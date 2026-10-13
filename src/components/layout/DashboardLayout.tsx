@@ -19,6 +19,7 @@ import { useUserRole } from "@/context/UserRoleContext";
 // ✅ Import shared profile cache
 import { getProfileCache, setProfileCache } from "@/lib/profileCache";
 import { FloatingChatButton } from "../FloatingChatButton";
+import { ErrorBoundary } from "../ErrorBoundary";
 
 // ✅ Lazy load heavy components
 const FloatingChat = lazy(() => import("@/components/FloatingChat"));
@@ -69,13 +70,15 @@ const RightPanel = memo(({ userId }: { userId: string }) => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto hide-scrollbar space-y-4 w-[400px] -mt-2 p-0">
-        <Suspense fallback={
-          <div className="flex items-center justify-center p-4">
-            <div className="animate-pulse text-gray-400">Loading chat...</div>
-          </div>
-        }>
-          <FloatingChat currentUserId={userId} />
-        </Suspense>
+        <ErrorBoundary label="FloatingChat">
+          <Suspense fallback={
+            <div className="flex items-center justify-center p-4">
+              <div className="animate-pulse text-gray-400">Loading chat...</div>
+            </div>
+          }>
+            <FloatingChat currentUserId={userId} />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </div>
   );
@@ -137,14 +140,18 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
           <Toaster />
 
           {showMusic && (
-            <Suspense fallback={null}>
-              <MusicPlayer />
-            </Suspense>
+            <ErrorBoundary label="MusicPlayer">
+              <Suspense fallback={null}>
+                <MusicPlayer />
+              </Suspense>
+            </ErrorBoundary>
           )}
         </div>
       </div>
 
-      <FloatingChatButton userId={userId || user?.id} />
+      <ErrorBoundary label="FloatingChatButton">
+        <FloatingChatButton userId={userId || user?.id} />
+      </ErrorBoundary>
     </div>
   );
 });
@@ -155,10 +162,13 @@ DashboardContent.displayName = "DashboardContent";
 // -------------------------------------------------------------
 export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   const { role: contextRole, refreshRole } = useUserRole();
-  const { profile, loading } = useUserProfile();
+  const { profile } = useUserProfile();
   const authUser = useUser();
   const navigate = useNavigate();
-  const { isLoading } = useSessionContext();
+  // ✅ Don't use `isLoading` from useSessionContext — it blocks paint on mobile.
+  //    We have our own cache-based gating (cachedUser, sharedCache).
+  //    Auth will hydrate silently and update state when ready.
+  const { isLoading: _authLoading } = useSessionContext();
   const location = useLocation();
   const isForum = location.pathname === "/forum";
 
@@ -189,10 +199,12 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") === "dark";
-    }
-    return false;
+    if (typeof window === "undefined") return false;
+    // ✅ Trust the <html> class set by index.html bootstrap
+    if (document.documentElement.classList.contains("dark")) return true;
+    if (document.documentElement.classList.contains("light")) return false;
+    // Fallback: canonical key
+    return localStorage.getItem("medrae_dark_mode") === "true";
   });
 
   const isMounted = useRef(true);
@@ -278,16 +290,42 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   // ------------------------------
   // Theme Sync
   // ------------------------------
+  // ------------------------------
+  // Theme Sync — single source of truth
+  // ------------------------------
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode);
+    const html = document.documentElement;
+    html.classList.toggle("dark", isDarkMode);
+    html.classList.toggle("light", !isDarkMode);
+    // Keep the CSS var in sync for splash/loader
+    html.style.setProperty("--bg-color", isDarkMode ? "#0d1117" : "#ffffff");
   }, [isDarkMode]);
 
-  const toggleDarkMode = () => {
+  // ✅ Follow <html> class changes made anywhere (Header, Footer, Settings)
+  useEffect(() => {
+    const html = document.documentElement;
+    const observer = new MutationObserver(() => {
+      const isDark = html.classList.contains("dark");
+      setIsDarkMode((prev) => (prev === isDark ? prev : isDark));
+    });
+    observer.observe(html, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    localStorage.setItem("theme", newMode ? "dark" : "light");
-  };
-
+    localStorage.setItem("medrae_dark_mode", String(newMode));
+    document.documentElement.classList.toggle("dark", newMode);
+    document.documentElement.classList.toggle("light", !newMode);
+    document.documentElement.style.setProperty(
+      "--bg-color",
+      newMode ? "#0d1117" : "#ffffff"
+    );
+    window.dispatchEvent(new CustomEvent("theme-changed", {
+      detail: { isDarkMode: newMode },
+    }));
+  }, [isDarkMode]);
   // ------------------------------
   // ⚡️ OPTIMIZED Streak - 24-hour cache
   // ------------------------------
@@ -452,30 +490,51 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
       </SidebarProvider>
     );
   }
-
-  // ✅ RULE 2: If NO user data exists, redirect
-  if (!authUser && !cachedUser) {
+  // ✅ RULE 2: If we truly have no cached data AND no auth user AND auth is done loading,
+  //            only THEN redirect to login. Never redirect while still hydrating.
+  if (!authUser && !cachedUser && !_authLoading) {
     navigate("/login", { replace: true });
     return null;
   }
 
-  // ✅ RULE 3: If still loading and no cached data, keep loader visible
-  if (isLoading) {
-    return null;
+  // ✅ RULE 3: If we have nothing cached AND auth is still hydrating, render a
+  //            minimal shell so the transition isn't blank.
+  if (!user && _authLoading) {
+    return (
+      <SidebarProvider>
+        <MusicPlayerProvider>
+          <DashboardContent
+            user={{
+              name: cachedUser?.email?.split('@')[0] || "Nurse",
+              role: userRole || "student",
+              avatar: "/avatars/default.jpg",
+              id: cachedUser?.id || "hydrating",
+            }}
+            role={userRole || "student"}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+            streak={streak}
+            isForum={isForum}
+            userId={cachedUser?.id || authUser?.id || "hydrating"}
+          >
+            {children}
+          </DashboardContent>
+        </MusicPlayerProvider>
+      </SidebarProvider>
+    );
   }
 
-  // Fallback redirect
-  if (!authUser) {
-    navigate("/login", { replace: true });
-    return null;
-  }
-
-  // ✅ RULE 4: Fallback render
+  // ✅ RULE 4: Final fallback — always render the dashboard.
+  //            Never return null, never crash. If we got this far, use whatever
+  //            identity we can construct, even a minimal one.
   const fallbackUser = {
-    name: authUser?.email?.split('@')[0] || "Nurse",
+    name:
+      cachedUser?.email?.split('@')[0] ||
+      authUser?.email?.split('@')[0] ||
+      "Nurse",
     role: userRole || "Student",
     avatar: "/avatars/default.jpg",
-    id: authUser?.id || 'unknown',
+    id: cachedUser?.id || authUser?.id || "unknown",
   };
 
   return (

@@ -2,14 +2,15 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ChevronDown, ChevronLeft, SkipBack, Play, Pause, SkipForward,
+    ChevronDown, ChevronLeft, SkipBack, Play, SkipForward,
     Repeat, Volume2, VolumeX, FilePlus, ListMusic,
-    Plus, Loader2, CheckCircle2, AlertCircle, ThumbsUp, Trash2, Headphones, EyeOff
-} from 'lucide-react';
-import { useMusicPlayer } from "./MusicPlayerProvider";
+    Plus, Loader2, CheckCircle2, AlertCircle, ThumbsUp, Trash2, Headphones, EyeOff,
+    X,
+} from "lucide-react";
+import { useMusicPlayer, type HistoryEntry } from "./MusicPlayerProvider";
 import { usePodcastShows } from "@/hooks/usePodcastShows";
 import { supabase } from "@/lib/supabaseClient";
-
+import { useLocation } from "react-router-dom";
 interface Track {
     id?: string;
     name: string;
@@ -94,15 +95,50 @@ export const MusicPlayer = () => {
         setVolume, setMuted, setRepeatMode, setProgress,
         refreshEpisodes,
         fetchShowEpisodes,
+        history,
+        clearHistory,
+        removeFromHistory,
     } = useMusicPlayer();
 
     const { shows, refresh: refreshShows, toggleEndorse, deleteShow } = usePodcastShows();
 
+    // ✅ Total episodes across all shows — used for the "Browse" label
+    //    and the episodes header. Falls back to "3K+" if shows haven't loaded.
+    const totalEpisodes = useMemo(() => {
+        const sum = shows.reduce(
+            (acc: number, s: any) => acc + (Number(s?.episode_count) || 0),
+            0
+        );
+        return sum;
+    }, [shows]);
+    const totalEpisodesLabel = useMemo(() => {
+        if (!totalEpisodes) return "3K+";
+        if (totalEpisodes >= 1000) {
+            const k = totalEpisodes / 1000;
+            // Round UP so "3K+" is truthful (2544 → 3K+)
+            const short = Math.ceil(k);
+            return `${short}K+`;
+        }
+        if (totalEpisodes >= 100) return `${totalEpisodes}+`;
+        return String(totalEpisodes);
+    }, [totalEpisodes]);
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
     }, []);
     const isAdmin = userId === ADMIN_ID;
 
+    // ✅ Only show the floating side tab on the home dashboard.
+    //    Audio keeps playing everywhere — this only controls visibility
+    //    of the tap-to-open button.
+    const location = useLocation();
+    const showSideTab = useMemo(() => {
+        const path = location.pathname;
+        // Home dashboard for whichever role the user is on
+        return (
+            path === "/dashboard" ||
+            path.startsWith("/dashboard/")
+        );
+    }, [location.pathname]);
     // ═══════════════════════════════════════════════════════
     // ── LIVE TIME — throttled (2 Hz max, rAF-coalesced) ──
     // Prevents re-rendering the whole tree 4×/sec during playback.
@@ -306,7 +342,49 @@ export const MusicPlayer = () => {
         togglePlay(true);
         if (window.innerWidth < 768) setScreen("player");
     }, [tracks, setCurrentIndex, setTracks, togglePlay]);
+    const handleResumeFromHistory = useCallback((entry: HistoryEntry) => {
+        // Find the track in `tracks` (or build one from the entry if missing)
+        const idx = tracks.findIndex((t) => (t.id || t.src) === entry.id);
+        if (idx >= 0) {
+            setCurrentIndex(idx);
+        } else {
+            const newIdx = tracks.length;
+            setTracks((prev) => [
+                ...prev,
+                {
+                    id: entry.id,
+                    name: entry.name,
+                    src: entry.src,
+                    artwork: entry.artwork,
+                    duration: entry.duration,
+                    showTitle: entry.showTitle,
+                    showId: entry.showId,
+                    publishedAt: entry.publishedAt,
+                },
+            ]);
+            setCurrentIndex(newIdx);
+        }
 
+        // Seek to saved position after the track is loaded
+        requestAnimationFrame(() => {
+            const audio = audioRef.current;
+            if (!audio) return;
+            const seek = () => {
+                try {
+                    audio.currentTime = Math.max(0, entry.position);
+                } catch { /* ignore */ }
+                audio.removeEventListener("loadedmetadata", seek);
+            };
+            if (audio.readyState >= 1) {
+                try { audio.currentTime = Math.max(0, entry.position); } catch { /* ignore */ }
+            } else {
+                audio.addEventListener("loadedmetadata", seek);
+            }
+        });
+
+        togglePlay(true);
+        if (window.innerWidth < 768) setScreen("player");
+    }, [tracks, setCurrentIndex, setTracks, togglePlay, audioRef]);
     const handleUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         Array.from(e.target.files)
@@ -444,10 +522,11 @@ export const MusicPlayer = () => {
             onUpload={handleUpload}
             onBrowse={handleBrowse}
             episodeCount={tracks.length}
+            totalEpisodesLabel={totalEpisodesLabel}
         />
     ), [
         artworkSrc, isPlaying, currentTrack, progress, currentTime, totalDuration,
-        volume, muted, repeatMode, loading, tracks.length,
+        volume, muted, repeatMode, loading, tracks.length, totalEpisodesLabel,
         handleProgressClick, handleTogglePlay, handlePrev, handleNext,
         handleCycleRepeat, handleToggleMute, handleVolume, handleUpload, handleBrowse,
     ]);
@@ -459,6 +538,7 @@ export const MusicPlayer = () => {
             isPlaying={isPlaying}
             progress={progress}
             loading={loading || showTracksLoading}
+            parentLoading={loading && tracks.length === 0}
             selectedShowId={selectedShowId}
             onSelectShow={handleSelectShow}
             onSelectTrack={handleSelectTrack}
@@ -467,14 +547,20 @@ export const MusicPlayer = () => {
             isAdmin={isAdmin}
             onManage={handleOpenAdmin}
             onHideEpisode={handleHideEpisodeRequest}
+            // ✅ history
+            history={history}
+            onResumeFromHistory={handleResumeFromHistory}
+            onRemoveFromHistory={removeFromHistory}
+            onClearHistory={clearHistory}
         />
     ), [
         visibleTracks, currentTrackSrc, isPlaying, progress,
-        loading, showTracksLoading, selectedShowId,
-        shows, isAdmin, toggleEndorse,
+        loading, showTracksLoading, tracks.length,
+        selectedShowId, shows, isAdmin, toggleEndorse,
         handleSelectShow, handleSelectTrack, handleOpenAdmin, handleHideEpisodeRequest,
+        // ✅ history
+        history, handleResumeFromHistory, removeFromHistory, clearHistory,
     ]);
-
     return (
         <>
             {/*
@@ -482,72 +568,90 @@ export const MusicPlayer = () => {
               * not via React prop — avoids remount + CORS preflight on every track.
               */}
             <audio ref={audioRef} crossOrigin="anonymous" />
+            {/* ✅ Pre-warm the episodes list off-screen — keeps the heaviest
+                subtree mounted from app boot, so tapping Studify → Browse is instant. */}
+            <div
+                aria-hidden="true"
+                style={{
+                    position: "fixed",
+                    width: 0,
+                    height: 0,
+                    overflow: "hidden",
+                    visibility: "hidden",
+                    pointerEvents: "none",
+                }}
+            >
+                {listEl}
+            </div>
 
             {/* ── SIDE TAB ── */}
-            <div className="fixed top-1/4 -translate-y-1/2 right-0 z-40 group">
-                <motion.div
-                    initial={{ x: "85%" }}
-                    whileHover={{ x: "0%" }}
-                    animate={{ x: isPlaying ? "0%" : "55%" }}
-                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                    className="relative flex items-center"
-                >
-                    <AnimatePresence>
-                        {isPlaying && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: -12 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                className="absolute right-full hidden md:block"
-                            >
-                                <div className="bg-white dark:bg-gh-card px-4 py-2 rounded-2xl shadow-2xl shadow-black/25 min-w-[150px]">
-                                    <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest block mb-1">
-                                        Now Playing
-                                    </span>
-                                    <div className="w-28 overflow-hidden">
-                                        <div className="animate-marquee text-[10px] font-bold text-black dark:text-gh-text whitespace-nowrap">
-                                            {currentTrack?.name || "Medrae Podcast"}
+            {/* ── SIDE TAB ── (only on home dashboard) */}
+            {showSideTab && (
+                <div className="fixed top-1/4 -translate-y-1/2 right-0 z-40 group">
+                    <motion.div
+                        initial={{ x: "85%" }}
+                        whileHover={{ x: "0%" }}
+                        animate={{ x: isPlaying ? "0%" : "55%" }}
+                        transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                        className="relative flex items-center"
+                    >
+                        <AnimatePresence>
+                            {isPlaying && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: -12 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="absolute right-full hidden md:block"
+                                >
+                                    <div className="bg-white dark:bg-gh-card px-4 py-2 rounded-2xl shadow-2xl shadow-black/25 min-w-[150px]">
+                                        <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest block mb-1">
+                                            Now Playing
+                                        </span>
+                                        <div className="w-28 overflow-hidden">
+                                            <div className="animate-marquee text-[10px] font-bold text-black dark:text-gh-text whitespace-nowrap">
+                                                {currentTrack?.name || "Medrae Podcast"}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <button
-                        onClick={() => setIsOpen(true)}
-                        className="flex items-center bg-slate-200 dark:bg-gh-card p-2 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.18)] transition-colors hover:bg-slate-300 dark:hover:bg-gh-hover"
-                    >
-                        <div className="relative h-14 w-14 flex items-center justify-center">
-                            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-400/20" />
-                                <motion.circle
-                                    cx="50" cy="50" r="46"
-                                    fill="none" stroke="currentColor" strokeWidth="6"
-                                    strokeDasharray="290"
-                                    style={{ strokeDashoffset: 290 - (290 * progress) }}
-                                    className="text-blue-500"
-                                />
-                            </svg>
-                            <div className={`h-11 w-11 rounded-full overflow-hidden relative ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
-                                <div className="absolute inset-0 bg-[radial-gradient(circle,_transparent_40%,_rgba(0,0,0,0.4)_100%)] z-10" />
-                                <img src="/music.png" alt="Studify" className="w-full h-full object-cover" />
-                            </div>
-                            {isPlaying && (
-                                <span className="absolute -top-1 -left-1 flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                                </span>
+                                </motion.div>
                             )}
-                        </div>
-                        <div className="ml-2 flex flex-col gap-1 pr-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                            <div className="w-1 h-1 bg-slate-700 dark:bg-gh-text rounded-full"></div>
-                            <div className="w-1 h-1 bg-slate-700 dark:bg-gh-text rounded-full"></div>
-                            <div className="w-1 h-1 bg-slate-700 dark:bg-gh-text rounded-full"></div>
-                        </div>
-                    </button>
-                </motion.div>
-            </div>
+                        </AnimatePresence>
+
+                        <button
+                            onClick={() => setIsOpen(true)}
+                            className="flex items-center bg-slate-200 dark:bg-gh-card p-3 pr-4 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.18)] transition-colors hover:bg-slate-300 dark:hover:bg-gh-hover"
+                        >
+                            <div className="relative h-16 w-16 flex items-center justify-center">
+                                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-400/20" />
+                                    <motion.circle
+                                        cx="50" cy="50" r="46"
+                                        fill="none" stroke="currentColor" strokeWidth="6"
+                                        strokeDasharray="290"
+                                        style={{ strokeDashoffset: 290 - (290 * progress) }}
+                                        className="text-blue-500"
+                                    />
+                                </svg>
+                                <div className={`h-13 w-13 rounded-full overflow-hidden relative ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle,_transparent_40%,_rgba(0,0,0,0.4)_100%)] z-10" />
+                                    <img src="/music.png" alt="Studify" className="w-full h-full object-cover" />
+                                </div>
+                                {isPlaying && (
+                                    <span className="absolute -top-1 -left-1 flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                    </span>
+                                )}
+                            </div>
+                            <div className="ml-2.5 flex flex-col gap-1.5 pr-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <div className="w-1.5 h-1.5 bg-slate-700 dark:bg-gh-text rounded-full"></div>
+                                <div className="w-1.5 h-1.5 bg-slate-700 dark:bg-gh-text rounded-full"></div>
+                                <div className="w-1.5 h-1.5 bg-slate-700 dark:bg-gh-text rounded-full"></div>
+                            </div>
+                        </button>
+                    </motion.div>
+                </div>
+            )}
 
             {/* ── FULLSCREEN ── */}
             <AnimatePresence>
@@ -590,7 +694,7 @@ export const MusicPlayer = () => {
                                     </span>
                                     <span className="text-[9px] text-gh-l-muted dark:text-gh-muted font-semibold">
                                         {screen === "player" && (currentTrack?.showTitle ?? "Nursing Audio")}
-                                        {screen === "episodes" && `${visibleTracks.length} available`}
+                                        {screen === "episodes" && `${totalEpisodesLabel} episodes`}
                                         {screen === "admin" && `${shows.length} show${shows.length !== 1 ? "s" : ""}`}
                                     </span>
                                 </div>
@@ -672,6 +776,7 @@ export const MusicPlayer = () => {
                             </div>
 
                             {/* MOBILE — one screen at a time, mode="wait" */}
+                            {/* MOBILE — one screen at a time, mode="wait" */}
                             <div className="md:hidden flex-1 min-h-0 relative">
                                 <AnimatePresence mode="wait" initial={false}>
                                     {screen === "player" && (
@@ -702,6 +807,20 @@ export const MusicPlayer = () => {
                                         >
                                             {listEl}
                                         </motion.div>
+                                    )}
+                                    {/* ✅ Pre-render the episodes screen ALWAYS (not just while on player).
+                                        Keeps the tree mounted across player↔episodes transitions so the
+                                        first render of EpisodesContent is not on the critical tap path.
+                                        Hidden when not active — no paint, no interaction. */}
+                                    {screen !== "episodes" && (
+                                        <div
+                                            key="m-episodes-preload"
+                                            aria-hidden="true"
+                                            className="absolute inset-0 opacity-0 pointer-events-none"
+                                            style={{ visibility: "hidden" }}
+                                        >
+                                            {listEl}
+                                        </div>
                                     )}
 
                                     {screen === "admin" && isAdmin && (
@@ -816,6 +935,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
         volume, muted, repeatActive, loading,
         onProgressClick, onTogglePlay, onPrev, onNext,
         onCycleRepeat, onToggleMute, onVolume, onUpload, onBrowse, episodeCount,
+        totalEpisodesLabel,
     } = props;
 
     const showSkeleton = loading && !currentTrack;
@@ -832,10 +952,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
         }
         setVolOpen(true);
     }, []);
-    const scheduleClose = useCallback(() => {
-        if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = window.setTimeout(() => setVolOpen(false), 700);
-    }, []);
+
     const closeNow = useCallback(() => {
         if (hideTimerRef.current) {
             window.clearTimeout(hideTimerRef.current);
@@ -1125,7 +1242,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                             Browse all episodes
                         </span>
                         <span className="text-[10px] font-bold text-slate-500 dark:text-gh-muted bg-white dark:bg-gh-canvas px-2 py-0.5 rounded-full">
-                            {episodeCount}
+                            {totalEpisodesLabel}
                         </span>
                     </button>
                 )}
@@ -1232,13 +1349,90 @@ const VlcVolumeSlider = React.memo(function VlcVolumeSlider({
 const EpisodesContent = React.memo(function EpisodesContent(props: any) {
     const {
         visibleTracks, currentTrackSrc, isPlaying, selectedShowId, loading,
+        parentLoading,
         onSelectShow, onSelectTrack, shows, onToggleEndorse, isAdmin, onManage,
         onHideEpisode,
         progress = 0,
+        // ✅ NEW
+        history = [],
+        onResumeFromHistory,
+        onRemoveFromHistory,
+        onClearHistory,
     } = props;
 
-    const showSkeleton = loading && visibleTracks.length === 0;
+    //    `visibleTracks` may not be populated yet even if the parent has
+    //    `tracks`. Force ONE skeleton frame so the user never sees blank.
+    //    This is critical on mobile where the layout pass is slower.
+    const [firstFrame, setFirstFrame] = useState(true);
+    useEffect(() => {
+        const id = requestAnimationFrame(() => setFirstFrame(false));
+        return () => cancelAnimationFrame(id);
+    }, []);
 
+    const showSkeleton =
+        firstFrame ||
+        (loading && visibleTracks.length === 0) ||
+        (visibleTracks.length === 0 && parentLoading === true);
+    // ✅ "Continue listening" — shows the last few episodes the user opened
+    const continueBlock = useMemo(() => {
+        if (showSkeleton) return null;
+        if (!history || history.length === 0) return null;
+
+        // Show only the top 5 most-recent — not the full history
+        const recent = history.slice(0, 5);
+
+        return (
+            <div className="px-3 md:px-4 pt-3 pb-1 shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <Headphones size={14} className="text-blue-600 dark:text-blue-400" />
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
+                            Continue listening
+                        </h3>
+                    </div>
+                    <button
+                        onClick={onClearHistory}
+                        className="text-[10px] font-bold text-gh-l-muted dark:text-gh-muted hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    >
+                        Clear all
+                    </button>
+                </div>
+
+                {recent.map((entry: HistoryEntry) => (
+                    <ContinueListeningRow
+                        key={entry.id}
+                        entry={entry}
+                        onResume={() => onResumeFromHistory(entry)}
+                        onRemove={() => onRemoveFromHistory(entry.id)}
+                    />
+                ))}
+            </div>
+        );
+    }, [history, showSkeleton, onResumeFromHistory, onRemoveFromHistory, onClearHistory]);
+    const [chipsTimedOut, setChipsTimedOut] = useState(false);
+    useEffect(() => {
+        const t = setTimeout(() => setChipsTimedOut(true), 3000);
+        return () => clearTimeout(t);
+    }, []);
+    // ✅ Chips-row skeleton — covers the case where `shows` hasn't loaded yet
+    //    but we already have episode data. Avoids blank space above the list.
+    const chipsSkeletonBlock = useMemo(() => {
+        if (showSkeleton) return null;
+        if (shows.length > 0) return null;
+        if (chipsTimedOut) return null;
+        return (
+            <div className="px-3 md:px-4 pt-3 pb-3 shrink-0">
+                <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="shrink-0 flex flex-col items-center gap-1.5">
+                            <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl bg-gh-l-hover dark:bg-gh-hover animate-pulse" />
+                            <div className="h-2.5 w-16 rounded-full bg-gh-l-hover dark:bg-gh-hover animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }, [shows.length, showSkeleton, chipsTimedOut]);
     const chipsBlock = useMemo(() => {
         if (showSkeleton || shows.length === 0) return null;
         return (
@@ -1422,15 +1616,18 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
     return (
         <div className="h-full flex flex-col min-h-0">
             <div className="md:hidden h-full overflow-y-auto custom-scrollbar">
+                {continueBlock}
                 {chipsBlock}
+                {chipsSkeletonBlock}
                 {showCardsBlock}
                 <div className="px-3 pb-6">
                     {episodeRows}
                 </div>
             </div>
-
             <div className="hidden md:block md:h-full md:min-h-0 md:overflow-y-auto custom-scrollbar">
+                {continueBlock}
                 {chipsBlock}
+                {chipsSkeletonBlock}
                 {showCardsBlock}
                 <div className="px-4 pb-6">
                     {episodeRows}
@@ -1599,7 +1796,109 @@ const EndorseButton = React.memo(function EndorseButton({ endorsed, count, onCli
         </button>
     );
 });
+// ════════════════════════════════════════════════════════════
+// CONTINUE LISTENING ROW
+// ════════════════════════════════════════════════════════════
+const ContinueListeningRow = React.memo(function ContinueListeningRow({
+    entry,
+    onResume,
+    onRemove,
+}: {
+    entry: HistoryEntry;
+    onResume: () => void;
+    onRemove: () => void;
+}) {
+    const pct = entry.duration
+        ? Math.min(100, Math.round((entry.position / entry.duration) * 100))
+        : 0;
 
+    const remaining = entry.duration
+        ? Math.max(0, entry.duration - entry.position)
+        : 0;
+
+    // Relative time — "2h ago", "yesterday", "3d ago"
+    const relTime = (() => {
+        const diff = Date.now() - entry.lastPlayedAt;
+        const m = Math.floor(diff / 60000);
+        if (m < 1) return "just now";
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        const d = Math.floor(h / 24);
+        if (d === 1) return "yesterday";
+        if (d < 7) return `${d}d ago`;
+        return new Date(entry.lastPlayedAt).toLocaleDateString();
+    })();
+
+    return (
+        <div className="group relative w-full rounded-2xl bg-gh-l-card dark:bg-gh-card overflow-hidden mb-2">
+            <button
+                onClick={onResume}
+                className="w-full flex items-center gap-3 p-3 text-left hover:bg-gh-l-hover dark:hover:bg-gh-hover transition-colors"
+            >
+                <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
+                    {entry.artwork ? (
+                        <img
+                            src={entry.artwork}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px] font-black">
+                            ▶
+                        </div>
+                    )}
+
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Play size={18} fill="white" className="text-white ml-0.5" />
+                    </div>
+
+                    {/* Progress bar at bottom */}
+                    {pct > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                            <div
+                                className="h-full bg-blue-500"
+                                style={{ width: `${pct}%` }}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-bold truncate text-gh-l-text dark:text-gh-text">
+                        {entry.name}
+                    </p>
+                    <p className="text-[10px] truncate text-gh-l-muted dark:text-gh-muted mt-0.5">
+                        {entry.showTitle ? `${entry.showTitle} · ` : ""}
+                        {remaining > 0 ? `${fmtTime(remaining)} left` : "Finished"}
+                        {" · "}
+                        {relTime}
+                    </p>
+                </div>
+
+                <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                    {entry.position > 5 ? "Resume" : "Play"}
+                </span>
+            </button>
+
+            {/* Remove button — appears on hover (desktop) / always (mobile, subtle) */}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove();
+                }}
+                className="absolute top-2 right-2 p-1 rounded-lg opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 text-gh-l-muted dark:text-gh-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+                title="Remove from history"
+                aria-label="Remove from history"
+            >
+                <X size={14} />
+            </button>
+        </div>
+    );
+});
 // ════════════════════════════════════════════════════════════
 // EPISODE ROW — memoized (biggest win: rows skip re-render on
 // timeupdate since their props don't change)

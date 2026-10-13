@@ -462,15 +462,23 @@ export function MistakesCard() {
         if (hasFetched.current) return;
         hasFetched.current = true;
 
+        // ✅ INSTANT PAINT: show whatever cache we have, even if stale,
+        //    then refresh in the background.
         try {
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { top: cachedTop, stats: cachedStats, ts } = JSON.parse(cached);
-                if (Date.now() - ts < CACHE_TTL && cachedTop?.length > 0) {
+                if (cachedTop?.length > 0) {
+                    // Use it immediately — even if expired
                     setTop(cachedTop);
                     setStats(cachedStats);
                     setLoading(false);
-                    return;
+
+                    // If it's still fresh, skip the network call entirely
+                    if (Date.now() - ts < CACHE_TTL) {
+                        return;
+                    }
+                    // Otherwise fall through to fetch fresh data (no skeleton)
                 }
             }
         } catch {

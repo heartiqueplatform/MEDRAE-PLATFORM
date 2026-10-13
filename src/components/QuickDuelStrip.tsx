@@ -153,6 +153,19 @@ function QuickDuelStripBase({
             if (!force && fetchedRef.current) return;
             fetchedRef.current = true;
 
+            // ✅ INSTANT PAINT: show whatever we have immediately
+            const instantHistory = readCache<Duel[]>(HISTORY_KEY);
+            const instantPlayers = readCache<Player[]>(PLAYERS_KEY);
+
+            if (instantHistory && instantHistory.length > 0) {
+                setHistory(instantHistory);
+                setLoading(false);  // ⬅️ kill loader the moment we have anything
+            }
+            if (instantPlayers && instantPlayers.length > 0) {
+                setPlayers(instantPlayers);
+                setLoading(false);
+            }
+
             try {
                 const [duelsRes, playersRes] = await Promise.all([
                     supabase
@@ -229,19 +242,17 @@ function QuickDuelStripBase({
                 }
             }
         },
-        [userId, players, cachedPlayers]
+        [userId]
     );
-
     /* -------------------------------------------------------------- */
     /*  Lifecycle: initial idle fetch + 60s poll + focus refresh       */
     /* -------------------------------------------------------------- */
     useEffect(() => {
         isMountedRef.current = true;
 
-        const ric: any = (window as any).requestIdleCallback;
-        const idleId = ric
-            ? ric(() => fetchData(false), { timeout: 2000 })
-            : setTimeout(() => fetchData(false), 800);
+        // ✅ Start the fetch IMMEDIATELY. No idle callback.
+        //    It paints from cache first (see fetchData), then refreshes.
+        fetchData(false);
 
         const onFocus = () => {
             if (!document.hidden) fetchData(true);
@@ -255,11 +266,6 @@ function QuickDuelStripBase({
 
         return () => {
             isMountedRef.current = false;
-            if ((window as any).cancelIdleCallback) {
-                (window as any).cancelIdleCallback(idleId);
-            } else {
-                clearTimeout(idleId);
-            }
             window.removeEventListener("focus", onFocus);
             document.removeEventListener("visibilitychange", onFocus);
             clearInterval(intervalId);
@@ -408,6 +414,14 @@ function QuickDuelStripBase({
         return <StripSkeleton />;
     }
 
+    // ✅ Show skeleton if we have NOTHING to show yet (no history AND no players)
+    //    even if loading somehow didn't get set.
+    if (!lastDuel && sortedPlayers.length === 0 && !initialHistory && !initialPlayers) {
+        const hasCache =
+            (readCache<Duel[]>(HISTORY_KEY)?.length ?? 0) > 0 ||
+            (readCache<Player[]>(PLAYERS_KEY)?.length ?? 0) > 0;
+        if (!hasCache) return <StripSkeleton />;
+    }
     /* -------------------------------------------------------------- */
     /*  Render                                                         */
     /* -------------------------------------------------------------- */

@@ -8,225 +8,272 @@ import { useUserRole } from "@/context/UserRoleContext";
 
 const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module => ({ default: module.MobileDrawer })));
 
-type IconTone = "neutral" | "practice" | "content" | "alert";
-
 const MISTAKE_COUNT_CACHE_KEY = "footer_mistake_count";
 
-// ⚡ Deferred so haptics NEVER block the navigation tap
 const superFastTap = (type: "light" | "success" | "warning" = "light") => {
     requestAnimationFrame(() => {
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            if (type === "success") {
-                navigator.vibrate([30, 40, 30]);
-            } else if (type === "warning") {
-                navigator.vibrate(100);
-            } else {
-                navigator.vibrate(35);
-            }
+            if (type === "success") navigator.vibrate([30, 40, 30]);
+            else if (type === "warning") navigator.vibrate(100);
+            else navigator.vibrate(35);
         }
     });
 };
 
 /* ============================================================
-   PROFESSIONAL SVG ICONS — v2 (thicker, weightier)
+   ICONS — v3
+   • 26×26 viewBox padding preserved
+   • strokeWidth: 1.9 inactive / 2.1 active
+   • Active state → filled silhouette (no fillOpacity)
+   • Round caps & joins throughout
    ============================================================ */
+
+const SW = (active: boolean) => (active ? 2.1 : 1.9);
+
+// ── HOME ────────────────────────────────────────────────────
 const IconHome = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
-            d="M4 10.8L11.3 3.9C11.69 3.53 12.31 3.53 12.7 3.9L20 10.8V19.5C20 20.33 19.33 21 18.5 21H15.5C14.67 21 14 20.33 14 19.5V16C14 14.9 13.1 14 12 14C10.9 14 10 14.9 10 16V19.5C10 20.33 9.33 21 8.5 21H5.5C4.67 21 4 20.33 4 19.5V10.8Z"
+            d="M3.5 11.2L11.72 3.4a1.9 1.9 0 0 1 2.56 0L22.5 11.2v9.3a1.5 1.5 0 0 1-1.5 1.5h-4.2a1 1 0 0 1-1-1v-3.6a3.3 3.3 0 0 0-6.6 0V21a1 1 0 0 1-1 1H5a1.5 1.5 0 0 1-1.5-1.5v-9.3Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
+            strokeWidth={SW(active)}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.20 : 0}
         />
     </svg>
 );
 
+// ── QUIZZES (heart → kept heart, cleaner geometry) ─────────
 const IconQuizzes = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
-            d="M12 20.5C12 20.5 3.5 15.5 3.5 9.5C3.5 6.46 5.96 4 9 4C10.6 4 12 4.8 12 4.8C12 4.8 13.4 4 15 4C18.04 4 20.5 6.46 20.5 9.5C20.5 15.5 12 20.5 12 20.5Z"
+            d="M13 21.8S4.4 16.6 4.4 10.9a4.9 4.9 0 0 1 8.6-3.1 4.9 4.9 0 0 1 8.6 3.1c0 5.7-8.6 10.9-8.6 10.9Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
+            strokeWidth={SW(active)}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
         />
     </svg>
 );
 
+// ── FEED ────────────────────────────────────────────────────
 const IconFeed = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M4 5.5C4 4.67 4.67 4 5.5 4H16.5C17.33 4 18 4.67 18 5.5V19.5C18 20.33 17.33 21 16.5 21H6.5C5.12 21 4 19.88 4 18.5V5.5Z"
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect
+            x="3.75"
+            y="4.25"
+            width="15.5"
+            height="17.5"
+            rx="2"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinecap="round"
+            strokeWidth={SW(active)}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.20 : 0}
         />
         <path
-            d="M18 8H19.5C20.33 8 21 8.67 21 9.5V18.5C21 19.88 19.88 21 18.5 21"
+            d="M19.25 8.5h1.5A2.25 2.25 0 0 1 23 10.75v10.5a2.25 2.25 0 0 1-2.25 2.25"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
+            strokeWidth={SW(active)}
             strokeLinecap="round"
             strokeLinejoin="round"
+            fill="none"
         />
-        <line x1="7.5" y1="8.5" x2="14.5" y2="8.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-        <line x1="7.5" y1="12" x2="14.5" y2="12" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-        <line x1="7.5" y1="15.5" x2="11.5" y2="15.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-    </svg>
-);
-
-const IconMistakes = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M11.5 6.8 L10 9.2 L11.5 11 L10 13 L11.5 15 L11.5 20.6 C11.5 20.6 3.4 15.6 3.4 9.5 C3.4 6.46 5.86 4 8.9 4 C10 4 11 4.5 11.5 5.2"
-            stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <g transform="rotate(18 16 12) translate(1.2 0.6)">
-            <path
-                d="M12.5 5.2 C13 4.5 14 4 15.1 4 C18.14 4 20.6 6.46 20.6 9.5 C20.6 15.6 12.5 20.6 12.5 20.6 L12.5 15 L14 13 L12.5 11 L14 9.2 L12.5 6.8"
-                stroke="currentColor"
-                strokeWidth={active ? 2.4 : 2.0}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill={active ? "currentColor" : "none"}
-                fillOpacity={active ? 0.22 : 0}
-            />
-        </g>
-    </svg>
-);
-
-const IconCpd = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M12 3.5L13.85 7.25L18 7.85L14.95 10.75L15.7 14.85L12 12.9L8.3 14.85L9.05 10.75L6 7.85L10.15 7.25L12 3.5Z"
-            stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path
-            d="M8.6 15.6L7.6 20.2L12 18.2L16.4 20.2L15.4 15.6"
-            stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
-
-const IconCatalog = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M4 5.5C4 4.67 4.67 4 5.5 4H18.5C19.33 4 20 4.67 20 5.5V18.5C20 19.33 19.33 20 18.5 20H5.5C4.67 20 4 19.33 4 18.5V5.5Z"
-            stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.20 : 0}
-        />
-        <line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-        <line x1="7" y1="13" x2="17" y2="13" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-        <line x1="7" y1="17" x2="13" y2="17" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-    </svg>
-);
-
-const IconProgress = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M4 20V13M10 20V8M16 20V4M20 20H4"
-            stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
+        {!active && (
+            <>
+                <path d="M7.5 9.25h8" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
+                <path d="M7.5 13h8" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
+                <path d="M7.5 16.75h5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
+            </>
+        )}
         {active && (
             <>
-                <circle cx="4" cy="13" r="1.6" fill="currentColor" />
-                <circle cx="10" cy="8" r="1.6" fill="currentColor" />
-                <circle cx="16" cy="4" r="1.6" fill="currentColor" />
+                <path d="M7.5 9.25h8" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
+                <path d="M7.5 13h8" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
+                <path d="M7.5 16.75h5" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
+            </>
+        )}
+    </svg>
+);
+// ── MISTAKES (broken heart — cleaned) ─────────────────────
+const IconMistakes = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Left half of heart */}
+        <path
+            d="M13 21.5S4.2 16.1 4.2 10.3a4.9 4.9 0 0 1 8.8-3.05"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+        />
+        {/* Right half of heart — offset slightly to create the "break" */}
+        <path
+            d="M13 21.5s8.8-5.4 8.8-11.2a4.9 4.9 0 0 0-8.8-3.05"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            transform="translate(1.2 0)"
+        />
+        {/* The jagged break line down the middle */}
+        <path
+            d="m11.2 6.8 1.8 2.6-1.4 2.2 1.4 2.4-1.4 2.3 1.4 2.4"
+            stroke={active ? "white" : "currentColor"}
+            strokeWidth={active ? 1.6 : 1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={active ? 0.7 : 1}
+            transform="translate(0.7 0)"
+        />
+    </svg>
+);
+
+// ── CPD (award/medal) ──────────────────────────────────────
+const IconCpd = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle
+            cx="13"
+            cy="10"
+            r="5.75"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            fill={active ? "currentColor" : "none"}
+        />
+        <path
+            d="M8.75 14.75 8 22.25l5-2.75 5 2.75-.75-7.5"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+        />
+    </svg>
+);
+
+// ── CATALOG (book) ──────────────────────────────────────────
+const IconCatalog = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M4.25 5.5A2.25 2.25 0 0 1 6.5 3.25H19A2.25 2.25 0 0 1 21.25 5.5v15A2.25 2.25 0 0 1 19 22.75H6.5A2.25 2.25 0 0 1 4.25 20.5V5.5Z"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+        />
+        <path d="M8.5 3.25v19.5" stroke={active ? "white" : "currentColor"} strokeWidth={active ? 1.6 : SW(false)} strokeLinecap="round" opacity={active ? 0.55 : 1} />
+        {!active && (
+            <>
+                <path d="M12 9.5h5.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
+                <path d="M12 13h5.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
             </>
         )}
     </svg>
 );
 
+// ── PROGRESS (bar chart) ───────────────────────────────────
+const IconProgress = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M4.25 21.75h17.5"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+        />
+        <rect x="6.5" y="13" width="3.5" height="7" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+        <rect x="11.25" y="9" width="3.5" height="11" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+        <rect x="16" y="5" width="3.5" height="15" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+    </svg>
+);
+
+// ── MENU (three lines, weightier) ──────────────────────────
 const IconMenu = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
-        <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
-        <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4.5 7.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
+        <path d="M4.5 13h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
+        <path d="M4.5 18.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
     </svg>
 );
 
-/* ✅ Tutor icons — same weight system */
+// ── TUTOR EXAMS (clipboard check) ──────────────────────────
 const IconTutorExams = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
-            d="M8 4.5H6.5C5.67 4.5 5 5.17 5 6V19.5C5 20.33 5.67 21 6.5 21H17.5C18.33 21 19 20.33 19 19.5V6C19 5.17 18.33 4.5 17.5 4.5H16"
+            d="M9 4.25H7.5A2.25 2.25 0 0 0 5.25 6.5v14A2.25 2.25 0 0 0 7.5 22.75h11A2.25 2.25 0 0 0 20.75 20.5v-14A2.25 2.25 0 0 0 18.5 4.25H17"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
+            strokeWidth={SW(active)}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.20 : 0}
         />
-        <path
-            d="M9 3H15C15.55 3 16 3.45 16 4V5.5C16 6.05 15.55 6.5 15 6.5H9C8.45 6.5 8 6.05 8 5.5V4C8 3.45 8.45 3 9 3Z"
+        <rect
+            x="9"
+            y="2.75"
+            width="8"
+            height="4"
+            rx="1.25"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            strokeWidth={SW(active)}
+            fill={active ? "currentColor" : "none"}
         />
-        <path d="M9 13.5L11 15.5L15 11.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" strokeLinejoin="round" />
+        {!active && (
+            <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        {active && (
+            <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+        )}
     </svg>
 );
 
+// ── EXAM RESULTS (document check) ──────────────────────────
 const IconExamResults = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
-            d="M6 3.5H14.5L19 8V19.5C19 20.33 18.33 21 17.5 21H6.5C5.67 21 5 20.33 5 19.5V4.5C5 3.67 5.67 3.5 6.5 3.5H6Z"
+            d="M6.5 3.25H15L21 9.25v12a1.5 1.5 0 0 1-1.5 1.5h-13a1.5 1.5 0 0 1-1.5-1.5v-16A1.5 1.5 0 0 1 6.5 3.25Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.4 : 2.0}
+            strokeWidth={SW(active)}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.20 : 0}
         />
-        <path d="M14.5 3.5V8H19" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8.5 13.5L10.75 15.75L15 11.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" strokeLinejoin="round" />
-        <line x1="8.5" y1="18" x2="15.5" y2="18" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
+        <path
+            d="M15 3.25v6h6"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        {!active && (
+            <>
+                <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M9.5 19.5h7" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
+            </>
+        )}
+        {active && (
+            <>
+                <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+                <path d="M9.5 19.5h7" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
+            </>
+        )}
     </svg>
 );
 
+// ── ANALYTICS (bar chart with baseline) ────────────────────
 const IconAnalytics = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 19.5H20" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
-        <rect x="5.5" y="12" width="3" height="6" rx="1"
-            stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <rect x="10.5" y="8" width="3" height="10" rx="1"
-            stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <rect x="15.5" y="4.5" width="3" height="13.5" rx="1"
-            stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
     </svg>
 );
 
 /* ============================================================
-   NAV ITEM — v2 (unified premium language)
+   NAV ITEM — v3
+   • No border on active tile
+   • Gradient fill + soft shadow only
+   • 44×44 tile, 26×26 icon
    ============================================================ */
 const NavItem = memo(({
     icon: Icon,
@@ -245,9 +292,8 @@ const NavItem = memo(({
 }) => {
     const [pressed, setPressed] = useState(false);
 
-    // Active → strong contrast. Inactive → muted but still readable.
     const labelColor = isActive
-        ? (isDark ? "text-white" : "text-gray-900")
+        ? (isDark ? "text-white" : "text-blue-600")
         : (isDark ? "text-gray-400" : "text-gray-500");
 
     const iconColor = isActive
@@ -258,79 +304,88 @@ const NavItem = memo(({
         setPressed(true);
         onPress(e);
     };
-    const handlePointerUp = () => setPressed(false);
-    const handlePointerLeave = () => setPressed(false);
-    const handlePointerCancel = () => setPressed(false);
+    const clear = () => setPressed(false);
+
+    // ── Active tile — clean gradient, NO border ──────────────
+    const activeTileBg = isDark
+        ? "linear-gradient(160deg, rgba(59,130,246,0.26) 0%, rgba(37,99,235,0.14) 100%)"
+        : "linear-gradient(160deg, rgba(59,130,246,0.16) 0%, rgba(37,99,235,0.09) 100%)";
+
+    const activeTileShadow = isDark
+        ? "0 4px 14px rgba(59,130,246,0.22), inset 0 1px 0 rgba(255,255,255,0.06)"
+        : "0 4px 14px rgba(59,130,246,0.16), inset 0 1px 0 rgba(255,255,255,0.75)";
 
     return (
         <button
             onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerLeave}
-            onPointerCancel={handlePointerCancel}
-            className="
-                flex flex-col items-center justify-center flex-1 h-full relative select-none
-                transition-transform duration-150
-            "
+            onPointerUp={clear}
+            onPointerLeave={clear}
+            onPointerCancel={clear}
+            className="flex flex-col items-center justify-center flex-1 h-full relative select-none"
             style={{
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-                transform: pressed ? 'scale(0.94)' : 'scale(1)',
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+                transition: "transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transform: pressed ? "scale(0.93)" : "scale(1)",
             }}
             aria-label={label}
         >
             {/* ── Press ripple ── */}
             <div
-                className="absolute top-1 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full pointer-events-none
-                    transition-all duration-300 ease-out"
-                style={{
-                    background: 'radial-gradient(circle, rgba(59,130,246,0.50) 0%, rgba(59,130,246,0.18) 45%, transparent 75%)',
-                    opacity: pressed ? 1 : 0,
-                    transform: `translateX(-50%) scale(${pressed ? 1.4 : 1})`,
-                }}
-            />
-
-            {/* ── Always-on active tile ── */}
-            <div
-                className="absolute top-0.5 left-1/2 -translate-x-1/2 w-9 h-9 rounded-xl pointer-events-none
-                    transition-all duration-300 ease-out"
+                className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
                 style={{
                     background: isDark
-                        ? 'linear-gradient(145deg, rgba(59,130,246,0.22) 0%, rgba(37,99,235,0.12) 100%)'
-                        : 'linear-gradient(145deg, rgba(59,130,246,0.14) 0%, rgba(37,99,235,0.08) 100%)',
-                    border: isActive
-                        ? (isDark
-                            ? '1px solid rgba(96,165,250,0.35)'
-                            : '1px solid rgba(59,130,246,0.28)')
-                        : '1px solid transparent',
-                    boxShadow: isActive
-                        ? (isDark
-                            ? '0 2px 10px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.04)'
-                            : '0 2px 10px rgba(59,130,246,0.14), inset 0 1px 0 rgba(255,255,255,0.6)')
-                        : 'none',
-                    opacity: isActive ? 1 : 0,
-                    transform: `translateX(-50%) scale(${isActive ? 1 : 0.85})`,
+                        ? "radial-gradient(circle, rgba(96,165,250,0.42) 0%, rgba(59,130,246,0.14) 50%, transparent 78%)"
+                        : "radial-gradient(circle, rgba(59,130,246,0.30) 0%, rgba(59,130,246,0.10) 50%, transparent 78%)",
+                    opacity: pressed ? 1 : 0,
+                    transition: "opacity 220ms ease-out",
                 }}
             />
 
-            <div className="relative flex items-center justify-center w-6 h-6 z-10">
-                <span className={`transition-colors duration-200 ${iconColor}`}>
+            {/* ── Active tile — borderless ── */}
+            <div
+                className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
+                style={{
+                    background: activeTileBg,
+                    boxShadow: isActive ? activeTileShadow : "none",
+                    opacity: isActive ? 1 : 0,
+                    transform: `translateX(-50%) scale(${isActive ? 1 : 0.82})`,
+                    transition: "opacity 260ms ease-out, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease-out",
+                }}
+            />
+
+            {/* ── Icon ── */}
+            <div className="relative flex items-center justify-center w-[26px] h-[26px] z-10">
+                <span
+                    className={`transition-colors duration-200 ${iconColor}`}
+                    style={{
+                        filter: isActive
+                            ? (isDark
+                                ? "drop-shadow(0 1px 3px rgba(59,130,246,0.35))"
+                                : "drop-shadow(0 1px 2px rgba(59,130,246,0.18))")
+                            : "none",
+                    }}
+                >
                     <Icon active={isActive} />
                 </span>
+
                 {badge !== undefined && badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-[4px]
-                        text-[9px] font-bold flex items-center justify-center
-                        bg-red-500 text-white rounded-full leading-none
-                        ring-2 ring-background">
-                        {badge > 99 ? '99+' : badge}
+                    <span
+                        className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] px-1
+                            text-[9.5px] font-bold flex items-center justify-center
+                            bg-red-500 text-white rounded-full leading-none
+                            ring-2 ring-background"
+                        style={{ boxShadow: "0 2px 6px rgba(239,68,68,0.35)" }}
+                    >
+                        {badge > 99 ? "99+" : badge}
                     </span>
                 )}
             </div>
+
+            {/* ── Label ── */}
             <span
-                className={`leading-none mt-1 transition-all duration-200 z-10
-                    text-[10px] tracking-tight
-                    ${isActive ? 'font-bold' : 'font-medium'}
-                    ${labelColor}`}
+                className={`leading-none mt-1.5 transition-all duration-200 z-10 text-[10.5px] tracking-tight ${isActive ? "font-semibold" : "font-medium"
+                    } ${labelColor}`}
             >
                 {label}
             </span>
@@ -357,22 +412,23 @@ export function Footer() {
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     const scrollContainerRef = useRef<Element | null>(null);
-
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         try {
+            // 1. Trust the <html> class — set by the bootstrap in index.html
+            if (document.documentElement.classList.contains('dark')) return 'dark';
+            if (document.documentElement.classList.contains('light')) return 'light';
+
+            // 2. Fallback: canonical key
             const darkMode = localStorage.getItem('medrae_dark_mode');
-            if (darkMode !== null) {
-                return darkMode === 'true' ? 'dark' : 'light';
-            }
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                return 'dark';
-            }
+            if (darkMode !== null) return darkMode === 'true' ? 'dark' : 'light';
+
+            // 3. Fallback: OS preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
             return 'light';
         } catch (e) {
             return 'light';
         }
     });
-
     const isMounted = useRef(true);
     const prefetchDone = useRef(false);
     const lastScrollY = useRef(0);
@@ -384,25 +440,23 @@ export function Footer() {
             try {
                 const { count, timestamp } = JSON.parse(cached);
                 if (Date.now() - timestamp < 5 * 60 * 1000) setMistakeCount(count);
-            } catch (e) { }
+            } catch { }
         }
     }, []);
 
     const fetchMistakeCount = useCallback(async () => {
-        if (!isStudent) return;
-        if (!user?.id) return;
+        if (!isStudent || !user?.id) return;
         try {
             const { count, error } = await supabase
                 .from("user_mistakes")
                 .select("*", { count: "exact", head: true })
                 .eq("user_id", user.id)
                 .eq("resolved", false);
-
             if (!error && isMounted.current) {
                 setMistakeCount(count || 0);
                 localStorage.setItem(MISTAKE_COUNT_CACHE_KEY, JSON.stringify({ count: count || 0, timestamp: Date.now() }));
             }
-        } catch (err) { }
+        } catch { }
     }, [user?.id, isStudent]);
 
     useEffect(() => { fetchMistakeCount(); }, [fetchMistakeCount]);
@@ -412,50 +466,44 @@ export function Footer() {
             try {
                 const darkMode = localStorage.getItem('medrae_dark_mode');
                 let newTheme: 'light' | 'dark';
-
-                if (darkMode !== null) {
-                    newTheme = darkMode === 'true' ? 'dark' : 'light';
-                } else {
-                    newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                }
-
-                if (newTheme !== theme) {
-                    setTheme(newTheme);
-                }
-            } catch (e) {
-            }
+                if (darkMode !== null) newTheme = darkMode === 'true' ? 'dark' : 'light';
+                else newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                if (newTheme !== theme) setTheme(newTheme);
+            } catch { }
         };
-
         const handleStorage = (e: StorageEvent) => {
-            if (e.key === 'medrae_dark_mode') {
-                const newTheme = e.newValue === 'true' ? 'dark' : 'light';
-                setTheme(newTheme);
-            }
+            if (e.key === 'medrae_dark_mode') setTheme(e.newValue === 'true' ? 'dark' : 'light');
         };
-
         const handleThemeChange = (e: CustomEvent) => {
-            const newTheme = e.detail?.isDarkMode ? 'dark' : 'light';
-            setTheme(newTheme);
+            setTheme(e.detail?.isDarkMode ? 'dark' : 'light');
         };
-
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const handleSystemChange = () => {
             if (localStorage.getItem('medrae_dark_mode') === null) {
-                const newTheme = mediaQuery.matches ? 'dark' : 'light';
-                setTheme(newTheme);
+                setTheme(mediaQuery.matches ? 'dark' : 'light');
             }
         };
-
         window.addEventListener('storage', handleStorage);
         window.addEventListener('theme-changed', handleThemeChange as EventListener);
         mediaQuery.addEventListener('change', handleSystemChange);
-
         return () => {
             window.removeEventListener('storage', handleStorage);
             window.removeEventListener('theme-changed', handleThemeChange as EventListener);
             mediaQuery.removeEventListener('change', handleSystemChange);
         };
     }, [theme]);
+
+    // ✅ Watch <html> class changes — bulletproof sync with index.html bootstrap
+    useEffect(() => {
+        const html = document.documentElement;
+        const observer = new MutationObserver(() => {
+            const isDark = html.classList.contains('dark');
+            const next = isDark ? 'dark' : 'light';
+            setTheme((prev) => (prev === next ? prev : next));
+        });
+        observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
 
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {
         e.preventDefault();
@@ -507,15 +555,11 @@ export function Footer() {
                     if (container) return container;
                 }
             }
-
             const dashboardContainer = document.querySelector('[data-scroll-container]');
             if (dashboardContainer) return dashboardContainer;
-
             const containers = document.querySelectorAll('.overflow-auto, .overflow-y-auto');
             for (const el of containers) {
-                if (el.scrollHeight > el.clientHeight + 10) {
-                    return el;
-                }
+                if (el.scrollHeight > el.clientHeight + 10) return el;
             }
             return null;
         };
@@ -525,37 +569,24 @@ export function Footer() {
 
         const handleScroll = () => {
             let currentScrollY;
-
             if (container === document.documentElement || container === document.body || !container) {
                 currentScrollY = window.scrollY || document.documentElement.scrollTop;
             } else {
                 currentScrollY = container.scrollTop;
             }
-
             if (window.innerWidth >= 768) return;
 
-            if (scrollTimeout.current) {
-                clearTimeout(scrollTimeout.current);
-                scrollTimeout.current = null;
-            }
+            if (scrollTimeout.current) { clearTimeout(scrollTimeout.current); scrollTimeout.current = null; }
 
-            if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-                setIsVisible(false);
-            } else if (currentScrollY < lastScrollY.current) {
-                setIsVisible(true);
-            }
-
-            if (currentScrollY <= 10) {
-                setIsVisible(true);
-            }
+            if (currentScrollY > lastScrollY.current && currentScrollY > 50) setIsVisible(false);
+            else if (currentScrollY < lastScrollY.current) setIsVisible(true);
+            if (currentScrollY <= 10) setIsVisible(true);
 
             lastScrollY.current = currentScrollY;
         };
 
         const handleScrollStop = () => {
-            if (scrollTimeout.current) {
-                clearTimeout(scrollTimeout.current);
-            }
+            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
             scrollTimeout.current = setTimeout(() => {
                 setIsVisible(true);
                 scrollTimeout.current = null;
@@ -578,29 +609,22 @@ export function Footer() {
                 container.removeEventListener('scroll', handleScroll);
                 container.removeEventListener('scroll', handleScrollStop);
             }
-            if (scrollTimeout.current) {
-                clearTimeout(scrollTimeout.current);
-            }
+            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
         };
     }, [location.pathname]);
 
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
 
-    const FOOTER_CONTENT_HEIGHT = 56;
+    const FOOTER_CONTENT_HEIGHT = 60;
     const footerHeight = FOOTER_CONTENT_HEIGHT + safeAreaBottom;
 
-    // ── Premium shelf edge: subtle top hairline that fades in from the sides ──
     const footerBgClass =
         'bg-background/95 backdrop-blur-xl border-0 ' +
         'before:content-[""] before:absolute before:top-0 before:left-0 before:right-0 before:h-px ' +
         'before:bg-gradient-to-r before:from-transparent ' +
         (theme === 'dark'
-            ? 'before:via-white/10 before:to-transparent '
-            : 'before:via-black/5 before:to-transparent');
-
-    const footerShadow = theme === 'dark'
-        ? 'shadow-none'
-        : 'shadow-none';
+            ? 'before:via-white/8 before:to-transparent '
+            : 'before:via-black/6 before:to-transparent');
 
     return (
         <>
@@ -609,7 +633,7 @@ export function Footer() {
                     transition-all duration-300 ease-out
                     ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
                     ${isDrawerOpen ? 'opacity-0 pointer-events-none' : ''}
-                    ${footerBgClass} ${footerShadow}
+                    ${footerBgClass}
                     flex justify-around items-center px-1
                     select-none`}
                 style={{
@@ -620,81 +644,29 @@ export function Footer() {
                     backfaceVisibility: 'hidden',
                 }}
             >
-                {/* ═══════════════════════════════════════════════════
-                    STUDENT-ONLY TABS
-                   ═══════════════════════════════════════════════════ */}
                 {isStudent && (
                     <>
-                        <NavItem
-                            icon={IconQuizzes}
-                            label="Quizzes"
-                            isActive={isActive("/Medrae-quizzes")}
-                            onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
-                            isDark={theme === 'dark'}
-                        />
-
-                        <NavItem
-                            icon={IconFeed}
-                            label="Feed"
-                            isActive={isActive("/feed")}
-                            onPress={(e) => handleNavigate(e, "/feed")}
-                            isDark={theme === 'dark'}
-                        />
+                        <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
+                        <NavItem icon={IconFeed} label="Feed" isActive={isActive("/feed")} onPress={(e) => handleNavigate(e, "/feed")} isDark={theme === 'dark'} />
                     </>
                 )}
 
-                {/* ═══════════════════════════════════════════════════
-                    TUTOR-ONLY TAB SLOT
-                    Tutors now get 3 tabs left of Home + 1 right + Menu.
-                    Total = 5 tabs (Exams · Analytics · Home · Feed · Menu)
-                   ═══════════════════════════════════════════════════ */}
                 {isTutor && (
                     <>
-                        <NavItem
-                            icon={IconTutorExams}
-                            label="Tutor Exams"
-                            isActive={isActive("/tutor/exams")}
-                            onPress={(e) => handleNavigate(e, "/tutor/exams")}
-                            isDark={theme === 'dark'}
-                        />
-
-                        <NavItem
-                            icon={IconAnalytics}
-                            label="Analytics"
-                            isActive={isActive("/analytics")}
-                            onPress={(e) => handleNavigate(e, "/analytics")}
-                            isDark={theme === 'dark'}
-                        />
+                        <NavItem icon={IconTutorExams} label="Tutor Exams" isActive={isActive("/tutor/exams")} onPress={(e) => handleNavigate(e, "/tutor/exams")} isDark={theme === 'dark'} />
+                        <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
                     </>
                 )}
 
-                {/* ═══════════════════════════════════════════════════
-                    HOME — visible to everyone
-                   ═══════════════════════════════════════════════════ */}
-                <NavItem
-                    icon={IconHome}
-                    label="Home"
-                    isActive={isActive(`/dashboard/${role}`)}
-                    onPress={(e) => handleNavigate(e, `/dashboard/${role}`)}
-                    isDark={theme === 'dark'}
-                />
+                <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
 
-                {/* 👇 Add the tutor's Results tab AFTER Home */}
                 {isTutor && (
+                    <NavItem icon={IconExamResults} label="Exam Results" isActive={isActive("/tutor/exams/:paper_id/results")} onPress={(e) => handleNavigate(e, "/tutor/exams/:paper_id/results")} isDark={theme === 'dark'} />
+                )}
+
+                {isStudent && (
                     <NavItem
-                        icon={IconExamResults}
-                        label="Exam Results"
-                        isActive={isActive("/tutor/exams/:paper_id/results")}
-                        onPress={(e) => handleNavigate(e, "/tutor/exams/:paper_id/results")}
-                        isDark={theme === 'dark'}
-                    />
-                )}
-
-                {/* ═══════════════════════════════════════════════════
-                    STUDENT-ONLY: MISTAKES
-                   ═══════════════════════════════════════════════════ */}
-                {isStudent && (
-                    <NavItem icon={IconMistakes}
+                        icon={IconMistakes}
                         label="Mistakes"
                         isActive={isActive("/my-mistakes")}
                         onPress={(e) => handleNavigate(e, "/my-mistakes")}
@@ -703,47 +675,15 @@ export function Footer() {
                     />
                 )}
 
-                {/* ═══════════════════════════════════════════════════
-                    STAFF-ONLY TABS — CPD module
-                   ═══════════════════════════════════════════════════ */}
                 {isStaff && (
                     <>
-                        <NavItem
-                            icon={IconCpd}
-                            label="CPD"
-                            isActive={isActive("/cpd")}
-                            onPress={(e) => handleNavigate(e, "/cpd")}
-                            isDark={theme === 'dark'}
-                        />
-
-                        <NavItem
-                            icon={IconCatalog}
-                            label="Catalog"
-                            isActive={isActive("/cpd/catalog")}
-                            onPress={(e) => handleNavigate(e, "/cpd/catalog")}
-                            isDark={theme === 'dark'}
-                        />
-
-                        <NavItem
-                            icon={IconProgress}
-                            label="Progress"
-                            isActive={isActive("/cpd/progress")}
-                            onPress={(e) => handleNavigate(e, "/cpd/progress")}
-                            isDark={theme === 'dark'}
-                        />
+                        <NavItem icon={IconCpd} label="CPD" isActive={isActive("/cpd")} onPress={(e) => handleNavigate(e, "/cpd")} isDark={theme === 'dark'} />
+                        <NavItem icon={IconCatalog} label="Catalog" isActive={isActive("/cpd/catalog")} onPress={(e) => handleNavigate(e, "/cpd/catalog")} isDark={theme === 'dark'} />
+                        <NavItem icon={IconProgress} label="Progress" isActive={isActive("/cpd/progress")} onPress={(e) => handleNavigate(e, "/cpd/progress")} isDark={theme === 'dark'} />
                     </>
                 )}
 
-                {/* ═══════════════════════════════════════════════════
-                    MENU — visible to everyone
-                   ═══════════════════════════════════════════════════ */}
-                <NavItem
-                    icon={IconMenu}
-                    label="Menu"
-                    isActive={isDrawerOpen}
-                    onPress={handleMenuPress}
-                    isDark={theme === 'dark'}
-                />
+                <NavItem icon={IconMenu} label="Menu" isActive={isDrawerOpen} onPress={handleMenuPress} isDark={theme === 'dark'} />
             </div>
 
             <Suspense fallback={null}>

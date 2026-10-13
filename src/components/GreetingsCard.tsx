@@ -389,9 +389,37 @@ function WeatherIcon({ kind, className = "" }: { kind: WeatherIconKind; classNam
 // ============================================
 // WEATHER HOOK
 // ============================================
+// ✅ Weather cache key + TTL
+const WEATHER_CACHE_KEY = "medrae_weather_cache_v1";
+const WEATHER_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+function readWeatherCache(): WeatherAdvice | null {
+    try {
+        const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        if (Date.now() - ts > WEATHER_CACHE_TTL) return null;
+        return data as WeatherAdvice;
+    } catch {
+        return null;
+    }
+}
+
+function writeWeatherCache(data: WeatherAdvice) {
+    try {
+        localStorage.setItem(
+            WEATHER_CACHE_KEY,
+            JSON.stringify({ data, ts: Date.now() })
+        );
+    } catch { /* ignore */ }
+}
+
 function useWeather() {
-    const [data, setData] = useState<WeatherAdvice | null>(null);
-    const [status, setStatus] = useState<"idle" | "loading" | "ready" | "denied" | "error">("idle");
+    // ✅ Seed from cache synchronously — instant paint, no skeleton
+    const [data, setData] = useState<WeatherAdvice | null>(() => readWeatherCache());
+    const [status, setStatus] = useState<"idle" | "loading" | "ready" | "denied" | "error">(
+        () => (readWeatherCache() ? "ready" : "idle")
+    );
     const [refreshTick, setRefreshTick] = useState(0);
 
     const refresh = useCallback(() => setRefreshTick((n) => n + 1), []);
@@ -403,14 +431,25 @@ function useWeather() {
             return;
         }
 
-        try {
-            sessionStorage.removeItem("weatherAdvice");
-            sessionStorage.removeItem("weatherAdvice_v3");
-        } catch { /* ignore */ }
+        // ✅ If we have a fresh cache and the user didn't force refresh,
+        //    skip the whole network+geo round trip.
+        const cached = readWeatherCache();
+        if (cached && refreshTick === 0) {
+            setStatus("ready");
+            return;
+        }
+
+        // Don't re-query if we're offline
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+            if (cached) setStatus("ready");
+            return;
+        }
 
         let cancelled = false;
-        setStatus("loading");
+        setStatus((prev) => (prev === "ready" ? "ready" : "loading"));
 
+        // ⚠️ KEY CHANGE: maximumAge: 15 min → browser reuses last known position
+        //    instead of re-running GPS on every mount.
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
                 try {
@@ -439,18 +478,28 @@ function useWeather() {
                     const hour = new Date().getHours();
                     const { advice, tone } = buildAdvice({ tempC, feelsLikeC, humidity, uvIndex, icon, hour });
 
-                    setData({
+                    const next: WeatherAdvice = {
                         tempC, feelsLikeC, humidity, uvIndex, code,
                         condition, icon, advice, tone, location,
                         isNight: hour >= 21 || hour < 5,
-                    });
+                    };
+
+                    setData(next);
                     setStatus("ready");
+                    writeWeatherCache(next);  // ✅ persist for next mount
                 } catch {
-                    if (!cancelled) setStatus("error");
+                    if (!cancelled) setStatus((prev) => (prev === "ready" ? "ready" : "error"));
                 }
             },
-            () => { if (!cancelled) setStatus("denied"); },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
+            () => {
+                // Denied permission → keep whatever cache we had
+                if (!cancelled) setStatus((prev) => (prev === "ready" ? "ready" : "denied"));
+            },
+            {
+                enableHighAccuracy: false,     // ⬅️ was true — turn off for speed
+                maximumAge: 15 * 60 * 1000,    // ⬅️ reuse 15-min-old position
+                timeout: 6000,                 // ⬅️ was 12000 — 6s is plenty
+            }
         );
 
         return () => { cancelled = true; };
@@ -477,10 +526,31 @@ function useClock() {
 export default function GreetingsCard() {
     const user = useUser();
     const { data: weather, status: weatherStatus, refresh: refreshWeather } = useWeather();
-
     const [name, setName] = useState<string>(() => {
         if (typeof window === "undefined") return "Nurse";
-        return localStorage.getItem("userName") || "Nurse";
+        // 1. Priority: shared profile cache (written by DashboardLayout/Profile/Header)
+        try {
+            const shared = localStorage.getItem("profile_cache_v1");
+            if (shared) {
+                const parsed = JSON.parse(shared);
+                const cachedName = parsed?.name;
+                if (cachedName && cachedName !== "Unknown User") {
+                    return cachedName.split(" ")[0];
+                }
+            }
+        } catch { /* ignore */ }
+        // 2. Fallback: userName key
+        const stored = localStorage.getItem("userName");
+        if (stored) return stored;
+        // 3. Fallback: legacy userProfile key
+        try {
+            const legacy = localStorage.getItem("userProfile");
+            if (legacy) {
+                const parsed = JSON.parse(legacy);
+                if (parsed?.name) return parsed.name.split(" ")[0];
+            }
+        } catch { /* ignore */ }
+        return "Nurse";
     });
 
     const [imageFailed, setImageFailed] = useState(false);
@@ -491,11 +561,11 @@ export default function GreetingsCard() {
     const heroImage = TIME_IMAGES[theme.icon];
     const dailyTag = useMemo(() => getDailyTag(now), [now.getDate()]);
     const medrae = useMedraeReadiness(name);
+
     useEffect(() => {
         setImageFailed(false);
         setImageLoaded(false);
     }, [heroImage]);
-
     const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
     const dateLine = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
     const clock = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
@@ -504,7 +574,28 @@ export default function GreetingsCard() {
     useEffect(() => {
         if (!user?.id) return;
         if (typeof window === "undefined") return;
-        if (localStorage.getItem("userName")) return;
+
+        // ✅ Skip the network entirely if we already have a cached name
+        //    AND it's not the placeholder "Nurse".
+        const cachedName = localStorage.getItem("userName");
+        if (cachedName && cachedName !== "Nurse") return;
+
+        // Also check the shared profile cache — it's authoritative
+        try {
+            const shared = localStorage.getItem("profile_cache_v1");
+            if (shared) {
+                const parsed = JSON.parse(shared);
+                if (parsed?.name && parsed.name !== "Unknown User") {
+                    const first = parsed.name.split(" ")[0];
+                    setName(first);
+                    localStorage.setItem("userName", first);
+                    return;  // ✅ done — no network call needed
+                }
+            }
+        } catch { /* ignore */ }
+
+        // Offline? Don't even try.
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
 
         let cancelled = false;
         const fetchName = async () => {
@@ -675,7 +766,9 @@ export default function GreetingsCard() {
                                 </>
                             ) : (
                                 <span className="text-[12px] md:text-sm font-normal text-white/70">
-                                    {weatherStatus === "loading" ? "Checking conditions…" : mood}
+                                    {/* Never show "loading" — show mood immediately,
+                                        weather swaps in when ready */}
+                                    {mood}
                                 </span>
                             )}
                         </div>

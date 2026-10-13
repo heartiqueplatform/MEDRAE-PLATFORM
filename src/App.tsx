@@ -167,6 +167,7 @@ import {
 import MaintenanceNotice from "./components/MaintenanceNotice";
 import InstallPrompt from "./components/pwa/InstallPrompt";
 import Guide from "./pages/Guide";
+import { RoutePrefetcher } from "./components/RoutePrefetcher";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -483,6 +484,8 @@ const AppContent = () => {
                     <AIWrapper>
                       <FirstTimeGuide />
                       <RouteScrollManager />
+                      {/* ✅ Warm every route chunk in the background */}
+                      <RoutePrefetcher />
                       {/* 🆕 MAINTENANCE OVERLAY — shows when ENABLED or ?maintenance=1 */}
                       <MaintenanceNotice />
                       <Routes>

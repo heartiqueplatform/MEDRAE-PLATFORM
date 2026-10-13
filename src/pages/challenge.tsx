@@ -748,14 +748,12 @@ export default function ChallengePage() {
     const user = session?.user;
     const [currentQIndex, setCurrentQIndex] = useState(0);
     const [challenges, setChallenges] = useState<any[]>(() => {
-        // Initialize from cache
         if (typeof window !== "undefined") {
             return loadCache(CHALLENGES_CACHE_KEY) || [];
         }
         return [];
     });
     const [players, setPlayers] = useState<any[]>(() => {
-        // Initialize from cache
         if (typeof window !== "undefined") {
             const cached = loadCache(PLAYERS_CACHE_KEY);
             if (cached) {
@@ -773,8 +771,21 @@ export default function ChallengePage() {
     const [answers, setAnswers] = useState<string[]>([]);
     const [timeLeft, setTimeLeft] = useState(0);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // ✅ Initialize loading from cache presence — no flash if cache exists
+    const [loading, setLoading] = useState(() => {
+        if (typeof window === "undefined") return false;
+        const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
+        const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
+        return !(cachedPlayers?.length > 0 || cachedChallenges?.length > 0);
+    });
+    const [isInitialLoad, setIsInitialLoad] = useState(() => {
+        // ✅ If cache exists, we've already "loaded" — skip the skeleton
+        if (typeof window === "undefined") return true;
+        const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
+        const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
+        return !(cachedPlayers?.length > 0 || cachedChallenges?.length > 0);
+    });
     const [showWinOverlay, setShowWinOverlay] = useState(false);
     const [showLossOverlay, setShowLossOverlay] = useState(false);
     const [seenIncomingIds, setSeenIncomingIds] = useState<Set<string>>(new Set());
@@ -941,54 +952,67 @@ export default function ChallengePage() {
     useEffect(() => {
         if (!user) return;
 
-        const loadData = async () => {
-            // 1. Immediate UI: Load from cache so it looks fast
-            const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
-            const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
+        // ✅ 1. Paint from cache FIRST (sync, no await)
+        const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
+        const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
 
-            if (cachedPlayers?.length > 0) {
-                setPlayers(cachedPlayers);
-                setPinnedUsers(cachedPlayers.filter(p => p.is_pinned));
-            } else {
-                setLoading(true); // Only show loader if nothing is cached
-            }
+        const hasCache =
+            (cachedPlayers?.length ?? 0) > 0 ||
+            (cachedChallenges?.length ?? 0) > 0;
 
-            if (cachedChallenges?.length > 0) {
-                setChallenges(cachedChallenges);
-            }
+        if (cachedPlayers?.length > 0) {
+            setPlayers(cachedPlayers);
+            setPinnedUsers(cachedPlayers.filter((p: any) => p.is_pinned));
+        }
+        if (cachedChallenges?.length > 0) {
+            setChallenges(cachedChallenges);
+        }
 
-            // 2. Background Sync: Always fetch fresh data on refresh/mount
-            // This ensures that even if you have a cache, you get the latest scores
-            await Promise.all([
-                fetchPlayers(),
-                fetchChallenges()
-            ]);
-
+        // If we have cache, kill the loading state immediately.
+        if (hasCache) {
             setLoading(false);
             setIsInitialLoad(false);
-        };
+        }
 
-        loadData();
+        // ✅ 2. Background refresh — do NOT await, do NOT gate the UI on it.
+        //    It updates state when it finishes.
+        (async () => {
+            try {
+                await Promise.all([
+                    fetchPlayers(),
+                    fetchChallenges(),
+                ]);
+            } finally {
+                // Only turn off loading if it was still on
+                setLoading(false);
+                setIsInitialLoad(false);
+            }
+        })();
     }, [user, fetchPlayers, fetchChallenges]);
     // Add this inside the ChallengePage component
     useEffect(() => {
+        let debounce: ReturnType<typeof setTimeout> | null = null;
+
         const handleAutoRefresh = () => {
-            // Only refresh if the user is actually looking at the page
-            if (document.visibilityState === 'visible' && user) {
-                console.log("App focused/returned: Refreshing data...");
+            if (document.visibilityState !== 'visible' || !user) return;
+
+            // ✅ Debounce — avoid firing on every focus event
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                // ✅ Silent refresh: no setLoading, no skeleton.
+                //    Data just updates when it arrives.
                 fetchChallenges();
                 fetchPlayers();
-            }
+            }, 400);
         };
 
-        // Listen for tab switching or coming back from another app
         document.addEventListener("visibilitychange", handleAutoRefresh);
-        // Listen for clicking back into the window
         window.addEventListener("focus", handleAutoRefresh);
 
         return () => {
             document.removeEventListener("visibilitychange", handleAutoRefresh);
             window.removeEventListener("focus", handleAutoRefresh);
+            if (debounce) clearTimeout(debounce);
         };
     }, [user, fetchChallenges, fetchPlayers]);
     useEffect(() => { initSound(); }, []);
@@ -1591,7 +1615,7 @@ export default function ChallengePage() {
 
             {/* Stats Dashboard - Clean, no borders */}
             <div className="grid grid-cols-3 gap-2 text-center max-w-full mx-auto mb-3">
-                {loading && isInitialLoad ? (<><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>) : (<>
+                {loading && isInitialLoad && players.length === 0 && challenges.length === 0 ? (<><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>) : (<>
                     <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
                         <Trophy className="mx-auto mb-1.5 text-emerald-600 dark:text-emerald-400" size={18} />
                         <p className="text-xl font-black text-emerald-700 dark:text-emerald-400 leading-none">{wins}</p>
@@ -1618,7 +1642,7 @@ export default function ChallengePage() {
                     completed={completed}
                     acceptChallenge={acceptChallenge}
                     user={user}
-                    loading={loading && isInitialLoad}
+                    loading={loading && isInitialLoad && players.length === 0 && challenges.length === 0}
                     search={search}
                     setSearch={setSearch}
                     onlyOnline={onlyOnline}

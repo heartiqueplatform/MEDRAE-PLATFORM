@@ -123,14 +123,18 @@ const preloadTotalUsers = () => {
 };
 
 // ✅ PRE-LOAD THEME - Runs synchronously before component mount
+// ✅ PRE-LOAD THEME - Trusts the <html> class set by index.html bootstrap
 const preloadTheme = () => {
   try {
-    // Check localStorage for theme preference
+    // 1. Trust the <html> class
+    if (document.documentElement.classList.contains('dark')) return true;
+    if (document.documentElement.classList.contains('light')) return false;
+
+    // 2. Fallback: canonical key
     const darkMode = localStorage.getItem('medrae_dark_mode');
-    if (darkMode !== null) {
-      return darkMode === 'true';
-    }
-    // Check system preference as fallback
+    if (darkMode !== null) return darkMode === 'true';
+
+    // 3. Fallback: OS
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   } catch (e) {
     return false;
@@ -193,6 +197,17 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       setIsDarkMode(propIsDarkMode);
     }
   }, [propIsDarkMode]);
+
+  // ✅ Watch <html> class changes — bulletproof sync with index.html bootstrap
+  useEffect(() => {
+    const html = document.documentElement;
+    const observer = new MutationObserver(() => {
+      const isDark = html.classList.contains('dark');
+      setIsDarkMode((prev) => (prev === isDark ? prev : isDark));
+    });
+    observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // ============================================================
   // ✅ SINGLE SOURCE OF TRUTH: User Data from shared cache
@@ -605,36 +620,27 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   }, [toast]);
 
   // ✅ Handle theme toggle - updates both local state and prop callback
+  // ✅ Handle theme toggle — single canonical key + class-based sync
   const handleToggleDarkMode = useCallback(() => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
 
-    // ✅ Write to the canonical key
+    // ✅ Single canonical key
     localStorage.setItem('medrae_dark_mode', String(newDarkMode));
 
-    // ✅ Mirror to keys the bootstrap also checks (belt-and-suspenders)
-    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
-    localStorage.setItem('medrae-theme', newDarkMode ? 'dark' : 'light');
+    // ✅ Apply class to <html> — MutationObserver in Footer picks this up
+    document.documentElement.classList.toggle('dark', newDarkMode);
+    document.documentElement.classList.toggle('light', !newDarkMode);
 
-    // Apply theme to document...
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-    }
+    // ✅ Update CSS variable so splash/loader match if it ever re-runs
+    document.documentElement.style.setProperty(
+      '--bg-color',
+      newDarkMode ? '#0d1117' : '#ffffff'
+    );
 
-    // Call the prop callback if provided
-    if (onToggleDarkMode) {
-      onToggleDarkMode();
-    }
+    if (onToggleDarkMode) onToggleDarkMode();
 
-    // Clear theme cache
-    const themeCacheKey = 'theme_cache_v1';
-    localStorage.removeItem(themeCacheKey);
-
-    // Dispatch event for other components
+    // ✅ Notify any other listeners
     window.dispatchEvent(new CustomEvent('theme-changed', {
       detail: { isDarkMode: newDarkMode }
     }));

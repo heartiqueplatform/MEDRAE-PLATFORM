@@ -92,7 +92,34 @@
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://ypgkpecnfziptpmwsdud.supabase.co" />
   <link rel="dns-prefetch" href="https://ypgkpecnfziptpmwsdud.supabase.co" />
+  <link rel="preconnect" href="https://images.pexels.com" />
+  <link rel="dns-prefetch" href="https://images.pexels.com" />
 
+  <script>
+    // ✅ Preload the correct hero image based on local hour — starts downloading
+    //    before React even parses.
+    (function () {
+      try {
+        var h = new Date().getHours();
+        var url;
+        if (h >= 5 && h < 12) {
+          url = "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=1200";
+        } else if (h >= 12 && h < 17) {
+          url = "https://images.pexels.com/photos/4270088/pexels-photo-4270088.jpeg?auto=compress&cs=tinysrgb&w=1200";
+        } else if (h >= 17 && h < 21) {
+          url = "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=1200";
+        } else {
+          url = "https://images.pexels.com/photos/305568/pexels-photo-305568.jpeg?auto=compress&cs=tinysrgb&w=1200";
+        }
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = url;
+        link.fetchPriority = "high";
+        document.head.appendChild(link);
+      } catch (e) { }
+    })();
+  </script>
   <!-- Enable back-forward cache for instant navigation -->
   <!-- Cache-Control handled by server headers (see infra), not <meta>.
          Those meta tags are ignored by modern browsers and break bfcache. -->
@@ -1081,52 +1108,28 @@
   <script>
     (function () {
       try {
-        // 🔧 Check multiple keys — pick whichever your app actually writes.
-        // If your Settings page uses a different key, add it here.
-        var userTheme =
-          localStorage.getItem('theme') ||
-          localStorage.getItem('medrae-theme') ||
-          localStorage.getItem('darkMode') ||
-          localStorage.getItem('app_theme') ||
-          null;
+        // ✅ Single source of truth: `medrae_dark_mode` ("true" / "false")
+        var stored = localStorage.getItem('medrae_dark_mode');
+        var isDark;
 
-        // ✅ Normalize medrae_dark_mode ("true" / "false") → "dark" / "light"
-        var medraeDark = localStorage.getItem('medrae_dark_mode');
-        if (medraeDark !== null) {
-          userTheme = medraeDark === 'true' ? 'dark' : 'light';
-        }
+        if (stored === 'true') isDark = true;
+        else if (stored === 'false') isDark = false;
+        else isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-        // Normalize other keys: "true"/"false" or "0"/"1"
-        if (userTheme === 'true' || userTheme === '1') userTheme = 'dark';
-        if (userTheme === 'false' || userTheme === '0') userTheme = 'light';
-
-        // If nothing is stored, follow the OS preference.
-        if (userTheme !== 'dark' && userTheme !== 'light') {
-          var systemPrefersDark =
-            window.matchMedia &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches;
-          userTheme = systemPrefersDark ? 'dark' : 'light';
-        }
-
-        // 🔧 Remove both classes first, then add exactly one.
-        // This guarantees we never end up with both "light" and "dark"
-        // on the html element at the same time (which would make the
-        // CSS cascade non-deterministic).
         document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(userTheme);
+        document.documentElement.classList.add(isDark ? 'dark' : 'light');
 
-        var bg = userTheme === 'dark' ? '#0d1117' : '#ffffff';
+        var bg = isDark ? '#0d1117' : '#ffffff';
         document.documentElement.style.setProperty('--bg-color', bg);
-        // body may not exist yet when this runs in the document head,
-        // but set a fallback on documentElement so the loader reads correctly.
         if (document.body) document.body.style.backgroundColor = bg;
+
+        window.__MEDRAE_INITIAL_THEME__ = isDark ? 'dark' : 'light';
       } catch (e) { /* never block paint */ }
 
       if (typeof window.performance !== 'undefined') {
         window.medraeLoadStart = performance.now();
       }
     })();
-
     // ---------- Graceful hide (fades, then removes) ----------
     var __medraeHideTimeout;
     window.hideMedraeLoader = function () {

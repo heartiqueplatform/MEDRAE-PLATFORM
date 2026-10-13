@@ -47,13 +47,117 @@ interface MusicPlayerContextProps {
     audioRef: React.RefObject<HTMLAudioElement>;
     refreshEpisodes: (opts?: { silent?: boolean }) => Promise<void>;
     fetchShowEpisodes: (showId: string) => Promise<Track[]>;
+
+    // ✅ NEW — history API
+    history: HistoryEntry[];
+    clearHistory: () => void;
+    removeFromHistory: (id: string) => void;
 }
 
 const MusicPlayerContext = createContext<MusicPlayerContextProps | undefined>(undefined);
 
 const MAIN_FETCH_LIMIT = 200;
+const TOTAL_EPISODES_LABEL = "3K+";
+
 const CACHE_TTL_MS = 1000 * 60 * 15; // 15 min
 
+// ✅ Synchronous localStorage snapshot — paints the episode list in the
+//    same frame the app mounts, before Dexie (async IDB) can resolve.
+const SNAPSHOT_KEY = "medrae_podcast_snapshot_v1";
+const SNAPSHOT_MAX_AGE = 1000 * 60 * 60 * 24; // 24h
+
+function readSnapshot(): Track[] | null {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem(SNAPSHOT_KEY);
+        if (!raw) return null;
+        const { tracks, ts } = JSON.parse(raw);
+        if (!Array.isArray(tracks) || tracks.length === 0) return null;
+        if (Date.now() - ts > SNAPSHOT_MAX_AGE) return null;
+        return tracks as Track[];
+    } catch {
+        return null;
+    }
+}
+
+function writeSnapshot(tracks: Track[]) {
+    if (typeof window === "undefined") return;
+    try {
+        // Only the last 60 tracks — keeps localStorage under the 5MB cap.
+        const slice = tracks.slice(0, 60);
+        localStorage.setItem(
+            SNAPSHOT_KEY,
+            JSON.stringify({ tracks: slice, ts: Date.now() })
+        );
+    } catch {
+        /* quota exceeded — ignore */
+    }
+}
+// ═══════════════════════════════════════════════════════════
+// PLAYBACK HISTORY — "Continue listening"
+// ═══════════════════════════════════════════════════════════
+const HISTORY_KEY = "medrae_play_history_v1";
+const HISTORY_MAX = 30;
+
+export interface HistoryEntry {
+    id: string;           // episode id (stable, unique)
+    src: string;          // audio url
+    name: string;         // episode title
+    artwork?: string;
+    showTitle?: string;
+    showId?: string;
+    duration?: number;
+    publishedAt?: string;
+    position: number;     // seconds — where the user left off
+    lastPlayedAt: number; // ms timestamp
+}
+
+function readHistory(): HistoryEntry[] {
+    if (typeof window === "undefined") return [];
+    try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter(
+            (e: any) => e && typeof e.id === "string" && typeof e.src === "string"
+        );
+    } catch {
+        return [];
+    }
+}
+
+function writeHistory(entries: HistoryEntry[]) {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
+    } catch {
+        /* quota — ignore */
+    }
+}
+
+function upsertHistory(
+    track: Track,
+    position: number,
+    existing: HistoryEntry[]
+): HistoryEntry[] {
+    const id = track.id || track.src;
+    const entry: HistoryEntry = {
+        id,
+        src: track.src,
+        name: track.name,
+        artwork: track.artwork,
+        showTitle: track.showTitle,
+        showId: track.showId,
+        duration: track.duration,
+        publishedAt: track.publishedAt,
+        position: Math.max(0, Math.floor(position || 0)),
+        lastPlayedAt: Date.now(),
+    };
+    // Remove any prior entry for the same id, then unshift the new one
+    const filtered = existing.filter((e) => e.id !== id);
+    return [entry, ...filtered].slice(0, HISTORY_MAX);
+}
 // ── Mapping helpers ──
 function rowToDbEpisode(e: any): DbEpisode {
     const show = Array.isArray(e.podcast_shows) ? e.podcast_shows[0] : e.podcast_shows;
@@ -82,11 +186,13 @@ function dbToTrack(e: DbEpisode): Track {
         showId: e.showId,
         publishedAt: e.publishedAt,
     };
-}
-
-export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
-    const [tracks, setTracks] = useState<Track[]>([]);
-    const [loading, setLoading] = useState(true);
+} export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
+    // ✅ Seed from the synchronous localStorage snapshot so the first render
+    //    already has tracks. Dexie will overwrite with a slightly fresher
+    //    version on the next tick, then Supabase refreshes in the background.
+    const snapshot = typeof window !== "undefined" ? readSnapshot() : null;
+    const [tracks, setTracks] = useState<Track[]>(snapshot ?? []);
+    const [loading, setLoading] = useState(snapshot === null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolumeState] = useState(1);
@@ -94,27 +200,50 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
     const [progress, setProgress] = useState(0);
 
+    // ✅ Playback history — reads synchronously from localStorage
+    const [history, setHistory] = useState<HistoryEntry[]>(() => readHistory());
+    const historyRef = useRef<HistoryEntry[]>(history);
+    useEffect(() => {
+        historyRef.current = history;
+    }, [history]);
     const audioRef = useRef<HTMLAudioElement>(null);
     const lastRefreshRef = useRef<number>(0);
     const currentSrcRef = useRef<string | undefined>(undefined);
-
+    // ✅ Persist a synchronous snapshot every time tracks change.
+    //    Cheap (only 60 items), sync, quota-safe.
+    useEffect(() => {
+        if (tracks.length === 0) return;
+        writeSnapshot(tracks);
+    }, [tracks]);
     // ── 1. Hydrate from Dexie INSTANTLY (before any network call) ──
+    // ── 1. Hydrate from Dexie (indexedDB) as a fallback layer ──
+    //    If we already painted from the localStorage snapshot, use Dexie
+    //    only to seed `lastRefreshRef` (so we don't hit the network too early).
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
                 const cached = await getLatestEpisodes(MAIN_FETCH_LIMIT);
                 if (cancelled) return;
+
                 if (cached.length > 0) {
-                    setTracks(cached.map(dbToTrack));
+                    // ✅ Only overwrite tracks if Dexie has STRICTLY more than we already have.
+                    //    Prevents a "flash back" to old data if snapshot was newer.
+                    setTracks((prev) =>
+                        cached.length > prev.length ? cached.map(dbToTrack) : prev
+                    );
                     setLoading(false);
                     lastRefreshRef.current = cached[0].cachedAt;
+                } else if (snapshot === null) {
+                    // No snapshot AND no Dexie data → still loading, let the network resolve
+                    setLoading(true);
                 }
             } catch (e) {
                 console.error("Dexie hydrate failed:", e);
             }
         })();
         return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // ── 2. Fetch fresh from Supabase ──
@@ -176,15 +305,13 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     // ── 4. Initial kick ──
+    // ── 4. Initial kick ──
     useEffect(() => {
-        (async () => {
-            const count = await studifyDb.episodes.count();
-            if (count === 0) {
-                await refreshEpisodes({ silent: false });
-            } else {
-                await refreshEpisodes({ silent: true });
-            }
-        })();
+        // ✅ If we already painted from snapshot, we never show a loader — go silent.
+        //    If we have nothing, show a proper load.
+        const hasAnything = tracks.length > 0;
+        refreshEpisodes({ silent: hasAnything });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshEpisodes]);
 
     // ═══════════════════════════════════════════════════════════
@@ -202,7 +329,48 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         audio.src = next;
         audio.load();
     }, [tracks, currentIndex]);
+    // ═══════════════════════════════════════════════════════════
+    // ── 5b. Record playback into history whenever the current
+    //        track changes or periodically during playback.
+    // ═══════════════════════════════════════════════════════════
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
 
+        // Whenever the current track changes → seed a history entry at position 0
+        const current = tracks[currentIndex];
+        if (current?.src) {
+            const id = current.id || current.src;
+            setHistory((prev) => {
+                const existing = prev.find((e) => e.id === id);
+                // Only update if it's not already the top entry — avoids infinite loops
+                if (existing && prev[0]?.id === id && existing.position === 0) return prev;
+                const next = upsertHistory(current, existing?.position ?? 0, prev);
+                writeHistory(next);
+                return next;
+            });
+        }
+
+        let lastSaved = -1;
+        const onTime = () => {
+            // Save every 5 seconds of playback — cheap write, keeps position current
+            const t = Math.floor(audio.currentTime);
+            if (t === lastSaved || t % 5 !== 0) return;
+            lastSaved = t;
+
+            const cur = tracks[currentIndex];
+            if (!cur?.src) return;
+
+            setHistory((prev) => {
+                const next = upsertHistory(cur, t, prev);
+                writeHistory(next);
+                return next;
+            });
+        };
+
+        audio.addEventListener("timeupdate", onTime);
+        return () => audio.removeEventListener("timeupdate", onTime);
+    }, [tracks, currentIndex]);
     // ── 6. Play / pause / volume ──
     useEffect(() => {
         const audio = audioRef.current;
@@ -271,7 +439,18 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const setVolume = useCallback((vol: number) => setVolumeState(vol), []);
+    const clearHistory = useCallback(() => {
+        setHistory([]);
+        writeHistory([]);
+    }, []);
 
+    const removeFromHistory = useCallback((id: string) => {
+        setHistory((prev) => {
+            const next = prev.filter((e) => e.id !== id);
+            writeHistory(next);
+            return next;
+        });
+    }, []);
     return (
         <MusicPlayerContext.Provider
             value={{
@@ -298,6 +477,10 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 audioRef,
                 refreshEpisodes,
                 fetchShowEpisodes,
+                // ✅ history
+                history,
+                clearHistory,
+                removeFromHistory,
             }}
         >
             {children}

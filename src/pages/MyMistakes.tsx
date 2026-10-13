@@ -540,42 +540,62 @@ export default function MyMistakes() {
     const fetchMistakes = useCallback(async (forceRefresh = false) => {
         if (!user || fetchInProgress) return;
 
+        // ────────────────────────────────────────────────────────────
+        // OFFLINE PATH — paint from cache, never hit the network
+        // ────────────────────────────────────────────────────────────
         if (typeof navigator !== "undefined" && !navigator.onLine) {
             const cached = getCachedMistakes();
             const cachedResolved = getCachedResolvedMistakes();
-            if (isMounted.current) {
-                setMistakes(cached);
-                setMistakeCount(cached.length);
-                setResolvedMistakes(cachedResolved);
-                setResolvedCount(cachedResolved.length);
-                setLoading(false);
-                setIsRefreshing(false);
-            }
-            return;
-        }
 
-        const now = Date.now();
-        const lastSync = safeStorage.get(MISTAKES_LAST_FETCH_KEY);
-
-        if (!forceRefresh && lastSync && now - parseInt(lastSync) < MIN_FETCH_INTERVAL) {
-            const cached = getCachedMistakes();
-            const cachedResolved = getCachedResolvedMistakes();
             if (cached.length > 0 || cachedResolved.length > 0) {
                 setMistakes(cached);
                 setMistakeCount(cached.length);
                 setResolvedMistakes(cachedResolved);
                 setResolvedCount(cachedResolved.length);
                 setLoading(false);
+            } else {
+                setLoading(false);
+                setHardError(true);
+            }
+            return;
+        }
+
+        // ────────────────────────────────────────────────────────────
+        // ONLINE PATH — cache-first paint, then silent refresh
+        // ────────────────────────────────────────────────────────────
+
+        // 1. Paint from cache immediately (if we have any).
+        const initialCached = getCachedMistakes();
+        const initialCachedResolved = getCachedResolvedMistakes();
+        const hasCache =
+            initialCached.length > 0 || initialCachedResolved.length > 0;
+
+        if (hasCache) {
+            setMistakes(initialCached);
+            setMistakeCount(initialCached.length);
+            setResolvedMistakes(initialCachedResolved);
+            setResolvedCount(initialCachedResolved.length);
+            setLoading(false);
+        }
+
+        // 2. Skip the network if we fetched very recently AND we're not forcing.
+        const now = Date.now();
+        const lastSync = safeStorage.get(MISTAKES_LAST_FETCH_KEY);
+        if (
+            !forceRefresh &&
+            lastSync &&
+            now - parseInt(lastSync) < MIN_FETCH_INTERVAL
+        ) {
+            if (hasCache) {
+                setLoading(false);
                 return;
             }
         }
 
+        // 3. Network fetch (fire-and-forget from the UI's perspective).
         fetchInProgress = true;
-
         if (isMounted.current) {
-            const cached = getCachedMistakes();
-            const cachedResolved = getCachedResolvedMistakes();
-            if (cached.length === 0 && cachedResolved.length === 0) setLoading(true);
+            if (!hasCache) setLoading(true);
             setIsRefreshing(true);
         }
 
@@ -628,11 +648,7 @@ export default function MyMistakes() {
 
             if (openRes.error) {
                 console.error("Supabase error (open):", openRes.error);
-                const cached = getCachedMistakes();
-                if (isMounted.current && cached.length > 0) {
-                    setMistakes(cached);
-                    setMistakeCount(cached.length);
-                }
+                // Keep whatever cache we already painted.
                 return;
             }
 
@@ -659,7 +675,10 @@ export default function MyMistakes() {
             console.error("Error fetching mistakes:", err);
             const cached = getCachedMistakes();
             const cachedResolved = getCachedResolvedMistakes();
-            if (isMounted.current && (cached.length > 0 || cachedResolved.length > 0)) {
+            if (
+                isMounted.current &&
+                (cached.length > 0 || cachedResolved.length > 0)
+            ) {
                 setMistakes(cached);
                 setMistakeCount(cached.length);
                 setResolvedMistakes(cachedResolved);
@@ -916,18 +935,29 @@ export default function MyMistakes() {
     // ═══════════════════════════════════════════════════════════════
     // RENDER — early returns
     // ═══════════════════════════════════════════════════════════════
-    if (!authReady && loading === false && mistakes.length === 0 && resolvedMistakes.length === 0) {
-        return <MistakesSkeleton />;
-    }
+    // ── Skeleton on ANY of these conditions:
+    //   • auth hasn't resolved yet
+    //   • we're loading and have no cached data
+    //   • we're logged in but haven't tried fetching yet (first-visit cold render)
+    const coldStart =
+        authReady &&
+        user &&
+        !loading &&
+        !hardError &&
+        mistakes.length === 0 &&
+        resolvedMistakes.length === 0;
 
-    if (loading && mistakes.length === 0 && resolvedMistakes.length === 0) {
+    if (
+        (!authReady && mistakes.length === 0 && resolvedMistakes.length === 0) ||
+        (loading && mistakes.length === 0 && resolvedMistakes.length === 0) ||
+        coldStart
+    ) {
         return <MistakesSkeleton />;
     }
 
     if (hardError && mistakes.length === 0 && resolvedMistakes.length === 0) {
         return <OfflineFallback onRetry={handleManualRefresh} />;
     }
-
     if (!user && mistakes.length === 0 && resolvedMistakes.length === 0 && authReady) {
         return (
             <div className="flex justify-center items-center min-h-[70vh] p-4 md:p-6 bg-transparent">
