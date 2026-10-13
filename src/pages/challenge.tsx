@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileModal } from '@/components/UserProfileModal';
+import { RecentWinsStrip } from '@/components/duel/RecentWinsStrip';
 
 
 interface CachedUser {
@@ -45,7 +46,7 @@ interface CachedUser {
 // Cache keys - persistent across sessions
 const PLAYERS_CACHE_KEY = "challenge_players_cache_v5";
 const CHALLENGES_CACHE_KEY = "challenge_history_cache_v5";
-const CACHE_VERSION = "5.0";
+const CACHE_VERSION = "5.1";
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days cache
 
 // Memory cache for faster access
@@ -138,11 +139,19 @@ function ChallengeTabs({
     onUpdateList,
     isUpdating,
     onSelectUser,
+    initialTab = "find",
 }: any) {
 
-    const [activeTab, setActiveTab] = useState<"find" | "pinned" | "incoming" | "sent" | "completed">("find");
+    const [activeTab, setActiveTab] = useState<"find" | "pinned" | "incoming" | "sent" | "completed">(initialTab);
     const searchDebounceRef = useRef<NodeJS.Timeout>();
 
+    // ✅ When parent passes a new initialTab, honor it
+    useEffect(() => {
+        if (initialTab && initialTab !== activeTab) {
+            setActiveTab(initialTab);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialTab]);
     const handleSearchChange = useCallback((value: string) => {
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
@@ -798,6 +807,24 @@ export default function ChallengePage() {
     const [timerWarningPlayed, setTimerWarningPlayed] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
     const duelTarget = searchParams.get("duel");
+
+    // ✅ Read hash for tab deep-linking (e.g. /challenge#incoming)
+    const [initialTab, setInitialTab] = useState<
+        "find" | "pinned" | "incoming" | "sent" | "completed"
+    >("find");
+
+    useEffect(() => {
+        const hash = (window.location.hash || "").replace("#", "").trim();
+        if (
+            hash === "find" ||
+            hash === "pinned" ||
+            hash === "incoming" ||
+            hash === "sent" ||
+            hash === "completed"
+        ) {
+            setInitialTab(hash);
+        }
+    }, []);
     const lastShownBattleId = useRef<string | null>(null);
     const processingCompletedRef = useRef(false);
     const timerRef = useRef<NodeJS.Timeout>();
@@ -1017,30 +1044,12 @@ export default function ChallengePage() {
     }, [user, fetchChallenges, fetchPlayers]);
     useEffect(() => { initSound(); }, []);
 
-    const filteredPlayers = useMemo(() => {
-        let filtered = [...players];
-        const term = search.trim().toLowerCase();
-        if (term) {
-            filtered = filtered.filter((p) => {
-                const name = (p.name || "").toLowerCase();
-                const username = (p.username || "").toLowerCase();
-                return name.includes(term) || username.includes(term);
-            });
-        }
-        if (onlyOnline) filtered = filtered.filter(p => p.is_online);
-        return filtered.sort((a, b) => {
-            if (a.is_pinned && !b.is_pinned) return -1;
-            if (!a.is_pinned && b.is_pinned) return 1;
-            return (a.name || "").localeCompare(b.name || "");
-        });
-    }, [players, search, onlyOnline]);
 
-    const cancelChallenge = async (challengeId: string) => {
-        playSound("ui-tap");
-        const { error } = await supabase.from("challenges").delete().eq("id", challengeId);
-        if (error) console.error(error);
-        else await fetchChallenges(); // Refresh after action
-    };
+    // ═══════════════════════════════════════════════════════════════
+    // ── Challenge action handlers ──
+    //    All three are declared HERE — above the deep-link effect —
+    //    so the effect's dep array can safely reference them.
+    // ═══════════════════════════════════════════════════════════════
 
     const sendChallenge = async (targetUserId: string) => {
         // ✅ Prevent double-send from any source
@@ -1064,6 +1073,7 @@ export default function ChallengePage() {
                 alert("Complete previous challenge with this player first.");
                 return;
             }
+
             // Try prefetched questions first (set by QuickDuelStrip)
             let questionsData: any[] | null = null;
             try {
@@ -1096,7 +1106,6 @@ export default function ChallengePage() {
                 score_to_beat: 0,
             });
 
-            // ✅ TEMP: fullscreen disabled for editing
             setTimeout(() => {
                 if (document.documentElement.requestFullscreen)
                     document.documentElement.requestFullscreen().catch(() => { });
@@ -1105,12 +1114,42 @@ export default function ChallengePage() {
             setTimeLeft(300);
             setTimerWarningPlayed(false);
         } finally {
-            // Release after a short delay — long enough to block re-entry
             setTimeout(() => {
                 sendingRef.current = false;
             }, 1500);
         }
     };
+
+    const acceptChallenge = async (challenge: any) => {
+        playSound("start");
+        setSeenIncomingIds((prev) => new Set(prev).add(challenge.id));
+        if (!challenge.question_ids || challenge.question_ids.length === 0) return;
+
+        const { data: questionsData } = await supabase
+            .from("simulation_questions")
+            .select("*")
+            .in("id", challenge.question_ids);
+        if (!questionsData) return;
+
+        setAnswers(Array(questionsData.length).fill(""));
+        setCurrentQIndex(0);
+        setActiveChallenge({ ...challenge, questions: questionsData, status: "opponent" });
+
+        setTimeout(() => {
+            if (document.documentElement.requestFullscreen)
+                document.documentElement.requestFullscreen().catch(() => { });
+        }, 100);
+        setTimeLeft(300);
+        setTimerWarningPlayed(false);
+    };
+
+    const cancelChallenge = async (challengeId: string) => {
+        playSound("ui-tap");
+        const { error } = await supabase.from("challenges").delete().eq("id", challengeId);
+        if (error) console.error(error);
+        else await fetchChallenges();
+    };
+
     // Reset the guard whenever the duel param changes (new challenge request)
     // Reset the guard whenever the duel param changes (new challenge request)
     useEffect(() => {
@@ -1120,6 +1159,11 @@ export default function ChallengePage() {
     }, [duelTarget]);
 
     // ✅ Deep-link: auto-start duel when ?duel=<userId> is present
+    // ✅ Deep-link: auto-start duel when ?duel=<userId> is present
+    //    Smart routing:
+    //      1. If they already challenged me → accept and play it
+    //      2. If I already challenged them → do nothing (waiting on them)
+    //      3. Otherwise → start a fresh challenge
     useEffect(() => {
         if (!duelTarget) return;
         if (activeChallenge) return;
@@ -1134,9 +1178,62 @@ export default function ChallengePage() {
         // Clear URL FIRST so any re-render sees no duel param
         setSearchParams({}, { replace: true });
 
-        // Then trigger
+        // ─── Case 1: incoming pending challenge from this user ───
+        const incomingChallenge = challenges.find(
+            (c: any) =>
+                c.status === "pending" &&
+                c.from_user_id === duelTarget &&
+                c.to_user_id === user?.id
+        );
+        if (incomingChallenge) {
+            acceptChallenge(incomingChallenge);
+            return;
+        }
+
+        // ─── Case 2: I already sent them a challenge ───
+        const outgoingChallenge = challenges.find(
+            (c: any) =>
+                c.status === "pending" &&
+                c.from_user_id === user?.id &&
+                c.to_user_id === duelTarget
+        );
+        if (outgoingChallenge) {
+            // Nothing to do — they owe us. Could show a toast here
+            // like "Waiting on them to play your challenge" but for
+            // now, silently do nothing.
+            return;
+        }
+
+        // ─── Case 3: no existing challenge → start one ───
         sendChallenge(duelTarget);
-    }, [duelTarget, players, activeChallenge, sendChallenge, setSearchParams]);
+    }, [
+        duelTarget,
+        players,
+        activeChallenge,
+        challenges,
+        user?.id,
+        sendChallenge,
+        acceptChallenge,
+        setSearchParams,
+    ]);
+
+    const filteredPlayers = useMemo(() => {
+        let filtered = [...players];
+        const term = search.trim().toLowerCase();
+        if (term) {
+            filtered = filtered.filter((p) => {
+                const name = (p.name || "").toLowerCase();
+                const username = (p.username || "").toLowerCase();
+                return name.includes(term) || username.includes(term);
+            });
+        }
+        if (onlyOnline) filtered = filtered.filter(p => p.is_online);
+        return filtered.sort((a, b) => {
+            if (a.is_pinned && !b.is_pinned) return -1;
+            if (!a.is_pinned && b.is_pinned) return 1;
+            return (a.name || "").localeCompare(b.name || "");
+        });
+    }, [players, search, onlyOnline]);
     const handleInvite = (type: string) => {
         playSound("ui-tap");
         const message = `Hey 👋\n\nJoin me on Medrae 🚀\n\nCompete in challenges:\nhttps://medrae.vercel.app/challenge\n\nSign up here:\nhttps://medrae.vercel.app`;
@@ -1144,22 +1241,7 @@ export default function ChallengePage() {
         if (type === "link") { navigator.clipboard.writeText("https://medrae.vercel.app"); alert("Invite link copied!"); }
     };
 
-    const acceptChallenge = async (challenge: any) => {
-        playSound("start");
-        setSeenIncomingIds((prev) => new Set(prev).add(challenge.id));
-        if (!challenge.question_ids || challenge.question_ids.length === 0) return;
 
-        const { data: questionsData } = await supabase.from("simulation_questions").select("*").in("id", challenge.question_ids);
-        if (!questionsData) return;
-
-        setAnswers(Array(questionsData.length).fill(""));
-        setCurrentQIndex(0);
-        setActiveChallenge({ ...challenge, questions: questionsData, status: "opponent" });
-
-        setTimeout(() => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); }, 100);
-        setTimeLeft(300);
-        setTimerWarningPlayed(false);
-    };
 
     const handleAnswer = useCallback((idx: number, opt: string) => {
         if (navigator.vibrate) navigator.vibrate(30);
@@ -1633,7 +1715,11 @@ export default function ChallengePage() {
                     </div>
                 </>)}
             </div>
-
+            {/* ✅ Recent wins — public recognition, no scores, no losers */}
+            <RecentWinsStrip
+                onSelectUser={setSelectedUserId}
+                currentUserId={user?.id}
+            />
             {/* Challenge Tabs - Edge to edge, no borders */}
             <div className="w-full max-w-full mx-auto">
                 <ChallengeTabs
@@ -1641,6 +1727,7 @@ export default function ChallengePage() {
                     outgoing={outgoing}
                     completed={completed}
                     acceptChallenge={acceptChallenge}
+                    initialTab={initialTab}
                     user={user}
                     loading={loading && isInitialLoad && players.length === 0 && challenges.length === 0}
                     search={search}

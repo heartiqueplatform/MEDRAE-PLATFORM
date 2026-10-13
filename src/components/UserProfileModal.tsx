@@ -65,12 +65,18 @@ interface SimulationResult {
     total_questions: number;
     submitted_at: string;
 }
-
 interface TriviaResult {
     id: string;
     score: number;
     total_questions: number;
     attempt_date: string;
+}
+
+// ✅ Duel wins — public recognition for the winner only
+interface DuelStats {
+    wins: number;
+    losses: number;
+    total: number;
 }
 
 interface UserDataState {
@@ -81,10 +87,10 @@ interface UserDataState {
     totalFeedSeen: number;
     currentStreak: number;
     bestStreak: number;
+    duelStats: DuelStats;   // ✅ NEW
     isLoading: boolean;
     isPaperTitlesLoaded: boolean;
 }
-
 /* ------------------------------------------------------------------ */
 /*  Skeletons — flat, no borders                                      */
 /* ------------------------------------------------------------------ */
@@ -170,6 +176,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
         totalFeedSeen: 0,
         currentStreak: 0,
         bestStreak: 0,
+        duelStats: { wins: 0, losses: 0, total: 0 },   // ✅ NEW
         isLoading: true,
         isPaperTitlesLoaded: false,
     });
@@ -195,45 +202,54 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
             setIsRefreshing(true);
 
             try {
-                const [profileResult, activityResult, feedResult, streaksResult] =
-                    await Promise.all([
+                const [
+                    profileResult,
+                    activityResult,
+                    feedResult,
+                    streaksResult,
+                    duelResult,
+                ] = await Promise.all([
+                    supabase
+                        .from("profiles")
+                        .select(
+                            "user_id, name, username, avatar_url, institution, course, block, county, bio, role, specialization, joined_date, is_online, last_seen"
+                        )
+                        .eq("user_id", userId)
+                        .single(),
+                    Promise.all([
                         supabase
-                            .from("profiles")
-                            .select(
-                                "user_id, name, username, avatar_url, institution, course, block, county, bio, role, specialization, joined_date, is_online, last_seen"
-                            )
+                            .from("quiz_results")
+                            .select("id, unit, score, total_questions, submitted_at")
                             .eq("user_id", userId)
-                            .single(),
-                        Promise.all([
-                            supabase
-                                .from("quiz_results")
-                                .select("id, unit, score, total_questions, submitted_at")
-                                .eq("user_id", userId)
-                                .order("submitted_at", { ascending: false })
-                                .limit(10),
-                            supabase
-                                .from("simulation_results")
-                                .select("id, paper_id, score, total_questions, submitted_at")
-                                .eq("user_id", userId)
-                                .order("submitted_at", { ascending: false })
-                                .limit(10),
-                            supabase
-                                .from("daily_trivia_results")
-                                .select("id, score, total_questions, attempt_date")
-                                .eq("user_id", userId)
-                                .order("attempt_date", { ascending: false })
-                                .limit(10),
-                        ]),
+                            .order("submitted_at", { ascending: false })
+                            .limit(10),
                         supabase
-                            .from("qfeed_seen")
-                            .select("*", { count: "exact", head: true })
-                            .eq("user_id", userId),
-                        supabase
-                            .from("login_activity")
-                            .select("streak")
+                            .from("simulation_results")
+                            .select("id, paper_id, score, total_questions, submitted_at")
                             .eq("user_id", userId)
-                            .order("login_date", { ascending: false }),
-                    ]);
+                            .order("submitted_at", { ascending: false })
+                            .limit(10),
+                        supabase
+                            .from("daily_trivia_results")
+                            .select("id, score, total_questions, attempt_date")
+                            .eq("user_id", userId)
+                            .order("attempt_date", { ascending: false })
+                            .limit(10),
+                    ]),
+                    supabase
+                        .from("qfeed_seen")
+                        .select("*", { count: "exact", head: true })
+                        .eq("user_id", userId),
+                    supabase
+                        .from("login_activity")
+                        .select("streak")
+                        .eq("user_id", userId)
+                        .order("login_date", { ascending: false }),
+                    // ✅ Duel stats — separate call, doesn't block other queries on error
+                    supabase
+                        .rpc("get_user_duel_stats", { p_user_id: userId })
+                        .maybeSingle(),
+                ]);
 
                 const profileData = profileResult.data as Profile | null;
                 const [quizData, simData, triviaData] = activityResult;
@@ -248,6 +264,12 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         ? Math.max(...streakData.map((r: any) => r.streak || 0))
                         : 0;
 
+                const duelStats: DuelStats = {
+                    wins: (duelResult?.data as any)?.wins ?? 0,
+                    losses: (duelResult?.data as any)?.losses ?? 0,
+                    total: (duelResult?.data as any)?.total ?? 0,
+                };
+
                 startTransition(() => {
                     setUserData((prev) => ({
                         ...prev,
@@ -258,6 +280,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         totalFeedSeen: feedResult.count || 0,
                         currentStreak: latestStreak,
                         bestStreak: maxStreak,
+                        duelStats,
                         isLoading: false,
                     }));
                 });
@@ -503,6 +526,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         ) : userData.profile ? (
                             <div className="flex flex-col">
                                 {/* Identity */}
+                                {/* Identity */}
                                 <div className="flex flex-col items-center text-center mb-6">
                                     <h2 className={`text-2xl font-bold ${textMain} tracking-tight leading-tight`}>
                                         {userData.profile.name || "Student"}
@@ -527,6 +551,19 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                             </>
                                         )}
                                     </div>
+
+                                    {/* ✅ Duel wins badge — only shows when the user has at least 1 win */}
+                                    {userData.duelStats.wins > 0 && (
+                                        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                                            <Trophy size={12} />
+                                            <span className="text-[11px] font-black">
+                                                {userData.duelStats.wins}{" "}
+                                                {userData.duelStats.wins === 1
+                                                    ? "duel won"
+                                                    : "duels won"}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Streaks — flat cards */}
