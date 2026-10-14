@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 export interface Unit {
+    id: string;                    // ✅ NEW — the quizzes.id UUID
     code: string;
     title: string;
     description?: string | null;
@@ -31,7 +32,7 @@ export interface PaperData {
     description: string;
 }
 
-const UNITS_CACHE_KEY = "dynamic_units_cache_v7"; // ⬅️ bumped → Help paper added
+const UNITS_CACHE_KEY = "dynamic_units_cache_v8"; // ⬅️ bumped — adds quiz id
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -55,6 +56,7 @@ const HELP_PAPER: PaperData = {
     description: "Study guides, exam tips & how to use Medrae",
     units: [
         {
+            id: "help-01",
             code: "HELP01",
             title: "How to Study a Unit Effectively",
             description: "A 3-step routine: read → quiz cold → review every wrong answer.",
@@ -73,6 +75,7 @@ const HELP_PAPER: PaperData = {
             unit: null,
         },
         {
+            id: "help-02",
             code: "HELP02",
             title: "How to Use Medrae Quizzes",
             description: "Pick a category, take the quiz, submit, review. That's the loop.",
@@ -91,6 +94,7 @@ const HELP_PAPER: PaperData = {
             unit: null,
         },
         {
+            id: "help-03",
             code: "HELP03",
             title: "How to Pass ANY Exam",
             description: "Before, during & after strategies that work for every paper.",
@@ -109,6 +113,7 @@ const HELP_PAPER: PaperData = {
             unit: null,
         },
         {
+            id: "help-04",
             code: "HELP04",
             title: "How to Pass NCLEX",
             description: "Format, mindset, study routine & day-of strategies for the big one.",
@@ -127,6 +132,7 @@ const HELP_PAPER: PaperData = {
             unit: null,
         },
         {
+            id: "help-05",
             code: "HELP05",
             title: "Exam Day Strategy",
             description: "Time per question, when to skip, when to guess. The playbook.",
@@ -146,6 +152,7 @@ const HELP_PAPER: PaperData = {
         },
     ],
 };
+
 /**
  * Always ensures HELP_PAPER is present in the papers array,
  * even when serving from cache. Removes any duplicate paperNumber 6.
@@ -296,6 +303,7 @@ const transformUnits = (
             const level = getUnitLevel(quiz.unit_code, quiz.title);
 
             uniqueUnitsMap.set(quiz.unit_code, {
+                id: quiz.id,                                   // ✅ NEW
                 code: quiz.unit_code,
                 title: quiz.title || quiz.unit || `Unit ${quiz.unit_code}`,
                 description: quiz.description || null,
@@ -357,7 +365,7 @@ export function useUnits() {
             cachedPapers = cached.papers;
             cachedAllUnits = cached.allUnits;
             cacheTimestamp = Date.now();
-            return mergeHelpPaper(cached.papers); // ⬅️ ensure Help is present
+            return mergeHelpPaper(cached.papers);
         }
         return [HELP_PAPER];
     });
@@ -421,6 +429,7 @@ export function useUnits() {
                 .from("quizzes")
                 .select(
                     `
+                    id,
                     unit_code,
                     title,
                     description,

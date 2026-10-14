@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Play, Lock, Sparkles, ChevronRight, ClipboardCheck } from "lucide-react";
+import { BookOpen, Play, Lock, Sparkles, ChevronRight, ClipboardCheck, Star, Users, Flame } from "lucide-react";
 import { useUnits } from "@/hooks/useUnits";
 import { useUnitQuestionCount } from "@/hooks/useUnitQuestionCount";
 import { useUser } from "@supabase/auth-helpers-react";
 import { getCachedPremium } from "@/lib/subscription";
 import { playSound } from "@/lib/soundManager";
+import { useQuizEngagement } from "@/hooks/useQuizEngagement";
 
 const PAPER_NUMBER = 4;
 const GRADIENT = "from-emerald-500 to-emerald-700";
@@ -24,20 +25,34 @@ export default function ShortPractice({
     const { papers, loading } = useUnits();
     const { data: unitCounts } = useUnitQuestionCount();
 
+    // ✅ Engagement hook
+    const { hydrateStats, hydrateUserState, getStats } = useQuizEngagement();
+
     const countsByCode = useMemo(() => {
-        const m = {};
-        (unitCounts || []).forEach((r) => {
+        const m: Record<string, number> = {};
+        (unitCounts || []).forEach((r: any) => {
             if (r?.unit_code) m[r.unit_code.trim()] = r.count;
         });
         return m;
     }, [unitCounts]);
 
     const units = useMemo(() => {
-        const paper = papers?.find((p) => p.paperNumber === PAPER_NUMBER);
+        const paper = papers?.find((p: any) => p.paperNumber === PAPER_NUMBER);
         return (paper?.units || []).slice(0, limit);
     }, [papers, limit]);
 
-    const tap = (u) => {
+    // ✅ Hydrate engagement for units on this strip
+    useEffect(() => {
+        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const ids = units
+            .map((u: any) => u.id)
+            .filter((id: any): id is string => !!id && UUID_RE.test(id));
+        if (ids.length === 0) return;
+        hydrateStats(ids);
+        hydrateUserState(ids);
+    }, [units, hydrateStats, hydrateUserState]);
+
+    const tap = (u: any) => {
         playSound?.("start");
         if (navigator.vibrate) navigator.vibrate(50);
         navigate(`/quiz?unit=${encodeURIComponent(u.title)}`);
@@ -86,9 +101,15 @@ export default function ShortPractice({
             </div>
 
             <div className="flex gap-3 sm:gap-4 overflow-x-auto custom-scrollbar pb-2 px-4 sm:px-0 snap-x snap-mandatory">
-                {units.map((unit) => {
+                {units.map((unit: any) => {
                     const count = countsByCode[unit.code?.trim()] ?? 0;
                     const unlocked = isPremium || unit.is_free;
+                    const stats = unit.id ? getStats(unit.id) : null;
+                    const hasRating = !!stats && stats.ratingCount > 0;
+                    const hasStarts = !!stats && stats.startCount > 0;
+                    const hot = !!stats && (stats.recentStarts24h ?? 0) >= 10;
+                    const showStrip = hasRating || hasStarts || hot;
+
                     return (
                         <motion.button
                             key={unit.code}
@@ -140,6 +161,35 @@ export default function ShortPractice({
                                 <h4 className="text-sm font-bold text-white leading-tight line-clamp-2">
                                     {unit.title}
                                 </h4>
+
+                                {/* ✅ Engagement strip */}
+                                {showStrip && (
+                                    <div className="flex items-center gap-1.5 flex-wrap text-[9px] font-bold text-white/90">
+                                        {hasRating && (
+                                            <span className="inline-flex items-center gap-0.5 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+                                                <Star size={9} fill="currentColor" className="text-amber-400" />
+                                                <span className="text-amber-300">{stats!.ratingAvg.toFixed(1)}</span>
+                                                <span className="text-white/60">({stats!.ratingCount})</span>
+                                            </span>
+                                        )}
+                                        {hasStarts && (
+                                            <span className="inline-flex items-center gap-0.5 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+                                                <Users size={9} />
+                                                <span>
+                                                    {stats!.startCount >= 1000
+                                                        ? `${(stats!.startCount / 1000).toFixed(1)}K`
+                                                        : stats!.startCount}
+                                                </span>
+                                            </span>
+                                        )}
+                                        {hot && (
+                                            <span className="inline-flex items-center gap-0.5 bg-orange-600/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-white">
+                                                <Flame size={9} /> HOT
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="flex items-center justify-between pt-1">
                                     <span className="text-[10px] font-semibold text-white/70">
                                         {count} Qs

@@ -22,8 +22,8 @@ export type UnitQuestionCount = {
 // ============================================
 
 const CACHE_KEY = "unitQuestionCounts_v5_full";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 min — ONLINE only
-const MIN_FETCH_INTERVAL = 30 * 1000; // 30 sec
+const CACHE_DURATION = 5 * 60 * 1000;
+const MIN_FETCH_INTERVAL = 30 * 1000;
 
 let cachedData: UnitQuestionCount[] | null = null;
 let fetchInProgress = false;
@@ -36,20 +36,12 @@ let lastFetchTime = 0;
 const isOffline = (): boolean =>
   typeof navigator !== "undefined" && navigator.onLine === false;
 
-/**
- * Read counts from localStorage.
- * @param ignoreTTL  when true, returns cache no matter how old it is.
- */
-const getCachedCounts = (
-  ignoreTTL = false
-): UnitQuestionCount[] | null => {
+const getCachedCounts = (ignoreTTL = false): UnitQuestionCount[] | null => {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
-
     const { data, timestamp } = JSON.parse(cached);
     if (!data || !Array.isArray(data) || data.length === 0) return null;
-
     if (ignoreTTL || Date.now() - timestamp < CACHE_DURATION) {
       cachedData = data;
       return data;
@@ -72,6 +64,25 @@ const saveCountsToCache = (data: UnitQuestionCount[]) => {
   }
 };
 
+// ✅ shallow equality for one row — used to skip no-op array replacement
+function eqRow(a: UnitQuestionCount, b: UnitQuestionCount): boolean {
+  return (
+    a.unit === b.unit &&
+    a.unit_code === b.unit_code &&
+    a.count === b.count &&
+    a.is_free === b.is_free &&
+    a.quiz_type === b.quiz_type
+  );
+}
+
+function eqList(a: UnitQuestionCount[], b: UnitQuestionCount[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (!eqRow(a[i], b[i])) return false;
+  }
+  return true;
+}
+
 // ============================================
 // HOOK
 // ============================================
@@ -88,6 +99,14 @@ export function useUnitQuestionCount() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+
+  // ✅ Ref mirror for stable getters
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+    setVersion((v) => v + 1);
+  }, [data]);
 
   const isMounted = useRef(true);
 
@@ -98,16 +117,20 @@ export function useUnitQuestionCount() {
     };
   }, []);
 
+  // ✅ Only write if list actually changed
+  const writeIfChanged = useCallback((next: UnitQuestionCount[]) => {
+    setData((prev) => (eqList(prev, next) ? prev : next));
+  }, []);
+
   // ============================================
   // MAIN FETCH
   // ============================================
 
   const fetchCounts = useCallback(async (force = false) => {
-    // OFFLINE short-circuit: serve cache with TTL ignored.
     if (isOffline()) {
       const cached = getCachedCounts(true);
       if (cached && isMounted.current) {
-        setData(cached);
+        writeIfChanged(cached);
         setError(null);
       }
       if (isMounted.current) setLoading(false);
@@ -116,19 +139,16 @@ export function useUnitQuestionCount() {
 
     const now = Date.now();
 
-    // Return cached data if available and not forced
     if (!force && cachedData && cachedData.length > 0) {
-      setData(cachedData);
+      writeIfChanged(cachedData);
       return cachedData;
     }
 
-    // Rate limiting (online only)
     if (!force && now - lastFetchTime < MIN_FETCH_INTERVAL && cachedData) {
-      setData(cachedData);
+      writeIfChanged(cachedData);
       return cachedData;
     }
 
-    // Prevent concurrent fetches
     if (fetchInProgress) {
       return new Promise((resolve) => {
         const checkDone = setInterval(() => {
@@ -171,7 +191,6 @@ export function useUnitQuestionCount() {
 
       (quizzes || []).forEach((q: any) => {
         if (!q.unit_code) return;
-
         const key = q.unit_code.trim().toLowerCase();
         const count = q.question_count || 0;
 
@@ -196,7 +215,7 @@ export function useUnitQuestionCount() {
       const result = Array.from(map.values());
 
       if (isMounted.current) {
-        setData(result);
+        writeIfChanged(result);
         saveCountsToCache(result);
         setError(null);
       }
@@ -205,27 +224,22 @@ export function useUnitQuestionCount() {
     } catch (err: any) {
       console.error("Error fetching unit counts:", err);
 
-      // ✅ Fallback: cache no matter how old it is
       const cachedFallback = getCachedCounts(true);
       if (cachedFallback && cachedFallback.length > 0) {
         if (isMounted.current) {
-          setData(cachedFallback);
+          writeIfChanged(cachedFallback);
           setError(null);
         }
         return cachedFallback;
       }
 
-      if (isMounted.current) {
-        setError(err.message || "Failed to fetch unit counts");
-      }
+      if (isMounted.current) setError(err.message || "Failed to fetch unit counts");
       return null;
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      if (isMounted.current) setLoading(false);
       fetchInProgress = false;
     }
-  }, []);
+  }, [writeIfChanged]);
 
   // ============================================
   // INITIAL LOAD
@@ -235,7 +249,6 @@ export function useUnitQuestionCount() {
     const timer = setTimeout(() => {
       fetchCounts();
     }, 50);
-
     return () => clearTimeout(timer);
   }, [fetchCounts]);
 
@@ -248,13 +261,11 @@ export function useUnitQuestionCount() {
 
     const handleVisibilityChange = () => {
       if (!document.hidden && isMounted.current) {
-        if (isOffline()) return; // don't even try offline
+        if (isOffline()) return;
         clearTimeout(visibilityTimeout);
         visibilityTimeout = setTimeout(() => {
           const cached = getCachedCounts();
-          if (!cached) {
-            fetchCounts();
-          }
+          if (!cached) fetchCounts();
         }, 500);
       }
     };
@@ -267,7 +278,7 @@ export function useUnitQuestionCount() {
   }, [fetchCounts]);
 
   // ============================================
-  // 🔁 AUTO-REFRESH WHEN CONNECTION RETURNS
+  // AUTO-REFRESH WHEN CONNECTION RETURNS
   // ============================================
 
   useEffect(() => {
@@ -288,7 +299,7 @@ export function useUnitQuestionCount() {
         try {
           const { data: newData } = JSON.parse(e.newValue);
           if (newData && newData.length > 0) {
-            setData(newData);
+            writeIfChanged(newData);
             cachedData = newData;
           }
         } catch (err) {
@@ -299,10 +310,10 @@ export function useUnitQuestionCount() {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [writeIfChanged]);
 
   // ============================================
-  // HELPERS
+  // HELPERS — stable identity (read from ref)
   // ============================================
 
   const incrementCount = useCallback((unitCode: string) => {
@@ -319,31 +330,31 @@ export function useUnitQuestionCount() {
 
   const getCountByUnitCode = useCallback(
     (unitCode: string): number => {
-      const found = data.find(
+      const found = dataRef.current.find(
         (u) => u.unit_code?.toLowerCase() === unitCode?.toLowerCase()
       );
       return found?.count || 0;
     },
-    [data]
+    []
   );
 
   const getCountByUnitName = useCallback(
     (unitName: string): number => {
-      const found = data.find(
+      const found = dataRef.current.find(
         (u) => u.unit?.toLowerCase() === unitName?.toLowerCase()
       );
       return found?.count || 0;
     },
-    [data]
+    []
   );
 
   const getUnitByCode = useCallback(
     (unitCode: string): UnitQuestionCount | undefined => {
-      return data.find(
+      return dataRef.current.find(
         (u) => u.unit_code?.toLowerCase() === unitCode?.toLowerCase()
       );
     },
-    [data]
+    []
   );
 
   const getUnitsByPaper = useCallback(
@@ -354,45 +365,36 @@ export function useUnitQuestionCount() {
             paperNumber === 3 ? "HNX3" :
               paperNumber === 4 ? "FP" :
                 paperNumber === 5 ? "MD" : "";
-
       if (!prefix) return [];
-      return data.filter((item) => item.unit_code?.startsWith(prefix));
+      return dataRef.current.filter((item) => item.unit_code?.startsWith(prefix));
     },
-    [data]
+    []
   );
 
   const getUnitsByCategory = useCallback(
-    (
-      category: "paper1" | "paper2" | "nclex" | "medical" | "practice"
-    ): UnitQuestionCount[] => {
+    (category: "paper1" | "paper2" | "nclex" | "medical" | "practice"): UnitQuestionCount[] => {
+      const rows = dataRef.current;
       switch (category) {
-        case "paper1":
-          return data.filter((item) => item.unit_code?.startsWith("HNX1"));
-        case "paper2":
-          return data.filter((item) => item.unit_code?.startsWith("HNX2"));
-        case "nclex":
-          return data.filter((item) => item.unit_code?.startsWith("HNX3"));
-        case "medical":
-          return data.filter((item) => item.unit_code?.startsWith("MD"));
-        case "practice":
-          return data.filter((item) => item.unit_code?.startsWith("FP"));
-        default:
-          return [];
+        case "paper1": return rows.filter((item) => item.unit_code?.startsWith("HNX1"));
+        case "paper2": return rows.filter((item) => item.unit_code?.startsWith("HNX2"));
+        case "nclex": return rows.filter((item) => item.unit_code?.startsWith("HNX3"));
+        case "medical": return rows.filter((item) => item.unit_code?.startsWith("MD"));
+        case "practice": return rows.filter((item) => item.unit_code?.startsWith("FP"));
+        default: return [];
       }
     },
-    [data]
+    []
   );
 
   const getFreeUnits = useCallback((): UnitQuestionCount[] => {
-    return data.filter((item) => item.is_free === true);
-  }, [data]);
+    return dataRef.current.filter((item) => item.is_free === true);
+  }, []);
 
   const getPremiumUnits = useCallback((): UnitQuestionCount[] => {
-    return data.filter((item) => item.is_free === false);
-  }, [data]);
+    return dataRef.current.filter((item) => item.is_free === false);
+  }, []);
 
   const refreshCounts = useCallback(async () => {
-    // Only clear cache when online; offline refresh just re-serves cache.
     if (!isOffline()) {
       localStorage.removeItem(CACHE_KEY);
       cachedData = null;
@@ -401,12 +403,9 @@ export function useUnitQuestionCount() {
     await fetchCounts(true);
   }, [fetchCounts]);
 
-  // ============================================
-  // RETURN
-  // ============================================
-
   return {
     data,
+    version,           // ✅ NEW
     loading,
     error,
     incrementCount,

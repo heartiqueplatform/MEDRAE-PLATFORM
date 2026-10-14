@@ -32,7 +32,6 @@ export class StudifyDB extends Dexie {
     constructor() {
         super("studify");
 
-        // Compound + single-column indexes we actually use
         this.version(1).stores({
             episodes: "id, showId, publishedAt, cachedAt",
             shows: "id, appleId, title",
@@ -42,32 +41,49 @@ export class StudifyDB extends Dexie {
 
 export const studifyDb = new StudifyDB();
 
+// ─────────────────────────────────────────────────────────────
+// CANONICAL ORDER — must match Supabase's ORDER BY exactly.
+//   episodes: publishedAt DESC, then id ASC
+//   shows:    title       ASC,  then id ASC
+// If a layer disagrees, the list visibly reorders on every
+// cache → network handoff.
+// ─────────────────────────────────────────────────────────────
+
+function compareEpisodes(a: DbEpisode, b: DbEpisode): number {
+    const av = a.publishedAt ?? "";
+    const bv = b.publishedAt ?? "";
+    if (av !== bv) return bv.localeCompare(av);   // newest first
+    return a.id.localeCompare(b.id);              // stable tiebreak
+}
+
+function compareShows(a: DbShow, b: DbShow): number {
+    const t = a.title.localeCompare(b.title);
+    return t !== 0 ? t : a.id.localeCompare(b.id);
+}
+
 // ── Helpers ──
 export async function getEpisodesForShow(showId: string): Promise<DbEpisode[]> {
     const rows = await studifyDb.episodes
         .where("showId")
         .equals(showId)
         .toArray();
-    // Sort newest-first, treating missing dates as oldest
-    return rows.sort((a, b) => {
-        const av = a.publishedAt ?? "";
-        const bv = b.publishedAt ?? "";
-        return bv.localeCompare(av);
-    });
+    rows.sort(compareEpisodes);
+    return rows;
 }
 
 export async function getLatestEpisodes(limit = 200): Promise<DbEpisode[]> {
-    // publishedAt is stored as ISO string — lexicographic = chronological
+    // Over-fetch so ties at the boundary don't drop rows after the sort.
     const all = await studifyDb.episodes
         .orderBy("publishedAt")
         .reverse()
-        .limit(limit)
+        .limit(limit * 2)
         .toArray();
-    return all;
+
+    all.sort(compareEpisodes);
+    return all.slice(0, limit);
 }
 
 export async function putEpisodes(eps: DbEpisode[]) {
-    // bulkPut is one transaction — way faster than loop
     await studifyDb.episodes.bulkPut(eps);
 }
 
@@ -76,7 +92,9 @@ export async function putShows(shows: DbShow[]) {
 }
 
 export async function getAllShows(): Promise<DbShow[]> {
-    return studifyDb.shows.toArray();
+    const rows = await studifyDb.shows.toArray();
+    rows.sort(compareShows);
+    return rows;
 }
 
 export async function clearStudifyCache() {
@@ -88,4 +106,23 @@ export async function clearStudifyCache() {
 
 export async function countEpisodes(): Promise<number> {
     return studifyDb.episodes.count();
+}
+/**
+ * Search episodes in Dexie by title. Case-insensitive substring match.
+ * Fast (~2-5 ms for a few thousand rows). Returns up to `limit` rows in
+ * canonical order.
+ */
+export async function searchEpisodesLocal(query: string, limit = 40): Promise<DbEpisode[]> {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+
+    // Dexie has no full-text search on primary index — use filter().
+    // For <10k rows this is fast enough (~5ms).
+    const all = await studifyDb.episodes
+        .filter((e) => e.title?.toLowerCase().includes(q))
+        .limit(limit * 3)
+        .toArray();
+
+    all.sort(compareEpisodes);
+    return all.slice(0, limit);
 }

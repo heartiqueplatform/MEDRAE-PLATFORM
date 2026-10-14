@@ -8,6 +8,7 @@ import {
     type DbShow,
 } from "@/lib/studifyDb";
 import { studifyDb } from "@/lib/studifyDb";
+
 export interface PodcastShow {
     id: string;
     apple_id: string;
@@ -22,6 +23,14 @@ export interface PodcastShow {
 }
 
 const CACHE_TTL_MS = 1000 * 60 * 15;
+
+// ✅ Canonical order — matches Dexie's getAllShows and the Supabase ORDER BY.
+function sortShows(list: PodcastShow[]): PodcastShow[] {
+    return [...list].sort((a, b) => {
+        const t = a.title.localeCompare(b.title);
+        return t !== 0 ? t : a.id.localeCompare(b.id);
+    });
+}
 
 function dbToShow(s: DbShow): PodcastShow {
     return {
@@ -46,16 +55,24 @@ export function usePodcastShows() {
         const silent = opts?.silent ?? false;
         if (!silent) setLoading(true);
 
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData?.user?.id ?? null;
+        // ✅ Session first (reads local storage synchronously), then verify
+        //    with getUser() as a fallback. Prevents userId from being null
+        //    when the SDK hasn't finished reading the token yet.
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId =
+            sessionData?.session?.user?.id ??
+            (await supabase.auth.getUser()).data?.user?.id ??
+            null;
+
         const { data: showRows, error: showErr } = await supabase
             .from("podcast_shows")
             .select(`
-        id, apple_id, title, author, artwork_url, description, explicit, is_active,
-        podcast_episodes!left ( id, is_hidden )
-    `)
+                id, apple_id, title, author, artwork_url, description, explicit, is_active,
+                podcast_episodes!left ( id, is_hidden )
+            `)
             .eq("is_active", true)
-            .order("created_at", { ascending: false });
+            .order("title", { ascending: true })        // ✅ canonical
+            .order("id", { ascending: true });          // ✅ unique tiebreaker
 
         if (showErr) {
             console.error("load shows:", showErr);
@@ -72,7 +89,9 @@ export function usePodcastShows() {
 
         const { data: endRows } = await supabase
             .from("podcast_endorsements")
-            .select("show_id, user_id");
+            .select("show_id, user_id")
+            .order("show_id", { ascending: true })      // ✅ deterministic
+            .order("user_id", { ascending: true });
 
         const endCount = new Map<string, number>();
         const myEndorsements = new Set<string>();
@@ -81,19 +100,22 @@ export function usePodcastShows() {
             if (userId && r.user_id === userId) myEndorsements.add(r.show_id);
         });
 
-        const merged: PodcastShow[] = (showRows ?? []).map((s: any) => ({
-            id: s.id,
-            apple_id: s.apple_id,
-            title: s.title,
-            author: s.author,
-            artwork_url: s.artwork_url,
-            description: s.description,
-            explicit: s.explicit,
-            episode_count: epCount.get(s.id) ?? 0,   // ✅ now accurate
-            endorsement_count: endCount.get(s.id) ?? 0,
-            user_endorsed: myEndorsements.has(s.id),
-        }));
-        // Persist to Dexie
+        const merged: PodcastShow[] = sortShows(
+            (showRows ?? []).map((s: any) => ({
+                id: s.id,
+                apple_id: s.apple_id,
+                title: s.title,
+                author: s.author,
+                artwork_url: s.artwork_url,
+                description: s.description,
+                explicit: s.explicit,
+                episode_count: epCount.get(s.id) ?? 0,
+                endorsement_count: endCount.get(s.id) ?? 0,
+                user_endorsed: myEndorsements.has(s.id),
+            }))
+        );
+
+        // Persist to Dexie in canonical order too
         await putShows(
             merged.map((s): DbShow => ({
                 id: s.id,
@@ -117,11 +139,26 @@ export function usePodcastShows() {
         (async () => {
             const cached = await getAllShows();
             if (cached.length > 0) {
-                setShows(cached.map(dbToShow));
+                setShows(sortShows(cached.map(dbToShow)));
                 setLoading(false);
             }
             refresh({ silent: true });
         })();
+    }, [refresh]);
+
+    // ✅ Re-run the fetch when auth settles so personalized data lands
+    useEffect(() => {
+        const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+            if (
+                event === "SIGNED_IN" ||
+                event === "SIGNED_OUT" ||
+                event === "TOKEN_REFRESHED" ||
+                event === "INITIAL_SESSION"
+            ) {
+                refresh({ silent: true });
+            }
+        });
+        return () => sub.subscription.unsubscribe();
     }, [refresh]);
 
     // ── OPTIMISTIC endorse ──
@@ -190,7 +227,6 @@ export function usePodcastShows() {
                 console.error("delete show:", error);
                 return false;
             }
-            // Also clear from Dexie
             await studifyDb.shows.delete(showId);
             await refresh({ silent: true });
             return true;

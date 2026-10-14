@@ -1,6 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef, useEffect, useCallback, ReactNode } from "react";
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useRef,
+    useEffect,
+    useCallback,
+    ReactNode,
+} from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
     studifyDb,
@@ -47,24 +55,42 @@ interface MusicPlayerContextProps {
     audioRef: React.RefObject<HTMLAudioElement>;
     refreshEpisodes: (opts?: { silent?: boolean }) => Promise<void>;
     fetchShowEpisodes: (showId: string) => Promise<Track[]>;
+    searchEpisodesRemote: (query: string) => Promise<Track[]>;
 
-    // ✅ NEW — history API
+    // ✅ history API
     history: HistoryEntry[];
     clearHistory: () => void;
     removeFromHistory: (id: string) => void;
 }
 
-const MusicPlayerContext = createContext<MusicPlayerContextProps | undefined>(undefined);
+const MusicPlayerContext = createContext<MusicPlayerContextProps | undefined>(
+    undefined
+);
 
 const MAIN_FETCH_LIMIT = 200;
-const TOTAL_EPISODES_LABEL = "3K+";
-
 const CACHE_TTL_MS = 1000 * 60 * 15; // 15 min
 
 // ✅ Synchronous localStorage snapshot — paints the episode list in the
 //    same frame the app mounts, before Dexie (async IDB) can resolve.
 const SNAPSHOT_KEY = "medrae_podcast_snapshot_v1";
 const SNAPSHOT_MAX_AGE = 1000 * 60 * 60 * 24; // 24h
+
+// ─────────────────────────────────────────────────────────────
+// CANONICAL ORDER
+// Must match:
+//   • Supabase's ORDER BY (published_at DESC, id ASC)
+//   • Dexie's compareEpisodes (publishedAt DESC, id ASC)
+// If they disagree, the list visibly reorders on every
+// snapshot → Dexie → Supabase handoff.
+// ─────────────────────────────────────────────────────────────
+function sortTracks(list: Track[]): Track[] {
+    return [...list].sort((a, b) => {
+        const ap = a.publishedAt ? Date.parse(a.publishedAt) : 0;
+        const bp = b.publishedAt ? Date.parse(b.publishedAt) : 0;
+        if (ap !== bp) return bp - ap;             // newest first
+        return (a.id ?? a.src).localeCompare(b.id ?? b.src); // stable tiebreak
+    });
+}
 
 function readSnapshot(): Track[] | null {
     if (typeof window === "undefined") return null;
@@ -93,6 +119,7 @@ function writeSnapshot(tracks: Track[]) {
         /* quota exceeded — ignore */
     }
 }
+
 // ═══════════════════════════════════════════════════════════
 // PLAYBACK HISTORY — "Continue listening"
 // ═══════════════════════════════════════════════════════════
@@ -130,7 +157,10 @@ function readHistory(): HistoryEntry[] {
 function writeHistory(entries: HistoryEntry[]) {
     if (typeof window === "undefined") return;
     try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, HISTORY_MAX)));
+        localStorage.setItem(
+            HISTORY_KEY,
+            JSON.stringify(entries.slice(0, HISTORY_MAX))
+        );
     } catch {
         /* quota — ignore */
     }
@@ -158,9 +188,12 @@ function upsertHistory(
     const filtered = existing.filter((e) => e.id !== id);
     return [entry, ...filtered].slice(0, HISTORY_MAX);
 }
+
 // ── Mapping helpers ──
 function rowToDbEpisode(e: any): DbEpisode {
-    const show = Array.isArray(e.podcast_shows) ? e.podcast_shows[0] : e.podcast_shows;
+    const show = Array.isArray(e.podcast_shows)
+        ? e.podcast_shows[0]
+        : e.podcast_shows;
     return {
         id: e.id,
         showId: e.show_id,
@@ -186,12 +219,14 @@ function dbToTrack(e: DbEpisode): Track {
         showId: e.showId,
         publishedAt: e.publishedAt,
     };
-} export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
+}
+
+export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     // ✅ Seed from the synchronous localStorage snapshot so the first render
     //    already has tracks. Dexie will overwrite with a slightly fresher
     //    version on the next tick, then Supabase refreshes in the background.
     const snapshot = typeof window !== "undefined" ? readSnapshot() : null;
-    const [tracks, setTracks] = useState<Track[]>(snapshot ?? []);
+    const [tracks, setTracks] = useState<Track[]>(() => sortTracks(snapshot ?? []));
     const [loading, setLoading] = useState(snapshot === null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -206,16 +241,18 @@ function dbToTrack(e: DbEpisode): Track {
     useEffect(() => {
         historyRef.current = history;
     }, [history]);
+
     const audioRef = useRef<HTMLAudioElement>(null);
     const lastRefreshRef = useRef<number>(0);
     const currentSrcRef = useRef<string | undefined>(undefined);
+
     // ✅ Persist a synchronous snapshot every time tracks change.
     //    Cheap (only 60 items), sync, quota-safe.
     useEffect(() => {
         if (tracks.length === 0) return;
         writeSnapshot(tracks);
     }, [tracks]);
-    // ── 1. Hydrate from Dexie INSTANTLY (before any network call) ──
+
     // ── 1. Hydrate from Dexie (indexedDB) as a fallback layer ──
     //    If we already painted from the localStorage snapshot, use Dexie
     //    only to seed `lastRefreshRef` (so we don't hit the network too early).
@@ -227,22 +264,26 @@ function dbToTrack(e: DbEpisode): Track {
                 if (cancelled) return;
 
                 if (cached.length > 0) {
-                    // ✅ Only overwrite tracks if Dexie has STRICTLY more than we already have.
-                    //    Prevents a "flash back" to old data if snapshot was newer.
+                    // ✅ Only overwrite tracks if Dexie has STRICTLY more than
+                    //    we already have. Prevents a "flash back" to old data.
                     setTracks((prev) =>
-                        cached.length > prev.length ? cached.map(dbToTrack) : prev
+                        cached.length > prev.length
+                            ? sortTracks(cached.map(dbToTrack))
+                            : prev
                     );
                     setLoading(false);
                     lastRefreshRef.current = cached[0].cachedAt;
                 } else if (snapshot === null) {
-                    // No snapshot AND no Dexie data → still loading, let the network resolve
+                    // No snapshot AND no Dexie data → still loading.
                     setLoading(true);
                 }
             } catch (e) {
                 console.error("Dexie hydrate failed:", e);
             }
         })();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -253,17 +294,19 @@ function dbToTrack(e: DbEpisode): Track {
         const stale = now - lastRefreshRef.current > CACHE_TTL_MS;
 
         if (silent && !stale) return;
-
         if (!silent) setLoading(true);
 
         const { data: epRows, error: epErr } = await supabase
             .from("podcast_episodes")
-            .select(`
+            .select(
+                `
                 id, title, audio_url, duration, published_at, show_id, is_hidden,
                 podcast_shows ( title, artwork_url )
-            `)
+            `
+            )
             .eq("is_hidden", false)
             .order("published_at", { ascending: false, nullsFirst: false })
+            .order("id", { ascending: true })           // ✅ unique tiebreaker
             .limit(MAIN_FETCH_LIMIT);
 
         if (epErr) {
@@ -274,37 +317,91 @@ function dbToTrack(e: DbEpisode): Track {
 
         await putEpisodes((epRows ?? []).map(rowToDbEpisode));
 
-        const episodeTracks: Track[] = (epRows ?? []).map(rowToDbEpisode).map(dbToTrack);
+        const episodeTracks: Track[] = sortTracks(
+            (epRows ?? []).map(rowToDbEpisode).map(dbToTrack)
+        );
         setTracks(episodeTracks);
         setCurrentIndex((prev) => (prev < episodeTracks.length ? prev : 0));
         lastRefreshRef.current = Date.now();
         setLoading(false);
     }, []);
 
+    // ✅ Re-fetch episodes when auth settles so personalized data lands.
+    //    NOTE: must live BELOW the refreshEpisodes useCallback — const
+    //    declarations are not hoisted, so referencing it earlier crashes
+    //    with "Cannot access 'refreshEpisodes' before initialization".
+    useEffect(() => {
+        const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+            if (
+                event === "SIGNED_IN" ||
+                event === "TOKEN_REFRESHED" ||
+                event === "INITIAL_SESSION"
+            ) {
+                refreshEpisodes({ silent: true });
+            }
+        });
+        return () => sub.subscription.unsubscribe();
+    }, [refreshEpisodes]);
+
     // ── 3. On-demand fetch for a specific show (unlimited) ──
-    const fetchShowEpisodes = useCallback(async (showId: string): Promise<Track[]> => {
+    const fetchShowEpisodes = useCallback(
+        async (showId: string): Promise<Track[]> => {
+            const { data, error } = await supabase
+                .from("podcast_episodes")
+                .select(
+                    `
+                id, title, audio_url, duration, published_at, show_id, is_hidden,
+                podcast_shows ( title, artwork_url )
+            `
+                )
+                .eq("is_hidden", false)
+                .eq("show_id", showId)
+                .order("published_at", { ascending: false, nullsFirst: false })
+                .order("id", { ascending: true });           // ✅ unique tiebreaker
+
+            if (error) {
+                console.error("Failed to load show episodes:", error);
+                const cached = await getEpisodesForShow(showId);
+                return sortTracks(cached.map(dbToTrack));
+            }
+
+            const dbEps = (data ?? []).map(rowToDbEpisode);
+            await putEpisodes(dbEps);
+            return sortTracks(dbEps.map(dbToTrack));
+        },
+        []
+    );
+    /**
+     * Search episodes server-side. Used as the final layer of the
+     * search stack — only fires when the query is 2+ chars and the
+     * user has paused typing for ~150 ms.
+     */
+    const searchEpisodesRemote = useCallback(async (query: string): Promise<Track[]> => {
+        const q = query.trim();
+        if (q.length < 2) return [];
+
+        // PostgREST .or() with ilike — matches title OR show title
+        const pattern = `%${q}%`;
         const { data, error } = await supabase
             .from("podcast_episodes")
             .select(`
-                id, title, audio_url, duration, published_at, show_id, is_hidden,
-                podcast_shows ( title, artwork_url )
-            `)
+            id, title, audio_url, duration, published_at, show_id, is_hidden,
+            podcast_shows ( title, artwork_url )
+        `)
             .eq("is_hidden", false)
-            .eq("show_id", showId)
-            .order("published_at", { ascending: false, nullsFirst: false });
+            .or(`title.ilike.${pattern}`)
+            .order("published_at", { ascending: false, nullsFirst: false })
+            .order("id", { ascending: true })
+            .limit(40);
 
         if (error) {
-            console.error("Failed to load show episodes:", error);
-            const cached = await getEpisodesForShow(showId);
-            return cached.map(dbToTrack);
+            console.error("searchEpisodesRemote:", error);
+            return [];
         }
 
         const dbEps = (data ?? []).map(rowToDbEpisode);
-        await putEpisodes(dbEps);
-        return dbEps.map(dbToTrack);
+        return sortTracks(dbEps.map(dbToTrack));
     }, []);
-
-    // ── 4. Initial kick ──
     // ── 4. Initial kick ──
     useEffect(() => {
         // ✅ If we already painted from snapshot, we never show a loader — go silent.
@@ -329,6 +426,7 @@ function dbToTrack(e: DbEpisode): Track {
         audio.src = next;
         audio.load();
     }, [tracks, currentIndex]);
+
     // ═══════════════════════════════════════════════════════════
     // ── 5b. Record playback into history whenever the current
     //        track changes or periodically during playback.
@@ -344,7 +442,8 @@ function dbToTrack(e: DbEpisode): Track {
             setHistory((prev) => {
                 const existing = prev.find((e) => e.id === id);
                 // Only update if it's not already the top entry — avoids infinite loops
-                if (existing && prev[0]?.id === id && existing.position === 0) return prev;
+                if (existing && prev[0]?.id === id && existing.position === 0)
+                    return prev;
                 const next = upsertHistory(current, existing?.position ?? 0, prev);
                 writeHistory(next);
                 return next;
@@ -371,6 +470,7 @@ function dbToTrack(e: DbEpisode): Track {
         audio.addEventListener("timeupdate", onTime);
         return () => audio.removeEventListener("timeupdate", onTime);
     }, [tracks, currentIndex]);
+
     // ── 6. Play / pause / volume ──
     useEffect(() => {
         const audio = audioRef.current;
@@ -419,26 +519,34 @@ function dbToTrack(e: DbEpisode): Track {
 
     // ── 8. Stable action callbacks ──
     const togglePlay = useCallback((force?: boolean) => {
-        setIsPlaying(prev => (force !== undefined ? force : !prev));
+        setIsPlaying((prev) => (force !== undefined ? force : !prev));
     }, []);
 
-    const toggleMute = useCallback(() => setMuted(prev => !prev), []);
+    const toggleMute = useCallback(() => setMuted((prev) => !prev), []);
 
-    const toggleRepeat = useCallback(() =>
-        setRepeatMode(prev => (prev === "off" ? "all" : prev === "all" ? "one" : "off")),
-        []);
+    const toggleRepeat = useCallback(
+        () =>
+            setRepeatMode((prev) =>
+                prev === "off" ? "all" : prev === "all" ? "one" : "off"
+            ),
+        []
+    );
 
     const nextTrack = useCallback(
-        () => setCurrentIndex(prev => (prev + 1) % Math.max(tracks.length, 1)),
+        () => setCurrentIndex((prev) => (prev + 1) % Math.max(tracks.length, 1)),
         [tracks.length]
     );
 
     const prevTrack = useCallback(
-        () => setCurrentIndex(prev => (prev - 1 + tracks.length) % Math.max(tracks.length, 1)),
+        () =>
+            setCurrentIndex(
+                (prev) => (prev - 1 + tracks.length) % Math.max(tracks.length, 1)
+            ),
         [tracks.length]
     );
 
     const setVolume = useCallback((vol: number) => setVolumeState(vol), []);
+
     const clearHistory = useCallback(() => {
         setHistory([]);
         writeHistory([]);
@@ -451,6 +559,7 @@ function dbToTrack(e: DbEpisode): Track {
             return next;
         });
     }, []);
+
     return (
         <MusicPlayerContext.Provider
             value={{
@@ -481,6 +590,7 @@ function dbToTrack(e: DbEpisode): Track {
                 history,
                 clearHistory,
                 removeFromHistory,
+                searchEpisodesRemote,
             }}
         >
             {children}
@@ -490,6 +600,7 @@ function dbToTrack(e: DbEpisode): Track {
 
 export const useMusicPlayer = () => {
     const context = useContext(MusicPlayerContext);
-    if (!context) throw new Error("useMusicPlayer must be used within MusicPlayerProvider");
+    if (!context)
+        throw new Error("useMusicPlayer must be used within MusicPlayerProvider");
     return context;
 };

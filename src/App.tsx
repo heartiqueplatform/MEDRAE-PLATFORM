@@ -366,42 +366,43 @@ const AppContent = () => {
   }, []);
 
   // 🔒 Heartbeat only — eviction is handled by token expiry (server-side)
+  // 🔒 Heartbeat — keeps profiles.last_seen fresh so the online list
+  //    reflects reality. Runs every 60s while the tab is visible.
   useEffect(() => {
     if (!user) return;
 
     const performHeartbeat = async () => {
       if (document.hidden) return;
-      // 🔧 Skip heartbeat when offline. Otherwise the interceptor
-      // catches the failed RPC and returns `{}`, which Supabase
-      // parses as a successful call with no body — useless, and it
-      // pollutes logs with fake successes.
       if (isOfflineHint()) return;
 
       const deviceId = localStorage.getItem("device_id");
 
       try {
-        await supabase.rpc('handle_user_heartbeat', {
+        await supabase.rpc("handle_user_heartbeat", {
           p_user_id: user.id,
-          p_device_id: deviceId || ""
+          p_device_id: deviceId || "",
         });
       } catch (err) {
-        // Non-fatal — a missed heartbeat just delays eviction checks.
         console.warn("[App] heartbeat failed:", err);
       }
     };
 
+    // Fire once immediately on mount
     performHeartbeat();
 
-    const interval = setInterval(performHeartbeat, 600000); // every 10 min
+    // 60-second interval while tab is visible
+    const interval = setInterval(performHeartbeat, 60_000);
+
+    // Fire immediately when tab regains focus
     const handleVisibility = () => {
       if (!document.hidden) performHeartbeat();
     };
 
-    document.addEventListener('visibilitychange', handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibility);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user]);
 

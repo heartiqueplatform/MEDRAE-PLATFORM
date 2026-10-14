@@ -175,8 +175,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   const width = useWindowWidth();
   const isOnline = useOnlineStatus();
 
-  const { onlineUsers, onlineCount, isLoading: onlineLoading, refetch } = useOnlineUsers();
-
+  const { onlineUsers, onlineCount, loading: onlineLoading, refresh } = useOnlineUsers();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
@@ -483,17 +482,19 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   // ============================================================
   // ✅ Online users popover - LAZY fetch
   // ============================================================
-  const handleOnlinePopoverOpen = useCallback((open: boolean) => {
-    setShowOnlineUsers(open);
-    if (open && isOnline) {
-      const lastFetch = localStorage.getItem('last_online_fetch');
-      const now = Date.now();
-      if (!lastFetch || (now - parseInt(lastFetch)) > 60000) {
-        refetch?.();
-        localStorage.setItem('last_online_fetch', String(now));
+  // ============================================================
+  // ✅ Online users popover — manual open always fetches fresh
+  // ============================================================
+  const handleOnlinePopoverOpen = useCallback(
+    (open: boolean) => {
+      setShowOnlineUsers(open);
+      if (open && isOnline) {
+        // ✅ Manual open → always fetch fresh (bypasses hook throttle)
+        refresh?.();
       }
-    }
-  }, [isOnline, refetch]);
+    },
+    [isOnline, refresh]
+  );
 
   // ✅ UPDATED: Handle settings open/close with blur effect
   const handleSettingsOpen = useCallback((open: boolean) => {
@@ -646,11 +647,14 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     }));
   }, [isDarkMode, onToggleDarkMode]);
 
-  const onlineBadgeText = useMemo(() => {
-    const count = onlineUsers.length <= 1 ? 0 : onlineUsers.length - 1;
-    return count;
-  }, [onlineUsers.length]);
-
+  // ✅ The useOnlineUsers hook already excludes the current user.
+  //    Just use the length directly. No subtraction.
+  // ✅ Badge shows total online users, including the current user.
+  //    `onlineCount` from the hook already includes everyone.
+  const onlineBadgeText = useMemo(
+    () => Math.max(0, onlineCount ?? 0),
+    [onlineCount]
+  );
   const getUserInitials = useCallback((name: string) => {
     if (!name || name === "Unknown" || name === "Unknown User") {
       return <User className="h-3 w-3 sm:h-4 sm:w-4" />;
@@ -726,22 +730,38 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
           <div className="flex items-center ml-auto gap-2 sm:gap-4">
 
             {/* 1. Online Users Section */}
+            {/* 1. Online Users Section */}
             <div className="hidden sm:flex items-center gap-1 sm:gap-2">
-              <AllUsersPopover totalUsers={totalUsers} />
+              {/* ✅ AllUsersPopover — admin-only.
+                  Everyone else sees nothing; the component isn't
+                  even mounted for them, so no network calls fire. */}
+              {authUser?.id === "25f37970-c9b9-4c15-b8a2-514a912e3261" && (
+                <AllUsersPopover totalUsers={totalUsers} />
+              )}
 
               <Popover open={showOnlineUsers} onOpenChange={handleOnlinePopoverOpen}>
                 <PopoverTrigger asChild>
                   <div className="flex items-center shrink-0 cursor-pointer select-none">
-                    <Badge className="h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center gap-1.5 transition-all rounded-full shadow-none shrink-0">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-                      </span>
-                      <span className="font-black leading-none flex items-center">
-                        {onlineBadgeText > 0 ? onlineBadgeText : ''}
-                        <span className="hidden lg:inline ml-0.5 tracking-tighter">Online</span>
-                      </span>
-                    </Badge>
+                    {/* ✅ Only render the badge once we've actually loaded the list.
+                        While loading, show a quiet skeleton pill — same dimensions,
+                        muted color — so the header doesn't jump when data arrives. */}
+                    {onlineLoading ? (
+                      <Badge
+                        className="h-5 sm:h-6 px-2 sm:px-2.5 text-[9px] sm:text-[10px] bg-muted text-muted-foreground border-0 flex items-center transition-all rounded-full shadow-none shrink-0"
+                        aria-hidden="true"
+                      >
+                        <span className="inline-block h-2 w-6 rounded-full bg-muted-foreground/30 animate-pulse" />
+                      </Badge>
+                    ) : (
+                      <Badge className="h-5 sm:h-6 px-2 sm:px-2.5 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center transition-all rounded-full shadow-none shrink-0">
+                        <span className="font-black leading-none flex items-center tabular-nums">
+                          {onlineBadgeText}
+                          <span className="hidden lg:inline ml-1 tracking-tighter">
+                            {onlineBadgeText === 1 ? "Peer Online" : "Peers Online"}
+                          </span>
+                        </span>
+                      </Badge>
+                    )}
                   </div>
                 </PopoverTrigger>
                 <PopoverContent className="w-72 max-h-96 overflow-y-auto custom-scrollbar p-2 bg-card">
@@ -754,25 +774,51 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                       </div>
                     ) : onlineUsers.length > 0 ? (
                       <ul className="space-y-2 text-sm">
-                        {onlineUsers.map((u) => (
-                          <li
-                            key={u.user_id}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-1 rounded"
-                            onClick={() => { setSelectedUserId(u.user_id); setShowOnlineUsers(false); }}
-                          >
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={u.avatar_url} loading="lazy" />
-                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                {u.name?.split(" ").map((n: string) => n[0]).join("") || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 truncate text-sm">
-                              <div className="font-medium">{u.name}</div>
-                              <div className="text-xs text-muted-foreground">{u.role}</div>
-                            </div>
-                            <span className="w-2 h-2 rounded-full bg-green-500 inline-block flex-shrink-0 animate-pulse" />
-                          </li>
-                        ))}
+                        {onlineUsers.map((u) => {
+                          // ✅ `authUser?.id` is the current user's id.
+                          //    If we're rendering ourselves, mark the row.
+                          const isMe = u.user_id === authUser?.id;
+
+                          return (
+                            <li
+                              key={u.user_id}
+                              className={`flex items-center gap-2 p-1 rounded ${isMe
+                                ? "bg-primary/5 dark:bg-primary/10 cursor-default"
+                                : "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                }`}
+                              onClick={() => {
+                                // ✅ Don't open a profile modal for yourself
+                                if (isMe) return;
+                                setSelectedUserId(u.user_id);
+                                setShowOnlineUsers(false);
+                              }}
+                            >
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={u.avatar_url} loading="lazy" />
+                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                  {u.name?.split(" ").map((n: string) => n[0]).join("") || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+
+                              <div className="flex-1 truncate text-sm">
+                                <div className="font-medium flex items-center gap-1.5">
+                                  <span className="truncate">{u.name}</span>
+                                  {isMe && (
+                                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full shrink-0">
+                                      You
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">{u.role}</div>
+                              </div>
+
+                              <span
+                                className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${isMe ? "bg-primary" : "bg-green-500 animate-pulse"
+                                  }`}
+                              />
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
                       <div className="text-center py-6">

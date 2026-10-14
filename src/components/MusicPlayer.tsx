@@ -9,9 +9,16 @@ import {
     Disc3,
 } from "lucide-react";
 import { useMusicPlayer, type HistoryEntry } from "./MusicPlayerProvider";
+import { useReportPlay } from "@/hooks/useReportPlay";
+import { useEpisodeInteractions } from "@/hooks/useEpisodeInteractions";
+import { Heart, Bookmark } from "lucide-react";
 import { usePodcastShows } from "@/hooks/usePodcastShows";
+import { useShowFollows } from "@/hooks/useShowFollows";
 import { supabase } from "@/lib/supabaseClient";
 import { useLocation } from "react-router-dom";
+import { EpisodeSearchBar } from "@/components/EpisodeSearchBar";
+import { fuzzySearch } from "@/lib/fuzzySearch";
+import { searchEpisodesLocal } from "@/lib/studifyDb";
 interface Track {
     id?: string;
     name: string;
@@ -99,13 +106,23 @@ export const MusicPlayer = () => {
         setVolume, setMuted, setRepeatMode, setProgress,
         refreshEpisodes,
         fetchShowEpisodes,
+        searchEpisodesRemote,
         history,
         clearHistory,
         removeFromHistory,
     } = useMusicPlayer();
-
     const { shows, refresh: refreshShows, toggleEndorse, deleteShow } = usePodcastShows();
-
+    const { report: reportPlay } = useReportPlay();
+    const {
+        toggle: toggleReaction,
+        hydrate: hydrateInteractions,
+        get: getInteraction,
+    } = useEpisodeInteractions();
+    const {
+        toggle: toggleFollow,
+        hydrate: hydrateFollows,
+        get: getFollow,
+    } = useShowFollows();
     // ✅ Total episodes across all shows — used for the "Browse" label
     //    and the episodes header. Falls back to "3K+" if shows haven't loaded.
     const totalEpisodes = useMemo(() => {
@@ -268,6 +285,7 @@ export const MusicPlayer = () => {
     // ── MEMOIZED DERIVED STATE ──
     // ═══════════════════════════════════════════════════════
     const currentTrack = tracks[currentIndex];
+
     const artworkSrc = currentTrack?.artwork || "";
     const currentTrackSrc = currentTrack?.src;
 
@@ -281,7 +299,18 @@ export const MusicPlayer = () => {
         if (showTracks && showTracks.length > 0) return showTracks;
         return tracks.filter((t) => t.showId === selectedShowId);
     }, [tracks, selectedShowId, showTracks]);
-
+    // ✅ Hydrate reaction counts when the episode list changes
+    useEffect(() => {
+        const ids = visibleTracks
+            .map((t) => t.id)
+            .filter((id): id is string => !!id);
+        if (ids.length > 0) hydrateInteractions(ids);
+    }, [visibleTracks, hydrateInteractions]);
+    // ✅ Hydrate follow state when the shows list changes
+    useEffect(() => {
+        const ids = shows.map((s: any) => s.id).filter((id): id is string => !!id);
+        if (ids.length > 0) hydrateFollows(ids);
+    }, [shows, hydrateFollows]);
     // ═══════════════════════════════════════════════════════
     // ── STABLE HANDLERS (useCallback) ──
     // ═══════════════════════════════════════════════════════
@@ -353,7 +382,6 @@ export const MusicPlayer = () => {
     const handleBrowse = useCallback(() => setScreen("episodes"), []);
     const handleOpenAdmin = useCallback(() => setScreen("admin"), []);
     const handleCloseAdmin = useCallback(() => setScreen("player"), []);
-
     const handleSelectTrack = useCallback((track: Track) => {
         if (!track?.src) return;
         const existingIdx = tracks.findIndex((x) => x.src === track.src);
@@ -365,8 +393,14 @@ export const MusicPlayer = () => {
             setCurrentIndex(newIdx);
         }
         togglePlay(true);
+
+        // ✅ Report the play (non-blocking, deduped server-side)
+        if (track.id && track.showId) {
+            reportPlay(track.id, track.showId, 0);
+        }
+
         if (window.innerWidth < 768) setScreen("player");
-    }, [tracks, setCurrentIndex, setTracks, togglePlay]);
+    }, [tracks, setCurrentIndex, setTracks, togglePlay, reportPlay]);
     const handleResumeFromHistory = useCallback((entry: HistoryEntry) => {
         // Find the track in `tracks` (or build one from the entry if missing)
         const idx = tracks.findIndex((t) => (t.id || t.src) === entry.id);
@@ -437,7 +471,70 @@ export const MusicPlayer = () => {
     }, [audioRef]);
 
     const handleHideEpisodeRequest = useCallback((id: string) => setConfirmHide(id), []);
+    // ── Layer 1: instant search on the 200 tracks already in memory ──
+    const handleSearchMemory = useCallback((query: string): any[] => {
+        const scored = fuzzySearch(tracks, query, (t) => t.name, 40);
+        return scored.map((t) => ({
+            id: t.id ?? t.src,
+            title: t.name,
+            showTitle: t.showTitle,
+            artwork: t.artwork,
+            duration: t.duration,
+            publishedAt: t.publishedAt,
+        }));
+    }, [tracks]);
 
+    // ── Layer 2: Dexie sweep (fast, thousands of rows) ──
+    const handleSearchLocal = useCallback(async (query: string): Promise<any[]> => {
+        const rows = await searchEpisodesLocal(query, 40);
+        return rows.map((e) => ({
+            id: e.id,
+            title: e.title,
+            showTitle: e.showTitle,
+            artwork: e.showArtwork,
+            duration: e.duration,
+            publishedAt: e.publishedAt,
+        }));
+    }, []);
+
+    // ── Layer 3: Supabase search (authoritative) ──
+    const handleSearchRemote = useCallback(async (query: string): Promise<any[]> => {
+        const rows = await searchEpisodesRemote(query);
+        return rows.map((t) => ({
+            id: t.id ?? t.src,
+            title: t.name,
+            showTitle: t.showTitle,
+            artwork: t.artwork,
+            duration: t.duration,
+            publishedAt: t.publishedAt,
+        }));
+    }, [searchEpisodesRemote]);
+
+    // ── When a search result is tapped, play it ──
+    const handleSearchSelect = useCallback((result: any) => {
+        // Find in tracks, else append
+        const idx = tracks.findIndex((t) => (t.id ?? t.src) === result.id);
+        if (idx >= 0) {
+            setCurrentIndex(idx);
+        } else {
+            const newTrack = {
+                id: result.id,
+                name: result.title,
+                src: result.src ?? "",
+                artwork: result.artwork,
+                duration: result.duration,
+                showTitle: result.showTitle,
+                showId: result.showId,
+                publishedAt: result.publishedAt,
+            };
+            // If src is missing, we need to fetch the full episode — for now,
+            // find it in `tracks` by id (it should be there since we searched)
+            setTracks((prev) => [...prev, newTrack]);
+            setCurrentIndex(tracks.length);
+        }
+        togglePlay(true);
+        if (window.innerWidth < 768) setScreen("player");
+    }, [tracks, setCurrentIndex, setTracks, togglePlay]);
     // ═══════════════════════════════════════════════════════
     // ── ASYNC HANDLERS ──
     // ═══════════════════════════════════════════════════════
@@ -548,12 +645,16 @@ export const MusicPlayer = () => {
             onBrowse={handleBrowse}
             episodeCount={tracks.length}
             totalEpisodesLabel={totalEpisodesLabel}
+            currentInteraction={
+                currentTrack?.id ? getInteraction("episode", currentTrack.id) : undefined
+            }
         />
     ), [
         artworkSrc, isPlaying, currentTrack, progress, currentTime, totalDuration,
         volume, muted, repeatMode, loading, tracks.length, totalEpisodesLabel,
         handleProgressClick, handleTogglePlay, handlePrev, handleNext,
         handleCycleRepeat, handleToggleMute, handleVolume, handleUpload, handleBrowse,
+        getInteraction,
     ]);
 
     const listEl = useMemo(() => (
@@ -577,14 +678,20 @@ export const MusicPlayer = () => {
             onResumeFromHistory={handleResumeFromHistory}
             onRemoveFromHistory={removeFromHistory}
             onClearHistory={clearHistory}
+            getInteraction={getInteraction}
+            onToggleReaction={toggleReaction}
+            getFollow={getFollow}
+            onToggleFollow={toggleFollow}
         />
     ), [
         visibleTracks, currentTrackSrc, isPlaying, progress,
         loading, showTracksLoading, tracks.length,
         selectedShowId, shows, isAdmin, toggleEndorse,
         handleSelectShow, handleSelectTrack, handleOpenAdmin, handleHideEpisodeRequest,
-        // ✅ history
         history, handleResumeFromHistory, removeFromHistory, clearHistory,
+
+        getFollow, toggleFollow,
+        getInteraction, toggleReaction,
     ]);
     return (
         <>
@@ -616,9 +723,6 @@ export const MusicPlayer = () => {
                     transition={{ type: "spring", stiffness: 340, damping: 26 }}
                     className="fixed top-1/4 -translate-y-1/2 right-4 z-40 group"
                 >
-                    {/* ═══════════════════════════════════════════════════════
-            Expanded card — reveals on hover (desktop) or tap-toggle
-            ═══════════════════════════════════════════════════════ */}
                     <motion.div
                         variants={{
                             collapsed: {
@@ -640,9 +744,9 @@ export const MusicPlayer = () => {
                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
                         className="
                 relative flex items-center
-                bg-white dark:bg-slate-900
-                ring-1 ring-slate-200/70 dark:ring-white/10
-                shadow-[0_8px_28px_-8px_rgba(0,0,0,0.28)]
+                bg-gh-l-card dark:bg-gh-card
+                shadow-[0_8px_28px_-8px_rgba(0,0,0,0.22)]
+                dark:shadow-[0_8px_28px_-8px_rgba(0,0,0,0.6)]
                 overflow-hidden
                 cursor-pointer
             "
@@ -676,7 +780,7 @@ export const MusicPlayer = () => {
                                 <circle
                                     cx="50" cy="50" r="46"
                                     fill="none" stroke="currentColor" strokeWidth="4"
-                                    className="text-slate-200 dark:text-slate-700/60"
+                                    className="text-gh-l-hover dark:text-gh-hover"
                                 />
                                 <motion.circle
                                     cx="50" cy="50" r="46"
@@ -705,9 +809,9 @@ export const MusicPlayer = () => {
                                     strokeWidth={1.75}
                                 />
                             </div>
-                            {/* Playing signal — animated bars (only visible when collapsed + playing) */}
+                            {/* Playing signal — animated bars */}
                             {isPlaying && (
-                                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-500 ring-[2.5px] ring-white dark:ring-slate-900 flex items-center justify-center gap-[1px] px-[3px]">
+                                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-500 ring-[2.5px] ring-gh-l-card dark:ring-gh-card flex items-center justify-center gap-[1px] px-[3px]">
                                     <motion.span
                                         animate={{ height: [3, 7, 3] }}
                                         transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut" }}
@@ -742,7 +846,7 @@ export const MusicPlayer = () => {
                                 <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
                                     {isPlaying ? "Now playing" : "Paused"}
                                 </span>
-                                <span className="text-[12px] font-bold text-slate-900 dark:text-white truncate leading-tight mt-0.5">
+                                <span className="text-[12px] font-bold text-gh-l-text dark:text-gh-text truncate leading-tight mt-0.5">
                                     {currentTrack?.name || "Medrae Player"}
                                 </span>
                             </div>
@@ -756,8 +860,8 @@ export const MusicPlayer = () => {
                                 aria-label={isPlaying ? "Pause" : "Play"}
                                 className="
                         h-9 w-9 shrink-0 rounded-full
-                        bg-slate-900 dark:bg-white
-                        text-white dark:text-slate-900
+                        bg-gh-l-text dark:bg-gh-text
+                        text-gh-l-card dark:text-gh-card
                         flex items-center justify-center
                         active:scale-95 transition-transform
                     "
@@ -859,7 +963,16 @@ export const MusicPlayer = () => {
                                     )}
                                 </div>
                             </div>
-
+                            {/* DESKTOP: search bar */}
+                            <div className="hidden md:block px-5 pb-3 pt-2 shrink-0">
+                                <EpisodeSearchBar
+                                    onSearchMemory={handleSearchMemory}
+                                    onSearchLocal={handleSearchLocal}
+                                    onSearchRemote={handleSearchRemote}
+                                    onSelect={handleSearchSelect}
+                                    placeholder="Search episodes, topics, shows…"
+                                />
+                            </div>
                             {/* DESKTOP: two columns */}
                             <div className="hidden md:grid flex-1 min-h-0 grid-cols-[42%_58%]">
                                 <div className="min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-5 border-0">
@@ -926,10 +1039,24 @@ export const MusicPlayer = () => {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.12, ease: "easeOut" }}
-                                            className="absolute inset-0 bg-gh-l-canvas dark:bg-gh-canvas"
+                                            className="absolute inset-0 flex flex-col bg-gh-l-canvas dark:bg-gh-canvas"
                                             style={{ willChange: 'opacity' }}
                                         >
-                                            {listEl}
+                                            {/* 🔍 Search bar — always at top of episodes screen */}
+                                            <div className="shrink-0 px-3 pt-2 pb-2">
+                                                <EpisodeSearchBar
+                                                    onSearchMemory={handleSearchMemory}
+                                                    onSearchLocal={handleSearchLocal}
+                                                    onSearchRemote={handleSearchRemote}
+                                                    onSelect={handleSearchSelect}
+                                                    placeholder="Search episodes…"
+                                                />
+                                            </div>
+
+                                            {/* 📜 Episodes list — scrolls under the search bar */}
+                                            <div className="flex-1 min-h-0">
+                                                {listEl}
+                                            </div>
                                         </motion.div>
                                     )}
                                     {/* ✅ Pre-render the episodes screen ALWAYS (not just while on player).
@@ -1059,7 +1186,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
         volume, muted, repeatActive, loading,
         onProgressClick, onTogglePlay, onPrev, onNext,
         onCycleRepeat, onToggleMute, onVolume, onUpload, onBrowse, episodeCount,
-        totalEpisodesLabel,
+        totalEpisodesLabel, currentInteraction,
     } = props;
 
     const showSkeleton = loading && !currentTrack;
@@ -1175,8 +1302,18 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                             {fmtDate(currentTrack.publishedAt)}
                         </p>
                     )}
+                    {currentInteraction && currentInteraction.playCount > 0 && (
+                        <p className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[10px] font-black uppercase tracking-wider">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
+                            </svg>
+                            {currentInteraction.playCount >= 1000
+                                ? `${(currentInteraction.playCount / 1000).toFixed(1)}K`
+                                : currentInteraction.playCount}{" "}
+                            play{currentInteraction.playCount === 1 ? "" : "s"}
+                        </p>
+                    )}
                 </div>
-
                 {/* Controls */}
                 <div className="w-full mt-5 flex items-center justify-between">
                     <button
@@ -1477,13 +1614,16 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         onSelectShow, onSelectTrack, shows, onToggleEndorse, isAdmin, onManage,
         onHideEpisode,
         progress = 0,
-        // ✅ NEW
         history = [],
         onResumeFromHistory,
         onRemoveFromHistory,
         onClearHistory,
+        // ✅ NEW
+        getInteraction,
+        onToggleReaction,
+        getFollow,
+        onToggleFollow,
     } = props;
-
     //    `visibleTracks` may not be populated yet even if the parent has
     //    `tracks`. Force ONE skeleton frame so the user never sees blank.
     //    This is critical on mobile where the layout pass is slower.
@@ -1588,52 +1728,83 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                     {shows.map((s: any) => {
                         const active = selectedShowId === s.id;
                         const initial = (s.title || "?").trim().charAt(0).toUpperCase();
+                        const follow = getFollow?.(s.id) ?? { following: false, followerCount: 0 };
                         return (
-                            <button
+                            <div
                                 key={s.id}
-                                onClick={() => onSelectShow(s.id)}
-                                className="shrink-0 flex flex-col items-center gap-1.5 group"
-                                aria-label={s.title}
+                                className="shrink-0 flex flex-col items-center gap-1.5 group relative"
                             >
-                                <div className={`relative w-28 h-28 md:w-32 md:h-32 rounded-xl p-[2px] transition-all ${active
-                                    ? "bg-gradient-to-tr from-blue-500 via-blue-400 to-blue-600 shadow-lg shadow-blue-500/30"
-                                    : "bg-transparent"
-                                    }`}>
-                                    <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
-                                        {s.artwork_url ? (
-                                            <img
-                                                src={s.artwork_url}
-                                                alt=""
-                                                loading="lazy"
-                                                decoding="async"
-                                                className={`w-full h-full object-cover transition-transform ${active ? "scale-105" : "group-hover:scale-105"
-                                                    }`}
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-lg font-black text-gh-l-muted dark:text-gh-muted">
-                                                {initial}
-                                            </div>
-                                        )}
-                                        {!active && (
-                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                                <button
+                                    onClick={() => onSelectShow(s.id)}
+                                    className="flex flex-col items-center gap-1.5 w-full"
+                                    aria-label={s.title}
+                                >
+                                    <div className={`relative w-28 h-28 md:w-32 md:h-32 rounded-xl p-[2px] transition-all ${active
+                                        ? "bg-gradient-to-tr from-blue-500 via-blue-400 to-blue-600 shadow-lg shadow-blue-500/30"
+                                        : "bg-transparent"
+                                        }`}>
+                                        <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
+                                            {s.artwork_url ? (
+                                                <img
+                                                    src={s.artwork_url}
+                                                    alt=""
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    className={`w-full h-full object-cover transition-transform ${active ? "scale-105" : "group-hover:scale-105"
+                                                        }`}
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-lg font-black text-gh-l-muted dark:text-gh-muted">
+                                                    {initial}
+                                                </div>
+                                            )}
+                                            {!active && (
+                                                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                                            )}
+
+                                            {onToggleFollow && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onToggleFollow(s.id);
+                                                    }}
+                                                    className={`absolute top-1.5 right-1.5 h-8 w-8 md:h-6 md:w-6 rounded-full flex items-center justify-center shadow-sm transition-all ${follow.following
+                                                        ? "bg-blue-600 text-white"
+                                                        : "bg-white/90 dark:bg-slate-900/90 text-gh-l-text dark:text-gh-text hover:bg-white"
+                                                        }`}
+                                                    title={follow.following ? "Unfollow" : "Follow"}
+                                                    aria-label={follow.following ? "Unfollow" : "Follow"}
+                                                >
+                                                    {follow.following ? (
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="20 6 9 17 4 12" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                            <line x1="12" y1="5" x2="12" y2="19" />
+                                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {(s.endorsement_count > 0 || follow.followerCount > 0) && (
+                                            <span className={`absolute -bottom-1 -right-1 min-w-[20px] h-[20px] px-1.5 rounded-full text-[9px] font-black flex items-center justify-center shadow-sm ${active
+                                                ? "bg-blue-600 text-white"
+                                                : "bg-gh-l-card dark:bg-gh-card text-gh-l-text dark:text-gh-text"
+                                                }`}>
+                                                {follow.followerCount > 0 ? follow.followerCount : s.endorsement_count}
+                                            </span>
                                         )}
                                     </div>
-                                    {s.endorsement_count > 0 && (
-                                        <span className={`absolute -bottom-1 -right-1 min-w-[20px] h-[20px] px-1.5 rounded-full text-[9px] font-black flex items-center justify-center shadow-sm ${active
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gh-l-card dark:bg-gh-card text-gh-l-text dark:text-gh-text"
-                                            }`}>
-                                            {s.endorsement_count}
-                                        </span>
-                                    )}
-                                </div>
-                                <span className={`text-[10px] font-bold truncate max-w-[72px] text-center leading-tight ${active
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-gh-l-text dark:text-gh-text"
-                                    }`}>
-                                    {s.title}
-                                </span>
-                            </button>
+                                    <span className={`text-[10px] font-bold truncate max-w-[72px] text-center leading-tight ${active
+                                        ? "text-blue-600 dark:text-blue-400"
+                                        : "text-gh-l-text dark:text-gh-text"
+                                        }`}>
+                                        {s.title}
+                                    </span>
+                                </button>
+                            </div>
                         );
                     })}
                     {isAdmin && (
@@ -1653,8 +1824,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                 </div>
             </div>
         );
-    }, [shows, selectedShowId, isAdmin, showSkeleton, onSelectShow, onManage]);
-
+    }, [shows, selectedShowId, isAdmin, showSkeleton, onSelectShow, onManage, getFollow, onToggleFollow]);
     const showCardsBlock = useMemo(() => {
         if (showSkeleton || selectedShowId !== null || shows.length === 0) return null;
         return (
@@ -1693,7 +1863,16 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                             </div>
 
                             {/* Endorse button — stopPropagation so it doesn't open the show */}
-                            <div onClick={(e) => e.stopPropagation()}>
+                            {/* Follow + Endorse */}
+                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                {onToggleFollow && (
+                                    <FollowButton
+                                        following={(getFollow?.(s.id) ?? { following: false, followerCount: 0 }).following}
+                                        followerCount={(getFollow?.(s.id) ?? { following: false, followerCount: 0 }).followerCount}
+                                        onClick={() => onToggleFollow(s.id)}
+                                        compact
+                                    />
+                                )}
                                 <EndorseButton
                                     endorsed={s.user_endorsed}
                                     count={s.endorsement_count}
@@ -1705,8 +1884,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                 </div>
             </div>
         );
-    }, [shows, selectedShowId, showSkeleton, onToggleEndorse, onSelectShow]);
-
+    }, [shows, selectedShowId, showSkeleton, onToggleEndorse, onSelectShow, getFollow, onToggleFollow]);
     const episodeRows = useMemo(() => (
         <>
             {showSkeleton && <SkeletonList count={8} />}
@@ -1731,12 +1909,18 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                         onSelect={() => onSelectTrack(t)}
                         isAdmin={isAdmin}
                         onHide={() => t.id && onHideEpisode(t.id)}
+                        interaction={t.id ? getInteraction?.("episode", t.id) : undefined}
+                        onToggleReaction={
+                            t.id && onToggleReaction
+                                ? (kind: "like" | "love" | "save") =>
+                                    onToggleReaction("episode", t.id, kind)
+                                : undefined
+                        }
                     />
                 );
             })}
         </>
-    ), [visibleTracks, currentTrackSrc, isPlaying, progress, showSkeleton, isAdmin, onSelectTrack, onHideEpisode]);
-
+    ), [visibleTracks, currentTrackSrc, isPlaying, progress, showSkeleton, isAdmin, onSelectTrack, onHideEpisode, getInteraction, onToggleReaction]);
     return (
         <div className="h-full flex flex-col min-h-0">
             <div className="md:hidden h-full overflow-y-auto custom-scrollbar">
@@ -1921,6 +2105,61 @@ const EndorseButton = React.memo(function EndorseButton({ endorsed, count, onCli
     );
 });
 // ════════════════════════════════════════════════════════════
+// FOLLOW BUTTON
+// ════════════════════════════════════════════════════════════
+const FollowButton = React.memo(function FollowButton({
+    following,
+    followerCount,
+    onClick,
+    compact = false,
+}: {
+    following: boolean;
+    followerCount: number;
+    onClick: () => void;
+    compact?: boolean;
+}) {
+    const countLabel =
+        followerCount >= 1000
+            ? `${(followerCount / 1000).toFixed(1)}K`
+            : followerCount > 0
+                ? String(followerCount)
+                : "";
+
+    return (
+        <button
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
+            className={`
+                shrink-0 flex items-center font-bold rounded-full transition-all touch-manipulation select-none
+                relative
+                ${compact
+                    ? "gap-1 px-2.5 py-1.5 text-[10px] min-h-[32px]"
+                    : "gap-1.5 px-3 py-2 text-xs min-h-[36px]"}
+                md:min-h-0
+                ${following
+                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                    : "bg-gh-l-hover dark:bg-gh-hover text-gh-l-text dark:text-gh-text hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
+                }
+                before:absolute before:inset-[-4px] before:content-[''] md:before:inset-0
+            `}
+            title={following ? "Unfollow" : "Follow this show"}
+        >
+            <Headphones size={compact ? 12 : 13} />
+            <span>{following ? "Following" : "Follow"}</span>
+            {countLabel && (
+                <span
+                    className={`text-[10px] font-black ${following ? "text-white/70 dark:text-slate-900/70" : "text-gh-l-muted dark:text-gh-muted"
+                        }`}
+                >
+                    {countLabel}
+                </span>
+            )}
+        </button>
+    );
+});
+// ════════════════════════════════════════════════════════════
 // CONTINUE LISTENING ROW
 // ════════════════════════════════════════════════════════════
 const ContinueListeningRow = React.memo(function ContinueListeningRow({
@@ -2028,7 +2267,9 @@ const ContinueListeningRow = React.memo(function ContinueListeningRow({
 // timeupdate since their props don't change)
 // ════════════════════════════════════════════════════════════
 const EpisodeRow = React.memo(function EpisodeRow({
-    track, index, isActive, isPlaying, onSelect, isAdmin, onHide, progress = 0, downloaded = false,
+    track, index, isActive, isPlaying, onSelect, isAdmin, onHide,
+    progress = 0, downloaded = false,
+    interaction, onToggleReaction,
 }: {
     track: Track;
     index: number;
@@ -2039,6 +2280,11 @@ const EpisodeRow = React.memo(function EpisodeRow({
     onHide?: () => void;
     progress?: number;
     downloaded?: boolean;
+    interaction?: {
+        liked: boolean; loved: boolean; saved: boolean;
+        counts: { like: number; love: number; save: number };
+    };
+    onToggleReaction?: (kind: "like" | "love" | "save") => void;
 }) {
     const R = 22;
     const C = 2 * Math.PI * R;
@@ -2047,12 +2293,12 @@ const EpisodeRow = React.memo(function EpisodeRow({
 
     return (
         <div
-            className={`group w-full rounded-2xl px-3 py-3 mb-1 flex items-center gap-3 transition-all ${isActive
+            className={`group w-full rounded-2xl px-3 py-3.5 md:py-3 mb-1 flex items-start gap-2.5 md:gap-3 transition-all ${isActive
                 ? "bg-blue-50 dark:bg-blue-950/40"
                 : "hover:bg-gh-l-card dark:hover:bg-gh-card"
                 }`}
         >
-            <button onClick={onSelect} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+            <button onClick={onSelect} className="flex items-start gap-3 flex-1 min-w-0 text-left">
                 <div className="relative shrink-0 w-12 h-12 rounded-full overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
                     {track.artwork ? (
                         <img src={track.artwork} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -2068,22 +2314,12 @@ const EpisodeRow = React.memo(function EpisodeRow({
                                 className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
                                 viewBox="0 0 48 48"
                             >
-                                <circle
-                                    cx="24" cy="24" r={R}
-                                    fill="none"
-                                    stroke="rgba(255,255,255,0.25)"
-                                    strokeWidth="2.5"
-                                />
-                                <circle
-                                    cx="24" cy="24" r={R}
-                                    fill="none"
-                                    stroke="#60A5FA"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeDasharray={C}
-                                    strokeDashoffset={dashOffset}
-                                    style={{ transition: "stroke-dashoffset 0.25s linear" }}
-                                />
+                                <circle cx="24" cy="24" r={R} fill="none"
+                                    stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
+                                <circle cx="24" cy="24" r={R} fill="none"
+                                    stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round"
+                                    strokeDasharray={C} strokeDashoffset={dashOffset}
+                                    style={{ transition: "stroke-dashoffset 0.25s linear" }} />
                             </svg>
 
                             {isPlaying ? (
@@ -2105,48 +2341,141 @@ const EpisodeRow = React.memo(function EpisodeRow({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <p className={`text-[13px] font-bold truncate ${isActive ? "text-blue-700 dark:text-blue-300" : "text-gh-l-text dark:text-gh-text"}`}>
+                    {/* Title — line-clamp-2 so long titles wrap instead of cutting */}
+                    <p className={`text-[13px] font-bold leading-snug line-clamp-2 ${isActive ? "text-blue-700 dark:text-blue-300" : "text-gh-l-text dark:text-gh-text"}`}>
                         {track.name}
                     </p>
 
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                        <p className="text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
-                            {track.showTitle ? `${track.showTitle} · ` : ""}
-                            {track.duration ? fmtTime(track.duration) : "—"}
-                            {track.publishedAt ? ` · ${fmtDate(track.publishedAt)}` : ""}
-                        </p>
-
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {track.showTitle && (
+                            <span className="text-[10px] font-semibold text-gh-l-muted dark:text-gh-muted">
+                                {track.showTitle}
+                            </span>
+                        )}
+                        {track.duration && (
+                            <>
+                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">·</span>
+                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">
+                                    {fmtTime(track.duration)}
+                                </span>
+                            </>
+                        )}
+                        {track.publishedAt && (
+                            <>
+                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">·</span>
+                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">
+                                    {fmtDate(track.publishedAt)}
+                                </span>
+                            </>
+                        )}
                         {downloaded && (
-                            <span
-                                className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full
-                                           bg-emerald-100 dark:bg-emerald-950/50
-                                           text-emerald-700 dark:text-emerald-400
-                                           text-[8px] font-black uppercase tracking-wider"
-                                title="Downloaded for offline playback"
-                            >
+                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider">
                                 <CheckCircle2 size={8} />
                                 Downloaded
                             </span>
                         )}
+                        {interaction && interaction.playCount > 0 && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider">
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
+                                </svg>
+                                {interaction.playCount >= 1000
+                                    ? `${(interaction.playCount / 1000).toFixed(1)}K`
+                                    : interaction.playCount}{" "}
+                                play{interaction.playCount === 1 ? "" : "s"}
+                            </span>
+                        )}
                     </div>
-                </div>
 
-                {!isActive && (
-                    <div className="shrink-0 text-gh-l-muted dark:text-gh-muted">
-                        <Play size={18} fill="currentColor" />
-                    </div>
-                )}
+                </div>
             </button>
 
-            {isAdmin && onHide && (
-                <button
-                    onClick={onHide}
-                    className="shrink-0 p-1.5 rounded-lg text-gh-l-muted dark:text-gh-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors opacity-60 md:opacity-0 md:group-hover:opacity-100"
-                    title="Hide this episode"
-                >
-                    <EyeOff size={14} />
-                </button>
-            )}
+            {/* ✅ Reaction bar — always visible, never truncates */}
+            {/* ✅ Reaction bar — stacks on phone, row on desktop */}
+            <div className="flex flex-col md:flex-row items-end md:items-center gap-0.5 md:gap-0 shrink-0">
+                <div className="flex items-center gap-0.5 md:gap-0">
+                    <ReactionButton
+                        kind="like"
+                        active={interaction?.liked ?? false}
+                        count={interaction?.counts.like ?? 0}
+                        onClick={() => onToggleReaction?.("like")}
+                    />
+                    <ReactionButton
+                        kind="love"
+                        active={interaction?.loved ?? false}
+                        count={interaction?.counts.love ?? 0}
+                        onClick={() => onToggleReaction?.("love")}
+                    />
+                    <ReactionButton
+                        kind="save"
+                        active={interaction?.saved ?? false}
+                        count={interaction?.counts.save ?? 0}
+                        onClick={() => onToggleReaction?.("save")}
+                    />
+                </div>
+                {isAdmin && onHide && (
+                    <button
+                        onClick={onHide}
+                        className="shrink-0 p-2 rounded-lg text-gh-l-muted dark:text-gh-l-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors opacity-70 md:opacity-0 md:group-hover:opacity-100"
+                        title="Hide this episode"
+                    >
+                        <EyeOff size={16} />
+                    </button>
+                )}
+            </div>
         </div>
+    );
+});
+
+// ════════════════════════════════════════════════════════════
+// REACTION BUTTON — one small pill per reaction
+// ════════════════════════════════════════════════════════════
+const ReactionButton = React.memo(function ReactionButton({
+    kind, active, count, onClick, size = "md",
+}: {
+    kind: "like" | "love" | "save";
+    active: boolean;
+    count: number;
+    onClick: () => void;
+    /** "sm" = compact (desktop list), "md" = thumb-friendly (mobile) */
+    size?: "sm" | "md";
+}) {
+    const Icon = kind === "like" ? ThumbsUp : kind === "love" ? Heart : Bookmark;
+
+    const activeColor =
+        kind === "love"
+            ? "text-rose-500 bg-rose-500/10"
+            : kind === "save"
+                ? "text-emerald-600 bg-emerald-500/10"
+                : "text-blue-500 bg-blue-500/10";
+
+    const display =
+        count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count > 0 ? String(count) : "";
+
+    // ── Sizing tokens ──
+    // sm → tiny pill (desktop list)
+    // md → meets Apple/Google 44px tap target on mobile, comfortable on desktop
+    const pad = size === "md" ? "px-2.5 py-2 min-h-[36px] md:min-h-[32px]" : "px-2 py-1.5";
+    const iconSize = size === "md" ? 16 : 14;
+    const textSize = size === "md" ? "text-[11px]" : "text-[10px]";
+    const gap = size === "md" ? "gap-1" : "gap-0.5";
+
+    return (
+        <button
+            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            /* invisible 44px tap target on mobile — extends beyond the visual pill */
+            className={`
+                relative flex items-center justify-center rounded-lg font-bold tabular-nums
+                transition-colors touch-manipulation select-none
+                ${gap} ${pad} ${textSize}
+                ${active ? activeColor : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"}
+                before:absolute before:inset-[-6px] before:content-[''] md:before:inset-0
+            `}
+            aria-label={`${kind}${count > 0 ? ` (${count})` : ""}`}
+            aria-pressed={active}
+        >
+            <Icon size={iconSize} fill={active ? "currentColor" : "none"} />
+            {display && <span>{display}</span>}
+        </button>
     );
 });
