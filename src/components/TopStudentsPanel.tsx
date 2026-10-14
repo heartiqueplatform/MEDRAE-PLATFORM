@@ -32,13 +32,152 @@ interface TopStudent {
     timeUsed?: number | null;
 }
 
+type ReactionType = "like" | "fire" | "clap";
+
 // Cache helpers with TTL
 const questionCache = new Map();
 const topStudentsCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const REACTION_DEBOUNCE = 500;
+const REACTION_DEBOUNCE = 300;
 
-// Memoized leaderboard item for reduced re-renders
+// ============================================================
+// SVG ICONS — outline when inactive, filled when active
+// ============================================================
+const LikeIcon = ({ filled, className }: { filled: boolean; className?: string }) => (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        {filled ? (
+            <path
+                fill="currentColor"
+                d="M2 21h4V9H2v12zM23 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.58 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"
+            />
+        ) : (
+            <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+            />
+        )}
+    </svg>
+);
+
+const FireIcon = ({ filled, className }: { filled: boolean; className?: string }) => (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        {filled ? (
+            <path
+                fill="currentColor"
+                d="M13.5 0.67s0.74 2.65 0.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l0.03-0.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5 0.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"
+            />
+        ) : (
+            <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-1.5.5-3 1.5-4.5C10 8 11 9.5 12 9.5c0-2 .5-4 0-7.5zm0 20a7 7 0 0 0 7-7c0-4-3-6-7-13-4 7-7 9-7 13a7 7 0 0 0 7 7z"
+            />
+        )}
+    </svg>
+);
+
+const ClapIcon = ({ filled, className }: { filled: boolean; className?: string }) => (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        {filled ? (
+            <path
+                fill="currentColor"
+                d="M12 2a2 2 0 0 0-2 2v6.5a.5.5 0 0 1-1 0V3a2 2 0 1 0-4 0v8.5a.5.5 0 0 1-1 0V6a2 2 0 1 0-4 0v11a6 6 0 0 0 6 6h6a6 6 0 0 0 6-6v-5a2 2 0 1 0-4 0v3.5a.5.5 0 0 1-1 0V4a2 2 0 0 0-2-2z"
+            />
+        ) : (
+            <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11 11V5a2 2 0 1 1 4 0v8m0-2.5a1.5 1.5 0 1 1 3 0V15m0-2a1.5 1.5 0 1 1 3 0v3a6 6 0 0 1-6 6h-3a6 6 0 0 1-6-6v-5a1.5 1.5 0 0 1 3 0m0 0V6a1.5 1.5 0 0 1 3 0v5"
+            />
+        )}
+    </svg>
+);
+
+// ============================================================
+// REACTION BUTTON — SVG pill, no border, tinted when active
+// ============================================================
+const ReactionButton = memo(({
+    type,
+    count,
+    isActive,
+    onClick,
+}: {
+    type: ReactionType;
+    count: number;
+    isActive: boolean;
+    onClick: (e: React.MouseEvent) => void;
+}) => {
+    const palette = {
+        like: {
+            active: "text-blue-500",
+            bg: "bg-blue-500/10",
+            ring: "ring-blue-500/30",
+            hover: "hover:bg-blue-500/10 hover:text-blue-500",
+            Icon: LikeIcon,
+            label: "Like",
+        },
+        fire: {
+            active: "text-orange-500",
+            bg: "bg-orange-500/10",
+            ring: "ring-orange-500/30",
+            hover: "hover:bg-orange-500/10 hover:text-orange-500",
+            Icon: FireIcon,
+            label: "Fire",
+        },
+        clap: {
+            active: "text-emerald-500",
+            bg: "bg-emerald-500/10",
+            ring: "ring-emerald-500/30",
+            hover: "hover:bg-emerald-500/10 hover:text-emerald-500",
+            Icon: ClapIcon,
+            label: "Clap",
+        },
+    }[type];
+
+    const { Icon } = palette;
+
+    return (
+        <motion.button
+            whileTap={{ scale: 1.25 }}
+            whileHover={{ scale: 1.08 }}
+            transition={{ type: "spring", stiffness: 500, damping: 25 }}
+            onClick={onClick}
+            aria-label={`${palette.label} (${count})`}
+            aria-pressed={isActive}
+            className={`group/rxn relative flex items-center gap-1 px-2 py-1 rounded-full
+                        transition-colors duration-150 border-0 outline-none select-none
+                        ${isActive
+                    ? `${palette.bg} ${palette.active} ${palette.ring} ring-1`
+                    : `text-muted-foreground ${palette.hover}`}`}
+        >
+            <Icon
+                filled={isActive}
+                className={`w-4 h-4 transition-transform duration-200
+                            ${isActive ? "scale-110" : "group-hover/rxn:scale-110"}`}
+            />
+            <span className={`text-[10px] font-bold tabular-nums
+                              ${isActive ? palette.active : "text-muted-foreground"}`}>
+                {count}
+            </span>
+        </motion.button>
+    );
+});
+
+ReactionButton.displayName = "ReactionButton";
+
+// ============================================================
+// LEADERBOARD ITEM
+// ============================================================
 const LeaderboardItem = memo(({
     student,
     idx,
@@ -47,14 +186,14 @@ const LeaderboardItem = memo(({
     toggleReaction,
     reactionBurst,
     formatTimeReadable,
-    onSelect
+    onSelect,
 }: {
     student: TopStudent;
     idx: number;
     reactions: Record<string, { like: number; fire: number; clap: number }>;
     myReactions: Record<string, string[]>;
-    toggleReaction: (userId: string, reaction: "like" | "fire" | "clap") => Promise<void>;
-    reactionBurst: (emoji: "like" | "fire" | "clap") => void;
+    toggleReaction: (userId: string, reaction: ReactionType) => Promise<void>;
+    reactionBurst: (emoji: ReactionType) => void;
     formatTimeReadable: (sec: number) => string;
     onSelect: (userId: string) => void;
 }) => (
@@ -66,7 +205,8 @@ const LeaderboardItem = memo(({
         whileHover={{ y: -4 }}
         onClick={() => onSelect(student.user_id)}
         className={`relative flex-shrink-0 w-40 p-4 rounded-2xl border-0 flex flex-col items-center cursor-pointer transition-all will-change-transform
-            ${idx === 0 ? "bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-900/10 dark:to-background border-0 shadow-none"
+            ${idx === 0
+                ? "bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-900/10 dark:to-background border-0 shadow-none"
                 : "bg-card border-border shadow-none"}`}
     >
         <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-none border-0
@@ -111,10 +251,10 @@ const LeaderboardItem = memo(({
             </div>
         </div>
 
-        <div className="flex items-center justify-center gap-1 mt-4 w-full bg-muted/30 rounded-full py-1 border-0">
+        {/* Reaction row — no wrapper pill, each button owns its state */}
+        <div className="flex items-center justify-center gap-1 mt-4 w-full border-0">
             <ReactionButton
                 type="like"
-                emoji="👍"
                 count={reactions[student.user_id]?.like || 0}
                 isActive={myReactions[student.user_id]?.includes("like") || false}
                 onClick={(e) => {
@@ -125,7 +265,6 @@ const LeaderboardItem = memo(({
             />
             <ReactionButton
                 type="fire"
-                emoji="🔥"
                 count={reactions[student.user_id]?.fire || 0}
                 isActive={myReactions[student.user_id]?.includes("fire") || false}
                 onClick={(e) => {
@@ -136,7 +275,6 @@ const LeaderboardItem = memo(({
             />
             <ReactionButton
                 type="clap"
-                emoji="👏"
                 count={reactions[student.user_id]?.clap || 0}
                 isActive={myReactions[student.user_id]?.includes("clap") || false}
                 onClick={(e) => {
@@ -151,42 +289,15 @@ const LeaderboardItem = memo(({
 
 LeaderboardItem.displayName = "LeaderboardItem";
 
-// Memoized reaction button for reduced re-renders
-const ReactionButton = memo(({
-    type,
-    emoji,
-    count,
-    isActive,
-    onClick
-}: {
-    type: string;
-    emoji: string;
-    count: number;
-    isActive: boolean;
-    onClick: (e: React.MouseEvent) => void;
-}) => (
-    <motion.button
-        whileTap={{ scale: 1.3 }}
-        onClick={onClick}
-        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full transition-all duration-150
-            ${isActive ? "bg-primary/20 ring-1 ring-primary/40" : "hover:bg-background"}`}
-    >
-        <span className="text-xs">{emoji}</span>
-        <span className={`text-[10px] font-bold ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-            {count}
-        </span>
-    </motion.button>
-));
-
-ReactionButton.displayName = "ReactionButton";
-
-// Memoized question option for reduced re-renders
+// ============================================================
+// QUESTION OPTION
+// ============================================================
 const QuestionOption = memo(({
     letter,
     text,
     isSelected,
     isDisabled,
-    onClick
+    onClick,
 }: {
     letter: string;
     text: string;
@@ -211,7 +322,9 @@ const QuestionOption = memo(({
 
 QuestionOption.displayName = "QuestionOption";
 
-// Time Warning Component
+// ============================================================
+// TIME WARNING
+// ============================================================
 const TimeWarning = memo(({ timeLeft, onDismiss }: { timeLeft: number; onDismiss: () => void }) => {
     const [show, setShow] = useState(true);
 
@@ -273,6 +386,9 @@ const TimeWarning = memo(({ timeLeft, onDismiss }: { timeLeft: number; onDismiss
 
 TimeWarning.displayName = "TimeWarning";
 
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 export const DailyTriviaCard = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -332,6 +448,9 @@ export const DailyTriviaCard = () => {
         return "";
     }, [scorePercentage]);
 
+    // ============================================
+    // Auth bootstrap — MUST run before reactions fetch
+    // ============================================
     useEffect(() => {
         isMounted.current = true;
         supabase.auth.getSession().then(({ data }) => {
@@ -355,7 +474,7 @@ export const DailyTriviaCard = () => {
     }, []);
 
     // ============================================
-    // FIXED: Load questions with "Always Show Cache First" strategy
+    // Load questions — cache first, network second
     // ============================================
     useEffect(() => {
         async function loadQuestions() {
@@ -364,7 +483,6 @@ export const DailyTriviaCard = () => {
 
             const cacheKey = `trivia_questions_${today}`;
 
-            // 1. Cache-first: if today's questions are cached → USE THEM, skip network
             const stored = localStorage.getItem(cacheKey);
             if (stored) {
                 try {
@@ -375,14 +493,13 @@ export const DailyTriviaCard = () => {
                             setLoading(false);
                         }
                         isFetchingQuestions.current = false;
-                        return; // ← KEY: no network call when cache exists
+                        return;
                     }
                 } catch {
                     localStorage.removeItem(cacheKey);
                 }
             }
 
-            // 2. No cache for today → fetch the deterministic daily batch
             if (isMounted.current) setLoading(true);
 
             try {
@@ -395,11 +512,7 @@ export const DailyTriviaCard = () => {
                     setQuestions(data);
                     localStorage.setItem(
                         cacheKey,
-                        JSON.stringify({
-                            data,
-                            timestamp: Date.now(),
-                            date: today,
-                        })
+                        JSON.stringify({ data, timestamp: Date.now(), date: today })
                     );
                 } else if (isMounted.current) {
                     setQuestions([]);
@@ -414,8 +527,9 @@ export const DailyTriviaCard = () => {
         }
         loadQuestions();
     }, [today]);
+
     // ============================================
-    // FIXED: Fetch top students with "Always Show Cache First" strategy
+    // Fetch leaderboard (students) — cache first, network second
     // ============================================
     const fetchTop = useCallback(async () => {
         if (!isMounted.current || isFetchingTop.current) return;
@@ -424,7 +538,6 @@ export const DailyTriviaCard = () => {
         const stored = localStorage.getItem(cacheKey);
         let hasCache = false;
 
-        // 1. ALWAYS show cached leaderboard immediately (if available)
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
@@ -433,130 +546,131 @@ export const DailyTriviaCard = () => {
                     if (isMounted.current) {
                         setTopStudents(parsed.data);
                         setTopLoading(false);
-                        console.log("✅ Leaderboard loaded from cache");
                     }
                 }
-            } catch (e) {
+            } catch {
                 localStorage.removeItem(cacheKey);
             }
         }
 
-        // 2. ALWAYS try to fetch fresh data in background
-        if (!isFetchingTop.current) {
-            isFetchingTop.current = true;
-            try {
-                const { data: results } = await supabase
-                    .from("daily_trivia_results")
-                    .select("user_id, score, time_used, created_at")
-                    .eq("attempt_date", today)
-                    .order("score", { ascending: false })
-                    .limit(10);
-
-                if (results && results.length > 0) {
-                    const ids = results.map((r) => r.user_id);
-                    const { data: profiles } = await supabase
-                        .from("profiles")
-                        .select("user_id, name, avatar_url, institution")
-                        .in("user_id", ids);
-
-                    const profileMap = new Map();
-                    profiles?.forEach(p => profileMap.set(p.user_id, p));
-
-                    const leaderboardData = results.map((r) => {
-                        const profile = profileMap.get(r.user_id);
-                        return {
-                            user_id: r.user_id,
-                            score: r.score,
-                            name: profile?.name || "Student",
-                            avatar_url: profile?.avatar_url || null,
-                            institution: profile?.institution || null,
-                            completedAt: r.created_at,
-                            timeUsed: r.time_used,
-                        };
-                    });
-
-                    if (isMounted.current) {
-                        setTopStudents(leaderboardData);
-                        // Cache with timestamp
-                        localStorage.setItem(cacheKey, JSON.stringify({
-                            data: leaderboardData,
-                            timestamp: Date.now()
-                        }));
-                        console.log("✅ Fresh leaderboard fetched and cached");
-                    }
-                } else if (!hasCache) {
-                    // If no results AND no cache, show empty state
-                    if (isMounted.current) {
-                        setTopStudents([]);
-                    }
-                }
-            } catch (err) {
-                console.error("❌ Leaderboard fetch failed:", err);
-                // If we have cache, keep showing it
-                if (!hasCache && isMounted.current) {
-                    setTopStudents([]);
-                }
-            } finally {
-                isFetchingTop.current = false;
-                if (isMounted.current) {
-                    setTopLoading(false);
-                }
-            }
-        }
-
-        // 3. ALWAYS FETCH REACTIONS (non-critical, try but don't fail)
+        isFetchingTop.current = true;
         try {
-            const { data: reactionData } = await supabase
+            const { data: results } = await supabase
+                .from("daily_trivia_results")
+                .select("user_id, score, time_used, created_at")
+                .eq("attempt_date", today)
+                .order("score", { ascending: false })
+                .limit(10);
+
+            if (results && results.length > 0) {
+                const ids = results.map((r) => r.user_id);
+                const { data: profiles } = await supabase
+                    .from("profiles")
+                    .select("user_id, name, avatar_url, institution")
+                    .in("user_id", ids);
+
+                const profileMap = new Map();
+                profiles?.forEach(p => profileMap.set(p.user_id, p));
+
+                const leaderboardData = results.map((r) => {
+                    const profile = profileMap.get(r.user_id);
+                    return {
+                        user_id: r.user_id,
+                        score: r.score,
+                        name: profile?.name || "Student",
+                        avatar_url: profile?.avatar_url || null,
+                        institution: profile?.institution || null,
+                        completedAt: r.created_at,
+                        timeUsed: r.time_used,
+                    };
+                });
+
+                if (isMounted.current) {
+                    setTopStudents(leaderboardData);
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data: leaderboardData,
+                        timestamp: Date.now()
+                    }));
+                }
+            } else if (!hasCache && isMounted.current) {
+                setTopStudents([]);
+            }
+        } catch (err) {
+            console.error("❌ Leaderboard fetch failed:", err);
+            if (!hasCache && isMounted.current) setTopStudents([]);
+        } finally {
+            isFetchingTop.current = false;
+            if (isMounted.current) setTopLoading(false);
+        }
+    }, [today]);
+
+    // ============================================
+    // Fetch reactions — separate, runs when selfUserId resolves
+    // ============================================
+    const fetchReactions = useCallback(async () => {
+        if (!isMounted.current) return;
+        if (!selfUserId) return; // can't know which are "mine" until auth resolves
+
+        try {
+            const { data: reactionData, error } = await supabase
                 .from("trivia_reactions")
                 .select("reactor_id, target_user_id, reaction")
                 .eq("attempt_date", today);
 
-            if (reactionData && isMounted.current) {
-                const counts: Record<string, { like: number; fire: number; clap: number }> = {};
-                const mine: Record<string, string[]> = {};
-
-                reactionData.forEach((r) => {
-                    const targetId = r.target_user_id;
-                    const type = r.reaction as "like" | "fire" | "clap";
-
-                    if (!counts[targetId]) {
-                        counts[targetId] = { like: 0, fire: 0, clap: 0 };
-                    }
-                    counts[targetId][type] = (counts[targetId][type] || 0) + 1;
-
-                    if (selfUserId && r.reactor_id === selfUserId) {
-                        if (!mine[targetId]) mine[targetId] = [];
-                        if (!mine[targetId].includes(type)) mine[targetId].push(type);
-                    }
-                });
-
-                setReactions(counts);
-                setMyReactions(mine);
+            if (error) {
+                console.error("❌ Reactions query error:", error);
+                return;
             }
+
+            if (!isMounted.current) return;
+
+            const counts: Record<string, { like: number; fire: number; clap: number }> = {};
+            const mine: Record<string, string[]> = {};
+
+            (reactionData ?? []).forEach((r) => {
+                const targetId = r.target_user_id;
+                const type = r.reaction as ReactionType;
+
+                if (!counts[targetId]) counts[targetId] = { like: 0, fire: 0, clap: 0 };
+                counts[targetId][type] = (counts[targetId][type] || 0) + 1;
+
+                if (r.reactor_id === selfUserId) {
+                    if (!mine[targetId]) mine[targetId] = [];
+                    if (!mine[targetId].includes(type)) mine[targetId].push(type);
+                }
+            });
+
+            setReactions(counts);
+            setMyReactions(mine);
         } catch (err) {
             console.error("❌ Reactions fetch failed (non-critical):", err);
-            // Don't show error - reactions are non-critical
         }
-
-        if (isMounted.current) setTopLoading(false);
     }, [today, selfUserId]);
 
+    // Leaderboard fetch on mount + on focus
+    useEffect(() => {
+        fetchTop();
+        const handleFocus = () => fetchTop();
+        window.addEventListener("focus", handleFocus);
+        return () => window.removeEventListener("focus", handleFocus);
+    }, [fetchTop]);
+
+    // Reactions fetch — re-runs when selfUserId resolves OR date changes
+    useEffect(() => {
+        fetchReactions();
+    }, [fetchReactions]);
+
     // ============================================
-    // FIXED: Retry loading when connection returns
+    // Retry loading when connection returns
     // ============================================
     useEffect(() => {
         const handleOnline = () => {
             console.log("🌐 Connection restored - retrying data fetch");
-
-            // Retry leaderboard
             fetchTop();
+            fetchReactions();
 
-            // Questions: only refetch if we truly have none.
-            // The loadQuestions effect already runs on mount + when `today` changes.
-            // If we came back online with an empty list, re-trigger it manually:
             if (questions.length === 0 && !isFetchingQuestions.current) {
                 setLoading(true);
-                // Force a fresh run of the loader without nuking cache:
                 (async () => {
                     try {
                         const { data, error } = await supabase.rpc("get_daily_trivia_questions", {
@@ -579,15 +693,14 @@ export const DailyTriviaCard = () => {
 
         window.addEventListener('online', handleOnline);
         return () => window.removeEventListener('online', handleOnline);
-    }, [questions.length, fetchTop, today]);
+    }, [questions.length, fetchTop, fetchReactions, today]);
 
+    // Cache janitor — removes yesterday's trivia keys
     useEffect(() => {
-        // Cache Janitor: Cleans up old trivia data from previous days
         const cleanOldCache = () => {
             const todayKey = new Date().toISOString().slice(0, 10);
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                // If the key is a trivia key but NOT today's key, delete it
                 if (key?.startsWith('trivia_') && !key.includes(todayKey)) {
                     localStorage.removeItem(key);
                 }
@@ -596,19 +709,9 @@ export const DailyTriviaCard = () => {
         cleanOldCache();
     }, []);
 
-    useEffect(() => {
-        fetchTop();
-
-        // We only want to refresh on focus if the user has been away for a long time
-        const handleFocus = () => {
-            fetchTop(); // Our new fetchTop handles the timing check internally now!
-        };
-
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
-    }, [fetchTop]);
-
-    // Optimized timer with cleanup and auto-submit logic
+    // ============================================
+    // Timer + auto-submit
+    // ============================================
     useEffect(() => {
         if (!started || completed) {
             if (timerIntervalRef.current) {
@@ -626,23 +729,19 @@ export const DailyTriviaCard = () => {
             setTimer((t) => {
                 const newTime = t - 1;
 
-                // Show warning at 60 seconds
                 if (newTime === 60 && !timeWarningShownRef.current) {
                     timeWarningShownRef.current = true;
                     setShowTimeWarning(true);
                     playSound("notification");
                 }
 
-                // Auto-submit at 10 seconds
                 if (newTime === 10) {
                     if (autoSubmitTimeoutRef.current) {
                         clearTimeout(autoSubmitTimeoutRef.current);
                     }
-                    // Show countdown
                     setAutoSubmitCountdown(10);
                     autoSubmitTimeoutRef.current = setTimeout(() => {
                         if (isMounted.current && !completed) {
-                            // Show final warning toast
                             toast({
                                 title: "⏰ Time's Up!",
                                 description: "Auto-submitting your answers. Work on your speed to get better and come back tomorrow!",
@@ -653,7 +752,6 @@ export const DailyTriviaCard = () => {
                     }, 10000);
                 }
 
-                // Update countdown display
                 if (newTime < 10 && newTime > 0 && autoSubmitCountdown !== null) {
                     setAutoSubmitCountdown(newTime);
                 }
@@ -689,18 +787,20 @@ export const DailyTriviaCard = () => {
         window.open(`https://wa.me/?text=${message}`, "_blank");
     }, []);
 
-    const reactionBurst = useCallback((emoji: "like" | "fire" | "clap") => {
+    // ============================================
+    // Confetti burst per reaction type
+    // ============================================
+    const reactionBurst = useCallback((emoji: ReactionType) => {
         playSound("ui-tap");
 
         const config = {
-            like: { emoji: "👍", color: "#3b82f6" },
-            fire: { emoji: "🔥", color: "#f97316" },
-            clap: { emoji: "👏", color: "#22c55e" },
+            like: { color: "#3b82f6" },
+            fire: { color: "#f97316" },
+            clap: { color: "#22c55e" },
         };
 
         const selected = config[emoji];
 
-        // Optimized confetti with requestAnimationFrame
         requestAnimationFrame(() => {
             confetti({
                 particleCount: 28,
@@ -730,14 +830,15 @@ export const DailyTriviaCard = () => {
         }, 120);
     }, []);
 
-    // Optimized: Debounced reaction toggle
+    // ============================================
+    // Toggle reaction — optimistic + persistent
+    // ============================================
     const toggleReaction = useCallback(async (
         targetUserId: string,
-        reaction: "like" | "fire" | "clap"
+        reaction: ReactionType
     ) => {
         if (!selfUserId) return;
 
-        // Rate limiting
         const now = Date.now();
         if (now - lastReactionTime.current < REACTION_DEBOUNCE) return;
         lastReactionTime.current = now;
@@ -745,7 +846,7 @@ export const DailyTriviaCard = () => {
         const todayString = today;
         const alreadyReacted = myReactions[targetUserId]?.includes(reaction) || false;
 
-        // Optimistic update with batched state
+        // Optimistic update
         setMyReactions((prev) => {
             const current = prev[targetUserId] || [];
             if (alreadyReacted) {
@@ -768,15 +869,16 @@ export const DailyTriviaCard = () => {
 
         try {
             if (alreadyReacted) {
-                await supabase
+                const { error } = await supabase
                     .from("trivia_reactions")
                     .delete()
                     .eq("reactor_id", selfUserId)
                     .eq("target_user_id", targetUserId)
                     .eq("reaction", reaction)
                     .eq("attempt_date", todayString);
+                if (error) throw error;
             } else {
-                await supabase
+                const { error } = await supabase
                     .from("trivia_reactions")
                     .upsert({
                         reactor_id: selfUserId,
@@ -784,12 +886,17 @@ export const DailyTriviaCard = () => {
                         attempt_date: todayString,
                         reaction,
                     }, {
-                        onConflict: ["reactor_id", "target_user_id", "attempt_date", "reaction"],
+                        // ✅ Matches the 4-column unique constraint.
+                        // If your DB only has a 3-column unique (one reaction
+                        // per target per day), change this to:
+                        //   onConflict: "reactor_id,target_user_id,attempt_date"
+                        onConflict: "reactor_id,target_user_id,attempt_date,reaction",
                     });
+                if (error) throw error;
             }
         } catch (error) {
-            // Rollback on error
             console.error("Reaction failed:", error);
+            // Roll back optimistic update
             setMyReactions((prev) => {
                 const current = prev[targetUserId] || [];
                 if (alreadyReacted) {
@@ -813,7 +920,6 @@ export const DailyTriviaCard = () => {
 
     const answerQuestion = useCallback((questionId: string, letter: string) => {
         if (!started || completed) return;
-
         setAnswers(prev => ({ ...prev, [questionId]: letter }));
 
         if (currentIndex === questions.length - 1) {
@@ -833,7 +939,6 @@ export const DailyTriviaCard = () => {
 
         const timeUsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
 
-        // 1. Save results to the database
         const { error } = await supabase
             .from("daily_trivia_results")
             .upsert({
@@ -846,8 +951,6 @@ export const DailyTriviaCard = () => {
                 attempt_date: today,
             }, { onConflict: ["user_id", "attempt_date"] });
 
-        // 2. SILENT REFRESH: Immediately fetch the new leaderboard
-        // without reloading the browser window.
         if (!error) {
             fetchTop();
         }
@@ -863,7 +966,6 @@ export const DailyTriviaCard = () => {
 
             playSound("trivia-finish", false);
 
-            // Celebration confetti (unchanged)
             setTimeout(() => {
                 const duration = 3000;
                 const animationEnd = Date.now() + duration;
@@ -885,7 +987,7 @@ export const DailyTriviaCard = () => {
                 }, 100);
             }, 100);
         }
-    }, [selfUserId, questions, answers, QUIZ_ID, today, fetchTop]); // Added fetchTop to dependencies
+    }, [selfUserId, questions, answers, QUIZ_ID, today, fetchTop]);
 
     const startTrivia = useCallback(() => {
         timeWarningShownRef.current = false;
@@ -910,7 +1012,6 @@ export const DailyTriviaCard = () => {
             <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/30 shadow-md mt-0">
                 <CardHeader className="bg-blue-50 dark:bg-muted/30 pb-3">
                     {started ? (
-                        /* ---------- IN-GAME STATE: timer + progress ---------- */
                         <div className="flex items-center justify-between flex-wrap gap-2">
                             <span className="font-mono flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
                                 <Timer className="w-4 h-4 text-blue-600" />
@@ -926,7 +1027,6 @@ export const DailyTriviaCard = () => {
                             </span>
                         </div>
                     ) : completed ? (
-                        /* ---------- POST-GAME STATE: minimal ---------- */
                         <div className="flex items-center gap-2">
                             <Target className="w-4 h-4 text-emerald-600" />
                             <CardTitle className="text-sm font-bold text-slate-700 dark:text-slate-200">
@@ -934,13 +1034,9 @@ export const DailyTriviaCard = () => {
                             </CardTitle>
                         </div>
                     ) : (
-                        /* ---------- PRE-GAME STATE: the marketing line ---------- */
                         <div className="flex items-start justify-between gap-3 flex-wrap">
                             <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 flex-1 min-w-0">
-
-                                <span className="align-middle">
-                                    Ready for today's MindRush?
-                                </span>
+                                <span className="align-middle">Ready for today's MindRush?</span>
                             </p>
                             <Badge variant="secondary" className="flex-shrink-0 h-6">
                                 {questions.length} Questions
@@ -948,6 +1044,7 @@ export const DailyTriviaCard = () => {
                         </div>
                     )}
                 </CardHeader>
+
                 <CardContent className="p-1">
                     {loading ? (
                         <div className="flex justify-center items-center py-12">
@@ -998,7 +1095,7 @@ export const DailyTriviaCard = () => {
                         </div>
                     ) : null}
 
-                    {/* Leaderboard Section with optimized scrolling */}
+                    {/* Leaderboard */}
                     <div className="mt-10 mb-6 px-1">
                         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <div>
@@ -1095,7 +1192,7 @@ export const DailyTriviaCard = () => {
                                         <div className="flex justify-center mb-1">
                                             <Target className="w-5 h-5 text-blue-500" />
                                         </div>
-                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium  tracking-wider">Score</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wider">Score</p>
                                         <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
                                             {savedScore.correct_answers}/{savedScore.total_questions}
                                         </p>
@@ -1105,7 +1202,7 @@ export const DailyTriviaCard = () => {
                                         <div className="flex justify-center mb-1">
                                             <Timer className="w-5 h-5 text-indigo-500" />
                                         </div>
-                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium  tracking-wider">Time</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wider">Time</p>
                                         <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
                                             {timeUsedToday !== null ? `${timeUsedToday}s` : "0s"}
                                         </p>
@@ -1172,7 +1269,6 @@ export const DailyTriviaCard = () => {
                                 <div className="mt-6 sm:mt-8 relative overflow-hidden rounded-2xl bg-slate-900 p-4 sm:p-6 text-white shadow-none group transition-all hover:scale-[1.01]">
                                     <div className="relative z-10">
                                         <div className="flex items-center gap-2 mb-3">
-
                                             <span className="inline-block px-3 py-1 rounded-xl bg-blue-600 text-[10px] font-bold tracking-widest">
                                                 Medrae Pro Advantage
                                             </span>

@@ -2,9 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Headphones, Podcast, Sparkles, Clock, Calendar } from 'lucide-react';
+import { Play, Headphones, Podcast, Sparkles, Clock, Calendar, ThumbsUp, Heart } from 'lucide-react';
 import { useMusicPlayer } from './MusicPlayerProvider';
 import type { Track } from './MusicPlayerProvider';
+import { useEpisodeInteractions } from "@/hooks/useEpisodeInteractions";
 
 // ── helpers ─────────────────────────────────────────────
 function fmtTime(seconds?: number) {
@@ -48,6 +49,9 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
     const { tracks, setCurrentIndex, togglePlay, refreshEpisodes } = useMusicPlayer();
     const [refreshed, setRefreshed] = useState(false);
 
+    // ✅ Podcast engagement hook — same one used in the player
+    const { hydrate: hydrateInteractions, get: getInteraction } = useEpisodeInteractions();
+
     // Ensure we have episodes even if the provider hasn't fetched yet
     useEffect(() => {
         if (!refreshed && tracks.length === 0) {
@@ -55,13 +59,22 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
         }
     }, [tracks.length, refreshed, refreshEpisodes]);
 
+    // ✅ Hydrate reaction + play counts for the tracks on this page
+    useEffect(() => {
+        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const ids = tracks
+            .map((t) => t.id)
+            .filter((id): id is string => !!id && UUID_RE.test(id));
+        if (ids.length === 0) return;
+        hydrateInteractions(ids);
+    }, [tracks, hydrateInteractions]);
+
     // Featured = deterministic per day; Top = deterministic shuffle of everything else
     const { featured, topPicks } = useMemo(() => {
         if (!tracks.length) return { featured: null as Track | null, topPicks: [] as Track[] };
         const seed = daySeed();
         const shuffled = seededShuffle(tracks, seed);
         const feat = shuffled[0] ?? null;
-        // Top 10 excluding the featured episode
         const top = shuffled.slice(1, 8);
         return { featured: feat, topPicks: top };
     }, [tracks]);
@@ -78,6 +91,8 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
             onOpenPlayer?.();
         }
     };
+
+    const featuredInteraction = featured.id ? getInteraction("episode", featured.id) : null;
 
     return (
         <section className="w-full max-w-5xl mx-auto">
@@ -167,13 +182,43 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                             )}
                         </div>
 
+                        {/* ✅ Engagement strip — plays / likes / loves */}
+                        {featuredInteraction && (
+                            (featuredInteraction.playCount > 0 ||
+                                featuredInteraction.counts.like > 0 ||
+                                featuredInteraction.counts.love > 0) && (
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
+                                    {featuredInteraction.playCount > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                            <Play size={9} fill="currentColor" />
+                                            {featuredInteraction.playCount >= 1000
+                                                ? `${(featuredInteraction.playCount / 1000).toFixed(1)}K`
+                                                : featuredInteraction.playCount}{" "}
+                                            plays
+                                        </span>
+                                    )}
+                                    {featuredInteraction.counts.like > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                            <ThumbsUp size={9} />
+                                            {featuredInteraction.counts.like}
+                                        </span>
+                                    )}
+                                    {featuredInteraction.counts.love > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                                            <Heart size={9} fill="currentColor" />
+                                            {featuredInteraction.counts.love}
+                                        </span>
+                                    )}
+                                </div>
+                            )
+                        )}
+
                         {/* play CTA row */}
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
                             <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-none">
                                 <Play size={12} fill="white" className="ml-0.5" />
                                 Play now
                             </span>
-                            {/* Apple Podcasts attribution — "premium" cue */}
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gh-l-muted dark:text-gh-muted">
                                 <ApplePodcastsIcon className="w-3.5 h-3.5" />
                                 via Apple Podcasts
@@ -183,7 +228,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                 </div>
             </motion.button>
 
-            {/* ── TOP 10 RANDOM PICKS ── */}
+            {/* ── TOP 8 RANDOM PICKS ── */}
             <div className="mb-2 px-1 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <h3 className="text-xs font-black tracking-tight text-gh-l-text dark:text-gh-text ">
@@ -196,7 +241,13 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 px-1">
                 {topPicks.map((t, i) => (
-                    <TopPickCard key={t.id || i} track={t} index={i} onClick={() => handlePlay(t)} />
+                    <TopPickCard
+                        key={t.id || i}
+                        track={t}
+                        index={i}
+                        onClick={() => handlePlay(t)}
+                        interaction={t.id ? getInteraction("episode", t.id) : undefined}
+                    />
                 ))}
                 <ApplePodcastsTile onClick={() => window.__studifyOpen?.("episodes")} />
             </div>
@@ -205,7 +256,30 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
 };
 
 // ── Top Pick Card ──────────────────────────────────────
-function TopPickCard({ track, index, onClick }: { track: Track; index: number; onClick: () => void }) {
+interface InteractionShape {
+    liked: boolean;
+    loved: boolean;
+    saved: boolean;
+    counts: { like: number; love: number; save: number };
+    playCount: number;
+}
+
+function TopPickCard({
+    track,
+    index,
+    onClick,
+    interaction,
+}: {
+    track: Track;
+    index: number;
+    onClick: () => void;
+    interaction?: InteractionShape;
+}) {
+    const hasPlays = (interaction?.playCount ?? 0) > 0;
+    const hasLikes = (interaction?.counts.like ?? 0) > 0;
+    const hasLoves = (interaction?.counts.love ?? 0) > 0;
+    const showStrip = hasPlays || hasLikes || hasLoves;
+
     return (
         <motion.button
             onClick={onClick}
@@ -227,7 +301,6 @@ function TopPickCard({ track, index, onClick }: { track: Track; index: number; o
                         <Headphones size={40} className="text-gh-l-muted dark:text-gh-muted" />
                     </div>
                 )}
-                {/* play overlay on hover */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-blue-600 shadow-none flex items-center justify-center">
                         <Play size={20} fill="white" className="text-white ml-0.5" />
@@ -244,6 +317,32 @@ function TopPickCard({ track, index, onClick }: { track: Track; index: number; o
                     {track.showTitle ? `${track.showTitle} · ` : ''}
                     {track.duration ? fmtTime(track.duration) : '—'}
                 </p>
+
+                {/* ✅ Engagement strip */}
+                {showStrip && (
+                    <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[9px] font-bold">
+                        {hasPlays && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                <Play size={8} fill="currentColor" />
+                                {interaction!.playCount >= 1000
+                                    ? `${(interaction!.playCount / 1000).toFixed(1)}K`
+                                    : interaction!.playCount}
+                            </span>
+                        )}
+                        {hasLikes && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                <ThumbsUp size={8} />
+                                {interaction!.counts.like}
+                            </span>
+                        )}
+                        {hasLoves && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                                <Heart size={8} fill="currentColor" />
+                                {interaction!.counts.love}
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* ── Full-width counter strip at the bottom ── */}
@@ -291,15 +390,14 @@ function DailyDoseSkeleton() {
 }
 
 // ── Apple Podcasts SVG icon (tiny, official-looking) ──
-// ── Apple logo (bitten apple) ──────────────────────────
 function ApplePodcastsIcon({ className = '' }: { className?: string }) {
     return (
         <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-            {/* Apple's bitten-apple silhouette */}
             <path d="M17.05 12.54c-.03-2.8 2.29-4.14 2.4-4.2-1.31-1.91-3.35-2.17-4.07-2.2-1.73-.18-3.38 1.02-4.25 1.02-.88 0-2.23-.99-3.66-.97-1.88.03-3.62 1.09-4.59 2.78-1.96 3.4-.5 8.42 1.41 11.18.93 1.35 2.05 2.86 3.51 2.8 1.41-.05 1.94-.91 3.65-.91 1.7 0 2.18.91 3.66.88 1.5-.02 2.48-1.37 3.4-2.72 1.07-1.55 1.5-3.04 1.53-3.12-.03-.02-2.94-1.13-2.97-4.5zM14.29 4.51c.77-.93 1.29-2.23 1.15-3.51-1.11.04-2.44.74-3.23 1.66-.71.82-1.32 2.14-1.15 3.39 1.23.1 2.49-.62 3.23-1.54z" />
         </svg>
     );
 }
+
 // ── 11th card: Apple Podcasts tile ─────────────────────
 function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
     return (
@@ -310,11 +408,8 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
             className="group w-full text-left rounded-xl overflow-hidden shadow-none hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow bg-gh-l-card dark:bg-gh-card font-sans antialiased"
         >
-            {/* Top block — purple gradient with Apple logo, same height as episode artwork */}
             <div className="relative w-full aspect-square bg-gradient-to-br from-[#B150F2] to-[#8927EB] flex items-center justify-center">
-                {/* soft radial highlight for depth */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,255,255,0.25),transparent_60%)]" />
-
                 <ApplePodcastsIcon className="w-20 h-20 md:w-28 md:h-28 text-white relative z-10 drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]" />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-white shadow-none flex items-center justify-center">
@@ -323,7 +418,6 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
                 </div>
             </div>
 
-            {/* Meta row — matches episode cards */}
             <div className="p-3">
                 <p className="text-[13px] font-bold truncate text-gh-l-text dark:text-gh-text">
                     Browse library
@@ -333,7 +427,6 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
                 </p>
             </div>
 
-            {/* Bottom strip — matches episode cards */}
             <div className="w-full flex items-center justify-between px-3 py-2 bg-gh-l-hover dark:bg-gh-hover">
                 <span className="text-[10px] font-black  tracking-widest text-gh-l-muted dark:text-gh-muted">
                     Apple Podcasts
@@ -345,4 +438,5 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
         </motion.button>
     );
 }
+
 export default DailyDose;
