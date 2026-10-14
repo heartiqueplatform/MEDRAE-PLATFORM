@@ -189,11 +189,46 @@ const IconProgress = ({ active }: { active: boolean }) => (
 );
 
 // ── MENU (three lines, weightier) ──────────────────────────
+// ── MENU (three lines, weightier) ──────────────────────────
 const IconMenu = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4.5 7.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
         <path d="M4.5 13h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
         <path d="M4.5 18.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
+    </svg>
+);
+
+// ── HEADPHONES (podcasts / listen) ─────────────────────────
+const IconHeadphones = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M5 15.5v-2.5a8 8 0 0 1 16 0v2.5"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+        />
+        <rect
+            x="3.5"
+            y="14"
+            width="5"
+            height="7.5"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            fill={active ? "currentColor" : "none"}
+        />
+        <rect
+            x="17.5"
+            y="14"
+            width="5"
+            height="7.5"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            fill={active ? "currentColor" : "none"}
+        />
     </svg>
 );
 
@@ -384,7 +419,7 @@ const NavItem = memo(({
 
             {/* ── Label ── */}
             <span
-                className={`leading-none mt-1.5 transition-all duration-200 z-10 text-[10.5px] tracking-tight ${isActive ? "font-semibold" : "font-medium"
+                className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-semibold" : "font-medium"
                     } ${labelColor}`}
             >
                 {label}
@@ -518,6 +553,25 @@ export function Footer() {
         superFastTap("success");
     }, []);
 
+    // ✅ Podcasts — opens the MusicPlayer fullscreen overlay.
+    //    Uses the global opener published by MusicPlayer. No route change,
+    //    so audio keeps playing and the tab bar stays where it is.
+    const handleOpenPodcasts = useCallback((e: React.PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        superFastTap("success");
+
+        const opener = (window as any).__studifyOpen;
+        if (typeof opener === "function") {
+            opener("episodes");
+        } else {
+            requestAnimationFrame(() => {
+                const retry = (window as any).__studifyOpen;
+                if (typeof retry === "function") retry("episodes");
+            });
+        }
+    }, []);
+
     useEffect(() => {
         if (prefetchDone.current) return;
         const prefetchDrawer = () => {
@@ -625,7 +679,6 @@ export function Footer() {
         (theme === 'dark'
             ? 'before:via-white/8 before:to-transparent '
             : 'before:via-black/6 before:to-transparent');
-
     return (
         <>
             <div
@@ -683,7 +736,23 @@ export function Footer() {
                     </>
                 )}
 
-                <NavItem icon={IconMenu} label="Menu" isActive={isDrawerOpen} onPress={handleMenuPress} isDark={theme === 'dark'} />
+                {/* ✅ Listen — visible for every role */}
+                <NavItem
+                    icon={IconHeadphones}
+                    label="Listen"
+                    isActive={false}
+                    onPress={handleOpenPodcasts}
+                    isDark={theme === 'dark'}
+                />
+
+                {/* ✅ Menu — one only */}
+                <NavItem
+                    icon={IconMenu}
+                    label="Menu"
+                    isActive={isDrawerOpen}
+                    onPress={handleMenuPress}
+                    isDark={theme === 'dark'}
+                />
             </div>
 
             <Suspense fallback={null}>

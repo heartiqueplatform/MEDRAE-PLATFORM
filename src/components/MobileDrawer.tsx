@@ -38,6 +38,8 @@ import {
     BookOpenCheck,
     MessageCircle,
     Sparkles,
+    Headphones,
+    ShoppingBag,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useProfileData } from "@/hooks/useProfileData";
@@ -267,9 +269,7 @@ const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     </svg>
 );
 
-const NursMartLogo = ({ className = "h-5 w-5" }: { className?: string }) => (
-    <img src="/Nurvia_logo.png" alt="" className={`${className} object-contain`} />
-);
+
 
 /* ============================================================
    MAIN
@@ -488,11 +488,36 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, [user?.id]);
 
     const handleNavigate = useCallback((url: string) => {
+        // ✅ Special case: Podcasts opens the MusicPlayer fullscreen overlay.
+        //    The player instance lives in DashboardLayout; it publishes a
+        //    window.__studifyOpen() helper we can call from anywhere.
+        if (url === "__open_music_player__") {
+            tapFeedback("success");
+            setIsOpen(false);
+
+            // Give the drawer's exit animation a beat to start before
+            // the player takes over. Otherwise both overlays mount on the
+            // same frame and the phone janks.
+            setTimeout(() => {
+                const opener = (window as any).__studifyOpen;
+                if (typeof opener === "function") {
+                    opener("episodes");   // opens on the Episodes tab
+                } else {
+                    // Fallback: navigate to the challenge page or log it.
+                    // In practice __studifyOpen is always mounted by the
+                    // time the drawer is reachable.
+                    console.warn("[MobileDrawer] __studifyOpen not registered yet");
+                }
+            }, 240);   // matches the drawer exit animation (0.26s)
+
+            return;
+        }
+
+        // Default behavior
         navigate(url);
         setIsOpen(false);
         requestAnimationFrame(() => tapFeedback("light"));
     }, [navigate, tapFeedback, setIsOpen]);
-
     const handleLogout = useCallback(async () => {
         setIsLoggingOut(true);
         tapFeedback();
@@ -543,25 +568,48 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             { label: "NCK Exam Prep", items: nckExamPrepItems },
         ];
 
-        // ---------- INSTITUTIONAL EXAMS ----------
-        // Student → student pages.
-        // Tutor   → tutor pages.
-        // Staff   → none for now (CPD section will replace this later).
-        if (userRole === "student") {
-            sectionsArray.push({
-                label: "Institutional Exams",
-                items: [
-                    { title: "Candidate Exams", url: "/exam/candidate", icon: GraduationCap, iconTone: "learning" as IconTone },
-                    { title: "Exam Results", url: "/exam/results", icon: BarChart3, iconTone: "progress" as IconTone },
-                ],
-            });
-        } else if (userRole === "tutor") {
+        // ---------- TUTOR TOOLS ----------
+        // Tutor-only. Staff and students never see this block.
+        if (userRole === "tutor") {
             sectionsArray.push({
                 label: "Tutor Tools",
                 items: [
                     { title: "Tutor Exams", url: "/tutor/exams", icon: GraduationCap, iconTone: "learning" as IconTone },
                     { title: "Exam Results", url: "/tutor/exams/results", icon: BarChart3, iconTone: "progress" as IconTone },
                     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
+                ],
+            });
+        }
+
+        // ---------- MEDIA / LISTEN ----------
+        // Every role gets an audio section. Students see "Media",
+        // tutors & staff see "Listen" (Podcasts first, then MedTube).
+        if (isStudent) {
+            sectionsArray.push({
+                label: "Media",
+                items: [
+                    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
+                    {
+                        title: "Podcasts",
+                        url: "__open_music_player__",
+                        icon: Headphones,
+                        iconTone: "media" as IconTone,
+                        action: "open_music_player" as const,
+                    },
+                ],
+            });
+        } else {
+            sectionsArray.push({
+                label: "Listen",
+                items: [
+                    {
+                        title: "Podcasts",
+                        url: "__open_music_player__",
+                        icon: Headphones,
+                        iconTone: "media" as IconTone,
+                        action: "open_music_player" as const,
+                    },
+                    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
                 ],
             });
         }
@@ -604,20 +652,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
         sectionsArray.push({ label: "Learning", items: learningItems });
 
-        // ---------- MEDIA ----------
-        sectionsArray.push({
-            label: "Media",
-            items: [
-                { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
-            ],
-        });
-
         // ---------- OTHER ----------
         const otherItems: any[] = [
-            { title: "NursMart", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
+            { title: "NursMart", url: "/market", icon: ShoppingBag, iconTone: "finance" as IconTone },
             { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone },
         ];
-
         // Help Center — students only (new one for tutors/staff coming soon)
         if (isStudent) {
             otherItems.push({
@@ -665,10 +704,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
         base.push(
             { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
+            { title: "Podcasts", url: "__open_music_player__", icon: Headphones, iconTone: "media" as IconTone },
             { title: "Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
-            { title: "Market", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
+            { title: "Market", url: "/market", icon: ShoppingBag, iconTone: "finance" as IconTone },
         );
-
         // Exams/Results chips — only for student & tutor, NOT staff
         if (userRole === "student") {
             base.push(

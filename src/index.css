@@ -783,3 +783,9 @@ pre {
 .animate-confetti {
   animation: confetti linear infinite;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(200%);
+  }
+}

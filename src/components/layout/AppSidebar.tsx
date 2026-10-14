@@ -9,7 +9,8 @@ import {
   Briefcase, CalendarDays, PenTool, Network, AlertCircle, Newspaper,
   BarChart3, Swords, ShoppingBag, Share2, Award,
   BookOpenCheck,
-  Upload
+  Upload,
+  Headphones,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -80,11 +81,13 @@ const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
 };
 
 // Cache keys
+// Cache keys
 const CACHE_PREFIX = "sidebar_cache_";
 const MISTAKE_COUNT_KEY = `${CACHE_PREFIX}mistake_count`;
 const STARS_KEY = `${CACHE_PREFIX}stars`;
 const COUNTS_KEY = `${CACHE_PREFIX}counts`;
 const ANNOUNCEMENTS_KEY = `${CACHE_PREFIX}announcements`;
+const EPISODES_COUNT_KEY = `${CACHE_PREFIX}episodes_count`;
 
 let fetchInProgress = false;
 let lastFetchTime = 0;
@@ -278,6 +281,8 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const [totalStars, setTotalStars] = useState<number>(() => getCached(STARS_KEY) || 0);
   const [totalEvents, setTotalEvents] = useState<number>(() => getCached(COUNTS_KEY)?.totalEvents || 0);
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(() => getCached(ANNOUNCEMENTS_KEY) || 0);
+  // ✅ Total podcast episodes — badge source for the Media > Podcasts row
+  const [totalEpisodes, setTotalEpisodes] = useState<number>(() => getCached(EPISODES_COUNT_KEY) || 0);
 
   const isMounted = useRef(true);
   const resizeDebounce = useRef<NodeJS.Timeout>();
@@ -355,7 +360,8 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         videosResult,
         eventsResult,
         quizResults,
-        announcementsResult
+        announcementsResult,
+        episodesResult
       ] = await Promise.allSettled([
         supabase.from("user_mistakes").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false),
         supabase.from("quiz_questions").select("*", { count: "exact", head: true }),
@@ -364,7 +370,10 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         supabase.from("medtube_videos").select("*", { count: "exact", head: true }),
         supabase.from("calendar_events").select("*", { count: "exact", head: true }),
         supabase.from("quiz_results").select("unit, score, total_questions", { head: false }).eq("user_id", user.id).limit(100),
-        supabase.from("announcements").select("id", { count: "exact", head: true }).eq("is_published", true)
+        supabase.from("announcements").select("id", { count: "exact", head: true }).eq("is_published", true),
+        // ✅ Total published podcast episodes (independent of the MusicPlayer's
+        //    own cache, so the badge renders even before the player mounts)
+        supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false)
       ]);
 
       const mistakesCount = mistakesResult.status === 'fulfilled' ? mistakesResult.value.count || 0 : 0;
@@ -374,7 +383,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       const videosCount = videosResult.status === 'fulfilled' ? videosResult.value.count || 0 : 0;
       const eventsCount = eventsResult.status === 'fulfilled' ? eventsResult.value.count || 0 : 0;
       const announcementsCount = announcementsResult.status === 'fulfilled' ? announcementsResult.value.count || 0 : 0;
-
+      const episodesCount = episodesResult.status === 'fulfilled' ? episodesResult.value.count || 0 : 0;
       let stars = 0;
       if (quizResults.status === 'fulfilled' && quizResults.value?.data) {
         const unitBestScores: Record<string, number> = {};
@@ -420,11 +429,13 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         setTotalEvents(counts.totalEvents);
         setTotalStars(stars);
         setUnreadAnnouncements(unread);
+        setTotalEpisodes(episodesCount);
 
         setCached(COUNTS_KEY, counts);
         setCached(MISTAKE_COUNT_KEY, mistakesCount);
         setCached(STARS_KEY, stars);
         setCached(ANNOUNCEMENTS_KEY, unread);
+        setCached(EPISODES_COUNT_KEY, episodesCount);
       }
     } catch (err) {
       console.error("Error fetching sidebar data:", err);
@@ -464,12 +475,40 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       if (resizeDebounce.current) clearTimeout(resizeDebounce.current);
     };
   }, []);
-
   const handleAnnouncementsClick = useCallback(() => {
     setUnreadAnnouncements(0);
     setCached(ANNOUNCEMENTS_KEY, 0);
     handleNavigate("/announcements");
   }, [handleNavigate]);
+
+  // ✅ Podcasts — opens the MusicPlayer fullscreen overlay.
+  //    Uses the global opener published by MusicPlayer. On smaller widths the
+  //    sidebar auto-collapses after the tap so the overlay is fully visible.
+  const handleOpenPodcasts = useCallback(() => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+
+    // Close the sidebar on tablet-ish widths first so it isn't hiding the modal.
+    if (windowWidth < 1024) {
+      toggleSidebar();
+      // Give the sidebar's collapse animation a beat before opening the player
+      setTimeout(() => {
+        const opener = (window as any).__studifyOpen;
+        if (typeof opener === "function") opener("episodes");
+      }, 220);
+      return;
+    }
+
+    const opener = (window as any).__studifyOpen;
+    if (typeof opener === "function") {
+      opener("episodes");
+    } else {
+      // MusicPlayer not yet mounted — retry next frame
+      requestAnimationFrame(() => {
+        const retry = (window as any).__studifyOpen;
+        if (typeof retry === "function") retry("episodes");
+      });
+    }
+  }, [toggleSidebar, windowWidth]);
 
   // ✅ MAIN — student-only items hidden for tutor & staff
   const mainItems = useMemo(() => {
@@ -600,18 +639,36 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
   const mediaItems = useMemo(() => [
     { title: "MedTube", url: "/medtube", icon: PlayFilledIcon, iconTone: "media" as IconTone, badge: totalVideos ? formatNumber(totalVideos) : undefined },
-  ], [totalVideos, formatNumber]);
-
+    // ✅ Podcasts — desktop only (footer Listen tab covers mobile).
+    //    Uses a special `onClick` so the sidebar calls the opener instead
+    //    of navigating to a route. Badge shows the total episode count.
+    {
+      title: "Podcasts",
+      url: "__open_music_player__",
+      icon: Headphones,
+      iconTone: "media" as IconTone,
+      onClick: handleOpenPodcasts,
+      badge: totalEpisodes > 0 ? formatNumber(totalEpisodes) : undefined,
+    },
+  ], [totalVideos, formatNumber, handleOpenPodcasts, totalEpisodes]);
   const tutorItems = useMemo(() => userRole === "tutor" ? [
     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
   ] : [], [userRole]);
 
+  // ✅ On phones, the footer already has a Listen tab. Don't duplicate it here.
+  //    Tablets (768–1023) and desktops keep the sidebar entry.
+  const visibleMediaItems = useMemo(() => {
+    if (windowWidth < 768) {
+      return mediaItems.filter((m) => m.title !== "Podcasts");
+    }
+    return mediaItems;
+  }, [mediaItems, windowWidth]);
 
 
   // ✅ MORE — Help Center removed entirely, GroupPay student-only
   const otherItems = useMemo(() => {
     const base = [
-      { title: "NursMartt", url: "/market", icon: (props: any) => <img src="/Nurvia_logo.png" alt="Nurvia Logo" className={`${props.className} object-contain bg-transparent`} loading="lazy" />, iconTone: "neutral" as IconTone },
+      { title: "NursMartt", url: "/market", icon: ShoppingBag, iconTone: "finance" as IconTone },
       { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone, onClick: handleAnnouncementsClick },
       // Help Center — students only (new one for tutors/staff coming soon)
       ...(isStudent
@@ -788,15 +845,23 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-0">
-              {mediaItems.map((item) => (
+              {visibleMediaItems.map((item) => (
                 <MenuItem
                   key={item.title}
                   item={item}
-                  isActive={isActive(item.url)}
+                  // ✅ Sentinel routes never match a real pathname, so this
+                  //    stays false for Podcasts and the tab won't highlight.
+                  isActive={item.url.startsWith("__") ? false : isActive(item.url)}
                   isCollapsed={isCollapsed}
                   tone={item.iconTone || "neutral"}
                   badge={item.badge}
-                  onClick={() => handleNavigate(item.url)}
+                  // ✅ Prefer the item's own onClick when present (Podcasts),
+                  //    otherwise fall back to normal navigation.
+                  onClick={() =>
+                    (item as any).onClick
+                      ? (item as any).onClick()
+                      : handleNavigate(item.url)
+                  }
                 />
               ))}
             </SidebarMenu>

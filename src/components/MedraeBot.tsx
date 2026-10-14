@@ -1,7 +1,7 @@
 // src/components/MedraeBot.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     X,
@@ -21,7 +21,8 @@ import {
     Clock,
 } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
-import MedraeSocialFooter from "@/components/MedraeSocialFooter";
+import { lazy, Suspense } from "react";
+const MedraeSocialFooter = lazy(() => import("@/components/MedraeSocialFooter"));
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import {
     getMyReferralCode,
@@ -105,17 +106,35 @@ const MedraeBot = () => {
     const [copied, setCopied] = useState(false);
 
     // ─── Premium from cache ───
+    // ✅ GATE: don't touch the network until the bot is eligible to appear.
+    //    `booted` flips true 2s after mount, or as soon as the user is idle.
+    const [booted, setBooted] = useState(false);
     useEffect(() => {
+        let raf: number | null = null;
+        const t = setTimeout(() => {
+            // One more frame so the initial route paint is fully settled
+            raf = requestAnimationFrame(() => setBooted(true));
+        }, 2000);
+        return () => {
+            clearTimeout(t);
+            if (raf !== null) cancelAnimationFrame(raf);
+        };
+    }, []);
+
+    // ─── Premium from cache (only after boot) ───
+    useEffect(() => {
+        if (!booted) return;
         if (!session?.user?.id) return;
         const cached = getCachedPremium(session.user.id);
         if (cached !== null) {
             setIsPremium(cached);
             setPremiumResolved(true);
         }
-    }, [session?.user?.id]);
+    }, [booted, session?.user?.id]);
 
-    // ─── Premium background refresh ───
+    // ─── Premium background refresh (only after boot) ───
     useEffect(() => {
+        if (!booted) return;
         if (!session?.user?.id) return;
         let cancelled = false;
         resolveSubscription(session.user.id)
@@ -128,14 +147,21 @@ const MedraeBot = () => {
                 if (!cancelled) setPremiumResolved(true);
             });
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
+    }, [booted, session?.user?.id]);
 
     // ─── Referral data ───
+    // ─── Referral data — only fetch once the bot is actually visible ───
+    //    The hero card shows a skeleton until this resolves.
+    const referralFetchedRef = useRef(false);
     useEffect(() => {
+        if (!isVisible) return;
+        if (referralFetchedRef.current) return;
         if (!session?.user?.id) {
             setReferralLoading(false);
             return;
         }
+        referralFetchedRef.current = true;
+
         let cancelled = false;
         setReferralLoading(true);
         (async () => {
@@ -154,7 +180,7 @@ const MedraeBot = () => {
             }
         })();
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
+    }, [isVisible, session?.user?.id]);
 
     // ─── Track app open ───
     useEffect(() => {
@@ -324,15 +350,18 @@ const MedraeBot = () => {
         document.body.style.overflow = "hidden";
         return () => { document.body.style.overflow = prev; };
     }, [isVisible]);
+    // ✅ Do NOTHING until the app has had time to settle.
+    //    This is the single biggest win — no effects fire, no DOM mounts.
+    if (!booted) return null;
 
     if (!isVisible && !isDismissing) return null;
     if (isPremium && !SHOW_BOT_FOR_PREMIUM) return null;
-
     // ═══════════════════════════════════════════════════════
     // 🦴 SKELETON (shown while referral data loads)
     // ═══════════════════════════════════════════════════════
     const ReferralHeroSkeleton = () => (
-        <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 animate-pulse">
+        <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600">
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
             <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 w-44 h-44 bg-fuchsia-400/20 rounded-full blur-3xl pointer-events-none" />
 
@@ -611,7 +640,16 @@ const MedraeBot = () => {
                 </button>
 
                 {/* 6. Social footer */}
-                <MedraeSocialFooter onNavigate={handleDismiss} />
+                {/* 6. Social footer — lazy-loaded */}
+                <Suspense fallback={
+                    <div className="grid grid-cols-4 gap-2 py-2">
+                        {[0, 1, 2, 3].map((i) => (
+                            <div key={i} className="h-11 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                        ))}
+                    </div>
+                }>
+                    <MedraeSocialFooter onNavigate={handleDismiss} />
+                </Suspense>
             </>
         );
     };

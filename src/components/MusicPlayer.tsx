@@ -6,6 +6,7 @@ import {
     Repeat, Volume2, VolumeX, FilePlus, ListMusic,
     Plus, Loader2, CheckCircle2, AlertCircle, ThumbsUp, Trash2, Headphones, EyeOff,
     X,
+    Disc3,
 } from "lucide-react";
 import { useMusicPlayer, type HistoryEntry } from "./MusicPlayerProvider";
 import { usePodcastShows } from "@/hooks/usePodcastShows";
@@ -67,10 +68,13 @@ export const MusicPlayer = () => {
     const [screen, setScreen] = useState<Screen>("player");
 
     // ---- global opener ----
+    // ✅ Set `screen` BEFORE flipping `isOpen` true. Otherwise the previous
+    //    screen renders for one frame (player) before switching to the
+    //    requested one (episodes), producing a visible jump.
     useEffect(() => {
         window.__studifyOpen = (target: Screen = "player") => {
-            setIsOpen(true);
-            requestAnimationFrame(() => setScreen(target));
+            setScreen(target);   // set first
+            setIsOpen(true);     // open after
         };
         return () => { window.__studifyOpen = undefined; };
     }, []);
@@ -130,15 +134,36 @@ export const MusicPlayer = () => {
     // ✅ Only show the floating side tab on the home dashboard.
     //    Audio keeps playing everywhere — this only controls visibility
     //    of the tap-to-open button.
+    // ✅ Visibility rules for the floating side tab:
+    //    • Route must be a dashboard (existing rule)
+    //    • Desktop (≥ md): always show — hover-to-expand UX works there
+    //    • Mobile (< md): only show while audio is actively playing,
+    //      because the footer already has a Listen tab on phones
     const location = useLocation();
+
+    // Track viewport width so the rule reacts to rotation / resize.
+    const [isDesktopViewport, setIsDesktopViewport] = useState(() => {
+        if (typeof window === "undefined") return true;
+        return window.matchMedia("(min-width: 768px)").matches;
+    });
+
+    useEffect(() => {
+        const mq = window.matchMedia("(min-width: 768px)");
+        const onChange = (e: MediaQueryListEvent) => setIsDesktopViewport(e.matches);
+        mq.addEventListener("change", onChange);
+        // Sync once in case matchMedia drifted (rare)
+        setIsDesktopViewport(mq.matches);
+        return () => mq.removeEventListener("change", onChange);
+    }, []);
+
     const showSideTab = useMemo(() => {
-        const path = location.pathname;
-        // Home dashboard for whichever role the user is on
-        return (
-            path === "/dashboard" ||
-            path.startsWith("/dashboard/")
-        );
-    }, [location.pathname]);
+        const onDashboard =
+            location.pathname === "/dashboard" ||
+            location.pathname.startsWith("/dashboard/");
+        if (!onDashboard) return false;
+        if (isDesktopViewport) return true;   // laptop / desktop
+        return isPlaying;                      // mobile: only while playing
+    }, [location.pathname, isDesktopViewport, isPlaying]);
     // ═══════════════════════════════════════════════════════
     // ── LIVE TIME — throttled (2 Hz max, rAF-coalesced) ──
     // Prevents re-rendering the whole tree 4×/sec during playback.
@@ -584,75 +609,174 @@ export const MusicPlayer = () => {
                 {listEl}
             </div>
 
-            {/* ── SIDE TAB ── */}
-            {/* ── SIDE TAB ── (only on home dashboard) */}
             {showSideTab && (
-                <div className="fixed top-1/4 -translate-y-1/2 right-0 z-40 group">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 340, damping: 26 }}
+                    className="fixed top-1/4 -translate-y-1/2 right-4 z-40 group"
+                >
+                    {/* ═══════════════════════════════════════════════════════
+            Expanded card — reveals on hover (desktop) or tap-toggle
+            ═══════════════════════════════════════════════════════ */}
                     <motion.div
-                        initial={{ x: "85%" }}
-                        whileHover={{ x: "0%" }}
-                        animate={{ x: isPlaying ? "0%" : "55%" }}
-                        transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                        className="relative flex items-center"
+                        variants={{
+                            collapsed: {
+                                width: 56,
+                                height: 56,
+                                borderRadius: 28,
+                                opacity: 1,
+                            },
+                            expanded: {
+                                width: 240,
+                                height: 56,
+                                borderRadius: 28,
+                                opacity: 1,
+                            },
+                        }}
+                        initial="collapsed"
+                        whileHover="expanded"
+                        whileTap="expanded"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        className="
+                relative flex items-center
+                bg-white dark:bg-slate-900
+                ring-1 ring-slate-200/70 dark:ring-white/10
+                shadow-[0_8px_28px_-8px_rgba(0,0,0,0.28)]
+                overflow-hidden
+                cursor-pointer
+            "
+                        onClick={() => setIsOpen(true)}
+                        role="button"
+                        aria-label="Open Medrae Player"
                     >
-                        <AnimatePresence>
+                        {/* Soft glow behind (only when playing) */}
+                        {isPlaying && (
+                            <motion.span
+                                aria-hidden="true"
+                                animate={{
+                                    opacity: [0.35, 0.6, 0.35],
+                                }}
+                                transition={{
+                                    duration: 2.6,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                                className="absolute inset-0 rounded-full bg-blue-500/25 blur-lg pointer-events-none"
+                            />
+                        )}
+
+                        {/* ── LEFT: Album disc with progress ring (fixed 56px) ── */}
+                        <div className="relative h-14 w-14 flex items-center justify-center shrink-0">
+                            <svg
+                                className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
+                                viewBox="0 0 100 100"
+                                aria-hidden="true"
+                            >
+                                <circle
+                                    cx="50" cy="50" r="46"
+                                    fill="none" stroke="currentColor" strokeWidth="4"
+                                    className="text-slate-200 dark:text-slate-700/60"
+                                />
+                                <motion.circle
+                                    cx="50" cy="50" r="46"
+                                    fill="none" stroke="currentColor" strokeWidth="5"
+                                    strokeLinecap="round"
+                                    strokeDasharray="290"
+                                    style={{ strokeDashoffset: 290 - 290 * progress }}
+                                    className="text-blue-500"
+                                />
+                            </svg>
+
+                            <div
+                                className={`
+                        h-11 w-11 rounded-full overflow-hidden relative
+                        bg-slate-900 dark:bg-slate-800
+                        shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]
+                        flex items-center justify-center
+                        ${isPlaying ? "animate-[spin_4s_linear_infinite]" : ""}
+                    `}
+                            >
+                                {/* Vinyl sheen */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle,_transparent_45%,_rgba(0,0,0,0.45)_100%)] z-10 pointer-events-none" />
+
+                                <Headphones
+                                    className="h-6 w-6 text-white/90 relative z-20"
+                                    strokeWidth={1.75}
+                                />
+                            </div>
+                            {/* Playing signal — animated bars (only visible when collapsed + playing) */}
                             {isPlaying && (
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: -12 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    className="absolute right-full hidden md:block"
-                                >
-                                    <div className="bg-white dark:bg-gh-card px-4 py-2 rounded-2xl shadow-2xl shadow-black/25 min-w-[150px]">
-                                        <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest block mb-1">
-                                            Now Playing
-                                        </span>
-                                        <div className="w-28 overflow-hidden">
-                                            <div className="animate-marquee text-[10px] font-bold text-black dark:text-gh-text whitespace-nowrap">
-                                                {currentTrack?.name || "Medrae Podcast"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        <button
-                            onClick={() => setIsOpen(true)}
-                            className="flex items-center bg-slate-200 dark:bg-gh-card p-3 pr-4 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.18)] transition-colors hover:bg-slate-300 dark:hover:bg-gh-hover"
-                        >
-                            <div className="relative h-16 w-16 flex items-center justify-center">
-                                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-400/20" />
-                                    <motion.circle
-                                        cx="50" cy="50" r="46"
-                                        fill="none" stroke="currentColor" strokeWidth="6"
-                                        strokeDasharray="290"
-                                        style={{ strokeDashoffset: 290 - (290 * progress) }}
-                                        className="text-blue-500"
+                                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-500 ring-[2.5px] ring-white dark:ring-slate-900 flex items-center justify-center gap-[1px] px-[3px]">
+                                    <motion.span
+                                        animate={{ height: [3, 7, 3] }}
+                                        transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut" }}
+                                        className="w-[1.5px] bg-white rounded-full"
                                     />
-                                </svg>
-                                <div className={`h-13 w-13 rounded-full overflow-hidden relative ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle,_transparent_40%,_rgba(0,0,0,0.4)_100%)] z-10" />
-                                    <img src="/music.png" alt="Studify" className="w-full h-full object-cover" />
+                                    <motion.span
+                                        animate={{ height: [5, 3, 6, 3] }}
+                                        transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: 0.15 }}
+                                        className="w-[1.5px] bg-white rounded-full"
+                                    />
+                                    <motion.span
+                                        animate={{ height: [3, 6, 3] }}
+                                        transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                                        className="w-[1.5px] bg-white rounded-full"
+                                    />
                                 </div>
-                                {isPlaying && (
-                                    <span className="absolute -top-1 -left-1 flex h-3 w-3">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                                    </span>
-                                )}
-                            </div>
-                            <div className="ml-2.5 flex flex-col gap-1.5 pr-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <div className="w-1.5 h-1.5 bg-slate-700 dark:bg-gh-text rounded-full"></div>
-                                <div className="w-1.5 h-1.5 bg-slate-700 dark:bg-gh-text rounded-full"></div>
-                                <div className="w-1.5 h-1.5 bg-slate-700 dark:bg-gh-text rounded-full"></div>
-                            </div>
-                        </button>
-                    </motion.div>
-                </div>
-            )}
+                            )}
+                        </div>
 
+                        {/* ── RIGHT: Title + controls (revealed on expand) ── */}
+                        <motion.div
+                            variants={{
+                                collapsed: { opacity: 0, x: -8 },
+                                expanded: { opacity: 1, x: 0 },
+                            }}
+                            transition={{ duration: 0.18, delay: 0.05 }}
+                            className="flex items-center gap-2 pr-3 pl-0 min-w-0"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Track info */}
+                            <div className="flex flex-col min-w-0 max-w-[130px]">
+                                <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                                    {isPlaying ? "Now playing" : "Paused"}
+                                </span>
+                                <span className="text-[12px] font-bold text-slate-900 dark:text-white truncate leading-tight mt-0.5">
+                                    {currentTrack?.name || "Medrae Player"}
+                                </span>
+                            </div>
+
+                            {/* Play/pause */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    togglePlay();
+                                }}
+                                aria-label={isPlaying ? "Pause" : "Play"}
+                                className="
+                        h-9 w-9 shrink-0 rounded-full
+                        bg-slate-900 dark:bg-white
+                        text-white dark:text-slate-900
+                        flex items-center justify-center
+                        active:scale-95 transition-transform
+                    "
+                            >
+                                {isPlaying ? (
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <rect x="6" y="5" width="4" height="14" rx="1.5" />
+                                        <rect x="14" y="5" width="4" height="14" rx="1.5" />
+                                    </svg>
+                                ) : (
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
+                                    </svg>
+                                )}
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                </motion.div>
+            )}
             {/* ── FULLSCREEN ── */}
             <AnimatePresence>
                 {isOpen && (

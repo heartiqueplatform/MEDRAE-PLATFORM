@@ -78,7 +78,7 @@ import { Notifications } from "./pages/Notifications";
 import { AdminNotificationPanel } from "@/components/AdminNotificationPanel";
 import { Profile } from "./pages/Profile";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from "react";
 import { initSound, loadSound } from "@/lib/soundManager";
 
 // SplashScreen import removed
@@ -95,8 +95,9 @@ import GroupDetailsPage from './pages/grouppay/[id]';
 // Layout
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import HelpCenter from "./pages/HelpCenter";
-import MedraeBot from "./components/MedraeBot"; // 🆕 NEW BOT IMPORT
-
+const MedraeBot = lazy(() =>
+  import("./components/MedraeBot").then((m) => ({ default: m.default }))
+);
 // Role-based Dashboards
 import StudentDashboard from "./pages/dashboard/student";
 import TutorDashboard from "./pages/dashboard/tutor";
@@ -642,9 +643,10 @@ const AppContent = () => {
                       <FloatingStreakCandle />
                       <ProfileIncompleteChecker />
 
-                      {/* 🆕 MEDRAE BOT - Lightweight, appears once per day */}
-                      <MedraeBot />
-
+                      {/* 🆕 MEDRAE BOT — lazy, only loads on first eligible open */}
+                      <Suspense fallback={null}>
+                        <MedraeBot />
+                      </Suspense>
                       {/* 🆕 SMART PWA INSTALL PROMPT — browser users only */}
                       <InstallPrompt />
                       <BottomBarWrapper />
