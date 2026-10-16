@@ -1830,57 +1830,73 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         return (
             <div className="px-4 md:px-5 pb-3 shrink-0">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                    {shows.map((s: any) => (
-                        <div
-                            key={s.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onSelectShow(s.id)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    onSelectShow(s.id);
-                                }
-                            }}
-                            className="group flex items-center gap-3 p-2.5 rounded-2xl bg-gh-l-card dark:bg-gh-card shadow-none cursor-pointer transition-colors hover:bg-gh-l-hover dark:hover:bg-gh-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                        >
-                            {s.artwork_url && (
-                                <img
-                                    src={s.artwork_url}
-                                    alt=""
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="w-12 h-12 rounded-xl object-cover shrink-0"
-                                />
-                            )}
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold truncate text-gh-l-text dark:text-gh-text group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    {s.title}
-                                </p>
-                                <p className="text-[10px] text-gh-l-muted dark:text-gh-muted">
-                                    {s.episode_count} episodes
-                                </p>
-                            </div>
+                    {shows.map((s: any) => {
+                        const follow = getFollow?.(s.id) ?? { following: false, followerCount: 0 };
+                        return (
+                            <div
+                                key={s.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => onSelectShow(s.id)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        onSelectShow(s.id);
+                                    }
+                                }}
+                                className="group flex items-center gap-3 p-2.5 rounded-2xl bg-gh-l-card dark:bg-gh-card cursor-pointer transition-colors hover:bg-gh-l-hover dark:hover:bg-gh-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                            >
+                                {/* ── Square Spotify-style avatar ── */}
+                                <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
+                                    {s.artwork_url ? (
+                                        <img
+                                            src={s.artwork_url}
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-lg font-black text-gh-l-muted dark:text-gh-muted">
+                                            {(s.title || "?").trim().charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
 
-                            {/* Endorse button — stopPropagation so it doesn't open the show */}
-                            {/* Follow + Endorse */}
-                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                {onToggleFollow && (
-                                    <FollowButton
-                                        following={(getFollow?.(s.id) ?? { following: false, followerCount: 0 }).following}
-                                        followerCount={(getFollow?.(s.id) ?? { following: false, followerCount: 0 }).followerCount}
-                                        onClick={() => onToggleFollow(s.id)}
+                                {/* ── Text column ── */}
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-bold truncate text-gh-l-text dark:text-gh-text group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {s.title}
+                                    </p>
+                                    <p className="text-[10px] text-gh-l-muted dark:text-gh-muted truncate">
+                                        {s.episode_count} episodes
+                                        {follow.followerCount > 0 && ` · ${follow.followerCount} followers`}
+                                    </p>
+                                </div>
+
+                                {/* ── Unified action cluster — both buttons share one size system ── */}
+                                <div
+                                    className="flex items-center gap-1 shrink-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {onToggleFollow && (
+                                        <FollowButton
+                                            following={follow.following}
+                                            followerCount={follow.followerCount}
+                                            onClick={() => onToggleFollow(s.id)}
+                                            compact
+                                        />
+                                    )}
+                                    <EndorseButton
+                                        endorsed={s.user_endorsed}
+                                        count={s.endorsement_count}
+                                        onClick={() => onToggleEndorse(s.id)}
                                         compact
                                     />
-                                )}
-                                <EndorseButton
-                                    endorsed={s.user_endorsed}
-                                    count={s.endorsement_count}
-                                    onClick={() => onToggleEndorse(s.id)}
-                                />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -2084,21 +2100,48 @@ function AppleLogo({ className = '' }: { className?: string }) {
 // ════════════════════════════════════════════════════════════
 // ENDORSE
 // ════════════════════════════════════════════════════════════
-const EndorseButton = React.memo(function EndorseButton({ endorsed, count, onClick }: { endorsed: boolean; count: number; onClick: () => void }) {
+const EndorseButton = React.memo(function EndorseButton({
+    endorsed, count, onClick, compact = false,
+}: {
+    endorsed: boolean;
+    count: number;
+    onClick: () => void;
+    compact?: boolean;
+}) {
+    const countLabel =
+        count >= 1000
+            ? `${(count / 1000).toFixed(1)}K`
+            : count > 0
+                ? String(count)
+                : "";
+
     return (
         <button
-            onClick={onClick}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${endorsed
-                ? "bg-blue-600 text-white shadow-none"
-                : "bg-gh-l-hover dark:bg-gh-hover text-gh-l-text dark:text-gh-text hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
-                }`}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
+            className={`
+                shrink-0 flex items-center font-bold rounded-full transition-all touch-manipulation select-none
+                ${compact
+                    ? "gap-1 px-2.5 py-1.5 text-[10px] min-h-[32px]"
+                    : "gap-1.5 px-3 py-2 text-xs min-h-[36px]"}
+                md:min-h-0
+                ${endorsed
+                    ? "bg-blue-600 text-white"
+                    : "bg-gh-l-hover dark:bg-gh-hover text-gh-l-text dark:text-gh-text hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"}
+            `}
             title={endorsed ? "Endorsed — click to remove" : "Endorse this show"}
+            aria-pressed={endorsed}
         >
-            <ThumbsUp size={13} fill={endorsed ? "currentColor" : "none"} />
+            <ThumbsUp size={compact ? 12 : 13} fill={endorsed ? "currentColor" : "none"} />
             <span>{endorsed ? "Endorsed" : "Endorse"}</span>
-            {count > 0 && (
-                <span className={`text-[10px] font-black ${endorsed ? "text-white/80" : "text-gh-l-muted dark:text-gh-muted"}`}>
-                    {count}
+            {countLabel && (
+                <span
+                    className={`text-[10px] font-black ${endorsed ? "text-white/80" : "text-gh-l-muted dark:text-gh-muted"
+                        }`}
+                >
+                    {countLabel}
                 </span>
             )}
         </button>
@@ -2291,17 +2334,30 @@ const EpisodeRow = React.memo(function EpisodeRow({
     const clampedProgress = Math.max(0, Math.min(1, progress));
     const dashOffset = C * (1 - clampedProgress);
 
+    // 3 equal cells normally, 4 when admin (hide button joins the row)
+    const gridCols = isAdmin && onHide ? "grid-cols-4" : "grid-cols-3";
+
     return (
         <div
-            className={`group w-full rounded-2xl px-3 py-3.5 md:py-3 mb-1 flex items-start gap-2.5 md:gap-3 transition-all ${isActive
+            className={`group w-full rounded-2xl mb-1 overflow-hidden transition-all ${isActive
                 ? "bg-blue-50 dark:bg-blue-950/40"
                 : "hover:bg-gh-l-card dark:hover:bg-gh-card"
                 }`}
         >
-            <button onClick={onSelect} className="flex items-start gap-3 flex-1 min-w-0 text-left">
-                <div className="relative shrink-0 w-12 h-12 rounded-full overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
+            {/* ── TOP: everything that was there before, untouched ── */}
+            <button
+                onClick={onSelect}
+                className="w-full flex items-start gap-3 px-3 py-3.5 md:py-3 text-left"
+            >
+                <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
                     {track.artwork ? (
-                        <img src={track.artwork} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                        <img
+                            src={track.artwork}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                        />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px] font-black">
                             {index + 1}
@@ -2386,38 +2442,35 @@ const EpisodeRow = React.memo(function EpisodeRow({
                             </span>
                         )}
                     </div>
-
                 </div>
             </button>
 
-            {/* ✅ Reaction bar — always visible, never truncates */}
-            {/* ✅ Reaction bar — stacks on phone, row on desktop */}
-            <div className="flex flex-col md:flex-row items-end md:items-center gap-0.5 md:gap-0 shrink-0">
-                <div className="flex items-center gap-0.5 md:gap-0">
-                    <ReactionButton
-                        kind="like"
-                        active={interaction?.liked ?? false}
-                        count={interaction?.counts.like ?? 0}
-                        onClick={() => onToggleReaction?.("like")}
-                    />
-                    <ReactionButton
-                        kind="love"
-                        active={interaction?.loved ?? false}
-                        count={interaction?.counts.love ?? 0}
-                        onClick={() => onToggleReaction?.("love")}
-                    />
-                    <ReactionButton
-                        kind="save"
-                        active={interaction?.saved ?? false}
-                        count={interaction?.counts.save ?? 0}
-                        onClick={() => onToggleReaction?.("save")}
-                    />
-                </div>
+            {/* ── BOTTOM: reactions only — full width, equal thirds ── */}
+            <div className={`grid ${gridCols} border-t border-gh-l-border/60 dark:border-gh-border/60 divide-x divide-gh-l-border/60 dark:divide-gh-border/60`}>
+                <ReactionCell
+                    kind="like"
+                    active={interaction?.liked ?? false}
+                    count={interaction?.counts.like ?? 0}
+                    onClick={() => onToggleReaction?.("like")}
+                />
+                <ReactionCell
+                    kind="love"
+                    active={interaction?.loved ?? false}
+                    count={interaction?.counts.love ?? 0}
+                    onClick={() => onToggleReaction?.("love")}
+                />
+                <ReactionCell
+                    kind="save"
+                    active={interaction?.saved ?? false}
+                    count={interaction?.counts.save ?? 0}
+                    onClick={() => onToggleReaction?.("save")}
+                />
                 {isAdmin && onHide && (
                     <button
                         onClick={onHide}
-                        className="shrink-0 p-2 rounded-lg text-gh-l-muted dark:text-gh-l-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors opacity-70 md:opacity-0 md:group-hover:opacity-100"
+                        className="flex items-center justify-center py-3 text-gh-l-muted dark:text-gh-l-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                         title="Hide this episode"
+                        aria-label="Hide this episode"
                     >
                         <EyeOff size={16} />
                     </button>
@@ -2426,19 +2479,20 @@ const EpisodeRow = React.memo(function EpisodeRow({
         </div>
     );
 });
-
 // ════════════════════════════════════════════════════════════
 // REACTION BUTTON — one small pill per reaction
 // ════════════════════════════════════════════════════════════
-const ReactionButton = React.memo(function ReactionButton({
-    kind, active, count, onClick, size = "md",
+// ════════════════════════════════════════════════════════════
+// REACTION CELL — full-height, edge-to-edge cell used inside
+// the grid row at the bottom of every EpisodeRow.
+// ════════════════════════════════════════════════════════════
+const ReactionCell = React.memo(function ReactionCell({
+    kind, active, count, onClick,
 }: {
     kind: "like" | "love" | "save";
     active: boolean;
     count: number;
     onClick: () => void;
-    /** "sm" = compact (desktop list), "md" = thumb-friendly (mobile) */
-    size?: "sm" | "md";
 }) {
     const Icon = kind === "like" ? ThumbsUp : kind === "love" ? Heart : Bookmark;
 
@@ -2452,29 +2506,22 @@ const ReactionButton = React.memo(function ReactionButton({
     const display =
         count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count > 0 ? String(count) : "";
 
-    // ── Sizing tokens ──
-    // sm → tiny pill (desktop list)
-    // md → meets Apple/Google 44px tap target on mobile, comfortable on desktop
-    const pad = size === "md" ? "px-2.5 py-2 min-h-[36px] md:min-h-[32px]" : "px-2 py-1.5";
-    const iconSize = size === "md" ? 16 : 14;
-    const textSize = size === "md" ? "text-[11px]" : "text-[10px]";
-    const gap = size === "md" ? "gap-1" : "gap-0.5";
-
     return (
         <button
             onClick={(e) => { e.stopPropagation(); onClick(); }}
-            /* invisible 44px tap target on mobile — extends beyond the visual pill */
             className={`
-                relative flex items-center justify-center rounded-lg font-bold tabular-nums
+                flex items-center justify-center gap-1.5
+                py-3 md:py-2.5
+                text-[11px] font-bold tabular-nums
                 transition-colors touch-manipulation select-none
-                ${gap} ${pad} ${textSize}
-                ${active ? activeColor : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"}
-                before:absolute before:inset-[-6px] before:content-[''] md:before:inset-0
+                ${active
+                    ? activeColor
+                    : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text hover:bg-gh-l-hover/60 dark:hover:bg-gh-hover/60"}
             `}
             aria-label={`${kind}${count > 0 ? ` (${count})` : ""}`}
             aria-pressed={active}
         >
-            <Icon size={iconSize} fill={active ? "currentColor" : "none"} />
+            <Icon size={16} fill={active ? "currentColor" : "none"} />
             {display && <span>{display}</span>}
         </button>
     );
