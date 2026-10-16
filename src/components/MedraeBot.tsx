@@ -70,10 +70,11 @@ const getTimeGreeting = (): string => {
 // ─── Build share message ───
 const buildShareMessage = (code: string): string => {
     return (
-        `🎓 I'm studying smarter with *Medrae* — an AI tutor for students.\n\n` +
+        `Hey  I'm using *Medrae Nursing* to prepare for my Nursing and NCK exams.\n\n` +
+        `6,500+ exam-style questions, unit-based revision, instant explanations  built for DCHN, BSN & KRN students.\n\n` +
         `Use my link and we BOTH get FREE Premium:\n` +
-        `👉 https://medrae.app/?ref=${code}\n\n` +
-        `You get 1 day free. I get 2. Everyone wins 💚`
+        `https://medrae.vercel.app/?ref=${code}\n\n` +
+        `You get 1 day free. I get 2. Win-win `
     );
 };
 
@@ -282,7 +283,7 @@ const MedraeBot = () => {
     const handleFeedback = useCallback(() => closeAndThen(() => navigate("/feedback")), [closeAndThen, navigate]);
 
     // ─── Share handlers ───
-    const shareUrl = referralCode ? `https://medrae.app/?ref=${referralCode}` : "";
+    const shareUrl = referralCode ? `https://medrae.vercel.app/?ref=${referralCode}` : "";
     const shareMessage = referralCode ? buildShareMessage(referralCode) : "";
 
     const handleShareWhatsApp = useCallback(() => {

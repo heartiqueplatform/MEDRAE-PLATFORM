@@ -184,7 +184,7 @@ const Referral: React.FC = () => {
         // Use the shared helper so the message is consistent with the rest of the app
         const message = referralCode
             ? buildWhatsAppMessage(referralCode)
-            : `🚀 Join me on Medrae — the ultimate nursing study platform! ${referralLink}`;
+            : ` Join me on Medrae — the ultimate nursing study platform! ${referralLink}`;
 
         openAndReward(
             `https://wa.me/?text=${encodeURIComponent(message)}`,
@@ -259,7 +259,7 @@ const Referral: React.FC = () => {
                                 Weekend Challenge
                             </div>
                             <h1 className="text-5xl font-bold leading-tight">
-                                {scenarioAnswered ? "🎉 Challenge Complete!" : "Clinical Case Challenge"}
+                                {scenarioAnswered ? " Challenge Complete!" : "Clinical Case Challenge"}
                             </h1>
                             <p className="text-gray-300 text-lg max-w-md">
                                 {scenarioAnswered
@@ -294,7 +294,7 @@ const Referral: React.FC = () => {
                             </div>
 
                             <h2 className="text-2xl font-bold tracking-tight font-serif">
-                                {scenarioAnswered ? "🎉 Challenge Mastered!" : "Clinical Case Challenge"}
+                                {scenarioAnswered ? " Challenge Mastered!" : "Clinical Case Challenge"}
                             </h2>
 
                             {!scenarioAnswered && scenario && (
@@ -483,7 +483,7 @@ const SuccessSection: React.FC<{
                     <GraduationCap className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1 font-serif">
-                    You're on Fire! 🔥
+                    You're on Fire!
                 </h3>
                 <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed max-w-sm mx-auto">
                     Share with a nursing friend. Every real signup earns you 2 days of Premium — the more you share, the longer you stay Premium free.
