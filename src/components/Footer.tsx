@@ -326,18 +326,25 @@ const NavItem = memo(({
     badge?: number;
 }) => {
     const [pressed, setPressed] = useState(false);
+    const [pending, setPending] = useState(false);
 
-    const labelColor = isActive
+    // Light up the tile the instant the tap lands — even if the
+    // route change takes 400ms. Clears once the route has settled.
+    const showActive = isActive || pending;
+
+    const labelColor = showActive
         ? (isDark ? "text-white" : "text-blue-600")
         : (isDark ? "text-gray-400" : "text-gray-500");
 
-    const iconColor = isActive
+    const iconColor = showActive
         ? (isDark ? "text-white" : "text-blue-600")
         : (isDark ? "text-gray-400" : "text-gray-500");
 
     const handlePointerDown = (e: React.PointerEvent) => {
         setPressed(true);
+        setPending(true);
         onPress(e);
+        setTimeout(() => setPending(false), 500);
     };
     const clear = () => setPressed(false);
 
