@@ -955,29 +955,18 @@ export default function StudentDashboard() {
                       key={s.userid}
                       onClick={() => setSelectedUserId(s.userid)}
                       className="group flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left
-                     transition-colors duration-150
-                     hover:bg-slate-50 dark:hover:bg-white/5
-                     active:bg-slate-100 dark:active:bg-white/10"
+             transition-colors duration-150
+             hover:bg-slate-50 dark:hover:bg-white/5
+             active:bg-slate-100 dark:active:bg-white/10"
                     >
-                      {/* Rank */}
-                      <div className="w-6 shrink-0 text-center">
-                        {isTop3 ? (
-                          <span className="text-lg leading-none">{medals[idx]}</span>
-                        ) : (
-                          <span className="text-[11px] font-bold text-slate-400 tabular-nums">
-                            {idx + 1}
-                          </span>
-                        )}
-                      </div>
-
                       {/* Avatar */}
                       <img
                         src={s.avatar_url || "/UsersAvatar.jpg"}
                         alt={s.name}
                         loading="lazy"
                         decoding="async"
-                        className={`w-10 h-10 rounded-full object-cover shrink-0
-                       ${isTop3
+                        className={`w-16 h-16 rounded-full object-cover shrink-0
+               ${isTop3
                             ? "ring-2 ring-yellow-400/60"
                             : "ring-1 ring-slate-200 dark:ring-white/10"}`}
                       />
@@ -992,13 +981,25 @@ export default function StudentDashboard() {
                         </p>
                       </div>
 
-                      {/* Stars pill */}
-                      <div className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full
-                          bg-yellow-50 dark:bg-yellow-500/10">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-[11px] font-bold text-yellow-700 dark:text-yellow-400 tabular-nums">
-                          {s.stars}
-                        </span>
+                      {/* Rank + Stars, grouped on the right */}
+                      <div className="shrink-0 flex items-center gap-2">
+                        <div className="w-6 text-center">
+                          {isTop3 ? (
+                            <span className="text-lg leading-none">{medals[idx]}</span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-slate-400 tabular-nums">
+                              {idx + 1}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full
+        bg-yellow-50 dark:bg-yellow-500/10">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-[11px] font-bold text-yellow-700 dark:text-yellow-400 tabular-nums">
+                            {s.stars}
+                          </span>
+                        </div>
                       </div>
                     </button>
                   );

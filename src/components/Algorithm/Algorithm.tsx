@@ -376,92 +376,140 @@ export default function Algorithm() {
             <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-sm">
 
                 {/* Top block: label + big score (with side padding) */}
-                <div className="px-5 md:px-8 pt-6 md:pt-8">
-                    <div className="flex items-center justify-center gap-2 mb-5">
-                        <Brain className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-[10px] md:text-xs font-normal tracking-[0.18em] text-gray-400 dark:text-gray-500 ">
-                            Exam Prediction Readiness
-                        </span>
-                    </div>
-
-                    <div className="flex flex-col items-center text-center">
-                        <div className="flex items-baseline gap-0.5">
-                            <span className={`text-4xl md:text-7xl font-semibold tracking-tight leading-none tabular-nums ${theme.text}`}>
-                                {score.toFixed(1)}
-                            </span>
-                            <span className={`text-xl md:text-3xl font-normal ${theme.text}`}>%</span>
-                        </div>
-
-                        <p className="mt-3 text-xs md:text-sm font-normal text-gray-500 dark:text-gray-400">
-                            {readiness} readiness
-                        </p>
-
-                        <p className="mt-1 text-xs md:text-sm font-normal text-gray-400 dark:text-gray-500 max-w-xs">
-                            {isHighScore
-                                ? "Strong performance — keep it up"
+                {/* Top block: colored hero card with big score */}
+                <div className="px-4 md:px-6 pt-4 md:pt-6">
+                    <div
+                        className={`relative overflow-hidden rounded-2xl p-5 md:p-7
+            ${isHighScore
+                                ? "bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600"
                                 : isMediumScore
-                                    ? "On track — a few more sessions to peak"
-                                    : "Focus on weak units to raise this score"}
-                        </p>
+                                    ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500"
+                                    : "bg-gradient-to-br from-red-500 via-red-600 to-rose-700"
+                            }`}
+                    >
+                        {/* Soft decorative glow so the card feels alive */}
+                        <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+                        <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-black/10 blur-3xl pointer-events-none" />
+
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            {/* Label row */}
+                            <div className="flex items-center justify-center gap-2 mb-4 md:mb-5">
+                                <Brain className="w-4 h-4 text-white/70" />
+                                <span className="text-[10px] md:text-xs font-medium tracking-[0.18em] text-white/70 uppercase">
+                                    Exam Prediction Readiness
+                                </span>
+                            </div>
+
+                            {/* Big score */}
+                            <div className="flex items-baseline gap-0.5 text-white drop-shadow-sm">
+                                <span className="text-5xl md:text-7xl font-semibold tracking-tight leading-none tabular-nums">
+                                    {score.toFixed(1)}
+                                </span>
+                                <span className="text-2xl md:text-3xl font-normal">%</span>
+                            </div>
+
+                            {/* Readiness label pill */}
+                            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-sm
+                bg-white/20 backdrop-blur-sm text-white text-[11px] md:text-xs font-bold
+                tracking-wide">
+                                {readiness} readiness
+                            </div>
+
+                            {/* Subtitle */}
+                            <p className="mt-3 text-xs md:text-sm font-medium text-white/85 max-w-xs leading-relaxed">
+                                {isHighScore
+                                    ? "Strong performance — keep it up"
+                                    : isMediumScore
+                                        ? "On track — a few more sessions to peak"
+                                        : "Focus on weak units to raise this score"}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* 🔥 EDGE-TO-EDGE GRAPH — no side padding, bleeds both sides */}
                 {/* 📊 REAL CHART — axes, grid, labels, tooltip */}
                 {scoreSeries.length >= 2 && (
-                    <div className="mt-6 w-full h-[220px] px-2">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                                data={scoreSeries.map((s, i) => ({
-                                    name: `#${i + 1}`,
-                                    score: Number(s.toFixed(1)),
-                                }))}
-                                margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
-                            >
-                                <defs>
-                                    <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor={theme.colors[1]} stopOpacity={0.35} />
-                                        <stop offset="100%" stopColor={theme.colors[1]} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
+                    <div className="px-4 md:px-6 mt-4">
+                        <div
+                            className={`relative overflow-hidden rounded-2xl p-3 pt-5
+                ${isHighScore
+                                    ? "bg-emerald-50/70 dark:bg-emerald-950/20"
+                                    : isMediumScore
+                                        ? "bg-amber-50/70 dark:bg-amber-950/20"
+                                        : "bg-red-50/70 dark:bg-red-950/20"
+                                }`}
+                        >
+                            {/* Soft tinted glow for depth */}
+                            <div
+                                className={`absolute -top-16 -left-10 h-40 w-40 rounded-full blur-3xl pointer-events-none
+                    ${isHighScore
+                                        ? "bg-emerald-400/20"
+                                        : isMediumScore
+                                            ? "bg-amber-400/20"
+                                            : "bg-red-400/20"
+                                    }`}
+                            />
 
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                            <div className="relative z-10 w-full h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart
+                                        data={scoreSeries.map((s, i) => ({
+                                            name: `#${i + 1}`,
+                                            score: Number(s.toFixed(1)),
+                                        }))}
+                                        margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
+                                    >
+                                        <defs>
+                                            <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor={theme.colors[1]} stopOpacity={0.35} />
+                                                <stop offset="100%" stopColor={theme.colors[1]} stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
 
-                                <XAxis
-                                    dataKey="name"
-                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                    axisLine={{ stroke: "#e5e7eb" }}
-                                    tickLine={false}
-                                />
-                                <YAxis
-                                    domain={[0, 100]}
-                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                    axisLine={false}
-                                    tickLine={false}
-                                    width={40}
-                                />
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            stroke="currentColor"
+                                            className="text-slate-200 dark:text-slate-700/60"
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="name"
+                                            tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                            axisLine={{ stroke: "#e5e7eb" }}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            domain={[0, 100]}
+                                            tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            width={40}
+                                        />
 
-                                <Tooltip
-                                    contentStyle={{
-                                        borderRadius: 8,
-                                        border: "none",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                        fontSize: 12,
-                                    }}
-                                    formatter={(value: number) => [`${value}%`, "Score"]}
-                                />
+                                        <Tooltip
+                                            contentStyle={{
+                                                borderRadius: 8,
+                                                border: "none",
+                                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                                fontSize: 12,
+                                            }}
+                                            formatter={(value: number) => [`${value}%`, "Score"]}
+                                        />
 
-                                <Area
-                                    type="monotone"
-                                    dataKey="score"
-                                    stroke={theme.colors[1]}
-                                    strokeWidth={2.5}
-                                    fill="url(#scoreFill)"
-                                    dot={{ r: 3, fill: theme.colors[1] }}
-                                    activeDot={{ r: 6 }}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                                        <Area
+                                            type="monotone"
+                                            dataKey="score"
+                                            stroke={theme.colors[1]}
+                                            strokeWidth={2.5}
+                                            fill="url(#scoreFill)"
+                                            dot={{ r: 3, fill: theme.colors[1] }}
+                                            activeDot={{ r: 6 }}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
                 )}
 
