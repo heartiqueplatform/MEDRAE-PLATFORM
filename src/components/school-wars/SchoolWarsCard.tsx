@@ -14,8 +14,8 @@ const VISIBLE_ROWS = 5;
 const ATMOSPHERE_IMAGES = [
     "/high7.png",
     "/high8.png",
-    "/high9.png",
-    "/high10.png",
+    "/background03.jpg",
+    "/background02.jpg",
 
 ];
 type LeaderboardRow = {
@@ -532,8 +532,12 @@ export function SchoolWarsCard({ currentUserInstitution }: Props) {
                 <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent dark:from-[#161b22]" />
 
                 {/* Title — sits ON TOP with z-index */}
+                {/* Title — sits ON TOP with z-index */}
                 <div className="absolute bottom-2 left-4 right-4 z-10">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">
+                    <h3 className="text-base font-semibold tracking-tight drop-shadow-sm
+                   text-slate-900 dark:text-white
+                   bg-white/70 dark:bg-[#161b22]/80 backdrop-blur-sm
+                   inline-block px-2 py-0.5 rounded-md">
                         School Wars
                     </h3>
                 </div>
