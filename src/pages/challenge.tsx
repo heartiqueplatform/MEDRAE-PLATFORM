@@ -32,7 +32,8 @@ import { Button } from "@/components/ui/button";
 import { UserProfileModal } from '@/components/UserProfileModal';
 import { RecentWinsStrip } from '@/components/duel/RecentWinsStrip';
 
-
+import { useFollowingList } from "@/hooks/useFollowingList";
+import { FollowButton } from "@/components/FollowButton";
 interface CachedUser {
     user_id: string;
     name: string;
@@ -247,86 +248,103 @@ function ChallengeTabs({
                                     ))}
 
                                     {/* === PLAYER ROWS === */}
+                                    {/* === PLAYER ROWS === */}
                                     {filteredPlayers.map((p: any) => (
                                         <div
                                             key={p.user_id}
-                                            className="group flex items-center gap-3 px-3 py-2.5
-                                           transition-colors duration-150
-                                           hover:bg-slate-50 dark:hover:bg-white/5"
+                                            className="group px-3 py-2.5
+       transition-colors duration-150
+       hover:bg-slate-50 dark:hover:bg-white/5
+       sm:flex sm:items-center sm:gap-3"
                                         >
-                                            <button
-                                                onClick={() => onSelectUser(p.user_id)}
-                                                className="relative shrink-0 active:scale-95 transition-transform"
-                                                style={{ touchAction: 'manipulation' }}
-                                            >
-                                                <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                                    {p.avatar_url ? (
-                                                        <img
-                                                            src={p.avatar_url}
-                                                            className="w-full h-full object-cover"
-                                                            alt={p.name}
-                                                            loading="lazy"
-                                                        />
-                                                    ) : (
-                                                        <img
-                                                            src="/pwa-512x512.png"
-                                                            className="w-full h-full object-cover"
-                                                            alt="Medrae Logo"
-                                                        />
+                                            {/* Top (phone) / left (desktop): avatar + name */}
+                                            <div className="flex items-start gap-3 sm:flex-1 sm:min-w-0 sm:items-center">
+                                                <button
+                                                    onClick={() => onSelectUser(p.user_id)}
+                                                    className="relative shrink-0 active:scale-95 transition-transform"
+                                                    style={{ touchAction: 'manipulation' }}
+                                                >
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                        {p.avatar_url ? (
+                                                            <img
+                                                                src={p.avatar_url}
+                                                                className="w-full h-full object-cover"
+                                                                alt={p.name}
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <img
+                                                                src="/pwa-512x512.png"
+                                                                className="w-full h-full object-cover"
+                                                                alt="Medrae Logo"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    {p.is_online && (
+                                                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
                                                     )}
-                                                </div>
-                                                {p.is_online && (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
-                                                )}
-                                                {p.is_pinned && (
-                                                    <span className="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
-                                                        <Star size={8} className="text-white fill-white" />
+                                                    {p.is_pinned && (
+                                                        <span className="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                                            <Star size={8} className="text-white fill-white" />
+                                                        </span>
+                                                    )}
+                                                </button>
+
+                                                <button
+                                                    onClick={() => onSelectUser(p.user_id)}
+                                                    className="flex-1 min-w-0 text-left active:opacity-70 pt-0.5 sm:pt-0"
+                                                    style={{ touchAction: 'manipulation' }}
+                                                >
+                                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                                        {p.name || "Unknown User"}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                                        @{p.username || "nurse"}
+                                                    </p>
+                                                </button>
+                                            </div>
+
+                                            {/* Actions: below on phone, inline-right on desktop */}
+                                            <div className="mt-2 flex items-center gap-2 flex-wrap pl-[60px] sm:mt-0 sm:pl-0 sm:flex-nowrap sm:shrink-0">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        togglePin(p.user_id);
+                                                    }}
+                                                    className={`shrink-0 flex items-center justify-center gap-1.5 rounded-sm transition-colors active:scale-90
+                    h-9 sm:h-8 px-3
+                    ${p.is_pinned
+                                                            ? "bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                                            : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+                                                        }`}
+                                                    style={{ touchAction: 'manipulation' }}
+                                                    title={p.is_pinned ? "Remove from favorites" : "Add to favorites"}
+                                                    aria-pressed={!!p.is_pinned}
+                                                    aria-label={p.is_pinned ? "Remove from favorites" : "Add to favorites"}
+                                                >
+                                                    <Star size={14} className={p.is_pinned ? "fill-current" : ""} />
+                                                    <span className="text-[12px] sm:text-[11px] font-bold">
+                                                        {p.is_pinned ? "Favorited" : "Favorite"}
                                                     </span>
-                                                )}
-                                            </button>
+                                                </button>
 
-                                            <button
-                                                onClick={() => onSelectUser(p.user_id)}
-                                                className="flex-1 min-w-0 text-left active:opacity-70"
-                                                style={{ touchAction: 'manipulation' }}
-                                            >
-                                                <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
-                                                    {p.name || "Unknown User"}
-                                                </p>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-                                                    @{p.username || "nurse"}
-                                                </p>
-                                            </button>
+                                                <div className="shrink-0 [&_button]:h-9 sm:[&_button]:h-8 [&_button]:text-[12px] sm:[&_button]:text-[11px] [&_button]:rounded-sm">
+                                                    <FollowButton targetUserId={p.user_id} size="sm" />
+                                                </div>
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    togglePin(p.user_id);
-                                                }}
-                                                className="shrink-0 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                                                style={{ touchAction: 'manipulation' }}
-                                                title={p.is_pinned ? "Unpin user" : "Pin user"}
-                                            >
-                                                {p.is_pinned ? (
-                                                    <Star size={14} className="text-amber-500 fill-amber-500" />
-                                                ) : (
-                                                    <StarOff size={14} className="text-slate-300" />
-                                                )}
-                                            </button>
-
-                                            <Button
-                                                onClick={(e: React.MouseEvent) => {
-                                                    e.stopPropagation();
-                                                    e.preventDefault();
-                                                    sendChallenge(p.user_id);
-                                                }}
-                                                size="sm"
-                                                className="shrink-0 h-8 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-colors active:scale-95 shadow-none"
-                                                style={{ touchAction: 'manipulation' }}
-                                            >
-
-                                                Challenge Me
-                                            </Button>
+                                                <Button
+                                                    onClick={(e: React.MouseEvent) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        sendChallenge(p.user_id);
+                                                    }}
+                                                    size="sm"
+                                                    className="shrink-0 h-9 sm:h-8 px-3 rounded-sm bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] sm:text-[11px] transition-colors active:scale-95 shadow-none flex-1 sm:flex-none min-w-[110px] sm:min-w-0"
+                                                    style={{ touchAction: 'manipulation' }}
+                                                >
+                                                    Challenge Me
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -834,6 +852,7 @@ export default function ChallengePage() {
     const submitGuardRef = useRef(false);
     const sendingRef = useRef(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const { isFollowing } = useFollowingList();
     // Load pinned users from cache on mount
     useEffect(() => {
         const cached = loadCache(PLAYERS_CACHE_KEY);
@@ -1229,11 +1248,18 @@ export default function ChallengePage() {
         }
         if (onlyOnline) filtered = filtered.filter(p => p.is_online);
         return filtered.sort((a, b) => {
+            // 1) pinned first
             if (a.is_pinned && !b.is_pinned) return -1;
             if (!a.is_pinned && b.is_pinned) return 1;
+            // 2) followed next (only matters between two non-pinned)
+            const aFollow = isFollowing(a.user_id);
+            const bFollow = isFollowing(b.user_id);
+            if (aFollow && !bFollow) return -1;
+            if (!aFollow && bFollow) return 1;
+            // 3) name
             return (a.name || "").localeCompare(b.name || "");
         });
-    }, [players, search, onlyOnline]);
+    }, [players, search, onlyOnline, isFollowing]);
     const handleInvite = (type: string) => {
         playSound("ui-tap");
         const message = `Hey 👋\n\nJoin me on Medrae 🚀\n\nCompete in challenges:\nhttps://medrae.vercel.app/challenge\n\nSign up here:\nhttps://medrae.vercel.app`;
@@ -1748,6 +1774,7 @@ export default function ChallengePage() {
                     onUpdateList={handleManualUpdate}
                     isUpdating={isUpdating}
                     onSelectUser={setSelectedUserId}
+                    isFollowing={isFollowing}
                 />
             </div>
 

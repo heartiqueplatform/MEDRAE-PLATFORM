@@ -22,6 +22,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { useFollow } from "@/hooks/useFollow";
+import { FollowButton } from "@/components/FollowButton";
+import { useAuth } from "@/context/AuthProvider";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -87,7 +90,7 @@ interface UserDataState {
     totalFeedSeen: number;
     currentStreak: number;
     bestStreak: number;
-    duelStats: DuelStats;   // ✅ NEW
+    duelStats: DuelStats;
     isLoading: boolean;
     isPaperTitlesLoaded: boolean;
 }
@@ -176,7 +179,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
         totalFeedSeen: 0,
         currentStreak: 0,
         bestStreak: 0,
-        duelStats: { wins: 0, losses: 0, total: 0 },   // ✅ NEW
+        duelStats: { wins: 0, losses: 0, total: 0 },
         isLoading: true,
         isPaperTitlesLoaded: false,
     });
@@ -188,6 +191,11 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
     const abortControllerRef = useRef<AbortController | null>(null);
     const paperTitlesLoadedRef = useRef(false);
     const [, startTransition] = useTransition();
+
+    // ─── Follow system ────────────────────────────────────────────
+    const { status: followStatus } = useFollow(userId);
+    const { user } = useAuth();
+    const isSelf = !!user?.id && user.id === userData.profile?.user_id;
 
     /* ---------------- Fetch ---------------- */
 
@@ -245,7 +253,6 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         .select("streak")
                         .eq("user_id", userId)
                         .order("login_date", { ascending: false }),
-                    // ✅ Duel stats — separate call, doesn't block other queries on error
                     supabase
                         .rpc("get_user_duel_stats", { p_user_id: userId })
                         .maybeSingle(),
@@ -526,7 +533,6 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         ) : userData.profile ? (
                             <div className="flex flex-col">
                                 {/* Identity */}
-                                {/* Identity */}
                                 <div className="flex flex-col items-center text-center mb-6">
                                     <h2 className={`text-2xl font-bold ${textMain} tracking-tight leading-tight`}>
                                         {userData.profile.name || "Student"}
@@ -552,6 +558,11 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                         )}
                                     </div>
 
+                                    {/* Follow button — hidden on self inside FollowButton */}
+                                    <div className="mt-3">
+                                        <FollowButton targetUserId={userData.profile.user_id} />
+                                    </div>
+
                                     {/* ✅ Duel wins badge — only shows when the user has at least 1 win */}
                                     {userData.duelStats.wins > 0 && (
                                         <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
@@ -566,179 +577,192 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                     )}
                                 </div>
 
-                                {/* Streaks — flat cards */}
-                                <div className="grid grid-cols-2 gap-3 mb-6">
-                                    <div className={`${surfaceAlt} rounded-2xl p-3 flex items-center gap-3`}>
-                                        <div className="p-2 bg-amber-500 rounded-xl text-white">
-                                            <Zap className="w-5 h-5 fill-current" />
-                                        </div>
-                                        <div>
-                                            <p className={`text-[9px] font-bold uppercase leading-none mb-1 ${textSub}`}>
-                                                Current
-                                            </p>
-                                            <p className={`text-sm font-bold ${textMain}`}>
-                                                {userData.currentStreak} Days
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className={`${surfaceAlt} rounded-2xl p-3 flex items-center gap-3`}>
-                                        <div className="p-2 bg-amber-500 rounded-xl text-white">
-                                            <Trophy className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className={`text-[9px] font-bold uppercase leading-none mb-1 ${textSub}`}>
-                                                Best
-                                            </p>
-                                            <p className={`text-sm font-bold ${textMain}`}>
-                                                {userData.bestStreak} Days
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Stats */}
-                                <div className="grid grid-cols-4 gap-2 mb-8">
-                                    {statsData.map((stat, i) => (
-                                        <StatCard key={i} {...stat} />
-                                    ))}
-                                </div>
-
-                                {/* Academic info — flat */}
-                                <div className={`${surfaceAlt} p-5 rounded-3xl mb-8`}>
-                                    <p className={`text-[10px] font-bold ${textSub} uppercase tracking-[2px] mb-4`}>
-                                        Academic Details
-                                    </p>
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between flex-wrap gap-2">
-                                            <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                Institution
-                                            </span>
-                                            <span className={`font-bold ${textMain} text-right`}>
-                                                {userData.profile.institution || "-"}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between flex-wrap gap-2">
-                                            <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                Course / Block
-                                            </span>
-                                            <span className={`font-bold ${textMain} text-right`}>
-                                                {userData.profile.course || "-"} /{" "}
-                                                {userData.profile.block || "-"}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between flex-wrap gap-2">
-                                            <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                County
-                                            </span>
-                                            <span className={`font-bold ${textMain} text-right`}>
-                                                {userData.profile.county || "-"}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between flex-wrap gap-2">
-                                            <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                Specialization
-                                            </span>
-                                            <span className={`font-bold ${accentText} text-right`}>
-                                                {userData.profile.specialization || "-"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Performance History — flat */}
-                                <div className="space-y-6">
-                                    <h4 className={`text-xs font-bold ${textMain} uppercase tracking-[2px] flex items-center gap-2`}>
-                                        <div className={`w-1.5 h-4 ${accentBg} rounded-full`} />
-                                        Performance History
-                                    </h4>
-
-                                    {userData.quizResults.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
-                                                Recent Quizzes
-                                            </p>
-                                            <div className="space-y-2">
-                                                {userData.quizResults.slice(0, 3).map((quiz) => (
-                                                    <div
-                                                        key={quiz.id}
-                                                        className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
-                                                    >
-                                                        <span className={`text-xs font-medium truncate max-w-[150px] ${textMain}`}>
-                                                            {quiz.unit || "Quiz"}
-                                                        </span>
-                                                        <span className="text-xs font-bold text-emerald-600">
-                                                            {Math.round(
-                                                                (quiz.score / quiz.total_questions) * 100
-                                                            )}
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                {followStatus.iFollow || isSelf ? (
+                                    <>
+                                        {/* Streaks — flat cards */}
+                                        <div className="grid grid-cols-2 gap-3 mb-6">
+                                            <div className={`${surfaceAlt} rounded-2xl p-3 flex items-center gap-3`}>
+                                                <div className="p-2 bg-amber-500 rounded-xl text-white">
+                                                    <Zap className="w-5 h-5 fill-current" />
+                                                </div>
+                                                <div>
+                                                    <p className={`text-[9px] font-bold uppercase leading-none mb-1 ${textSub}`}>
+                                                        Current
+                                                    </p>
+                                                    <p className={`text-sm font-bold ${textMain}`}>
+                                                        {userData.currentStreak} Days
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className={`${surfaceAlt} rounded-2xl p-3 flex items-center gap-3`}>
+                                                <div className="p-2 bg-amber-500 rounded-xl text-white">
+                                                    <Trophy className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className={`text-[9px] font-bold uppercase leading-none mb-1 ${textSub}`}>
+                                                        Best
+                                                    </p>
+                                                    <p className={`text-sm font-bold ${textMain}`}>
+                                                        {userData.bestStreak} Days
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
 
-                                    {userData.simulationResults.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className={`text-[10px] font-bold ${accentText} uppercase tracking-wider`}>
-                                                Recent Simulations
+                                        {/* Stats */}
+                                        <div className="grid grid-cols-4 gap-2 mb-8">
+                                            {statsData.map((stat, i) => (
+                                                <StatCard key={i} {...stat} />
+                                            ))}
+                                        </div>
+
+                                        {/* Academic info — flat */}
+                                        <div className={`${surfaceAlt} p-5 rounded-3xl mb-8`}>
+                                            <p className={`text-[10px] font-bold ${textSub} uppercase tracking-[2px] mb-4`}>
+                                                Academic Details
                                             </p>
-                                            <div className="space-y-2">
-                                                {userData.simulationResults.slice(0, 3).map((sim) => (
-                                                    <div
-                                                        key={sim.id}
-                                                        className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
-                                                    >
-                                                        <span className={`text-xs font-medium truncate max-w-[150px] ${textMain}`}>
-                                                            {sim.paper_name || "Simulation"}
-                                                        </span>
-                                                        <span className={`text-xs font-bold ${accentText}`}>
-                                                            {Math.round(
-                                                                (sim.score / sim.total_questions) * 100
-                                                            )}
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-3 text-sm">
+                                                <div className="flex justify-between flex-wrap gap-2">
+                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
+                                                        Institution
+                                                    </span>
+                                                    <span className={`font-bold ${textMain} text-right`}>
+                                                        {userData.profile.institution || "-"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between flex-wrap gap-2">
+                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
+                                                        Course / Block
+                                                    </span>
+                                                    <span className={`font-bold ${textMain} text-right`}>
+                                                        {userData.profile.course || "-"} /{" "}
+                                                        {userData.profile.block || "-"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between flex-wrap gap-2">
+                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
+                                                        County
+                                                    </span>
+                                                    <span className={`font-bold ${textMain} text-right`}>
+                                                        {userData.profile.county || "-"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between flex-wrap gap-2">
+                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
+                                                        Specialization
+                                                    </span>
+                                                    <span className={`font-bold ${accentText} text-right`}>
+                                                        {userData.profile.specialization || "-"}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
 
-                                    {userData.triviaResults.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
-                                                Daily Trivia
-                                            </p>
-                                            <div className="space-y-2">
-                                                {userData.triviaResults.slice(0, 3).map((trivia) => (
-                                                    <div
-                                                        key={trivia.id}
-                                                        className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
-                                                    >
-                                                        <span className={`text-xs font-medium ${textMain}`}>
-                                                            {new Date(trivia.attempt_date).toLocaleDateString()}
-                                                        </span>
-                                                        <span className="text-xs font-bold text-amber-600">
-                                                            {Math.round(
-                                                                (trivia.score / trivia.total_questions) * 100
-                                                            )}
-                                                            %
-                                                        </span>
+                                        {/* Performance History — flat */}
+                                        <div className="space-y-6">
+                                            <h4 className={`text-xs font-bold ${textMain} uppercase tracking-[2px] flex items-center gap-2`}>
+                                                <div className={`w-1.5 h-4 ${accentBg} rounded-full`} />
+                                                Performance History
+                                            </h4>
+
+                                            {userData.quizResults.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                                                        Recent Quizzes
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {userData.quizResults.slice(0, 3).map((quiz) => (
+                                                            <div
+                                                                key={quiz.id}
+                                                                className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
+                                                            >
+                                                                <span className={`text-xs font-medium truncate max-w-[150px] ${textMain}`}>
+                                                                    {quiz.unit || "Quiz"}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-emerald-600">
+                                                                    {Math.round(
+                                                                        (quiz.score / quiz.total_questions) * 100
+                                                                    )}
+                                                                    %
+                                                                </span>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                                </div>
+                                            )}
 
-                                <div className="mt-8 text-center">
-                                    <p className={`text-[9px] font-bold ${textSub} uppercase tracking-[3px]`}>
-                                        Student Since{" "}
-                                        {userData.profile.joined_date
-                                            ? new Date(userData.profile.joined_date).getFullYear()
-                                            : "2024"}
-                                    </p>
-                                </div>
+                                            {userData.simulationResults.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <p className={`text-[10px] font-bold ${accentText} uppercase tracking-wider`}>
+                                                        Recent Simulations
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {userData.simulationResults.slice(0, 3).map((sim) => (
+                                                            <div
+                                                                key={sim.id}
+                                                                className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
+                                                            >
+                                                                <span className={`text-xs font-medium truncate max-w-[150px] ${textMain}`}>
+                                                                    {sim.paper_name || "Simulation"}
+                                                                </span>
+                                                                <span className={`text-xs font-bold ${accentText}`}>
+                                                                    {Math.round(
+                                                                        (sim.score / sim.total_questions) * 100
+                                                                    )}
+                                                                    %
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {userData.triviaResults.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
+                                                        Daily Trivia
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {userData.triviaResults.slice(0, 3).map((trivia) => (
+                                                            <div
+                                                                key={trivia.id}
+                                                                className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
+                                                            >
+                                                                <span className={`text-xs font-medium ${textMain}`}>
+                                                                    {new Date(trivia.attempt_date).toLocaleDateString()}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-amber-600">
+                                                                    {Math.round(
+                                                                        (trivia.score / trivia.total_questions) * 100
+                                                                    )}
+                                                                    %
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-8 text-center">
+                                            <p className={`text-[9px] font-bold ${textSub} uppercase tracking-[3px]`}>
+                                                Student Since{" "}
+                                                {userData.profile.joined_date
+                                                    ? new Date(userData.profile.joined_date).getFullYear()
+                                                    : "2024"}
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center text-center py-10 px-4">
+                                        <p className={`text-[11px] font-bold uppercase tracking-[2px] ${textSub} mb-2`}>
+                                            Activity hidden
+                                        </p>
+                                        <p className={`text-xs ${textSub} max-w-[260px] leading-relaxed`}>
+                                            Follow this student to see their streaks, stats, and performance history.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-20">
