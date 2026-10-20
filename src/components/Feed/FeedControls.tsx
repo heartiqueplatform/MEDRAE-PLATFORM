@@ -103,7 +103,7 @@ export default function FeedControls({
     /* ── Encouraging message ── */
     const message = useMemo(() => {
         if (questionCount === 0) return "Ready when you are. Let's get started! 🚀";
-        if (questionCount < 100) return "Great start — keep the momentum going! 💪";
+        if (questionCount < 100) return "Great start  keep the momentum going! 💪";
         if (questionCount < 500) return "You're warming up nicely. Keep going! 🔥";
         if (questionCount < 1000) return "Solid grind. 1K is within reach! ⚡";
         if (questionCount < 3000) return "You're on fire. 3K coming up! 🌟";

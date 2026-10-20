@@ -316,12 +316,12 @@ export default function Feed() {
   useEffect(() => {
     if (correctStreak > 0 && correctStreak % 5 === 0) {
       setFeedbackMessage(
-        "🏆 Outstanding work! Reaching this streak shows excellent focus and consistency. Keep up the great momentum—you’re making impressive progress."
+        "🏆 Outstanding work! Reaching this streak shows excellent focus and consistency. Keep up the great momentum you’re making impressive progress."
       );
       playSound("trivia-finish");
     } else if (correctStreak > 0 && correctStreak % 3 === 0) {
       setFeedbackMessage(
-        "🔥 Great job! Your effort is clearly paying off. Each correct answer strengthens your understanding—keep going."
+        "🔥 Great job! Your effort is clearly paying off. Each correct answer strengthens your understanding keep going."
       );
       playSound("medrae");
     }

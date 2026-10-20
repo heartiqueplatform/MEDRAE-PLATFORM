@@ -704,6 +704,9 @@ export function Footer() {
                     backfaceVisibility: 'hidden',
                 }}
             >
+                {/* ✅ Home — always first (far left) */}
+                <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
+
                 {isStudent && (
                     <>
                         <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
@@ -717,8 +720,6 @@ export function Footer() {
                         <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
                     </>
                 )}
-
-                <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
 
                 {isTutor && (
                     <NavItem icon={IconExamResults} label="Exam Results" isActive={isActive("/tutor/exams/:paper_id/results")} onPress={(e) => handleNavigate(e, "/tutor/exams/:paper_id/results")} isDark={theme === 'dark'} />
