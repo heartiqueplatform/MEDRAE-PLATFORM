@@ -112,6 +112,7 @@ import ExamBuddiesPage from "./pages/survival-hub/ExamBuddiesPage";
 import AuthCallback from "./pages/AuthCallback";
 import FloatingStreakCandle from "./components/FloatingStreakCandle";
 import { ProfileIncompleteChecker } from "./components/ProfileIncompleteChecker";
+import StreakRestore from "./pages/StreakRestore";
 import LinkGenerator from "./pages/LinkGenerator";
 import RedirectHandler from "./pages/RedirectHandler";
 import { FloatingRefreshLoader } from "./components/FloatingRefreshLoader";
@@ -566,6 +567,7 @@ const AppContent = () => {
                           <Route path="/feed" element={<Feed />} />
 
                           <Route path="/grouppay" element={<GroupPayHome />} />
+                          <Route path="/streak/restore" element={<StreakRestore />} />
                           <Route path="/grouppay/create" element={<CreateGroupPage />} />
                           <Route path="/grouppay/:id" element={<GroupDetailsPage />} />
                           <Route path="/guide" element={<Guide />} />

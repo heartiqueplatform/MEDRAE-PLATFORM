@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,20 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, UserCheck, Stethoscope, Eye, EyeOff, User, Mail, Phone, Lock, MoreHorizontal, ShieldQuestion, School, MapPin, FileText, ChevronRight, Target, BookOpen, Layers, CheckCircle2, Info, ArrowRight, LogOut } from "lucide-react";
+import {
+  GraduationCap, UserCheck, Stethoscope, Eye, EyeOff, User, Mail, Phone, Lock,
+  ShieldQuestion, School, MapPin, FileText, ChevronRight, Target, BookOpen,
+  Layers, CheckCircle2, Info, ArrowRight, LogOut, Search, AlertCircle, X,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
-import { institutions } from "@/components/forms/institutions.data";
-import { counties } from "@/components/forms/institutions.data";
+import { institutions, counties } from "@/components/forms/institutions.data";
 import { Separator } from "@/components/ui/separator";
-import { useEffect } from "react";
 import ExitOverlay from "@/components/ExitOverlay";
-import sha256 from "crypto-js/sha256";
-import GoogleAuthButton from "@/components/google/GoogleAuthButton";
+
 // ==========================================
 // 🔒 DEVICE LIMIT POLICY
-// Maximum concurrent devices allowed per user.
-// MUST MATCH Login.tsx
 // ==========================================
 const MAX_DEVICES = 2;
 
@@ -35,7 +34,6 @@ function getOrCreateDeviceId(): string {
 
 async function enforceDeviceLimit(userId: string, deviceId: string) {
   try {
-    // 1. Register / refresh THIS device's row
     await supabase.from("user_sessions").upsert(
       {
         user_id: userId,
@@ -47,7 +45,6 @@ async function enforceDeviceLimit(userId: string, deviceId: string) {
       { onConflict: "user_id,device_id" }
     );
 
-    // 2. Fetch all sessions for this user, newest first
     const { data: sessions, error } = await supabase
       .from("user_sessions")
       .select("id, device_id, last_seen")
@@ -60,66 +57,204 @@ async function enforceDeviceLimit(userId: string, deviceId: string) {
     }
     if (!sessions || sessions.length <= MAX_DEVICES) return;
 
-    // 3. Anything past the first MAX_DEVICES rows is stale → delete
     const toEvict = sessions.slice(MAX_DEVICES).map((s) => s.id);
     await supabase.from("user_sessions").delete().in("id", toEvict);
   } catch (err) {
     console.error("🔒 enforceDeviceLimit error:", err);
   }
 }
-const backgroundImages = [
-  "high1.png",
-  "high2.png",
-  "high3.png",
-  "high4.png",
-  "high5.png",
-  "high6.png",
-];
 
+const backgroundImages = ["high1.png", "high2.png", "high3.png", "high4.png", "high5.png", "high6.png"];
+
+// ==========================================
+// 🎯 SEARCHABLE INSTITUTION SELECT
+// ==========================================
+// ==========================================
+// 🎯 SEARCHABLE INSTITUTION SELECT — shadcn Select (matches Settings)
+// ==========================================
+function SearchableInstitutionSelect({
+  value,
+  onChange,
+  hasError,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  hasError?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const selected = institutions.find((i) => i.value === value);
+
+  const grouped = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const filtered = term
+      ? institutions.filter(
+        (i) =>
+          i.label.toLowerCase().includes(term) ||
+          i.value.toLowerCase().includes(term)
+      )
+      : institutions;
+
+    const tags = [
+      { tag: "kmtc", title: "KMTC Campuses", items: filtered.filter((i) => i.tag === "kmtc") },
+      { tag: "university", title: "Universities", items: filtered.filter((i) => i.tag === "university") },
+      { tag: "hospital", title: "Hospital / Mission / Nursing Colleges", items: filtered.filter((i) => i.tag === "hospital") },
+      { tag: "other", title: "Other Colleges", items: filtered.filter((i) => i.tag === "other") },
+    ];
+    return tags.filter((t) => t.items.length > 0);
+  }, [query]);
+
+  return (
+    <Select value={value || ""} onValueChange={onChange}>
+      <SelectTrigger
+        className={`text-sm h-10 ${hasError ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+      >
+        <SelectValue placeholder="Search or choose institution">
+          {selected?.label ?? ""}
+        </SelectValue>
+      </SelectTrigger>
+
+      <SelectContent className="max-h-[340px] p-0 [&>div]:p-0" position="popper">
+        {/* Sticky search — flush to top, fully opaque */}
+        <div className="sticky -top-2 z-10 bg-popover dark:bg-[#161b22] border-b border-border p-0 backdrop-blur-none">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Search e.g. 'KMTC Nakuru'"
+              className="w-full pl-9 pr-8 py-2.5 rounded-none bg-popover dark:bg-[#161b22] border-0 text-sm outline-none focus:ring-0"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-accent"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Grouped results */}
+        <div className="py-1">
+          {grouped.length === 0 ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              No institution matches "{query}"
+            </div>
+          ) : (
+            grouped.map((group) => (
+              <div key={group.tag}>
+                <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/50">
+                  {group.title} ({group.items.length})
+                </div>
+                {group.items.map((inst) => (
+                  <SelectItem
+                    key={inst.value}
+                    value={inst.value}
+                    className="text-sm"
+                  >
+                    {inst.label}
+                  </SelectItem>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      </SelectContent>
+    </Select>
+  );
+}
+// ==========================================
+// 🎯 FIELD WRAPPER WITH ERROR DISPLAY
+// ==========================================
+function Field({
+  id,
+  label,
+  icon,
+  required,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div id={id} className="space-y-1 md:space-y-1.5 scroll-mt-24">
+      <Label
+        className={`text-[10px] md:text-xs uppercase tracking-wider font-bold flex items-center gap-1 ${error ? "text-red-600" : "text-gray-500"
+          }`}
+      >
+        {icon}
+        {label} {required && <span className="text-red-500">*</span>}
+      </Label>
+      {children}
+      {error && (
+        <p className="text-[11px] text-red-600 flex items-center gap-1 mt-0.5">
+          <AlertCircle className="w-3 h-3" /> {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// MAIN REGISTER
+// ==========================================
 export function Register() {
   useEffect(() => {
     document.documentElement.classList.remove("dark");
   }, []);
+
   const [usernameEdited, setUsernameEdited] = useState(false);
   const [showExitOverlay, setShowExitOverlay] = useState(false);
-
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
 
   const courseOptions = [
     { value: "bsc-nursing", label: "BScN ★★★★★" },
-    { value: "krchn", label: "KRCHN  ★★★★" },
+    { value: "krchn", label: "KRCHN ★★★★" },
     { value: "midwifery", label: "Midwifery ★★★★" },
     { value: "critical-care-nursing", label: "Critical Care Nursing ★★★★" },
-    { value: "mental-health-nursing", label: "Mental Health & Psychiatry Nursing  ★★★★" },
+    { value: "mental-health-nursing", label: "Mental Health & Psychiatry Nursing ★★★★" },
     { value: "pediatric-nursing", label: "Pediatric Nursing ★★★★" },
     { value: "oncology-nursing", label: "Oncology Nursing ★★★★" },
     { value: "palliative-care-nursing", label: "Palliative Care Nursing ★★★★" },
     { value: "community-health-nursing", label: "Community Health Nursing ★★★★" },
-    { value: "perioperative-nursing", label: "Perioperative (Theatre) Nursing  ★★★★" },
-    { value: "renal-nursing", label: "Renal Nursing  ★★★★" },
+    { value: "perioperative-nursing", label: "Perioperative (Theatre) Nursing ★★★★" },
+    { value: "renal-nursing", label: "Renal Nursing ★★★★" },
     { value: "other", label: "Other (Nursing Related) ★★★" },
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setBgIndex(prev => {
-        if (prev + 1 >= backgroundImages.length) return 0;
-        return prev + 1;
-      });
+      setBgIndex((prev) => (prev + 1 >= backgroundImages.length ? 0 : prev + 1));
     }, 6000);
-
     return () => clearInterval(interval);
   }, []);
-  const handleRegister = async (role, formData) => {
+
+  const handleRegister = async (role: "student" | "tutor", formData: any) => {
     if (formData.password !== formData.confirmPassword) {
-      toast({ title: "Password Mismatch!", description: "Passwords must match.", variant: "destructive" });
+      toast({
+        title: "Password Mismatch!",
+        description: "Passwords must match.",
+        variant: "destructive",
+      });
       return;
     }
     setIsLoading(true);
 
-    // ⬅️ NEW: Read referral code from URL (?ref=MED-XXXXXX)
     const urlRef = new URLSearchParams(window.location.search).get("ref");
 
     try {
@@ -128,51 +263,38 @@ export function Register() {
         password: formData.password,
         options: {
           data: {
-            role: role,
+            role,
             name: formData.fullName,
-            referral_code: urlRef || null   // ⬅️ NEW: attach ref to signup metadata
-          }
-        }
+            referral_code: urlRef || null,
+          },
+        },
       });
 
-      if (signUpError || !signUpData.user) throw new Error(signUpError?.message || "Sign-up failed.");
+      if (signUpError || !signUpData.user)
+        throw new Error(signUpError?.message || "Sign-up failed.");
 
-      // First declaration of userId
       const userId = signUpData.user.id;
       const courseFinal = formData.course === "other" ? formData.otherCourse : formData.course;
 
+      const basePayload = {
+        name: formData.fullName,
+        username: formData.username,
+        phone: formData.phone,
+        county: formData.county,
+        institution: formData.institution,
+        bio: formData.bio,
+        role,
+        subscription: "Free",
+        joined_date: new Date().toISOString().split("T")[0],
+        reset_question: formData.resetQuestion,
+        reset_answer: formData.resetAnswer,
+        target_score: formData.targetScore,
+      };
+
       const profileUpdatePayload =
         role === "tutor"
-          ? {
-            name: formData.fullName,
-            username: formData.username,
-            phone: formData.phone,
-            county: formData.county,
-            institution: formData.institution,
-            bio: formData.bio,
-            role,
-            subscription: "Free",
-            joined_date: new Date().toISOString().split("T")[0],
-            reset_question: formData.resetQuestion,
-            reset_answer: formData.resetAnswer,
-            target_score: formData.targetScore,
-          }
-          : {
-            name: formData.fullName,
-            username: formData.username,
-            phone: formData.phone,
-            county: formData.county,
-            institution: formData.institution,
-            course: courseFinal,
-            block: formData.block,
-            bio: formData.bio,
-            role,
-            subscription: "Free",
-            joined_date: new Date().toISOString().split("T")[0],
-            reset_question: formData.resetQuestion,
-            reset_answer: formData.resetAnswer,
-            target_score: formData.targetScore,
-          };
+          ? basePayload
+          : { ...basePayload, course: courseFinal, block: formData.block };
 
       const { error: updateError } = await supabase
         .from("profiles")
@@ -186,23 +308,21 @@ export function Register() {
         password: formData.password,
       });
 
-      if (loginError || !loginData.user) throw new Error(loginError?.message || "Login after registration failed.");
+      if (loginError || !loginData.user)
+        throw new Error(loginError?.message || "Login after registration failed.");
 
       const deviceId = getOrCreateDeviceId();
-      // 🔒 Enforce device limit (max 2 devices)
       await enforceDeviceLimit(loginData.user.id, deviceId);
 
-      // Non-blocking heartbeat
       try {
-        await supabase.rpc('handle_user_heartbeat', {
+        await supabase.rpc("handle_user_heartbeat", {
           p_user_id: loginData.user.id,
-          p_device_id: deviceId
+          p_device_id: deviceId,
         });
       } catch (err) {
         console.warn("Heartbeat failed (non-fatal):", err);
       }
 
-      // ✅ FIXED: Renamed this variable to avoid the "already declared" error
       const loggedInUserId = loginData.user.id;
       localStorage.setItem(`userRole_${loggedInUserId}`, role);
       localStorage.setItem("last_known_role", role);
@@ -220,9 +340,8 @@ export function Register() {
       setIsLoading(false);
     }
   };
-  const handleExitApp = () => {
-    setShowExitOverlay(true);
-  };
+
+  const handleExitApp = () => setShowExitOverlay(true);
   const finalExitAction = () => {
     if ((window as any).electronAPI) {
       (window as any).electronAPI.quitApp();
@@ -231,29 +350,19 @@ export function Register() {
       window.location.href = "https://google.com";
     }
   };
+
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row transition-all duration-1000 bg-white text-gray-900">
-      {/* FLOATING EXIT BUTTON */}
       <button
         onClick={handleExitApp}
-        className="hidden md:flex fixed top-6 left-6 z-[9999]
-             bg-white/10 backdrop-blur-md
-             hover:bg-white/20 border border-white/20
-             text-white/80 hover:text-white
-             py-2 px-4 rounded-xl
-             transition-all duration-300 active:scale-95
-             items-center gap-2.5 group"
+        className="hidden md:flex fixed top-6 left-6 z-[9999] bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 text-white/80 hover:text-white py-2 px-4 rounded-xl transition-all duration-300 active:scale-95 items-center gap-2.5 group"
       >
         <LogOut className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:text-red-400 transition-all" />
-        <span className="text-[11px] font-medium tracking-widest uppercase">
-          Exit System
-        </span>
+        <span className="text-[11px] font-medium tracking-widest uppercase">Exit System</span>
       </button>
-      <ExitOverlay
-        isOpen={showExitOverlay}
-        onExit={finalExitAction}
-      />
-      {/* LEFT IMAGE SIDE (DESKTOP) */}
+      <ExitOverlay isOpen={showExitOverlay} onExit={finalExitAction} />
+
+      {/* LEFT IMAGE SIDE */}
       <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
         {backgroundImages.map((img, index) => (
           <div
@@ -262,7 +371,7 @@ export function Register() {
               }`}
             style={{
               backgroundImage: `url(${img})`,
-              transition: 'opacity 1s ease-in-out, transform 10s linear'
+              transition: "opacity 1s ease-in-out, transform 10s linear",
             }}
           />
         ))}
@@ -285,21 +394,16 @@ export function Register() {
           </div>
         </div>
       </div>
-      {/* RIGHT FORM SIDE - full width on mobile */}
-      <div className="w-full md:w-1/2 flex justify-center items-center p-0 md:p-8 lg:p-12 overflow-y-auto">
+
+      {/* RIGHT FORM SIDE */}
+      <div className="w-full md:w-1/2 flex justify-center items-start p-0 md:p-8 lg:p-12 overflow-y-auto">
         <div className="w-full md:max-w-2xl md:animate-in md:fade-in md:slide-in-from-right-4 md:duration-700">
-
           <Card className="w-full bg-white text-gray-900 md:border md:shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:rounded-[2rem] border-none shadow-none rounded-none overflow-hidden flex flex-col">
-
             <CardHeader className="space-y-4 md:space-y-6 pt-6 md:pt-10 px-4 md:px-8 pb-3 md:pb-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2 md:space-x-3">
                   <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600 p-1.5 md:p-2 shadow-lg shadow-blue-200">
-                    <img
-                      src="/pwa-192x192.jpeg"
-                      alt="Logo"
-                      className="w-full h-full object-contain invert"
-                    />
+                    <img src="/pwa-192x192.jpeg" alt="Logo" className="w-full h-full object-contain invert" />
                   </div>
                   <CardTitle className="text-lg md:text-2xl font-black tracking-tight text-slate-800">
                     Hello! Love seeing you get started
@@ -312,9 +416,6 @@ export function Register() {
               >
                 Already have an account? Log In here
               </Link>
-              <div className="mb-4">
-                <GoogleAuthButton />
-              </div>
               <div className="space-y-0.5 md:space-y-1">
                 <h2 className="text-lg md:text-xl font-bold text-slate-700">Create your account</h2>
                 <CardDescription className="text-slate-500 font-medium text-xs md:text-sm">
@@ -325,31 +426,18 @@ export function Register() {
 
             <CardContent className="px-4 md:px-8 pb-8 md:pb-10">
               <Tabs defaultValue="student" className="w-full">
-
                 <TabsList className="grid w-full grid-cols-3 mb-6 md:mb-8 bg-slate-100/80 p-1 md:p-1.5 rounded-xl md:rounded-2xl h-12 md:h-14">
-                  <TabsTrigger
-                    value="student"
-                    className="rounded-lg md:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all text-[10px] md:text-sm"
-                  >
+                  <TabsTrigger value="student" className="rounded-lg md:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all text-[10px] md:text-sm">
                     <GraduationCap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" /> Student
                   </TabsTrigger>
-
-                  <TabsTrigger
-                    value="tutor"
-                    className="rounded-lg md:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all text-[10px] md:text-sm"
-                  >
+                  <TabsTrigger value="tutor" className="rounded-lg md:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all text-[10px] md:text-sm">
                     <UserCheck className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" /> Tutor
                   </TabsTrigger>
-
-                  <TabsTrigger
-                    value="staff"
-                    className="rounded-lg md:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all text-[10px] md:text-sm"
-                  >
+                  <TabsTrigger value="staff" className="rounded-lg md:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all text-[10px] md:text-sm">
                     <Stethoscope className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" /> Staff
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Content Areas */}
                 <div className="min-h-[400px]">
                   <TabsContent value="student" className="mt-0 focus-visible:outline-none md:animate-in md:fade-in-50 md:duration-500">
                     <StudentForm
@@ -373,30 +461,15 @@ export function Register() {
                   <TabsContent value="staff" className="mt-0 focus-visible:outline-none">
                     <div className="bg-slate-50 md:rounded-[2rem] p-6 md:p-8 md:border md:border-slate-100 relative overflow-hidden rounded-2xl border border-slate-100">
                       <Stethoscope className="absolute -right-8 -bottom-8 w-32 md:w-40 h-32 md:h-40 text-slate-200/50 -rotate-12" />
-
                       <div className="relative z-10 space-y-4 md:space-y-6">
                         <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl shadow-sm flex items-center justify-center border border-slate-100">
                           <Info className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
                         </div>
-
                         <div className="space-y-2 md:space-y-3">
                           <h3 className="text-lg md:text-xl font-bold text-slate-800">Staff Portal Coming Soon</h3>
                           <div className="space-y-3 md:space-y-4 text-slate-600 leading-relaxed font-medium text-xs md:text-sm">
-                            <p>
-                              Our Staff registration portal is currently under development to ensure a robust experience for our administrative team.
-                            </p>
-                            <p>
-                              In the meantime, feel free to explore the student dashboard to familiarize yourself with the platform features.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="pt-1 md:pt-2 flex flex-wrap gap-2 md:gap-3">
-                          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-slate-500 bg-white px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-slate-100">
-                            <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-500" /> Administrative Tools
-                          </div>
-                          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-slate-500 bg-white px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-slate-100">
-                            <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-500" /> User Management
+                            <p>Our Staff registration portal is currently under development to ensure a robust experience for our administrative team.</p>
+                            <p>In the meantime, feel free to explore the student dashboard to familiarize yourself with the platform features.</p>
                           </div>
                         </div>
                       </div>
@@ -405,7 +478,6 @@ export function Register() {
                 </div>
               </Tabs>
 
-              {/* Bottom Footer Section */}
               <div className="mt-8 md:mt-10 pt-6 md:pt-8 border-t border-slate-100">
                 <div className="flex flex-col items-center justify-center space-y-3 md:space-y-4">
                   <p className="text-xs md:text-sm text-slate-500 font-medium">
@@ -414,19 +486,12 @@ export function Register() {
                       Sign in here <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </p>
-
                   <div className="flex justify-center gap-3">
-                    <span
-                      className="text-[10px] uppercase tracking-wider text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer transition-colors"
-                      onClick={() => navigate("/privacy")}
-                    >
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 hover:text-slate-700 cursor-pointer transition-colors" onClick={() => navigate("/privacy")}>
                       Privacy & Policy
                     </span>
-                    <span className="text-[10px] text-slate-300 dark:text-slate-600">•</span>
-                    <span
-                      className="text-[10px] uppercase tracking-wider text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer transition-colors"
-                      onClick={() => navigate("/terms")}
-                    >
+                    <span className="text-[10px] text-slate-300">•</span>
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 hover:text-slate-700 cursor-pointer transition-colors" onClick={() => navigate("/terms")}>
                       Terms & Conditions
                     </span>
                   </div>
@@ -441,20 +506,43 @@ export function Register() {
 }
 export default Register;
 
-const PasswordField = ({ label, value, onChange }) => {
+// ==========================================
+// PASSWORD FIELD
+// ==========================================
+const PasswordField = ({ label, value, onChange, error }: any) => {
   const [show, setShow] = useState(false);
   return (
-    <div className="space-y-1.5 md:space-y-2 relative">
-      <Label className="text-xs md:text-sm">{label}</Label>
-      <Input type={show ? "text" : "password"} value={value} onChange={onChange} placeholder="Enter password" className="pr-10 text-sm" />
-      <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-8 md:top-9 text-gray-500 hover:text-gray-700">
+    <div className="space-y-1.5 md:space-y-2 relative scroll-mt-24">
+      <Label className={`text-xs md:text-sm ${error ? "text-red-600" : ""}`}>
+        {label} <span className="text-red-500">*</span>
+      </Label>
+      <Input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={onChange}
+        placeholder="Enter password"
+        className={`pr-10 text-sm ${error ? "border-red-400 bg-red-50/50" : ""}`}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-3 top-8 md:top-9 text-gray-500 hover:text-gray-700"
+      >
         {show ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
+      {error && (
+        <p className="text-[11px] text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" /> {error}
+        </p>
+      )}
     </div>
   );
 };
 
-function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdited, courseOptions }) {
+// ==========================================
+// STUDENT FORM
+// ==========================================
+function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdited, courseOptions }: any) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -473,11 +561,69 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
     targetScore: 50,
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const setField = (key: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  };
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) e.fullName = "Full name is required";
+    if (!formData.username.trim()) e.username = "Username is required";
+    if (!formData.email.trim()) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()))
+      e.email = "Enter a valid email address";
+    if (!formData.phone.trim() || formData.phone.trim().length < 10)
+      e.phone = "Enter a valid phone number";
+    if (!formData.password) e.password = "Password is required";
+    else if (formData.password.length < 6) e.password = "Minimum 6 characters";
+    if (!formData.confirmPassword) e.confirmPassword = "Confirm your password";
+    else if (formData.password !== formData.confirmPassword)
+      e.confirmPassword = "Passwords don't match";
+    if (!formData.resetQuestion) e.resetQuestion = "Choose a security question";
+    if (!formData.resetAnswer.trim()) e.resetAnswer = "Provide an answer";
+    if (!formData.targetScore || formData.targetScore < 1 || formData.targetScore > 100)
+      e.targetScore = "Enter a score between 1 and 100";
+    if (!formData.institution) e.institution = "Choose your institution";
+    if (!formData.county) e.county = "Choose your county";
+    if (!formData.course) e.course = "Choose your course";
+    if (formData.course === "other" && !formData.otherCourse.trim())
+      e.otherCourse = "Type your course name";
+    if (!formData.block) e.block = "Choose your level / block";
+    if (!formData.bio.trim()) e.bio = "A short bio is required";
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      // Scroll to first error
+      const firstKey = Object.keys(e)[0];
+      const el = document.getElementById(`field-${firstKey}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast({
+        title: "Please complete all fields",
+        description: `${Object.keys(e).length} field(s) need attention.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) handleRegister("student", formData);
+  };
+
   return (
     <div className="max-w-2xl mx-auto bg-white">
       <div className="space-y-6 md:space-y-8">
-
-        {/* --- SECTION 1: ACCOUNT DETAILS --- */}
+        {/* SECTION 1 */}
         <div className="space-y-3 md:space-y-4">
           <div className="flex items-center gap-1.5 md:gap-2 pb-1">
             <User className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
@@ -485,74 +631,69 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold">Full Name *</Label>
+            <Field id="field-fullName" label="Full Name" required error={errors.fullName}>
               <Input
                 placeholder="SN Jacqueline Nk"
-                className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all text-sm"
+                className={`bg-gray-50/50 transition-all text-sm ${errors.fullName ? "border-red-400 bg-red-50/50" : "border-gray-200"}`}
                 value={formData.fullName}
-                onChange={e => {
+                onChange={(e) => {
                   const fullName = e.target.value;
-                  setFormData({
-                    ...formData,
+                  setFormData((prev) => ({
+                    ...prev,
                     fullName,
-                    username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
-                  });
+                    username: usernameEdited
+                      ? prev.username
+                      : fullName.toLowerCase().replace(/\s+/g, ""),
+                  }));
+                  if (errors.fullName) setField("fullName", fullName);
                 }}
               />
-            </div>
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold">Username *</Label>
+            </Field>
+
+            <Field id="field-username" label="Username" required error={errors.username}>
               <div className="relative">
                 <Input
                   placeholder="snJacquelineNk"
-                  className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all pl-8 text-sm"
+                  className={`pl-8 text-sm ${errors.username ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
                   value={formData.username}
-                  onChange={e => {
+                  onChange={(e) => {
                     setUsernameEdited(true);
-                    setFormData({ ...formData, username: e.target.value });
+                    setField("username", e.target.value);
                   }}
                 />
                 <span className="absolute left-3 top-2.5 text-gray-400 text-sm">@</span>
               </div>
-            </div>
+            </Field>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold">Email Address *</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
-                <Input
-                  type="email"
-                  placeholder="examplesnJacquelinenk@gmail.com"
-                  className="pl-9 md:pl-10 bg-gray-50/50 border-gray-200 focus:bg-white transition-all text-sm"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold">Phone Number *</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
-                <Input
-                  className="pl-9 md:pl-10 bg-gray-50/50 border-gray-200 focus:bg-white transition-all font-mono text-sm"
-                  value={formData.phone}
-                  onChange={e => {
-                    let value = e.target.value;
-                    if (!value.startsWith("+254")) value = "+254";
-                    setFormData({ ...formData, phone: value });
-                  }}
-                />
-              </div>
-            </div>
+            <Field id="field-email" label="Email Address" icon={<Mail className="w-3 h-3" />} required error={errors.email}>
+              <Input
+                type="email"
+                placeholder="example@gmail.com"
+                className={`text-sm ${errors.email ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                value={formData.email}
+                onChange={(e) => setField("email", e.target.value)}
+              />
+            </Field>
+
+            <Field id="field-phone" label="Phone Number" icon={<Phone className="w-3 h-3" />} required error={errors.phone}>
+              <Input
+                className={`font-mono text-sm ${errors.phone ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                value={formData.phone}
+                onChange={(e) => {
+                  let value = e.target.value;
+                  if (!value.startsWith("+254")) value = "+254";
+                  setField("phone", value);
+                }}
+              />
+            </Field>
           </div>
         </div>
 
         <Separator className="opacity-50" />
 
-        {/* --- SECTION 2: SECURITY --- */}
+        {/* SECTION 2 */}
         <div className="space-y-3 md:space-y-4">
           <div className="flex items-center gap-1.5 md:gap-2 pb-1">
             <Lock className="w-4 h-4 md:w-5 md:h-5 text-amber-600" />
@@ -561,27 +702,29 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <PasswordField
-              label="Password *"
+              label="Password"
               value={formData.password}
-              onChange={e => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e: any) => setField("password", e.target.value)}
+              error={errors.password}
             />
             <PasswordField
-              label="Confirm Password *"
+              label="Confirm Password"
               value={formData.confirmPassword}
-              onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+              onChange={(e: any) => setField("confirmPassword", e.target.value)}
+              error={errors.confirmPassword}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-1 md:pt-2">
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-                <ShieldQuestion className="w-2.5 h-2.5 md:w-3 md:h-3" /> Security Question *
-              </Label>
-              <Select
-                value={formData.resetQuestion}
-                onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
-              >
-                <SelectTrigger className="bg-gray-50/50 border-gray-200 text-sm">
+            <Field
+              id="field-resetQuestion"
+              label="Security Question"
+              icon={<ShieldQuestion className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+              required
+              error={errors.resetQuestion}
+            >
+              <Select value={formData.resetQuestion} onValueChange={(v) => setField("resetQuestion", v)}>
+                <SelectTrigger className={`text-sm ${errors.resetQuestion ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
                   <SelectValue placeholder="Select a question" />
                 </SelectTrigger>
                 <SelectContent>
@@ -591,106 +734,114 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
                   <SelectItem value="favorite_teacher">Who was your favorite teacher?</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold">Your Answer *</Label>
+            </Field>
+
+            <Field id="field-resetAnswer" label="Your Answer" required error={errors.resetAnswer}>
               <Input
                 placeholder="Enter answer"
-                className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all text-sm"
+                className={`text-sm ${errors.resetAnswer ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
                 value={formData.resetAnswer}
-                onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
+                onChange={(e) => setField("resetAnswer", e.target.value)}
               />
-            </div>
+            </Field>
           </div>
         </div>
 
         <Separator className="opacity-50" />
 
-        {/* --- SECTION 3: ACADEMIC PROFILE --- */}
+        {/* SECTION 3 */}
         <div className="space-y-3 md:space-y-4">
           <div className="flex items-center gap-1.5 md:gap-2 pb-1">
             <School className="w-4 h-4 md:w-5 md:h-5 text-emerald-600" />
             <h3 className="font-semibold text-gray-800 text-sm md:text-base">Academic Profile</h3>
           </div>
 
-          <div className="space-y-1 md:space-y-1.5">
-            <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-              <Target className="w-2.5 h-2.5 md:w-3 md:h-3" /> Target Score (%) *
-            </Label>
+          <Field id="field-targetScore" label="Target Score (%)" icon={<Target className="w-2.5 h-2.5 md:w-3 md:h-3" />} required error={errors.targetScore}>
             <div className="relative max-w-[200px]">
               <Input
                 type="number"
                 min={1}
                 max={100}
-                className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all pr-8 font-bold text-emerald-700 text-sm"
+                className={`pr-8 font-bold text-emerald-700 text-sm ${errors.targetScore ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
                 value={formData.targetScore}
-                onChange={e => setFormData({ ...formData, targetScore: Number(e.target.value) })}
+                onChange={(e) => setField("targetScore", Number(e.target.value))}
               />
               <span className="absolute right-3 top-2.5 text-gray-400 text-sm">%</span>
             </div>
-          </div>
+          </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-                <School className="w-2.5 h-2.5 md:w-3 md:h-3" /> Institution *
-              </Label>
-              <Select value={formData.institution} onValueChange={v => setFormData({ ...formData, institution: v })}>
-                <SelectTrigger className="bg-gray-50/50 border-gray-200 text-sm">
-                  <SelectValue placeholder="Choose institution" />
-                </SelectTrigger>
-                <SelectContent>
-                  {institutions.map((inst) => (
-                    <SelectItem key={inst.value} value={inst.value}>{inst.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-                <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3" /> County *
-              </Label>
-              <Select value={formData.county} onValueChange={v => setFormData({ ...formData, county: v })}>
-                <SelectTrigger className="bg-gray-50/50 border-gray-200 text-sm">
+            <Field
+              id="field-institution"
+              label="Institution"
+              icon={<School className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+              required
+              error={errors.institution}
+            >
+              <SearchableInstitutionSelect
+                value={formData.institution}
+                onChange={(v) => setField("institution", v)}
+                hasError={!!errors.institution}
+              />
+            </Field>
+            <Field
+              id="field-county"
+              label="County"
+              icon={<MapPin className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+              required
+              error={errors.county}
+            >
+              <Select value={formData.county} onValueChange={(v) => setField("county", v)}>
+                <SelectTrigger className={`text-sm ${errors.county ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
                   <SelectValue placeholder="Choose county" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {counties.map((county) => (
-                    <SelectItem key={county.value} value={county.value}>{county.label}</SelectItem>
+                    <SelectItem key={county.value} value={county.value}>
+                      {county.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </Field>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-                <BookOpen className="w-2.5 h-2.5 md:w-3 md:h-3" /> Course *
-              </Label>
-              <Select value={formData.course} onValueChange={v => setFormData({ ...formData, course: v })}>
-                <SelectTrigger className="bg-gray-50/50 border-gray-200 text-sm">
+            <Field
+              id="field-course"
+              label="Course"
+              icon={<BookOpen className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+              required
+              error={errors.course || errors.otherCourse}
+            >
+              <Select value={formData.course} onValueChange={(v) => setField("course", v)}>
+                <SelectTrigger className={`text-sm ${errors.course ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
                   <SelectValue placeholder="Select course" />
                 </SelectTrigger>
                 <SelectContent>
-                  {courseOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {courseOptions.map((c: any) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {formData.course === "other" && (
                 <Input
                   placeholder="Type your course name"
-                  className="mt-2 text-sm"
+                  className={`mt-2 text-sm ${errors.otherCourse ? "border-red-400 bg-red-50/50" : ""}`}
                   value={formData.otherCourse}
-                  onChange={e => setFormData({ ...formData, otherCourse: e.target.value })}
+                  onChange={(e) => setField("otherCourse", e.target.value)}
                 />
               )}
-            </div>
-            <div className="space-y-1 md:space-y-1.5">
-              <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-                <Layers className="w-2.5 h-2.5 md:w-3 md:h-3" /> Level / Block *
-              </Label>
-              <Select value={formData.block} onValueChange={v => setFormData({ ...formData, block: v })}>
-                <SelectTrigger className="bg-gray-50/50 border-gray-200 text-sm">
+            </Field>
+
+            <Field
+              id="field-block"
+              label="Level / Block"
+              icon={<Layers className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+              required
+              error={errors.block}
+            >
+              <Select value={formData.block} onValueChange={(v) => setField("block", v)}>
+                <SelectTrigger className={`text-sm ${errors.block ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -711,28 +862,30 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
                   <SelectItem value="block6">Block 6</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </Field>
           </div>
 
-          <div className="space-y-1 md:space-y-1.5">
-            <Label className="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
-              <FileText className="w-2.5 h-2.5 md:w-3 md:h-3" /> Short Bio
-            </Label>
+          <Field
+            id="field-bio"
+            label="Short Bio"
+            icon={<FileText className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+            required
+            error={errors.bio}
+          >
             <Textarea
               placeholder="Tell us a bit about your academic goals..."
-              className="bg-gray-50/50 border-gray-200 min-h-[100px] resize-none text-sm"
+              className={`min-h-[100px] resize-none text-sm ${errors.bio ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
               value={formData.bio}
-              onChange={e => setFormData({ ...formData, bio: e.target.value })}
+              onChange={(e) => setField("bio", e.target.value)}
             />
-          </div>
+          </Field>
         </div>
 
-        {/* --- SUBMIT BUTTON --- */}
         <div className="pt-1 md:pt-2">
           <Button
             className="w-full h-11 md:h-12 text-sm md:text-md font-bold transition-all shadow-md hover:shadow-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99]"
             disabled={isLoading}
-            onClick={() => handleRegister("student", formData)}
+            onClick={handleSubmit}
           >
             {isLoading ? (
               <div className="flex items-center gap-2">
@@ -753,7 +906,10 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
   );
 }
 
-function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdited }) {
+// ==========================================
+// TUTOR FORM
+// ==========================================
+function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdited }: any) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -766,14 +922,64 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
     confirmPassword: "",
     resetQuestion: "",
     resetAnswer: "",
+    targetScore: 50,
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const setField = (key: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  };
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) e.fullName = "Full name is required";
+    if (!formData.username.trim()) e.username = "Username is required";
+    if (!formData.email.trim()) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()))
+      e.email = "Enter a valid email address";
+    if (!formData.phone.trim() || formData.phone.trim().length < 10)
+      e.phone = "Enter a valid phone number";
+    if (!formData.password) e.password = "Password is required";
+    else if (formData.password.length < 6) e.password = "Minimum 6 characters";
+    if (!formData.confirmPassword) e.confirmPassword = "Confirm your password";
+    else if (formData.password !== formData.confirmPassword)
+      e.confirmPassword = "Passwords don't match";
+    if (!formData.resetQuestion) e.resetQuestion = "Choose a security question";
+    if (!formData.resetAnswer.trim()) e.resetAnswer = "Provide an answer";
+    if (!formData.institution) e.institution = "Choose your institution";
+    if (!formData.county) e.county = "Choose your county";
+    if (!formData.bio.trim()) e.bio = "A short bio is required";
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      const firstKey = Object.keys(e)[0];
+      const el = document.getElementById(`tutor-field-${firstKey}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast({
+        title: "Please complete all fields",
+        description: `${Object.keys(e).length} field(s) need attention.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+  const handleSubmit = () => {
+    if (validate()) handleRegister("tutor", formData);
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
       <Card className="border-none shadow-none bg-transparent">
         <CardContent className="p-0 space-y-6 md:space-y-8">
-
-          {/* Section 1: Personal Identity */}
           <section className="space-y-3 md:space-y-4">
             <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2">
               <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg">
@@ -783,74 +989,100 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium">Full Name <span className="text-destructive">*</span></Label>
+              <div id="tutor-field-fullName" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium ${errors.fullName ? "text-red-600" : ""}`}>
+                  Full Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  className="bg-white/50 focus-visible:ring-blue-500 text-sm"
+                  className={`text-sm ${errors.fullName ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}
                   placeholder="Tutor Jacqueline Nk"
                   value={formData.fullName}
-                  onChange={e => {
+                  onChange={(e) => {
                     const fullName = e.target.value;
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       fullName,
-                      username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
-                    });
+                      username: usernameEdited
+                        ? prev.username
+                        : fullName.toLowerCase().replace(/\s+/g, ""),
+                    }));
+                    if (errors.fullName) setField("fullName", fullName);
                   }}
                 />
+                {errors.fullName && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.fullName}
+                  </p>
+                )}
               </div>
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium">Username <span className="text-destructive">*</span></Label>
+
+              <div id="tutor-field-username" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium ${errors.username ? "text-red-600" : ""}`}>
+                  Username <span className="text-red-500">*</span>
+                </Label>
                 <div className="relative">
                   <Input
-                    className="bg-white/50 focus-visible:ring-blue-500 pl-8 text-sm"
+                    className={`pl-8 text-sm ${errors.username ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}
                     placeholder="tutorJacquelinenk"
                     value={formData.username}
-                    onChange={e => {
+                    onChange={(e) => {
                       setUsernameEdited(true);
-                      setFormData({ ...formData, username: e.target.value });
+                      setField("username", e.target.value);
                     }}
                   />
                   <span className="absolute left-2.5 top-2.5 text-slate-400 text-sm">@</span>
                 </div>
+                {errors.username && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.username}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium">Email Address <span className="text-destructive">*</span></Label>
-                <div className="relative">
-                  <Input
-                    type="email"
-                    className="bg-white/50 focus-visible:ring-blue-500 pl-9 text-sm"
-                    placeholder="exampleJacquelinenk@gmail.com"
-                    value={formData.email}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  />
-                  <Mail className="absolute left-3 top-2.5 w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400" />
-                </div>
+              <div id="tutor-field-email" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium ${errors.email ? "text-red-600" : ""}`}>
+                  Email Address <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="email"
+                  className={`text-sm ${errors.email ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}
+                  placeholder="example@gmail.com"
+                  value={formData.email}
+                  onChange={(e) => setField("email", e.target.value)}
+                />
+                {errors.email && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.email}
+                  </p>
+                )}
               </div>
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium">Phone Number <span className="text-destructive">*</span></Label>
-                <div className="relative">
-                  <Input
-                    className="bg-white/50 focus-visible:ring-blue-500 pl-9 text-sm"
-                    value={formData.phone}
-                    onChange={e => {
-                      let value = e.target.value;
-                      if (!value.startsWith("+254")) value = "+254";
-                      setFormData({ ...formData, phone: value });
-                    }}
-                  />
-                  <Phone className="absolute left-3 top-2.5 w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400" />
-                </div>
+
+              <div id="tutor-field-phone" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium ${errors.phone ? "text-red-600" : ""}`}>
+                  Phone Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  className={`text-sm ${errors.phone ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}
+                  value={formData.phone}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    if (!value.startsWith("+254")) value = "+254";
+                    setField("phone", value);
+                  }}
+                />
+                {errors.phone && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.phone}
+                  </p>
+                )}
               </div>
             </div>
           </section>
 
           <Separator className="opacity-50" />
 
-          {/* Section 2: Account Security */}
           <section className="space-y-3 md:space-y-4">
             <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2">
               <div className="p-1.5 md:p-2 bg-amber-50 rounded-lg">
@@ -861,27 +1093,26 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
               <PasswordField
-                label="Password *"
+                label="Password"
                 value={formData.password}
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e: any) => setField("password", e.target.value)}
+                error={errors.password}
               />
               <PasswordField
-                label="Confirm Password *"
+                label="Confirm Password"
                 value={formData.confirmPassword}
-                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                onChange={(e: any) => setField("confirmPassword", e.target.value)}
+                error={errors.confirmPassword}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 pt-1 md:pt-2">
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-                  <ShieldQuestion className="w-3 h-3 md:w-3.5 md:h-3.5" /> Security Question *
+              <div id="tutor-field-resetQuestion" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium flex items-center gap-1.5 ${errors.resetQuestion ? "text-red-600" : ""}`}>
+                  <ShieldQuestion className="w-3 h-3" /> Security Question <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={formData.resetQuestion}
-                  onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
-                >
-                  <SelectTrigger className="bg-white/50 focus:ring-amber-500 text-sm">
+                <Select value={formData.resetQuestion} onValueChange={(v) => setField("resetQuestion", v)}>
+                  <SelectTrigger className={`text-sm ${errors.resetQuestion ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}>
                     <SelectValue placeholder="Select question" />
                   </SelectTrigger>
                   <SelectContent>
@@ -891,22 +1122,34 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
                     <SelectItem value="favorite_teacher">Favorite teacher?</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.resetQuestion && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.resetQuestion}
+                  </p>
+                )}
               </div>
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium">Security Answer *</Label>
+
+              <div id="tutor-field-resetAnswer" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium ${errors.resetAnswer ? "text-red-600" : ""}`}>
+                  Security Answer <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  className="bg-white/50 focus-visible:ring-amber-500 text-sm"
+                  className={`text-sm ${errors.resetAnswer ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}
                   placeholder="Your answer"
                   value={formData.resetAnswer}
-                  onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
+                  onChange={(e) => setField("resetAnswer", e.target.value)}
                 />
+                {errors.resetAnswer && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.resetAnswer}
+                  </p>
+                )}
               </div>
             </div>
           </section>
 
           <Separator className="opacity-50" />
 
-          {/* Section 3: Professional Details */}
           <section className="space-y-3 md:space-y-4">
             <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2">
               <div className="p-1.5 md:p-2 bg-emerald-50 rounded-lg">
@@ -916,27 +1159,28 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-                  <School className="w-3 h-3 md:w-3.5 md:h-3.5" /> Institution *
+              <div id="tutor-field-institution" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium flex items-center gap-1.5 ${errors.institution ? "text-red-600" : ""}`}>
+                  <School className="w-3 h-3" /> Institution <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formData.institution} onValueChange={v => setFormData({ ...formData, institution: v })}>
-                  <SelectTrigger className="bg-white/50 focus:ring-emerald-500 text-sm">
-                    <SelectValue placeholder="Choose institution" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {institutions.map((inst) => (
-                      <SelectItem key={inst.value} value={inst.value}>{inst.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableInstitutionSelect
+                  value={formData.institution}
+                  onChange={(v) => setField("institution", v)}
+                  hasError={!!errors.institution}
+                />
+                {errors.institution && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.institution}
+                  </p>
+                )}
               </div>
-              <div className="space-y-1.5 md:space-y-2">
-                <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-                  <MapPin className="w-3 h-3 md:w-3.5 md:h-3.5" /> County *
+
+              <div id="tutor-field-county" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+                <Label className={`text-xs md:text-sm font-medium flex items-center gap-1.5 ${errors.county ? "text-red-600" : ""}`}>
+                  <MapPin className="w-3 h-3" /> County <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formData.county} onValueChange={v => setFormData({ ...formData, county: v })}>
-                  <SelectTrigger className="bg-white/50 focus:ring-emerald-500 text-sm">
+                <Select value={formData.county} onValueChange={(v) => setField("county", v)}>
+                  <SelectTrigger className={`text-sm ${errors.county ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}>
                     <SelectValue placeholder="Choose county" />
                   </SelectTrigger>
                   <SelectContent>
@@ -945,28 +1189,37 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.county && (
+                  <p className="text-[11px] text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.county}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-1.5 md:space-y-2">
-              <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-                <FileText className="w-3 h-3 md:w-3.5 md:h-3.5" /> Short Professional Bio
+            <div id="tutor-field-bio" className="space-y-1.5 md:space-y-2 scroll-mt-24">
+              <Label className={`text-xs md:text-sm font-medium flex items-center gap-1.5 ${errors.bio ? "text-red-600" : ""}`}>
+                <FileText className="w-3 h-3" /> Short Professional Bio <span className="text-red-500">*</span>
               </Label>
               <Textarea
-                className="min-h-[100px] bg-white/50 focus-visible:ring-emerald-500 resize-none text-sm"
+                className={`min-h-[100px] resize-none text-sm ${errors.bio ? "border-red-400 bg-red-50/50" : "bg-white/50"}`}
                 placeholder="Tell us about your teaching experience and expertise..."
                 value={formData.bio}
-                onChange={e => setFormData({ ...formData, bio: e.target.value })}
+                onChange={(e) => setField("bio", e.target.value)}
               />
+              {errors.bio && (
+                <p className="text-[11px] text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.bio}
+                </p>
+              )}
             </div>
           </section>
 
-          {/* Action Button */}
           <div className="pt-2 md:pt-4">
             <Button
               className="w-full h-11 md:h-12 text-sm md:text-base font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] bg-blue-600 hover:bg-blue-700"
               disabled={isLoading}
-              onClick={() => handleRegister("tutor", formData)}
+              onClick={handleSubmit}
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -983,7 +1236,6 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
               By registering, you agree to our Terms of Service and Privacy Policy.
             </p>
           </div>
-
         </CardContent>
       </Card>
     </div>

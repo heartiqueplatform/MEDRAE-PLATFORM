@@ -204,7 +204,7 @@ function ChallengeTabs({
                                                 style={{ touchAction: 'manipulation' }}
                                             >
                                                 <div className="relative shrink-0">
-                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
                                                         <Send size={20} className="text-white rotate-[-20deg]" />
                                                     </div>
                                                     <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
@@ -259,7 +259,7 @@ function ChallengeTabs({
                                                 className="relative shrink-0 active:scale-95 transition-transform"
                                                 style={{ touchAction: 'manipulation' }}
                                             >
-                                                <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                                                     {p.avatar_url ? (
                                                         <img
                                                             src={p.avatar_url}
@@ -358,7 +358,7 @@ function ChallengeTabs({
                                     className="relative shrink-0 active:scale-95 transition-transform"
                                     style={{ touchAction: 'manipulation' }}
                                 >
-                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 ring-2 ring-amber-400/60">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 ring-2 ring-amber-400/60">
                                         {p.avatar_url ? (
                                             <img
                                                 src={p.avatar_url}
@@ -442,7 +442,7 @@ function ChallengeTabs({
                                hover:bg-slate-50 dark:hover:bg-white/5"
                             >
                                 <div className="relative shrink-0">
-                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                                         {challenge.from_user?.avatar_url ? (
                                             <img
                                                 src={challenge.from_user.avatar_url}
@@ -508,7 +508,7 @@ function ChallengeTabs({
                                hover:bg-slate-50 dark:hover:bg-white/5"
                             >
                                 <div className="relative shrink-0">
-                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                                         {challenge.to_user?.avatar_url ? (
                                             <img
                                                 src={challenge.to_user.avatar_url}
@@ -577,7 +577,7 @@ function ChallengeTabs({
                                    hover:bg-slate-50 dark:hover:bg-white/5"
                                 >
                                     <div className="relative shrink-0">
-                                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                                             {opponent?.avatar_url ? (
                                                 <img
                                                     src={opponent.avatar_url}
@@ -718,7 +718,7 @@ function PlayerRowSkeleton({ count = 6 }: { count?: number }) {
                     key={i}
                     className="flex items-center gap-3 px-3 py-2.5 animate-pulse"
                 >
-                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                    <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
                     <div className="flex-1 min-w-0 space-y-1.5">
                         <div className="h-3 w-2/3 rounded bg-slate-200 dark:bg-white/10" />
                         <div className="h-2.5 w-1/3 rounded bg-slate-200 dark:bg-white/10" />
@@ -1779,7 +1779,7 @@ export default function ChallengePage() {
                                 <div className="relative mb-6"><div className="absolute inset-0 bg-amber-400/30 blur-2xl rounded-full" /><motion.div animate={{ y: [0, -15, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}><Trophy size={64} className="relative text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" /></motion.div></div>
                                 <div className="space-y-3 mb-8"><div><p className="text-amber-500 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Champion</p><h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Victory!</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Clinical dominance established. You've out-performed your peer.</p></div>
                                 <Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowWinOverlay(false); }} className="h-12 px-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl border-0 text-sm">Continue</Button>
-                                <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Nurse Duel (N.D) Challenge</p>
+                                <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Clinical Challenge</p>
                             </motion.div>
                         </motion.div>
                     )}

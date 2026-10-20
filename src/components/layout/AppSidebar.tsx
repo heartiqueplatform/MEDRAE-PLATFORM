@@ -11,6 +11,7 @@ import {
   BookOpenCheck,
   Upload,
   Headphones,
+  Flame,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -88,7 +89,7 @@ const STARS_KEY = `${CACHE_PREFIX}stars`;
 const COUNTS_KEY = `${CACHE_PREFIX}counts`;
 const ANNOUNCEMENTS_KEY = `${CACHE_PREFIX}announcements`;
 const EPISODES_COUNT_KEY = `${CACHE_PREFIX}episodes_count`;
-
+const STREAK_SUMMARY_KEY = `${CACHE_PREFIX}streak_summary`;
 let fetchInProgress = false;
 let lastFetchTime = 0;
 const CACHE_DURATION = 120000;
@@ -283,7 +284,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(() => getCached(ANNOUNCEMENTS_KEY) || 0);
   // ✅ Total podcast episodes — badge source for the Media > Podcasts row
   const [totalEpisodes, setTotalEpisodes] = useState<number>(() => getCached(EPISODES_COUNT_KEY) || 0);
-
+  // ✅ Streak summary — drives the "Restore streak" item visibility
+  const [streakSummary, setStreakSummary] = useState<{
+    current: number;
+    best: number;
+  }>(() => getCached(STREAK_SUMMARY_KEY) || { current: 0, best: 0 });
   const isMounted = useRef(true);
   const resizeDebounce = useRef<NodeJS.Timeout>();
 
@@ -361,7 +366,8 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         eventsResult,
         quizResults,
         announcementsResult,
-        episodesResult
+        episodesResult,
+        streakResult
       ] = await Promise.allSettled([
         supabase.from("user_mistakes").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false),
         supabase.from("quiz_questions").select("*", { count: "exact", head: true }),
@@ -373,7 +379,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         supabase.from("announcements").select("id", { count: "exact", head: true }).eq("is_published", true),
         // ✅ Total published podcast episodes (independent of the MusicPlayer's
         //    own cache, so the badge renders even before the player mounts)
-        supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false)
+        supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false),
+        supabase.from("user_streak_summary")
+          .select("current_streak, best_streak")
+          .eq("user_id", user.id)
+          .maybeSingle()
       ]);
 
       const mistakesCount = mistakesResult.status === 'fulfilled' ? mistakesResult.value.count || 0 : 0;
@@ -384,6 +394,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       const eventsCount = eventsResult.status === 'fulfilled' ? eventsResult.value.count || 0 : 0;
       const announcementsCount = announcementsResult.status === 'fulfilled' ? announcementsResult.value.count || 0 : 0;
       const episodesCount = episodesResult.status === 'fulfilled' ? episodesResult.value.count || 0 : 0;
+      const streakData = streakResult.status === 'fulfilled' ? streakResult.value.data : null;
+      const summary = {
+        current: streakData?.current_streak || 0,
+        best: streakData?.best_streak || 0,
+      };
       let stars = 0;
       if (quizResults.status === 'fulfilled' && quizResults.value?.data) {
         const unitBestScores: Record<string, number> = {};
@@ -430,12 +445,14 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         setTotalStars(stars);
         setUnreadAnnouncements(unread);
         setTotalEpisodes(episodesCount);
+        setStreakSummary(summary);
 
         setCached(COUNTS_KEY, counts);
         setCached(MISTAKE_COUNT_KEY, mistakesCount);
         setCached(STARS_KEY, stars);
         setCached(ANNOUNCEMENTS_KEY, unread);
         setCached(EPISODES_COUNT_KEY, episodesCount);
+        setCached(STREAK_SUMMARY_KEY, summary);
       }
     } catch (err) {
       console.error("Error fetching sidebar data:", err);
@@ -443,7 +460,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       fetchInProgress = false;
     }
   }, []);
-
   useEffect(() => {
     isMounted.current = true;
     fetchAllData(true);
@@ -454,13 +470,19 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       }
     };
 
+    const handleStreakUpdated = () => {
+      if (isMounted.current) fetchAllData(true);
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('streak-updated', handleStreakUpdated);
+
     return () => {
       isMounted.current = false;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('streak-updated', handleStreakUpdated);
     };
   }, [fetchAllData]);
-
   useEffect(() => {
     const handleResize = () => {
       if (resizeDebounce.current) clearTimeout(resizeDebounce.current);
@@ -518,20 +540,30 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
     if (isStudent) {
       base.push(
-        { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+        { title: "Nursing Curriculum", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
         { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
-        { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+        { title: "Clinical Challenge", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
         { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
       );
-    }
 
+      // 👇 NEW — only when the user actually has a broken streak
+      if (streakSummary.best > streakSummary.current && streakSummary.current > 0) {
+        base.push({
+          title: "Restore Streak",
+          url: "/streak/restore",
+          icon: Flame,
+          iconTone: "alert" as IconTone,
+          badge: `${streakSummary.best - streakSummary.current}d`,
+        } as any);
+      }
+    }
     // Survival Hub is shared across every role
     base.push(
       { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
     );
 
     return base;
-  }, [userRole, mistakeCount, isStudent]);
+  }, [userRole, mistakeCount, isStudent, streakSummary.current, streakSummary.best]);
   // ✅ STAFF TOOLS — CPD module (staff only, students/tutors never see these)
   const staffItems = useMemo(() => {
     if (userRole !== "staff") return [];

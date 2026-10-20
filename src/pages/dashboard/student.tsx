@@ -58,6 +58,7 @@ import ShortPaper1 from "@/components/ShortPaper1";
 import ShortPaper2 from "@/components/ShortPaper2";
 import ShortMedical from "@/components/ShortMedical";
 import ShortPractice from "@/components/ShortPractice";
+import { SchoolWarsCard } from "@/components/school-wars/SchoolWarsCard";
 
 
 
@@ -811,17 +812,15 @@ export default function StudentDashboard() {
         )}
       </AnimatePresence>
       <div className="w-full space-y-2 md:px-4 lg:px-6">
-        <GreetingsCard />
+
         <QuickDuelStrip
           userId={user?.id ?? ""}
           initialHistory={initialCache.quickDuelHistory ?? []}
           initialPlayers={initialCache.quickDuelPlayers ?? []}
         />
-        <ShortMedical
-          limit={5}
-          title="Medical Conditions"
-          subtitle="Hypertension, Heart Failure & more"
-        />
+
+        <SchoolWarsCard currentUserInstitution={profileState?.institution} />
+
 
         <DailyTriviaCard />
         <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />

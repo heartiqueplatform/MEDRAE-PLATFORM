@@ -1,5 +1,5 @@
 "use client";
-
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, memo, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
@@ -19,8 +19,7 @@ import {
     Clock,
     BookOpen,
 } from "lucide-react";
-import { StreakResuscitationModal } from "@/components/StreakResuscitation/StreakResuscitation";
-import { useResuscitationLink } from "@/hooks/useResuscitationLink";
+
 import {
     getMyReferralCode,
     getMyReferralStats,
@@ -28,9 +27,52 @@ import {
 } from "@/lib/referrals";
 
 // ============================================
+// GREETING + MEDRAE HELPERS
+// ============================================
+type MedraeLine = { score: number; text: string; tone: "high" | "mid" | "low" };
+
+function pickMedraeLine(score: number, firstName: string): MedraeLine {
+    if (score >= 80) return { score, tone: "high", text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — you're in strong shape. Keep sharp with a timed Proctored full paper this week.` };
+    if (score >= 70) return { score, tone: "high", text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — nearly there. One more Proctored full paper should seal it.` };
+    if (score >= 50) return { score, tone: "mid", text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — on track. Focus on your weakest units and try a Proctored full paper this week.` };
+    if (score >= 30) return { score, tone: "low", text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — not yet where we want it. Do more questions from Prep Quizzes and sit one Proctored Readiness full paper.` };
+    return { score, tone: "low", text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — let's change that. Start with Prep Quizzes today, then attempt a Proctored Readiness full paper.` };
+}
+
+function useMedraeReadiness(firstName: string): MedraeLine | null {
+    const [line, setLine] = useState<MedraeLine | null>(null);
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const read = () => {
+            try {
+                const raw = localStorage.getItem("medrae_algo_book_cache");
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                const score = Number(parsed?.overall_prediction?.predicted_score);
+                if (!Number.isFinite(score)) return;
+                setLine(pickMedraeLine(score, firstName || "there"));
+            } catch { /* silent */ }
+        };
+        read();
+        const onFocus = () => read();
+        const onStorage = (e: StorageEvent) => { if (e.key === "medrae_algo_book_cache") read(); };
+        window.addEventListener("focus", onFocus);
+        window.addEventListener("storage", onStorage);
+        return () => { window.removeEventListener("focus", onFocus); window.removeEventListener("storage", onStorage); };
+    }, [firstName]);
+    return line;
+}
+
+function getTimeGreeting(hour: number): string {
+    if (hour >= 5 && hour < 12) return "Good morning";
+    if (hour >= 12 && hour < 17) return "Good afternoon";
+    if (hour >= 17 && hour < 21) return "Good evening";
+    return "Good night";
+}
+
+// ============================================
 // TYPES & CONSTANTS
 // ============================================
-
 type EmotionType =
     | "motivated" | "stressed" | "happy" | "focused" | "tired"
     | "confused" | "excited" | "calm" | "anxious" | "grateful";
@@ -139,12 +181,6 @@ const safeSetItem = (key: string, value: string): void => {
 };
 const safeRemoveItem = (key: string): void => {
     try { localStorage.removeItem(key); } catch { }
-};
-const safeGetSessionItem = (key: string): string | null => {
-    try { return sessionStorage.getItem(key); } catch { return null; }
-};
-const safeSetSessionItem = (key: string, value: string): void => {
-    try { sessionStorage.setItem(key, value); } catch { }
 };
 const todayStr = () => new Date().toISOString().split("T")[0];
 
@@ -355,7 +391,6 @@ const ReferralShareModal = memo(
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
                 <div className="relative w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-                    {/* Header — violet gradient */}
                     <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 p-5 relative">
                         <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -379,9 +414,7 @@ const ReferralShareModal = memo(
                         </div>
                     </div>
 
-                    {/* Body */}
                     <div className="flex-1 overflow-y-auto p-5 space-y-3">
-                        {/* Reward math */}
                         <div className="grid grid-cols-2 gap-2">
                             <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3 text-center">
                                 <p className="text-3xl font-black text-violet-600 dark:text-violet-400 leading-none">+2</p>
@@ -397,7 +430,6 @@ const ReferralShareModal = memo(
                             </div>
                         </div>
 
-                        {/* Why it stacks */}
                         <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3 space-y-2">
                             <div className="flex items-start gap-2">
                                 <Clock className="w-3.5 h-3.5 text-violet-500 flex-shrink-0 mt-0.5" />
@@ -413,7 +445,6 @@ const ReferralShareModal = memo(
                             </div>
                         </div>
 
-                        {/* Live stats */}
                         {referralStats && referralStats.invites > 0 && (
                             <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3 flex items-center justify-center gap-4 text-[11px] font-bold text-slate-900 dark:text-white">
                                 <span className="flex items-center gap-1">
@@ -429,7 +460,6 @@ const ReferralShareModal = memo(
                         )}
                     </div>
 
-                    {/* Actions */}
                     <div className="p-5 pt-3 space-y-2">
                         <button
                             onClick={handleShareWhatsApp}
@@ -484,9 +514,9 @@ ReferralShareModal.displayName = "ReferralShareModal";
 // ============================================
 // 🎯 MAIN WELCOME MODAL
 // ============================================
-
 const StreakWelcomeModal = memo(
     ({
+        name,
         streak,
         bestStreak,
         isOnline,
@@ -499,6 +529,7 @@ const StreakWelcomeModal = memo(
         onResuscitateClick,
         onOpenReferral,
     }: {
+        name: string;
         streak: number;
         bestStreak: number;
         isOnline: boolean;
@@ -511,9 +542,12 @@ const StreakWelcomeModal = memo(
         onResuscitateClick: () => void;
         onOpenReferral: () => void;
     }) => {
-        const message = ENCOURAGEMENT[streak % ENCOURAGEMENT.length];
+        const medrae = useMedraeReadiness(name || "there");
+        const message = medrae?.text ?? ENCOURAGEMENT[streak % ENCOURAGEMENT.length];
+        const greeting = getTimeGreeting(new Date().getHours());
+        const dateLine = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+        const clock = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
         const canResuscitate = bestStreak > streak && streak > 0;
-
         return (
             <div className="fixed inset-0 z-[99998] flex items-end sm:items-center justify-center p-0 sm:p-4">
                 <div
@@ -532,8 +566,14 @@ const StreakWelcomeModal = memo(
 
                     {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
 
-                    {/* Body */}
                     <div className="px-6 pt-8 pb-5 text-center">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                            {greeting}, {name}
+                        </h2>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 mb-4">
+                            {dateLine} · {clock}
+                        </p>
+
                         <div className="inline-flex items-center justify-center gap-2 mb-2">
                             <Flame className="w-7 h-7 text-amber-500" />
                             <span className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -567,9 +607,7 @@ const StreakWelcomeModal = memo(
                         )}
                     </div>
 
-                    {/* Actions */}
                     <div className="px-6 pb-6 space-y-2">
-                        {/* 🎁 REFERRAL CTA */}
                         {hasReferral && (
                             <button
                                 onClick={onOpenReferral}
@@ -585,7 +623,6 @@ const StreakWelcomeModal = memo(
                             </button>
                         )}
 
-                        {/* Primary — share feeling */}
                         <button
                             onClick={onShareFeeling}
                             className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
@@ -594,7 +631,6 @@ const StreakWelcomeModal = memo(
                             Share how you feel
                         </button>
 
-                        {/* Tertiary — community */}
                         <button
                             onClick={onViewCommunity}
                             className="w-full py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-colors"
@@ -880,10 +916,24 @@ EmotionPostModal.displayName = "EmotionPostModal";
 // ============================================
 // 🏠 MAIN COMPONENT
 // ============================================
-
 export default function StreakCandleWelcome() {
     const user = useUser();
     const isOnline = useOnlineStatus();
+    const navigate = useNavigate();
+
+    const [firstName] = useState<string>(() => {
+        if (typeof window === "undefined") return "Nurse";
+        try {
+            const shared = localStorage.getItem("profile_cache_v1");
+            if (shared) {
+                const parsed = JSON.parse(shared);
+                if (parsed?.name && parsed.name !== "Unknown User") return parsed.name.split(" ")[0];
+            }
+        } catch { /* ignore */ }
+        const stored = localStorage.getItem("userName");
+        if (stored) return stored;
+        return "Nurse";
+    });
 
     const initialStreak = (() => {
         try {
@@ -915,13 +965,7 @@ export default function StreakCandleWelcome() {
     const [showCommunity, setShowCommunity] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [showReferralModal, setShowReferralModal] = useState(false);
-    const [showResuscitation, setShowResuscitation] = useState(false);
-    const [resuscitationData, setResuscitationData] = useState({
-        highestStreak: 0,
-        currentStreak: 0,
-    });
 
-    // ─── Referral state ───
     const [referralCode, setReferralCode] = useState<string | null>(null);
     const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
 
@@ -933,27 +977,11 @@ export default function StreakCandleWelcome() {
     const [isReady, setIsReady] = useState(() => initialStreak > 0);
     const [pendingCount, setPendingCount] = useState(0);
 
-    const { isProcessing, result, setResult } = useResuscitationLink();
     const hasFetchedStreak = useRef(false);
     const hasFetchedMessages = useRef(false);
     const mounted = useRef(true);
     const wasOnlineRef = useRef(isOnline);
     const flushingRef = useRef(false);
-
-    // ─── Session tracking ───
-    const getSessionId = useCallback(() => {
-        let sessionId = safeGetSessionItem("emotion_checkin_session");
-        if (!sessionId) {
-            sessionId = Date.now().toString() + "-" + Math.random().toString(36).slice(2, 9);
-            safeSetSessionItem("emotion_checkin_session", sessionId);
-        }
-        return sessionId;
-    }, []);
-
-    const markShownThisSession = useCallback(() => {
-        const sessionId = getSessionId();
-        if (sessionId) safeSetSessionItem("emotion_checkin_shown", sessionId);
-    }, [getSessionId]);
 
     const saveStreakToCache = useCallback((streakValue: number, bestValue?: number) => {
         safeSetItem(STREAK_CACHE_KEY, JSON.stringify({ streakValue, date: todayStr() }));
@@ -1365,117 +1393,42 @@ export default function StreakCandleWelcome() {
         if (isOnline && user?.id) flushQueue();
     }, [isOnline, user?.id, flushQueue]);
 
-    // ─── Streak death check ───
-    // ─── Streak death check ───
+    // ─── Streak death check (refresh bestStreak only, no modal) ───
     useEffect(() => {
         if (!user?.id || !isReady) return;
         if (!isOnline) return;
-        if (new Date().getDay() !== 3) return;   // 👈 add this
-
 
         let cancelled = false;
-
-        const check = async () => {
+        (async () => {
             try {
                 const { data, error } = await supabase
                     .from("login_activity")
-                    .select("streak, best_streak, login_date")
+                    .select("streak, best_streak")
                     .eq("user_id", user.id)
                     .order("login_date", { ascending: false })
                     .limit(1);
 
                 if (error || cancelled) return;
-                if (data && data.length > 0) {
+                if (data && data.length > 0 && mounted.current) {
                     const info = data[0];
-                    const today = todayStr();
-                    const lastLogin = info.login_date?.split("T")[0];
-
-                    if (info.best_streak > bestStreak && mounted.current) {
-                        setBestStreak(info.best_streak);
-                    }
-
-                    if (lastLogin && lastLogin !== today) {
-                        const y = new Date();
-                        y.setDate(y.getDate() - 1);
-                        const yStr = y.toISOString().split("T")[0];
-
-                        if (lastLogin !== yStr && info.streak > 0 && mounted.current) {
-                            setResuscitationData({
-                                highestStreak: info.best_streak || info.streak,
-                                currentStreak: info.streak,
-                            });
-                            setShowResuscitation(true);
-                        }
-                    }
+                    if (info.best_streak > bestStreak) setBestStreak(info.best_streak);
                 }
             } catch { /* silent */ }
-        };
+        })();
 
-        check();
         return () => { cancelled = true; };
     }, [user?.id, isReady, isOnline, bestStreak]);
 
-    // ─── Resuscitate ───
-    const handleResuscitate = useCallback(
-        async (sharedWith: string[]) => {
-            if (!user?.id) return false;
-            try {
-                const { data, error } = await supabase.rpc("resuscitate_streak", {
-                    user_id_param: user.id,
-                });
-                if (error) throw error;
-                if (!data || !data[0]?.success) return false;
-
-                await supabase.rpc("record_streak_resuscitation", {
-                    user_id_param: user.id,
-                    shared_with: sharedWith,
-                });
-
-                const restored = data[0].restored_streak;
-                setStreak(restored);
-                setBestStreak(restored);
-                saveStreakToCache(restored, restored);
-                setResuscitationData({ highestStreak: restored, currentStreak: restored });
-
-                safeRemoveItem(`streak_${user.id}`);
-                safeRemoveItem(`best_streak_${user.id}`);
-
-                if (typeof window !== "undefined") {
-                    window.dispatchEvent(
-                        new CustomEvent("streak-updated", { detail: { streak: restored } })
-                    );
-                }
-
-                setShowResuscitation(false);
-                return true;
-            } catch (e) {
-                console.error("Resuscitate error:", e);
-                return false;
-            }
-        },
-        [user?.id, saveStreakToCache]
-    );
-
-    // ─── Show welcome modal (Wednesday only, max 2 times per Wednesday) ───
+    // ─── Show daily streak welcome (once per calendar day, first open only) ───
     useEffect(() => {
-        if (showResuscitation) return;
         if (!isReady) return;
         if (streak === 0) return;
 
-        // Only on Wednesday (0=Sun, 3=Wed)
-        if (new Date().getDay() !== 3) return;
-
-        // 👇 Persistent per-Wednesday tracking
-        const wednesdayKey = `welcome_wed_${todayStr()}`;  // e.g. welcome_wed_2026-10-07
-        const shownCount = parseInt(safeGetItem(wednesdayKey) || "0", 10);
-
-        // 👇 Cap at 2 shows per Wednesday
-        if (shownCount >= 2) return;
+        const dailyKey = `streak_welcome_shown_${todayStr()}`;
+        if (safeGetItem(dailyKey) === "1") return;
+        safeSetItem(dailyKey, "1");
 
         const timer = setTimeout(() => {
-            // Increment counter BEFORE showing (avoid race conditions)
-            safeSetItem(wednesdayKey, String(shownCount + 1));
-
             setShowWelcome(true);
             if (!hasFetchedMessages.current) {
                 hasFetchedMessages.current = true;
@@ -1484,37 +1437,13 @@ export default function StreakCandleWelcome() {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [isReady, streak, fetchMessages, showResuscitation]);
+    }, [isReady, streak, fetchMessages]);
+
     // ─── Handlers ───
     const handleOpenResuscitation = useCallback(() => {
         setShowWelcome(false);
-        const fetchLatest = async () => {
-            if (!user?.id) return;
-            try {
-                safeRemoveItem(`streak_${user.id}`);
-                safeRemoveItem(`best_streak_${user.id}`);
-                if (!quickOnlineCheck()) {
-                    setShowResuscitation(true);
-                    return;
-                }
-                const { data, error } = await supabase
-                    .from("login_activity")
-                    .select("streak, best_streak")
-                    .eq("user_id", user.id)
-                    .order("login_date", { ascending: false })
-                    .limit(1);
-                if (!error && data && data.length > 0) {
-                    const cs = data[0].streak || 0;
-                    const cb = data[0].best_streak || cs;
-                    setResuscitationData({ highestStreak: cb, currentStreak: cs });
-                    setStreak(cs);
-                    setBestStreak(cb);
-                }
-            } catch { /* silent */ }
-            setShowResuscitation(true);
-        };
-        fetchLatest();
-    }, [user?.id]);
+        navigate("/streak/restore");
+    }, [navigate]);
 
     const handleCloseWelcome = useCallback(() => setShowWelcome(false), []);
     const handleOpenCommunity = useCallback(() => {
@@ -1535,14 +1464,11 @@ export default function StreakCandleWelcome() {
     }, []);
     const handleCloseReferral = useCallback(() => setShowReferralModal(false), []);
 
-    useEffect(() => {
-        if (result?.success) fetchStreakData();
-    }, [result, fetchStreakData]);
-
     return (
         <>
             {showWelcome && (
                 <StreakWelcomeModal
+                    name={firstName}
                     streak={streak}
                     bestStreak={bestStreak}
                     isOnline={isOnline}
@@ -1585,60 +1511,6 @@ export default function StreakCandleWelcome() {
                     onClose={handleClosePost}
                     onSubmit={handlePostMessage}
                 />
-            )}
-
-            {showResuscitation && (
-                <StreakResuscitationModal
-                    key={`${resuscitationData.highestStreak}-${resuscitationData.currentStreak}-${Date.now()}`}
-                    highestStreak={resuscitationData.highestStreak}
-                    currentStreak={resuscitationData.currentStreak}
-                    isOpen={showResuscitation}
-                    onClose={() => setShowResuscitation(false)}
-                    onResuscitate={handleResuscitate}
-                    isDarkMode={false}
-                />
-            )}
-
-            {isProcessing && (
-                <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-amber-500 mx-auto" />
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white mt-4">
-                            Restoring your streak...
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            Just a moment.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {result && !isProcessing && (
-                <div
-                    className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-                    onClick={() => setResult(null)}
-                >
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full mx-4 text-center">
-                        <div className={`text-5xl mb-3 ${result.success ? "" : ""}`}>
-                            {result.success ? "🎉" : "❌"}
-                        </div>
-                        <h3 className={`text-lg font-bold ${result.success ? "text-emerald-600" : "text-red-600"}`}>
-                            {result.success ? "Streak restored" : "Couldn't restore"}
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                            {result.message}
-                        </p>
-                        <button
-                            onClick={() => {
-                                setResult(null);
-                                if (typeof window !== "undefined") window.location.href = "/";
-                            }}
-                            className="mt-4 w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors active:scale-[0.98]"
-                        >
-                            {result.success ? "Nice" : "Try again"}
-                        </button>
-                    </div>
-                </div>
             )}
         </>
     );

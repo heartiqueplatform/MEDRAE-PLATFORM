@@ -1126,6 +1126,27 @@
         if (document.body) document.body.style.backgroundColor = bg;
 
         window.__MEDRAE_INITIAL_THEME__ = isDark ? 'dark' : 'light';
+
+        // ✅ Follow the device theme live — only while the user has NOT
+        //    explicitly picked a theme (no key in localStorage).
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+          var onChange = function (e) {
+            try {
+              if (localStorage.getItem('medrae_dark_mode') !== null) return;
+              var nowDark = e.matches;
+              document.documentElement.classList.remove('light', 'dark');
+              document.documentElement.classList.add(nowDark ? 'dark' : 'light');
+              document.documentElement.style.setProperty('--bg-color', nowDark ? '#0d1117' : '#ffffff');
+              if (document.body) document.body.style.backgroundColor = nowDark ? '#0d1117' : '#ffffff';
+              window.dispatchEvent(new CustomEvent('theme-changed', {
+                detail: { isDarkMode: nowDark },
+              }));
+            } catch (err) { /* never block paint */ }
+          };
+          if (mq.addEventListener) mq.addEventListener('change', onChange);
+          else if (mq.addListener) mq.addListener(onChange);   // Safari <14
+        }
       } catch (e) { /* never block paint */ }
 
       if (typeof window.performance !== 'undefined') {

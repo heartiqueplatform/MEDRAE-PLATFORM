@@ -1332,7 +1332,6 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                         >
                             <SkipBack fill="currentColor" size={26} />
                         </button>
-
                         <button
                             onClick={onTogglePlay}
                             aria-label={isPlaying ? "Pause" : "Play"}
@@ -1344,63 +1343,53 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                                 return (
                                     <svg
                                         viewBox="0 0 100 100"
-                                        className="absolute inset-0 w-full h-full pointer-events-none"
+                                        className="absolute inset-0 w-full h-full pointer-events-none -rotate-90"
                                         aria-hidden="true"
                                     >
+                                        {/* Track ring */}
                                         <circle
                                             cx="50" cy="50" r="44"
                                             fill="none"
                                             stroke="currentColor"
                                             strokeWidth="5"
-                                            className="text-slate-200 dark:text-gh-border"
+                                            className="text-slate-200 dark:text-[#21262d]"
                                         />
+                                        {/* Progress ring — follows the playhead */}
                                         <circle
                                             cx="50" cy="50" r="44"
                                             fill="none"
-                                            stroke="#DC2626"
+                                            stroke="currentColor"
                                             strokeWidth="5"
-                                            strokeLinecap="butt"
+                                            strokeLinecap="round"
                                             pathLength={100}
                                             strokeDasharray="100"
                                             strokeDashoffset={100 - safeProgress * 100}
-                                            transform="rotate(-90 50 50)"
-                                        />
-                                        <path
-                                            d="M50 88
-                       C47 85 14 60 8 42
-                       C3 26 15 12 28 9
-                       C38 7 46 12 50 20
-                       C54 12 62 7 72 9
-                       C85 12 97 26 92 42
-                       C86 60 53 85 50 88 Z"
-                                            fill="#E11D2A"
-                                            transform="translate(50 52) scale(0.78) translate(-50 -50)"
+                                            className="text-blue-600 dark:text-blue-500 transition-[stroke-dashoffset] duration-150"
                                         />
                                     </svg>
                                 );
                             })()}
 
-                            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            {/* Solid center disc */}
+                            <span className="absolute inset-[14px] rounded-full bg-gradient-to-br from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-black/40">
                                 {isPlaying ? (
-                                    <svg width="38" height="38" viewBox="0 0 24 24" fill="#FFFFFF" style={{ marginTop: 6 }}>
-                                        <rect x="7" y="5" width="4" height="14" rx="2" ry="2" />
-                                        <rect x="13" y="5" width="4" height="14" rx="2" ry="2" />
+                                    /* Pause icon */
+                                    <svg
+                                        width="30" height="30" viewBox="0 0 24 24"
+                                        className="text-slate-900 dark:text-white"
+                                        fill="currentColor"
+                                    >
+                                        <rect x="7" y="5" width="3.5" height="14" rx="1.5" />
+                                        <rect x="13.5" y="5" width="3.5" height="14" rx="1.5" />
                                     </svg>
                                 ) : (
-                                    <svg width="38" height="38" viewBox="0 0 24 24" fill="#FFFFFF" style={{ marginTop: 6, marginLeft: 4 }}>
-                                        <path
-                                            d="M8.5 5.5
-                   C8.5 4.9 9.2 4.5 9.7 4.8
-                   L18.8 11.3
-                   C19.3 11.6 19.3 12.4 18.8 12.7
-                   L9.7 19.2
-                   C9.2 19.5 8.5 19.1 8.5 18.5
-                   Z"
-                                            stroke="#FFFFFF"
-                                            strokeWidth="1.5"
-                                            strokeLinejoin="round"
-                                            strokeLinecap="round"
-                                        />
+                                    /* Play icon — optical centering via marginLeft */
+                                    <svg
+                                        width="30" height="30" viewBox="0 0 24 24"
+                                        className="text-slate-900 dark:text-white ml-1"
+                                        fill="currentColor"
+                                    >
+                                        <path d="M8 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8 5.5Z" />
                                     </svg>
                                 )}
                             </span>

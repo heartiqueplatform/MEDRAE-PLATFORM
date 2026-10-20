@@ -19,6 +19,7 @@ import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
 import confetti from "canvas-confetti";
 import { createPortal } from 'react-dom';
 import { GlobalLoader } from "@/components/GlobalLoader";
+import ShortMedical from "@/components/ShortMedical";
 
 // Enhanced request deduplication cache with longer TTLs
 // Enhanced request deduplication cache with longer TTLs
@@ -1258,6 +1259,11 @@ export default function Feed() {
                   </CardContent>
 
                 </Card>
+                <ShortMedical
+                  limit={5}
+                  title="Medical Conditions"
+                  subtitle="Hypertension, Heart Failure & more"
+                />
                 <MicroCaseCard />
               </motion.div>
 

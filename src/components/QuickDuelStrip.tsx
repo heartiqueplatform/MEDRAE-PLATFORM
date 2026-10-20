@@ -16,10 +16,23 @@ import {
     CheckCircle2,
     AlertCircle,
     Loader2,
+    // ⬇️⬇️ NEW — invite icons
+    Gift,
+    Share2,
+    Copy,
+    Check,
+    Users,
+    Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { UserProfileModal } from "./UserProfileModal";
+// ⬇️⬇️ NEW — referral helpers
+import {
+    getMyReferralCode,
+    getMyReferralStats,
+    type ReferralStats,
+} from "@/lib/referrals";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -64,8 +77,8 @@ type ChallengeState =
 
 const HISTORY_KEY = "quick_duel_history_v2";
 const PLAYERS_KEY = "quick_duel_players_v2";
-const CACHE_TTL = 60 * 1000;      // ⬅️ 60s
-const POLL_INTERVAL = 60 * 1000;  // ⬅️ 60s
+const CACHE_TTL = 60 * 1000;
+const POLL_INTERVAL = 60 * 1000;
 
 function readCache<T>(key: string): T | null {
     if (typeof window === "undefined") return null;
@@ -112,6 +125,17 @@ function SafeImg({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Referral share message                                             */
+/* ------------------------------------------------------------------ */
+
+const buildShareMessage = (code: string): string =>
+    `Hey  I'm using *Medrae Nursing* to prepare for my Nursing and NCK exams.\n\n` +
+    `6,500+ exam-style questions, unit-based revision, instant explanations  built for DCHN, BSN & KRN students.\n\n` +
+    `Use my link and we BOTH get FREE Premium:\n` +
+    `https://medrae.vercel.app/?ref=${code}\n\n` +
+    `You get 1 day free. I get 2. Win-win `;
+
+/* ------------------------------------------------------------------ */
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -140,9 +164,130 @@ function QuickDuelStripBase({
     const fetchedRef = useRef(false);
     const isMountedRef = useRef(true);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
-    // ⬇️ Challenge modal state
+    const [sharing, setSharing] = useState(false);
     const [challenge, setChallenge] = useState<ChallengeState>({ status: "idle" });
+
+    /* -------------------------------------------------------------- */
+    /*  Referral state (lazy, once)                                    */
+    /* -------------------------------------------------------------- */
+    const [referralCode, setReferralCode] = useState<string | null>(null);
+    const [referralStats, setReferralStats] = useState<ReferralStats>({
+        invites: 0,
+        pending: 0,
+        daysEarned: 0,
+    });
+    const [referralLoading, setReferralLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
+    const referralFetchedRef = useRef(false);
+
+    useEffect(() => {
+        if (!userId) return;
+        if (referralFetchedRef.current) return;
+        referralFetchedRef.current = true;
+
+        let cancelled = false;
+        setReferralLoading(true);
+        (async () => {
+            try {
+                const [code, stats] = await Promise.all([
+                    getMyReferralCode(userId),
+                    getMyReferralStats(userId),
+                ]);
+                if (cancelled) return;
+                setReferralCode(code);
+                setReferralStats(stats);
+            } catch {
+                /* silent */
+            } finally {
+                if (!cancelled) setReferralLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [userId]);
+
+    const shareUrl = referralCode
+        ? `https://medrae.vercel.app/?ref=${referralCode}`
+        : "";
+    const shareMessage = referralCode ? buildShareMessage(referralCode) : "";
+
+    const handleShareWhatsApp = useCallback(() => {
+        if (!referralCode) return;
+        if (navigator.vibrate) navigator.vibrate(15);
+        window.open(
+            `https://wa.me/?text=${encodeURIComponent(shareMessage)}`,
+            "_blank"
+        );
+    }, [referralCode, shareMessage]);
+
+    /* -------------------------------------------------------------- */
+    /*  Copy FIRST — handleShareNative depends on it (TDZ fix)        */
+    /* -------------------------------------------------------------- */
+    const handleCopy = useCallback(async () => {
+        if (!referralCode) return;
+        if (navigator.vibrate) navigator.vibrate(10);
+        try {
+            await navigator.clipboard.writeText(shareMessage);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch { /* ignore */ }
+    }, [referralCode, shareMessage]);
+
+    /* -------------------------------------------------------------- */
+    /*  Native share — timeout + AbortController + copy fallback.     */
+    /*  Re-entry guarded via `sharing` (iOS freezes on 2nd call).     */
+    /* -------------------------------------------------------------- */
+    const SHARE_TIMEOUT_MS = 15000;
+
+    const handleShareNative = useCallback(async () => {
+        if (!referralCode) return;
+        if (sharing) return;               // ← guard re-entry
+        setSharing(true);                  // ← lock button
+        if (navigator.vibrate) navigator.vibrate(10);
+
+        const canShare =
+            typeof navigator !== "undefined" &&
+            typeof (navigator as any).share === "function";
+
+        if (!canShare) {
+            setSharing(false);             // ← unlock
+            await handleCopy();
+            return;
+        }
+
+        const controller =
+            typeof AbortController !== "undefined" ? new AbortController() : null;
+
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        const timeoutPromise = new Promise<"timeout">((resolve) => {
+            timeoutId = setTimeout(() => {
+                try { controller?.abort(); } catch { /* ignore */ }
+                resolve("timeout");
+            }, SHARE_TIMEOUT_MS);
+        });
+
+        try {
+            const sharePromise = (navigator as any).share({
+                title: "Medrae — free AI tutor for student nurses",
+                text: "🎓 Use my link and we BOTH get FREE Premium:",
+                url: shareUrl,
+                ...(controller ? { signal: controller.signal } : {}),
+            }) as Promise<void>;
+
+            const result = await Promise.race([sharePromise, timeoutPromise]);
+
+            if (result === "timeout") {
+                await handleCopy();
+            }
+        } catch (err: any) {
+            const name = err?.name;
+            if (name !== "AbortError" && name !== "NotAllowedError") {
+                await handleCopy();
+            }
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+            setSharing(false);             // ← always unlock
+        }
+    }, [referralCode, shareUrl, handleCopy, sharing]);
 
     /* -------------------------------------------------------------- */
     /*  Fetch                                                          */
@@ -153,13 +298,12 @@ function QuickDuelStripBase({
             if (!force && fetchedRef.current) return;
             fetchedRef.current = true;
 
-            // ✅ INSTANT PAINT: show whatever we have immediately
             const instantHistory = readCache<Duel[]>(HISTORY_KEY);
             const instantPlayers = readCache<Player[]>(PLAYERS_KEY);
 
             if (instantHistory && instantHistory.length > 0) {
                 setHistory(instantHistory);
-                setLoading(false);  // ⬅️ kill loader the moment we have anything
+                setLoading(false);
             }
             if (instantPlayers && instantPlayers.length > 0) {
                 setPlayers(instantPlayers);
@@ -244,14 +388,12 @@ function QuickDuelStripBase({
         },
         [userId]
     );
+
     /* -------------------------------------------------------------- */
-    /*  Lifecycle: initial idle fetch + 60s poll + focus refresh       */
+    /*  Lifecycle                                                      */
     /* -------------------------------------------------------------- */
     useEffect(() => {
         isMountedRef.current = true;
-
-        // ✅ Start the fetch IMMEDIATELY. No idle callback.
-        //    It paints from cache first (see fetchData), then refreshes.
         fetchData(false);
 
         const onFocus = () => {
@@ -310,13 +452,7 @@ function QuickDuelStripBase({
     }, [players]);
 
     /* -------------------------------------------------------------- */
-    /*  PREMIUM challenge flow                                         */
-    /*   1. Show modal immediately (preparing)                         */
-    /*   2. Prefetch 10 questions via RPC                              */
-    /*   3. Stash in sessionStorage for ChallengePage                  */
-    /*   4. Enforce minimum 800ms display                              */
-    /*   5. Show "ready" for 600ms                                     */
-    /*   6. Navigate (modal still visible, covers transition)          */
+    /*  Challenge flow                                                 */
     /* -------------------------------------------------------------- */
     const sendChallenge = useCallback(
         async (player: Player) => {
@@ -334,7 +470,6 @@ function QuickDuelStripBase({
                 });
                 if (error) throw error;
 
-                // Hand off to ChallengePage
                 try {
                     sessionStorage.setItem(
                         `prefetched_questions_${player.user_id}`,
@@ -342,7 +477,6 @@ function QuickDuelStripBase({
                     );
                 } catch { }
 
-                // Enforce minimum display so it never flashes
                 const elapsed = Date.now() - startedAt;
                 if (elapsed < MIN_DISPLAY_MS) {
                     await new Promise((r) => setTimeout(r, MIN_DISPLAY_MS - elapsed));
@@ -351,11 +485,9 @@ function QuickDuelStripBase({
                 if (!isMountedRef.current) return;
                 setChallenge({ status: "ready", player });
 
-                // Hold "ready" state, then navigate (modal still visible)
                 setTimeout(() => {
                     if (!isMountedRef.current) return;
                     navigate(`/challenge?duel=${player.user_id}`);
-                    // Fade out after navigation begins
                     setTimeout(() => {
                         if (isMountedRef.current) {
                             setChallenge({ status: "idle" });
@@ -391,7 +523,6 @@ function QuickDuelStripBase({
             if (player) {
                 sendChallenge(player);
             } else {
-                // Fallback — no modal, direct nav
                 navigate(`/challenge?duel=${opponentId}`);
             }
         },
@@ -414,21 +545,20 @@ function QuickDuelStripBase({
         return <StripSkeleton />;
     }
 
-    // ✅ Show skeleton if we have NOTHING to show yet (no history AND no players)
-    //    even if loading somehow didn't get set.
     if (!lastDuel && sortedPlayers.length === 0 && !initialHistory && !initialPlayers) {
         const hasCache =
             (readCache<Duel[]>(HISTORY_KEY)?.length ?? 0) > 0 ||
             (readCache<Player[]>(PLAYERS_KEY)?.length ?? 0) > 0;
         if (!hasCache) return <StripSkeleton />;
     }
+
     /* -------------------------------------------------------------- */
     /*  Render                                                         */
     /* -------------------------------------------------------------- */
     return (
         <>
             <section
-                className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-5 font-sans"
+                className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-4 font-sans"
                 style={{ contain: "layout paint" }}
             >
                 {/* ---------- Players row ---------- */}
@@ -538,29 +668,32 @@ function QuickDuelStripBase({
                     )
                 )}
 
-                {/* ---------- Last battle card ---------- */}
+                {/* ---------- Last battle card (own bordered container) ---------- */}
                 {lastDuel && (
                     <div
-                        className={`flex items-center gap-3 p-3 rounded-2xl ${lastDuel.won ? "bg-emerald-500/5" : "bg-rose-500/5"
+                        className={`flex items-center gap-3 p-3 rounded-2xl border ${lastDuel.won
+                            ? "bg-emerald-500/5 border-0"
+                            : "bg-rose-500/5 border-0"
                             }`}
                     >
+                        {/* ⬇️⬇️ FIXED — avatar now matches players row (80px) */}
                         <div className="relative shrink-0">
                             <SafeImg
                                 src={lastDuel.opponent_avatar}
                                 alt={lastDuel.opponent_name}
                                 loading="lazy"
                                 decoding="async"
-                                className="w-11 h-11 rounded-full object-cover"
+                                className="w-[80px] h-[80px] rounded-full object-cover"
                             />
                             <span
-                                className={`absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center ${lastDuel.won ? "bg-emerald-500" : "bg-rose-500"
+                                className={`absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-900 ${lastDuel.won ? "bg-emerald-500" : "bg-rose-500"
                                     }`}
-                                style={{ width: 18, height: 18 }}
+                                style={{ width: 22, height: 22 }}
                             >
                                 {lastDuel.won ? (
-                                    <Trophy size={10} className="text-white" strokeWidth={2.5} />
+                                    <Trophy size={12} className="text-white" strokeWidth={2.5} />
                                 ) : (
-                                    <Flame size={10} className="text-white" strokeWidth={2.5} />
+                                    <Flame size={12} className="text-white" strokeWidth={2.5} />
                                 )}
                             </span>
                         </div>
@@ -576,7 +709,7 @@ function QuickDuelStripBase({
 
                         <button
                             onClick={() => handleRematch(lastDuel.opponent_id)}
-                            className="px-3.5 h-9 rounded-xl bg-blue-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black tracking-wider active:scale-95 transition-transform"
+                            className="px-3.5 h-9 rounded-xl bg-blue-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black tracking-wider active:scale-95 transition-transform shrink-0"
                             style={{ touchAction: "manipulation" }}
                         >
                             Rematch
@@ -584,13 +717,24 @@ function QuickDuelStripBase({
                     </div>
                 )}
 
+                {/* ---------- Invite friends card (subtle, quiet) ---------- */}
+                <InviteFriendsCard
+                    loading={referralLoading}
+                    code={referralCode}
+                    stats={referralStats}
+                    copied={copied}
+                    sharing={sharing}
+                    onWhatsApp={handleShareWhatsApp}
+                    onNative={handleShareNative}
+                    onCopy={handleCopy}
+                />
+
                 <UserProfileModal
                     userId={selectedUserId}
                     onClose={() => setSelectedUserId(null)}
                 />
             </section>
 
-            {/* ---------- Premium challenge modal ---------- */}
             <ChallengeOverlay
                 state={challenge}
                 onDismiss={dismissChallenge}
@@ -601,7 +745,121 @@ function QuickDuelStripBase({
 }
 
 /* ------------------------------------------------------------------ */
-/*  ChallengeOverlay — dark, animated, premium                         */
+/*  InviteFriendsCard — quiet, subtle, no loud gradient                */
+/* ------------------------------------------------------------------ */
+
+function InviteFriendsCard({
+    loading,
+    code,
+    stats,
+    copied,
+    sharing,
+    onWhatsApp,
+    onNative,
+    onCopy,
+}: {
+    loading: boolean;
+    code: string | null;
+    stats: ReferralStats;
+    copied: boolean;
+    sharing: boolean;
+    onWhatsApp: () => void;
+    onNative: () => void;
+    onCopy: () => void;
+}) {
+    // Quiet skeleton — matches the soft card styling
+    if (loading) {
+        return (
+            <div className="rounded-2xl border-0 bg-slate-50/60 dark:bg-slate-800/30 p-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                        <div className="h-2.5 w-2/3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!code) return null;
+
+    const hasInvites = stats.invites > 0;
+
+    return (
+        <div className="rounded-2xl border-0 bg-slate-50/60 dark:bg-slate-800/30 p-3">
+            {/* Header row */}
+            <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-violet-500/10 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
+                    <Gift size={16} className="text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
+                        Invite friends, earn free Premium
+                    </p>
+                    <p className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+                        <Sparkles size={9} className="text-violet-500" />
+                        +2 days for you · +1 day for them
+                    </p>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                <button
+                    onClick={onWhatsApp}
+                    className="h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200/70 dark:border-slate-600/60 text-slate-700 dark:text-slate-200 font-bold text-[10.5px] flex items-center justify-center gap-1 active:scale-[0.97] transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                    aria-label="Share invite on WhatsApp"
+                >
+                    <Share2 size={11} />
+                    WhatsApp
+                </button>
+                <button
+                    onClick={onNative}
+                    disabled={sharing}
+                    className="h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200/70 dark:border-slate-600/60 text-slate-700 dark:text-slate-200 font-bold text-[10.5px] flex items-center justify-center gap-1 active:scale-[0.97] transition-transform disabled:opacity-50 disabled:pointer-events-none"
+                    style={{ touchAction: "manipulation" }}
+                    aria-label="Share invite"
+                >
+                    {sharing ? (
+                        <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                        <Sparkles size={11} />
+                    )}
+                    {sharing ? "…" : "More"}
+                </button>
+                <button
+                    onClick={onCopy}
+                    className="h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200/70 dark:border-slate-600/60 text-slate-700 dark:text-slate-200 font-bold text-[10.5px] flex items-center justify-center gap-1 active:scale-[0.97] transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                    aria-label="Copy invite link"
+                >
+                    {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    {copied ? "Copied" : "Copy"}
+                </button>
+            </div>
+
+            {/* Live stats (only when there are invites) */}
+            {hasInvites && (
+                <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center gap-3 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1">
+                        <Users size={10} className="text-emerald-500" />
+                        {stats.invites} joined
+                    </span>
+                    <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+                    <span className="flex items-center gap-1">
+                        <Gift size={10} className="text-violet-500" />
+                        {stats.daysEarned} days earned
+                    </span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  ChallengeOverlay — unchanged                                       */
 /* ------------------------------------------------------------------ */
 
 function ChallengeOverlay({
@@ -634,14 +892,11 @@ function ChallengeOverlay({
                         className="relative w-[88%] max-w-sm bg-slate-900 dark:bg-muted/100 rounded-xl p-8 border-0 shadow-none overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Ambient glow */}
                         <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/20 blur-[80px] pointer-events-none" />
                         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-indigo-500/10 blur-[80px] pointer-events-none" />
 
-                        {/* PREPARING */}
                         {state.status === "preparing" && (
                             <div className="relative flex flex-col items-center text-center">
-                                {/* Pulsing swords */}
                                 <div className="relative w-24 h-24 mb-6">
                                     <motion.div
                                         animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.7, 0.4] }}
@@ -667,7 +922,6 @@ function ChallengeOverlay({
                                     </span>
                                 </p>
 
-                                {/* Indeterminate progress bar */}
                                 <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-4">
                                     <motion.div
                                         initial={{ x: "-100%" }}
@@ -684,7 +938,6 @@ function ChallengeOverlay({
                             </div>
                         )}
 
-                        {/* READY */}
                         {state.status === "ready" && (
                             <div className="relative flex flex-col items-center text-center">
                                 <motion.div
@@ -721,7 +974,6 @@ function ChallengeOverlay({
                             </div>
                         )}
 
-                        {/* ERROR */}
                         {state.status === "error" && (
                             <div className="relative flex flex-col items-center text-center">
                                 <div className="w-24 h-24 rounded-full bg-rose-500/15 flex items-center justify-center mb-6 relative">
@@ -760,7 +1012,7 @@ function ChallengeOverlay({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Skeleton                                                           */
+/*  Skeleton — avatar placeholder now matches 80px                     */
 /* ------------------------------------------------------------------ */
 
 function StripSkeleton() {
@@ -779,7 +1031,7 @@ function StripSkeleton() {
                     </div>
                 ))}
             </div>
-            <div className="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <div className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
         </section>
     );
 }

@@ -384,7 +384,7 @@ export function GlobalDuelManager() {
                                         <p className="text-[13px] text-muted-foreground leading-snug">
                                             Don't just study solo. Send an{" "}
                                             <span className="font-black text-indigo-500 underline underline-offset-4 uppercase">
-                                                N.D. (Nurse Duel)
+                                                Clinical Challenge
                                             </span>{" "}
                                             to a peer and beat their clinical score!
                                         </p>

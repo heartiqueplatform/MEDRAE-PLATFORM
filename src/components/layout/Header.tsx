@@ -5,7 +5,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-import { Bell, Moon, Sun, User, Settings, Menu, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume } from "lucide-react";
+import { Bell, Moon, Sun, User, Settings, Menu, Flame, VolumeOff, Volume } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -177,7 +177,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
   const { onlineUsers, onlineCount, loading: onlineLoading, refresh } = useOnlineUsers();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [rotating, setRotating] = useState(false);
+
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const [isMuted, setIsMuted] = useState(isSoundMuted);
 
@@ -586,15 +586,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     };
   }, []);
 
-  // ============================================================
-  // ✅ MEMOIZED: Handlers
-  // ============================================================
-  const handleReload = useCallback(() => {
-    setRotating(true);
-    setTimeout(() => window.location.reload(), 300);
-  }, []);
-
-
   const handleProfileClick = useCallback(() => {
     navigate("/profile");
   }, [navigate]);
@@ -835,17 +826,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
             {/* 2. ✅ CHALLENGE BUTTON - COMPLETELY REMOVED */}
 
-            {/* 3. Refresh Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleReload}
-              className={`hidden md:flex h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none border-0 ${rotating ? 'animate-spin' : ''}`}
-              title="Refresh App"
-              aria-label="Refresh"
-            >
-              <RefreshCcw className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" />
-            </Button>
+
             {/* 3. NOTIFICATIONS BUTTON - NEW! Beside Settings */}
             <Button
               variant="ghost"

@@ -176,8 +176,6 @@ export function SettingsSheet({
                     relative z-10 flex flex-col
                     w-full h-[100dvh] max-h-[100dvh]
                     animate-in slide-in-from-bottom duration-300
-                    sm:mt-16 sm:mr-2 sm:mb-4 sm:h-auto sm:max-h-[80vh]
-                    sm:w-80 sm:max-w-[420px]
                 "
             >
                 <div
@@ -197,7 +195,8 @@ export function SettingsSheet({
                     "
                 >
                     {/* Mobile header */}
-                    <div className="flex items-center justify-between mb-3 sm:hidden">
+                    {/* Header — visible on all breakpoints */}
+                    <div className="mx-auto w-full max-w-2xl flex items-center justify-between mb-3">
                         <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Settings</h3>
                         <Button
                             variant="ghost"
@@ -210,175 +209,177 @@ export function SettingsSheet({
                         </Button>
                     </div>
 
-                    {/* ===== Premium / Get Verified ===== */}
-                    {!isPremium && (
-                        <button
-                            onClick={() => goToPage("/subscription")}
-                            className="w-full mb-3 min-h-[64px] flex items-center gap-3 px-4 py-3 rounded-2xl
+                    <div className="mx-auto w-full max-w-2xl">
+                        {/* ===== Premium / Get Verified ===== */}
+                        {!isPremium && (
+                            <button
+                                onClick={() => goToPage("/subscription")}
+                                className="w-full mb-3 min-h-[64px] flex items-center gap-3 px-4 py-3 rounded-2xl
                                 bg-gradient-to-r from-amber-50 to-yellow-50
                                 dark:from-amber-950/40 dark:to-yellow-950/40
                                 active:scale-[0.98] transition-transform text-left"
-                        >
-                            <span className="relative inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-full
+                            >
+                                <span className="relative inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-full
                                 bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-600
                                 shadow-[0_0_0_1px_rgba(255,255,255,0.5)_inset,0_1px_3px_rgba(0,0,0,0.15)]">
-                                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
-                                    <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" strokeWidth="3"
-                                        strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </span>
-                            <span className="flex-1 min-w-0">
-                                <span className="block text-sm font-bold text-amber-900 dark:text-amber-100 truncate">
-                                    Get Verified
+                                    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
+                                        <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" strokeWidth="3"
+                                            strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
                                 </span>
-                                <span className="block text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium truncate">
-                                    Unlock the golden badge on your profile
+                                <span className="flex-1 min-w-0">
+                                    <span className="block text-sm font-bold text-amber-900 dark:text-amber-100 truncate">
+                                        Get Verified
+                                    </span>
+                                    <span className="block text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium truncate">
+                                        Unlock the golden badge on your profile
+                                    </span>
                                 </span>
-                            </span>
-                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 shrink-0">
-                                Upgrade →
-                            </span>
-                        </button>
-                    )}
+                                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 shrink-0">
+                                    Upgrade →
+                                </span>
+                            </button>
+                        )}
 
-                    {isPremium && (
-                        <div className="mb-3 min-h-[64px] flex items-center gap-3 px-4 py-3 rounded-2xl
+                        {isPremium && (
+                            <div className="mb-3 min-h-[64px] flex items-center gap-3 px-4 py-3 rounded-2xl
                             bg-gradient-to-r from-amber-50 to-yellow-50
                             dark:from-amber-950/40 dark:to-yellow-950/40">
-                            <VerifiedBadge isPremium={true} size="lg" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-amber-900 dark:text-amber-100 truncate">
-                                    Verified Premium Member
-                                </p>
-                                <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium truncate">
-                                    Your account is officially recognized
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <StreakWidget streak={streak} isOnline={isOnline} />
-
-                    {/* ===== Sound Control ===== */}
-                    <div className="mb-3">
-                        <div
-                            className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl transition-all duration-300 ${isMuted
-                                ? "bg-red-50 dark:bg-red-950/20"
-                                : "bg-emerald-50 dark:bg-emerald-950/20"
-                                }`}
-                        >
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className={`flex items-center justify-center h-10 w-10 shrink-0 rounded-xl bg-white dark:bg-[#21262d] ${isMuted ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
-                                    }`}>
-                                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 truncate">
-                                        {isMuted
-                                            ? (<><VolumeOff className="w-4 h-4 text-red-500 shrink-0" />Sound Muted</>)
-                                            : (<><Volume className="w-4 h-4 text-emerald-500 shrink-0" />Sound Enabled</>)}
-                                    </span>
-                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                                        {isMuted ? "All notifications are silent" : "You'll hear notification sounds"}
-                                    </span>
+                                <VerifiedBadge isPremium={true} size="lg" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-amber-900 dark:text-amber-100 truncate">
+                                        Verified Premium Member
+                                    </p>
+                                    <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium truncate">
+                                        Your account is officially recognized
+                                    </p>
                                 </div>
                             </div>
-                            <Button
-                                onClick={handleMuteToggle}
-                                variant={isMuted ? "destructive" : "default"}
-                                size="sm"
-                                className={`rounded-xl px-5 h-10 text-xs font-bold transition-all shadow-sm hover:shadow-md w-full sm:w-auto shrink-0 ${isMuted
-                                    ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white"
-                                    : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white"
+                        )}
+
+                        <StreakWidget streak={streak} isOnline={isOnline} />
+
+                        {/* ===== Sound Control ===== */}
+                        <div className="mb-3">
+                            <div
+                                className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl transition-all duration-300 ${isMuted
+                                    ? "bg-red-50 dark:bg-red-950/20"
+                                    : "bg-emerald-50 dark:bg-emerald-950/20"
                                     }`}
                             >
-                                {isMuted
-                                    ? (<><Volume className="w-4 h-4 mr-2" />Unmute</>)
-                                    : (<><VolumeOff className="w-4 h-4 mr-2" />Mute</>)}
-                            </Button>
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className={`flex items-center justify-center h-10 w-10 shrink-0 rounded-xl bg-white dark:bg-[#21262d] ${isMuted ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                                        }`}>
+                                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 truncate">
+                                            {isMuted
+                                                ? (<><VolumeOff className="w-4 h-4 text-red-500 shrink-0" />Sound Muted</>)
+                                                : (<><Volume className="w-4 h-4 text-emerald-500 shrink-0" />Sound Enabled</>)}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                            {isMuted ? "All notifications are silent" : "You'll hear notification sounds"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Button
+                                    onClick={handleMuteToggle}
+                                    variant={isMuted ? "destructive" : "default"}
+                                    size="sm"
+                                    className={`rounded-xl px-5 h-10 text-xs font-bold transition-all shadow-sm hover:shadow-md w-full sm:w-auto shrink-0 ${isMuted
+                                        ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white"
+                                        : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white"
+                                        }`}
+                                >
+                                    {isMuted
+                                        ? (<><Volume className="w-4 h-4 mr-2" />Unmute</>)
+                                        : (<><VolumeOff className="w-4 h-4 mr-2" />Mute</>)}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* ===== Group 1: Sharing + Theme + Telegram ===== */}
-                    <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22] sm:bg-transparent dark:sm:bg-transparent">
-                        {/* ❌ REMOVED: "Invite Colleagues" button (was handleShare → hardcoded URL).
+                        {/* ===== Group 1: Sharing + Theme + Telegram ===== */}
+                        <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22] sm:bg-transparent dark:sm:bg-transparent">
+                            {/* ❌ REMOVED: "Invite Colleagues" button (was handleShare → hardcoded URL).
                             The real referral flow lives in "Invite a Friend" below. */}
 
-                        <button onClick={() => setShowTelegram(true)} className={rowBase}>
-                            <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
-                                <TelegramLogo className="w-4 h-4" />
-                            </div>
-                            <div className={labelStack}>
-                                <span className={primaryLabel}>Connect Telegram</span>
-                                <span className={`${secondaryLabel} text-[#229ED9]/80 dark:text-[#2AABEE]/70`}>
-                                    Practice & progress in Telegram
-                                </span>
-                            </div>
-                        </button>
-
-                        <button onClick={() => setShowNotifPrefs(true)} className={rowBase}>
-                            <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
-                                <Bell className="w-4 h-4 text-white" />
-                            </div>
-                            <div className={labelStack}>
-                                <span className={primaryLabel}>Notification Preferences</span>
-                                <span className={`${secondaryLabel} text-[#229ED9]/80 dark:text-[#2AABEE]/70`}>
-                                    Choose what Telegram sends you
-                                </span>
-                            </div>
-                        </button>
-
-                        <button onClick={() => goToPage("/share")} className={rowBase}>
-                            <div className={`${iconTile} bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400`}>
-                                <Share2 className="w-4 h-4" />
-                            </div>
-                            <div className={labelStack}>
-                                <span className={primaryLabel}>Invite a Friend & Earn Premium</span>
-                                <span className={`${secondaryLabel} text-violet-600/70 dark:text-violet-400/60`}>
-                                    You get 2 days · They get 1 day
-                                </span>
-                            </div>
-                            <Badge className="ml-auto h-5 px-2 shrink-0 bg-gradient-to-r from-violet-500 to-purple-600 text-[9px] font-bold text-white border-0 rounded-full">
-                                Reward
-                            </Badge>
-                        </button>
-
-                        <button onClick={onToggleDarkMode} className={`${rowBase} justify-between`}>
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className={`${iconTile} ${isDarkMode
-                                    ? "bg-amber-900/30 text-amber-400"
-                                    : "bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400"
-                                    }`}>
-                                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                            <button onClick={() => setShowTelegram(true)} className={rowBase}>
+                                <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
+                                    <TelegramLogo className="w-4 h-4" />
                                 </div>
-                                <span className={primaryLabel}>
-                                    {isDarkMode ? "Light Mode" : "Dark Mode"}
-                                </span>
-                            </div>
-                            <div className="w-8 h-4 shrink-0 bg-gray-200 dark:bg-[#30363d] rounded-full relative">
-                                <div className={`absolute top-1 w-2 h-2 rounded-full transition-all duration-200 ${isDarkMode ? "right-1 bg-amber-400" : "left-1 bg-gray-400"
-                                    }`} />
-                            </div>
-                        </button>
-                    </div>
+                                <div className={labelStack}>
+                                    <span className={primaryLabel}>Connect Telegram</span>
+                                    <span className={`${secondaryLabel} text-[#229ED9]/80 dark:text-[#2AABEE]/70`}>
+                                        Practice & progress in Telegram
+                                    </span>
+                                </div>
+                            </button>
 
-                    <div className="my-3 h-px bg-gray-200 dark:bg-[#21262d]" />
+                            <button onClick={() => setShowNotifPrefs(true)} className={rowBase}>
+                                <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
+                                    <Bell className="w-4 h-4 text-white" />
+                                </div>
+                                <div className={labelStack}>
+                                    <span className={primaryLabel}>Notification Preferences</span>
+                                    <span className={`${secondaryLabel} text-[#229ED9]/80 dark:text-[#2AABEE]/70`}>
+                                        Choose what Telegram sends you
+                                    </span>
+                                </div>
+                            </button>
 
-                    {/* ===== Group 2: System actions ===== */}
-                    <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22] sm:bg-transparent dark:sm:bg-transparent">
-                        <button onClick={handleReload} className={rowBase}>
-                            <div className={`${iconTile} bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 ${rotating ? "animate-spin" : ""}`}>
-                                <RefreshCcw className="w-4 h-4" />
-                            </div>
-                            <div className={labelStack}>
-                                <span className={primaryLabel}>System Update</span>
-                                <span className={`${secondaryLabel} text-emerald-600/70 dark:text-emerald-400/60`}>
-                                    Refresh platform content
-                                </span>
-                            </div>
-                        </button>
-                        <HardResetButton asRow keepLoggedIn label="Clear Caches" />
-                        <HardResetButton asRow label="Hard Reset" />
+                            <button onClick={() => goToPage("/share")} className={rowBase}>
+                                <div className={`${iconTile} bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400`}>
+                                    <Share2 className="w-4 h-4" />
+                                </div>
+                                <div className={labelStack}>
+                                    <span className={primaryLabel}>Invite a Friend & Earn Premium</span>
+                                    <span className={`${secondaryLabel} text-violet-600/70 dark:text-violet-400/60`}>
+                                        You get 2 days · They get 1 day
+                                    </span>
+                                </div>
+                                <Badge className="ml-auto h-5 px-2 shrink-0 bg-gradient-to-r from-violet-500 to-purple-600 text-[9px] font-bold text-white border-0 rounded-full">
+                                    Reward
+                                </Badge>
+                            </button>
+
+                            <button onClick={onToggleDarkMode} className={`${rowBase} justify-between`}>
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className={`${iconTile} ${isDarkMode
+                                        ? "bg-amber-900/30 text-amber-400"
+                                        : "bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400"
+                                        }`}>
+                                        {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                                    </div>
+                                    <span className={primaryLabel}>
+                                        {isDarkMode ? "Light Mode" : "Dark Mode"}
+                                    </span>
+                                </div>
+                                <div className="w-8 h-4 shrink-0 bg-gray-200 dark:bg-[#30363d] rounded-full relative">
+                                    <div className={`absolute top-1 w-2 h-2 rounded-full transition-all duration-200 ${isDarkMode ? "right-1 bg-amber-400" : "left-1 bg-gray-400"
+                                        }`} />
+                                </div>
+                            </button>
+                        </div>
+
+                        <div className="my-3 h-px bg-gray-200 dark:bg-[#21262d]" />
+
+                        {/* ===== Group 2: System actions ===== */}
+                        <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22] sm:bg-transparent dark:sm:bg-transparent">
+                            <button onClick={handleReload} className={rowBase}>
+                                <div className={`${iconTile} bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 ${rotating ? "animate-spin" : ""}`}>
+                                    <RefreshCcw className="w-4 h-4" />
+                                </div>
+                                <div className={labelStack}>
+                                    <span className={primaryLabel}>System Update</span>
+                                    <span className={`${secondaryLabel} text-emerald-600/70 dark:text-emerald-400/60`}>
+                                        Refresh platform content
+                                    </span>
+                                </div>
+                            </button>
+                            <HardResetButton asRow keepLoggedIn label="Clear Caches" />
+                            <HardResetButton asRow label="Hard Reset" />
+                        </div>
                     </div>
                 </div>
             </div>

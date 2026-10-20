@@ -137,8 +137,7 @@ const PAGE_VARIANTS = {
 };
 
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
-
-const preloadUserProfile = () => {
+const STREAK_SUMMARY_KEY = "sidebar_cache_streak_summary"; const preloadUserProfile = () => {
     try {
         const sharedCache = getProfileCache();
         if (sharedCache && sharedCache.name && sharedCache.name !== "Unknown User") {
@@ -306,11 +305,74 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         if (getCachedPremium(user?.id)) return "premium";
         return null;
     });
-
+    // ✅ Streak summary — drives the "Restore Streak" row visibility
+    const [streakSummary, setStreakSummary] = useState<{ current: number; best: number }>(
+        () => {
+            try {
+                const raw = localStorage.getItem(STREAK_SUMMARY_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    return parsed.data || { current: 0, best: 0 };
+                }
+            } catch { }
+            return { current: 0, best: 0 };
+        }
+    );
     useEffect(() => {
         setDrawerContext(isOpen);
     }, [isOpen, setDrawerContext]);
+    // ✅ Fetch streak summary when the drawer opens
+    useEffect(() => {
+        if (!isOpen || !user?.id) return;
+        let cancelled = false;
 
+        (async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("user_streak_summary")
+                    .select("current_streak, best_streak")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+                if (cancelled || error) return;
+
+                const summary = {
+                    current: data?.current_streak || 0,
+                    best: data?.best_streak || 0,
+                };
+                setStreakSummary(summary);
+                try {
+                    localStorage.setItem(
+                        STREAK_SUMMARY_KEY,
+                        JSON.stringify({ data: summary, timestamp: Date.now() })
+                    );
+                } catch { }
+            } catch { /* silent */ }
+        })();
+
+        return () => { cancelled = true; };
+    }, [isOpen, user?.id]);
+
+    // ✅ Instant refresh when a restore happens anywhere in the app
+    useEffect(() => {
+        const onStreakUpdated = () => {
+            if (!user?.id) return;
+            (async () => {
+                try {
+                    const { data } = await supabase
+                        .from("user_streak_summary")
+                        .select("current_streak, best_streak")
+                        .eq("user_id", user.id)
+                        .maybeSingle();
+                    setStreakSummary({
+                        current: data?.current_streak || 0,
+                        best: data?.best_streak || 0,
+                    });
+                } catch { /* silent */ }
+            })();
+        };
+        window.addEventListener("streak-updated", onStreakUpdated);
+        return () => window.removeEventListener("streak-updated", onStreakUpdated);
+    }, [user?.id]);
     /* ---- Subscription: cache-first, then background refresh ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
@@ -551,11 +613,21 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
         if (isStudent) {
             mainItems.push(
-                { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+                { title: "Nursing Curriculum", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
                 { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
-                { title: "Nurse Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+                { title: "Clinical Challenge", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
                 { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone },
             );
+
+            // 👇 NEW — only when the user has a broken streak
+            if (streakSummary.best > streakSummary.current && streakSummary.current > 0) {
+                mainItems.push({
+                    title: "Restore Streak",
+                    url: "/streak/restore",
+                    icon: Flame,
+                    iconTone: "alert" as IconTone,
+                });
+            }
         }
 
         // Survival Hub stays for everyone
@@ -685,7 +757,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
-    }, [userRole, isStudent, nckExamPrepItems]);
+    }, [userRole, isStudent, nckExamPrepItems, streakSummary.current, streakSummary.best]);
 
     /* ---------------- Horizontal identity strip items ---------------- */
     const identityStrip = useMemo(() => {
@@ -701,7 +773,15 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 { title: "Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
             );
         }
-
+        // 👇 NEW — restore streak quick-access chip (students with a broken streak only)
+        if (isStudent && streakSummary.best > streakSummary.current && streakSummary.current > 0) {
+            base.push({
+                title: "Restore",
+                url: "/streak/restore",
+                icon: Flame,
+                iconTone: "alert" as IconTone,
+            });
+        }
         base.push(
             { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
             { title: "Podcasts", url: "__open_music_player__", icon: Headphones, iconTone: "media" as IconTone },
@@ -749,7 +829,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
 
         return base;
-    }, [userRole, isStudent, activePlan]);
+    }, [userRole, isStudent, activePlan, streakSummary.current, streakSummary.best]);
 
     const avatarUrl = getAvatarUrl(userProfile.avatar_url);
     const initials = userProfile.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
