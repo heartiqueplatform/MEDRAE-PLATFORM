@@ -115,7 +115,7 @@ const HelpCenter = () => {
                             <ul className="list-disc list-inside space-y-2 ml-2 text-base text-gray-700 dark:text-gray-300">
                                 <li>Unlimited quiz attempts</li>
                                 <li>Advanced performance analytics</li>
-                                <li>Access to <strong>6,000+</strong> NCK-aligned questions</li>
+                                <li>Access to <strong>9,000+</strong> NCK-aligned questions</li>
                                 <li>Priority support</li>
                                 <li>Downloadable study materials</li>
                             </ul>
