@@ -559,8 +559,12 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                     </div>
 
                                     {/* Follow button — hidden on self inside FollowButton */}
-                                    <div className="mt-3">
-                                        <FollowButton targetUserId={userData.profile.user_id} />
+                                    {/* Follow button — centered, prominent */}
+                                    <div className="mt-4 flex justify-center [&_button]:h-11 [&_button]:px-6 [&_button]:text-[14px] [&_button]:font-bold [&_button]:gap-1.5 [&_button]:rounded-lg">
+                                        <FollowButton
+                                            targetUserId={userData.profile.user_id}
+                                            size="md"
+                                        />
                                     </div>
 
                                     {/* ✅ Duel wins badge — only shows when the user has at least 1 win */}
