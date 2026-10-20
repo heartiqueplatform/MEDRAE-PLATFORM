@@ -305,7 +305,7 @@ function ChallengeTabs({
                                             </div>
 
                                             {/* Actions: below on phone, inline-right on desktop */}
-                                            <div className="mt-2 flex items-center gap-2 flex-wrap pl-[60px] sm:mt-0 sm:pl-0 sm:flex-nowrap sm:shrink-0">
+                                            <div className="mt-2 flex items-center gap-2 pl-[60px] sm:mt-0 sm:pl-0 sm:flex-nowrap sm:shrink-0">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -339,7 +339,7 @@ function ChallengeTabs({
                                                         sendChallenge(p.user_id);
                                                     }}
                                                     size="sm"
-                                                    className="shrink-0 h-9 sm:h-8 px-3 rounded-sm bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] sm:text-[11px] transition-colors active:scale-95 shadow-none flex-1 sm:flex-none min-w-[110px] sm:min-w-0"
+                                                    className="shrink-0 h-9 sm:h-8 px-3 rounded-sm bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] sm:text-[11px] transition-colors active:scale-95 shadow-none flex-1 sm:flex-none"
                                                     style={{ touchAction: 'manipulation' }}
                                                 >
                                                     Challenge Me
