@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-
+import { useSmartNavigate } from "@/navigation/useSmartNavigate";
 import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDrawer } from "@/contexts/DrawerContext";
@@ -548,38 +548,46 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
         return finalUrl;
     }, [user?.id]);
+    const smartNav = useSmartNavigate();
 
     const handleNavigate = useCallback((url: string) => {
         // ✅ Special case: Podcasts opens the MusicPlayer fullscreen overlay.
-        //    The player instance lives in DashboardLayout; it publishes a
-        //    window.__studifyOpen() helper we can call from anywhere.
+        //    No route change → no progress bar / no navigate.
         if (url === "__open_music_player__") {
             tapFeedback("success");
             setIsOpen(false);
 
-            // Give the drawer's exit animation a beat to start before
-            // the player takes over. Otherwise both overlays mount on the
-            // same frame and the phone janks.
             setTimeout(() => {
                 const opener = (window as any).__studifyOpen;
                 if (typeof opener === "function") {
-                    opener("episodes");   // opens on the Episodes tab
+                    opener("episodes");
                 } else {
-                    // Fallback: navigate to the challenge page or log it.
-                    // In practice __studifyOpen is always mounted by the
-                    // time the drawer is reachable.
-                    console.warn("[MobileDrawer] __studifyOpen not registered yet");
+                    requestAnimationFrame(() => {
+                        const retry = (window as any).__studifyOpen;
+                        if (typeof retry === "function") retry("episodes");
+                    });
                 }
-            }, 240);   // matches the drawer exit animation (0.26s)
+            }, 240);
 
             return;
         }
 
-        // Default behavior
-        navigate(url);
+        // ✅ Defer the drawer-close by one frame so the tap feels instant, then
+        //    hand off to smartNav which:
+        //      - fires the top progress bar  (nav-progress-start)
+        //      - prefetches the target chunk (preloadRoute)
+        //      - navigates inside startTransition (keeps old UI interactive)
+        //      - haptics + no double-vibrate
+        tapFeedback("light");
         setIsOpen(false);
-        requestAnimationFrame(() => tapFeedback("light"));
-    }, [navigate, tapFeedback, setIsOpen]);
+
+        // One rAF so the drawer's exit transition starts painting before the
+        // route swap happens. Without this, on low-end Android the drawer close
+        // and the new page mount land on the same frame → visible jank.
+        requestAnimationFrame(() => {
+            smartNav(null, url);
+        });
+    }, [smartNav, tapFeedback, setIsOpen]);
     const handleLogout = useCallback(async () => {
         setIsLoggingOut(true);
         tapFeedback();

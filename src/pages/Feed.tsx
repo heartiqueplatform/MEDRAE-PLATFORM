@@ -932,9 +932,34 @@ export default function Feed() {
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, [hasMoreImages, isLoadingImages]);
-
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
     <>
+
+      {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
+      <div className="sticky top-0 z-40 w-full">
+        <FeedControls
+          questionCount={questionCount}
+          session={session}
+          supabase={supabase}
+          setFeedImages={setFeedImages}
+          setQuestions={setQuestions}
+          setAnswers={setAnswers}
+          setQuestionCount={setQuestionCount}
+          fetchQuestions={fetchQuestions}
+          user={user}
+          loading={loading}
+          setLoading={setLoading}
+          setPage={setPage}
+        />
+      </div>
+
       <PullToRefresh
         onRefresh={() => {
           // Clear in-memory caches so we don't show stale / already-interacted items.
@@ -1052,20 +1077,7 @@ export default function Feed() {
               </motion.div>
             )}
           </AnimatePresence>
-          <FeedControls
-            questionCount={questionCount}
-            session={session}
-            supabase={supabase}
-            setFeedImages={setFeedImages}
-            setQuestions={setQuestions}
-            setAnswers={setAnswers}
-            setQuestionCount={setQuestionCount}
-            fetchQuestions={fetchQuestions}
-            user={user}
-            loading={loading}
-            setLoading={setLoading}
-            setPage={setPage}
-          />
+
           {loading && questions.length === 0 && (
             Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />) // ✅ Reduced from 3 to 2
           )}

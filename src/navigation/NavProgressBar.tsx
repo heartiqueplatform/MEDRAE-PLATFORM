@@ -8,7 +8,7 @@ export function NavProgressBar() {
     const [scale, setScale] = useState(0);
     const raf = useRef<number>();
 
-    // START — fires the instant a tap lands (dispatched by NavItem)
+    // START — fires the instant a tap lands (dispatched by smartNav)
     useEffect(() => {
         const start = () => {
             cancelAnimationFrame(raf.current!);
@@ -29,22 +29,34 @@ export function NavProgressBar() {
     // COMPLETE — fires when the new route has actually committed
     useEffect(() => {
         setScale(1);
-        const t = setTimeout(() => setVisible(false), 200);
+        const t = setTimeout(() => setVisible(false), 240);
         return () => clearTimeout(t);
     }, [location.pathname]);
 
     return (
         <div
-            className="fixed top-0 left-0 right-0 h-[2.5px] z-[99999] pointer-events-none"
+            className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none"
             style={{
-                background: "linear-gradient(90deg, #3b82f6, #2563eb)",
-                transform: `scaleX(${scale})`,
-                transformOrigin: "left",
+                height: "4px",
                 opacity: visible ? 1 : 0,
-                transition: scale === 0.8
-                    ? "transform 380ms cubic-bezier(0.4,0,0.2,1)"
-                    : "transform 180ms ease-out, opacity 180ms ease-out",
+                transition: "opacity 180ms ease-out",
             }}
-        />
+        >
+            <div
+                style={{
+                    height: "100%",
+                    width: "100%",
+                    background: "linear-gradient(90deg, #3b82f6 0%, #2563eb 60%, #1d4ed8 100%)",
+                    transform: `scaleX(${scale})`,
+                    transformOrigin: "left",
+                    boxShadow: "0 0 12px rgba(59,130,246,0.75), 0 0 4px rgba(59,130,246,0.9)",
+                    borderRadius: "0 0 4px 0",
+                    transition:
+                        scale === 0.8
+                            ? "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)"
+                            : "transform 200ms ease-out",
+                }}
+            />
+        </div>
     );
 }

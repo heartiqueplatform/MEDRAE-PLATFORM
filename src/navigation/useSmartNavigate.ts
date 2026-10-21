@@ -10,28 +10,15 @@ function haptic(type: "light" | "medium" = "light") {
     }
 }
 
-/**
- * Use it in a pointer-down handler:
- *   <button onPointerDown={(e) => smartNav(e, "/feed")} />
- */
 export function useSmartNavigate() {
     const navigate = useNavigate();
-
     return useCallback(
         (e: React.PointerEvent | null, path: string) => {
             if (e) e.preventDefault();
-
-            // 1. Instant feedback — bar + haptic, before anything else
             window.dispatchEvent(new Event("nav-progress-start"));
             haptic("light");
-
-            // 2. Warm the chunk (no-op if already cached)
             preloadRoute(path);
-
-            // 3. Defer the actual route swap so paint isn't blocked
-            startTransition(() => {
-                navigate(path);
-            });
+            startTransition(() => navigate(path));
         },
         [navigate]
     );
