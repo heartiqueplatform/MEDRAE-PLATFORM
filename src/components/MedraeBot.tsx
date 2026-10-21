@@ -51,12 +51,10 @@ const SUPPORT_PHONE_DISPLAY = "0704 473 503";
 
 const BOT_STORAGE_KEY = "medrae_bot_dismissed";
 const BOT_BUMP_KEY = "medrae_bot_bump_version";
-const BOT_OPEN_COUNT_KEY = "medrae_bot_open_count";
-const BOT_OPEN_DATE_KEY = "medrae_bot_open_date";
-const BOT_SESSION_FLAG = "medrae_bot_session_started";
-const BOT_DISMISSED_THIS_OPEN = "medrae_bot_dismissed_this_open";
 
-const MAX_SHOWS_PER_DAY = 4;
+const BOT_DISMISSED_THIS_OPEN = "medrae_bot_dismissed_this_open";
+const BOT_SHOWN_DATE_KEY = "medrae_bot_shown_date";   // YYYY-MM-DD of last show
+const MAX_SHOWS_PER_DAY = 1;
 
 // ─── Time-aware greeting ───
 const getTimeGreeting = (): string => {
@@ -109,13 +107,40 @@ const MedraeBot = () => {
     // ─── Premium from cache ───
     // ✅ GATE: don't touch the network until the bot is eligible to appear.
     //    `booted` flips true 2s after mount, or as soon as the user is idle.
+    // ─── Session-time gate ───
+    // The bot only becomes *eligible to appear* after the user has been
+    // inside the app for MIN_SESSION_MS. Everything before that is silent:
+    // no fetch, no DOM, no timers inside the component subtree.
+    //
+    // The gate is per session, anchored to `sessionStorage` so a refresh
+    // inside the same tab doesn't reset the clock. Logging out clears it.
+    const MIN_SESSION_MS = 5 * 60 * 1000; // 5 minutes
+    const SESSION_START_KEY = "medrae_session_started_at";
+
     const [booted, setBooted] = useState(false);
+
     useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        // 1. Anchor the session start time (once per tab session)
+        let startedAt = Number(sessionStorage.getItem(SESSION_START_KEY) || 0);
+        if (!startedAt || Number.isNaN(startedAt)) {
+            startedAt = Date.now();
+            sessionStorage.setItem(SESSION_START_KEY, String(startedAt));
+        }
+
+        // 2. How long until the 5-minute mark?
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, MIN_SESSION_MS - elapsed);
+
+        // 3. Schedule the flip. If the user is already past 5 minutes
+        //    (refreshed late in the session), this fires on the next frame
+        //    instead of waiting 5 more minutes.
         let raf: number | null = null;
         const t = setTimeout(() => {
-            // One more frame so the initial route paint is fully settled
             raf = requestAnimationFrame(() => setBooted(true));
-        }, 2000);
+        }, remaining);
+
         return () => {
             clearTimeout(t);
             if (raf !== null) cancelAnimationFrame(raf);
@@ -165,41 +190,42 @@ const MedraeBot = () => {
 
         let cancelled = false;
         setReferralLoading(true);
-        (async () => {
-            try {
-                const [code, stats] = await Promise.all([
-                    getMyReferralCode(session.user.id),
-                    getMyReferralStats(session.user.id),
-                ]);
-                if (cancelled) return;
-                setReferralCode(code);
-                setReferralStats(stats);
-            } catch {
-                /* ignore */
-            } finally {
-                if (!cancelled) setReferralLoading(false);
-            }
-        })();
-        return () => { cancelled = true; };
+
+        const run = () => {
+            (async () => {
+                try {
+                    const [code, stats] = await Promise.all([
+                        getMyReferralCode(session.user.id),
+                        getMyReferralStats(session.user.id),
+                    ]);
+                    if (cancelled) return;
+                    setReferralCode(code);
+                    setReferralStats(stats);
+                } catch {
+                    /* ignore */
+                } finally {
+                    if (!cancelled) setReferralLoading(false);
+                }
+            })();
+        };
+
+        // Prefer idle; fall back to setTimeout on older browsers
+        const idle = (window as any).requestIdleCallback;
+        if (typeof idle === "function") {
+            const id = idle(run, { timeout: 2000 });
+            return () => {
+                cancelled = true;
+                (window as any).cancelIdleCallback?.(id);
+            };
+        } else {
+            const id = setTimeout(run, 200);
+            return () => {
+                cancelled = true;
+                clearTimeout(id);
+            };
+        }
     }, [isVisible, session?.user?.id]);
 
-    // ─── Track app open ───
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-        if (FORCE_SHOW_ON_REFRESH) return;
-        if (sessionStorage.getItem(BOT_SESSION_FLAG)) return;
-        sessionStorage.setItem(BOT_SESSION_FLAG, "true");
-        try {
-            const today = new Date().toDateString();
-            const storedDate = localStorage.getItem(BOT_OPEN_DATE_KEY);
-            let count = storedDate === today
-                ? parseInt(localStorage.getItem(BOT_OPEN_COUNT_KEY) || "0", 10)
-                : 0;
-            if (storedDate !== today) localStorage.setItem(BOT_OPEN_DATE_KEY, today);
-            count += 1;
-            localStorage.setItem(BOT_OPEN_COUNT_KEY, count.toString());
-        } catch { /* ignore */ }
-    }, []);
 
     // ─── Decide visibility ───
     useEffect(() => {
@@ -211,6 +237,8 @@ const MedraeBot = () => {
         if (!session?.user) return;
         if (hasChecked) return;
         if (!premiumResolved) return;
+        // ✅ Don't decide until the 5-minute session gate opens
+        if (!booted) return;
 
         if (FORCE_SHOW_ON_REFRESH) {
             setIsVisible(true);
@@ -219,24 +247,50 @@ const MedraeBot = () => {
         }
 
         try {
+            // Premium users never see the bot
             if (isPremium && !SHOW_BOT_FOR_PREMIUM) {
                 setHasChecked(true);
                 return;
             }
-            const today = new Date().toDateString();
-            const storedDate = localStorage.getItem(BOT_OPEN_DATE_KEY);
-            const openCount = parseInt(localStorage.getItem(BOT_OPEN_COUNT_KEY) || "0", 10);
-            const seenBump = localStorage.getItem(BOT_BUMP_KEY);
 
-            if (seenBump !== BUMP_VERSION) { setIsVisible(true); setHasChecked(true); return; }
-            if (storedDate === today && openCount > MAX_SHOWS_PER_DAY) { setHasChecked(true); return; }
-            if (sessionStorage.getItem(BOT_DISMISSED_THIS_OPEN)) { setHasChecked(true); return; }
+            // 24h snooze after an explicit dismiss
+            const snoozeUntil = Number(localStorage.getItem("medrae_bot_snooze_until") || 0);
+            if (snoozeUntil && Date.now() < snoozeUntil) {
+                setHasChecked(true);
+                return;
+            }
+
+            // ✅ ONCE PER DAY — the important gate
+            const todayKey = new Date().toISOString().split("T")[0];  // YYYY-MM-DD
+            const shownDate = localStorage.getItem(BOT_SHOWN_DATE_KEY);
+            if (shownDate === todayKey) {
+                setHasChecked(true);
+                return;
+            }
+
+            // Version bump → force one re-show even if shown today
+            const seenBump = localStorage.getItem(BOT_BUMP_KEY);
+            if (seenBump !== BUMP_VERSION) {
+                localStorage.setItem(BOT_SHOWN_DATE_KEY, todayKey);
+                setIsVisible(true);
+                setHasChecked(true);
+                return;
+            }
+
+            // Not dismissed this session
+            if (sessionStorage.getItem(BOT_DISMISSED_THIS_OPEN)) {
+                setHasChecked(true);
+                return;
+            }
+
+            // ✅ All gates passed → record today + show
+            localStorage.setItem(BOT_SHOWN_DATE_KEY, todayKey);
             setIsVisible(true);
             setHasChecked(true);
         } catch {
             setHasChecked(true);
         }
-    }, [session, isPremium, hasChecked, premiumResolved]);
+    }, [session, isPremium, hasChecked, premiumResolved, booted]);
 
     // ─── Mount animation ───
     useEffect(() => {
@@ -264,6 +318,8 @@ const MedraeBot = () => {
             sessionStorage.setItem(BOT_DISMISSED_THIS_OPEN, "true");
             localStorage.setItem(BOT_STORAGE_KEY, Date.now().toString());
             localStorage.setItem(BOT_BUMP_KEY, BUMP_VERSION);
+            // ✅ 24h cooldown
+            localStorage.setItem("medrae_bot_snooze_until", String(Date.now() + 24 * 60 * 60 * 1000));
         } catch { /* ignore */ }
     }, []);
 
