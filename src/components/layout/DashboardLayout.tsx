@@ -1,5 +1,5 @@
 "use client";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, } from "react-router-dom";
 import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,9 +12,9 @@ import { Header } from "./Header";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser, useSessionContext } from "@supabase/auth-helpers-react";
-import { BottomBar } from "@/components/ui/BottomBar";
+
 import { Footer } from "@/components/Footer";
-import { useSidebar } from "@/components/ui/sidebar";
+
 import { useUserRole } from "@/context/UserRoleContext";
 // ✅ Import shared profile cache
 import { getProfileCache, setProfileCache } from "@/lib/profileCache";
@@ -89,13 +89,7 @@ RightPanel.displayName = "RightPanel";
 // -------------------------------------------------------------
 // DashboardContent Component
 // -------------------------------------------------------------
-const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode, children, isForum, userId }: any) => {
-  const location = useLocation();
-  const isFeed = location.pathname === "/feed";
-  const disabledPages = ["/login", "/register", "/simulation/candidate", "/quiz-simulation/instructions"];
-  const showMusic = !disabledPages.includes(location.pathname);
-  const { isSidebarOpen } = useSidebar();
-
+const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode, children, userId }: any) => {
   const loaderHiddenRef = useRef(false);
 
   useEffect(() => {
@@ -124,28 +118,19 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
             <div className="flex flex-col min-h-full">
               <div className="flex-1 pt-4 px-0 md:px-4 lg:px-6">
                 <Outlet />
-                {!isForum && !isFeed && <div className="h-4" />}
               </div>
               <Footer mistakeCount={0} />
               <div className="h-20 md:hidden shrink-0" />
             </div>
           </main>
 
-          {!isSidebarOpen && (
-            <div className="fixed bottom-0 left-0 right-0 z-50 md:relative bg-background/80 backdrop-blur-lg border-t border-border/50 pb-[env(safe-area-inset-bottom)]">
-              <BottomBar userRole={role} unreadCount={0} unreadAnnouncements={0} />
-            </div>
-          )}
-
           <Toaster />
 
-          {showMusic && (
-            <ErrorBoundary label="MusicPlayer">
-              <Suspense fallback={null}>
-                <MusicPlayer />
-              </Suspense>
-            </ErrorBoundary>
-          )}
+          <ErrorBoundary label="MusicPlayer">
+            <Suspense fallback={null}>
+              <MusicPlayer />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
 
@@ -156,7 +141,6 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
   );
 });
 DashboardContent.displayName = "DashboardContent";
-
 // -------------------------------------------------------------
 // Main DashboardLayout Component - Uses shared profileCache
 // -------------------------------------------------------------
@@ -169,8 +153,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   //    We have our own cache-based gating (cachedUser, sharedCache).
   //    Auth will hydrate silently and update state when ready.
   const { isLoading: _authLoading } = useSessionContext();
-  const location = useLocation();
-  const isForum = location.pathname === "/forum";
+
 
   // ------------------------------
   // ⚡️ INSTANT DATA: Use shared profileCache immediately
@@ -481,7 +464,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
             streak={streak}
-            isForum={isForum}
+
             userId={user.id}
           >
             {children}
@@ -514,7 +497,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
             streak={streak}
-            isForum={isForum}
+
             userId={cachedUser?.id || authUser?.id || "hydrating"}
           >
             {children}
@@ -546,7 +529,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
           streak={streak}
-          isForum={isForum}
+
           userId={fallbackUser.id}
         >
           {children}

@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthProvider";
 import { useUserRole } from "@/context/UserRoleContext";
-
+import { useSmartNavigate } from "@/navigation/useSmartNavigate";
 const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module => ({ default: module.MobileDrawer })));
 
 const MISTAKE_COUNT_CACHE_KEY = "footer_mistake_count";
@@ -547,11 +547,14 @@ export function Footer() {
         return () => observer.disconnect();
     }, []);
 
+    const smartNav = useSmartNavigate();
+
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {
         e.preventDefault();
-        navigate(url);
+        // smartNav fires the top progress bar + prefetches the chunk + uses startTransition
+        smartNav(e, url);
         superFastTap("light");
-    }, [navigate]);
+    }, [smartNav]);
 
     const handleMenuPress = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
@@ -581,15 +584,20 @@ export function Footer() {
 
     useEffect(() => {
         if (prefetchDone.current) return;
-        const prefetchDrawer = () => {
-            import("@/components/MobileDrawer").catch(console.warn);
+
+        const prefetch = () => {
+            import("@/components/MobileDrawer").catch(() => { });
+            // Warm the chunks that the footer can navigate to
+            import("@/navigation/routePreload").then(({ preloadRoute }) => {
+                ["/Medrae-quizzes", "/feed", "/my-mistakes", "/dashboard/student", "/dashboard/tutor", "/dashboard/staff"]
+                    .forEach(preloadRoute);
+            });
             prefetchDone.current = true;
         };
-        if ('requestIdleCallback' in window) {
-            (window as any).requestIdleCallback(prefetchDrawer, { timeout: 2000 });
-        } else {
-            setTimeout(prefetchDrawer, 1000);
-        }
+
+        // Fire 200ms after mount — after the first paint, no idle wait
+        const t = setTimeout(prefetch, 200);
+        return () => clearTimeout(t);
     }, []);
 
     useEffect(() => {
@@ -606,18 +614,12 @@ export function Footer() {
     }, []);
 
     useEffect(() => {
+        let container: Element | null = null;
+        let detach: (() => void) | null = null;
+
         const findScrollContainer = () => {
-            if (location.pathname === '/feed') {
-                const feedContainer = document.querySelector('.p-0.max-w-2xl.mx-auto.space-y-2.h-\\[80vh\\].overflow-y-auto');
-                if (feedContainer) return feedContainer;
-                const pullToRefresh = document.querySelector('.react-simple-pull-to-refresh');
-                if (pullToRefresh) {
-                    const container = pullToRefresh.querySelector('.overflow-y-auto');
-                    if (container) return container;
-                }
-            }
-            const dashboardContainer = document.querySelector('[data-scroll-container]');
-            if (dashboardContainer) return dashboardContainer;
+            const el = document.querySelector('[data-scroll-container]');
+            if (el) return el;
             const containers = document.querySelectorAll('.overflow-auto, .overflow-y-auto');
             for (const el of containers) {
                 if (el.scrollHeight > el.clientHeight + 10) return el;
@@ -625,54 +627,59 @@ export function Footer() {
             return null;
         };
 
-        const container = findScrollContainer();
-        scrollContainerRef.current = container;
+        const attach = (next: Element | null) => {
+            if (next === container) return;
+            // Detach old listeners
+            if (detach) { detach(); detach = null; }
+            container = next;
+            scrollContainerRef.current = container;
 
-        const handleScroll = () => {
-            let currentScrollY;
-            if (container === document.documentElement || container === document.body || !container) {
-                currentScrollY = window.scrollY || document.documentElement.scrollTop;
-            } else {
-                currentScrollY = container.scrollTop;
-            }
-            if (window.innerWidth >= 768) return;
+            if (!container) return;
 
-            if (scrollTimeout.current) { clearTimeout(scrollTimeout.current); scrollTimeout.current = null; }
+            const handleScroll = () => {
+                if (window.innerWidth >= 768) return;
+                const y = container.scrollTop;
 
-            if (currentScrollY > lastScrollY.current && currentScrollY > 50) setIsVisible(false);
-            else if (currentScrollY < lastScrollY.current) setIsVisible(true);
-            if (currentScrollY <= 10) setIsVisible(true);
+                if (scrollTimeout.current) {
+                    clearTimeout(scrollTimeout.current);
+                    scrollTimeout.current = null;
+                }
 
-            lastScrollY.current = currentScrollY;
-        };
+                if (y > lastScrollY.current && y > 50) setIsVisible(false);
+                else if (y < lastScrollY.current) setIsVisible(true);
+                if (y <= 10) setIsVisible(true);
 
-        const handleScrollStop = () => {
-            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-            scrollTimeout.current = setTimeout(() => {
-                setIsVisible(true);
-                scrollTimeout.current = null;
-            }, 1500);
-        };
+                lastScrollY.current = y;
 
-        if (container === document.documentElement || container === document.body || !container) {
-            window.addEventListener('scroll', handleScroll, { passive: true });
-            window.addEventListener('scroll', handleScrollStop, { passive: true });
-        } else {
+                scrollTimeout.current = setTimeout(() => {
+                    setIsVisible(true);
+                    scrollTimeout.current = null;
+                }, 1500);
+            };
+
             container.addEventListener('scroll', handleScroll, { passive: true });
-            container.addEventListener('scroll', handleScrollStop, { passive: true });
-        }
+            detach = () => container.removeEventListener('scroll', handleScroll);
+        };
+
+        // Try immediately
+        attach(findScrollContainer());
+
+        // If not yet in the DOM (first render after hydration), watch for it.
+        // One observer, no polling, no querySelector storm on nav.
+        const observer = new MutationObserver(() => {
+            const next = findScrollContainer();
+            if (next) {
+                attach(next);
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
 
         return () => {
-            if (container === document.documentElement || container === document.body || !container) {
-                window.removeEventListener('scroll', handleScroll);
-                window.removeEventListener('scroll', handleScrollStop);
-            } else {
-                container.removeEventListener('scroll', handleScroll);
-                container.removeEventListener('scroll', handleScrollStop);
-            }
+            observer.disconnect();
+            if (detach) detach();
             if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
         };
-    }, [location.pathname]);
+    }, []);   // ← EMPTY deps — runs ONCE
 
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
 

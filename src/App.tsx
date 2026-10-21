@@ -28,7 +28,8 @@ import ListingDetail from "./pages/market/[id]";
 import ChallengePage from "./pages/challenge";
 import { AuthProvider } from "@/context/AuthProvider";
 import { useAuth } from "@/context/AuthProvider";
-
+import { NavProgressBar } from "@/navigation/NavProgressBar";
+import { preloadAllRoutes } from "@/navigation/routePreload";
 import AssessmentNotes from "./pages/AssessmentNotes";
 import QuizPage from "./pages/QuizPage";
 import Index from "./pages/Index";
@@ -442,7 +443,10 @@ const AppContent = () => {
 
     return () => document.removeEventListener('visibilitychange', updateBadge);
   }, [user]);
-
+  // Add a one-time preload after mount — inside AppContent
+  useEffect(() => {
+    preloadAllRoutes(400);
+  }, []);
   return (
     <>
       <DrawerProvider>
@@ -475,6 +479,7 @@ const AppContent = () => {
         <SessionContextProvider supabaseClient={supabase}>
           <QueryClientProvider client={queryClient}>
             <GlobalRealtimeListener />
+            <NavProgressBar />
             <AdminNotificationPanel />
             <GlobalDuelManager />
 

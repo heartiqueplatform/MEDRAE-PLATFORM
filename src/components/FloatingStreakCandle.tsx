@@ -921,19 +921,76 @@ export default function StreakCandleWelcome() {
     const isOnline = useOnlineStatus();
     const navigate = useNavigate();
 
-    const [firstName] = useState<string>(() => {
-        if (typeof window === "undefined") return "Nurse";
-        try {
-            const shared = localStorage.getItem("profile_cache_v1");
-            if (shared) {
-                const parsed = JSON.parse(shared);
-                if (parsed?.name && parsed.name !== "Unknown User") return parsed.name.split(" ")[0];
+    // ─── First name — cache first, then Supabase, then listen for updates ───
+    const [firstName, setFirstName] = useState<string>("Nurse");
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        // 1. Try every cache key your app writes to, in priority order
+        const readCached = (): string | null => {
+            const keys = [
+                "profile_cache_v1",
+                "app_user_profile_cache",
+                "userProfile",
+            ];
+            for (const key of keys) {
+                try {
+                    const raw = localStorage.getItem(key);
+                    if (!raw) continue;
+                    const parsed = JSON.parse(raw);
+                    const data = parsed?.data ?? parsed;   // some caches wrap in { data, ts }
+                    const name = data?.name;
+                    if (name && name !== "Unknown User" && name !== "Unknown") {
+                        return String(name).split(" ")[0];
+                    }
+                } catch { /* ignore */ }
             }
-        } catch { /* ignore */ }
-        const stored = localStorage.getItem("userName");
-        if (stored) return stored;
-        return "Nurse";
-    });
+            const stored = localStorage.getItem("userName");
+            if (stored) return stored.split(" ")[0];
+            return null;
+        };
+
+        const cached = readCached();
+        if (cached) setFirstName(cached);
+
+        // 2. Fire a Supabase fetch — authoritative, overwrites cache if newer
+        if (!user?.id) return;
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("profiles")
+                    .select("name")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+
+                if (cancelled || error || !data?.name) return;
+                const first = String(data.name).trim().split(" ")[0];
+                if (first && first !== "Unknown") setFirstName(first);
+            } catch { /* silent */ }
+        })();
+
+        return () => { cancelled = true; };
+    }, [user?.id]);
+
+    // 3. React to profile updates elsewhere in the app
+    useEffect(() => {
+        const onProfileUpdate = (e: Event) => {
+            const detail = (e as CustomEvent<{ profile?: { name?: string } }>).detail;
+            const name = detail?.profile?.name;
+            if (name && name !== "Unknown User" && name !== "Unknown") {
+                setFirstName(String(name).split(" ")[0]);
+            }
+        };
+        window.addEventListener("profile-updated", onProfileUpdate);
+        window.addEventListener("profileUpdated", onProfileUpdate);
+        return () => {
+            window.removeEventListener("profile-updated", onProfileUpdate);
+            window.removeEventListener("profileUpdated", onProfileUpdate);
+        };
+    }, []);
 
     const initialStreak = (() => {
         try {
