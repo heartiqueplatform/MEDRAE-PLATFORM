@@ -1818,9 +1818,11 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         if (showSkeleton || selectedShowId !== null || shows.length === 0) return null;
         return (
             <div className="px-4 md:px-5 pb-3 shrink-0">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
                     {shows.map((s: any) => {
                         const follow = getFollow?.(s.id) ?? { following: false, followerCount: 0 };
+                        const initial = (s.title || "?").trim().charAt(0).toUpperCase();
+
                         return (
                             <div
                                 key={s.id}
@@ -1833,55 +1835,61 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                                         onSelectShow(s.id);
                                     }
                                 }}
-                                className="group flex items-center gap-3 p-2.5 rounded-2xl bg-gh-l-card dark:bg-gh-card cursor-pointer transition-colors hover:bg-gh-l-hover dark:hover:bg-gh-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                className="group flex gap-3 p-3 rounded-2xl bg-gh-l-card dark:bg-gh-card cursor-pointer transition-colors hover:bg-gh-l-hover dark:hover:bg-gh-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                             >
-                                {/* ── Square Spotify-style avatar ── */}
-                                <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
+                                {/* ── Big square Spotify-style avatar ── */}
+                                <div className="relative shrink-0 w-20 h-20 md:w-[88px] md:h-[88px] rounded-xl overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
                                     {s.artwork_url ? (
                                         <img
                                             src={s.artwork_url}
                                             alt=""
                                             loading="lazy"
                                             decoding="async"
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-lg font-black text-gh-l-muted dark:text-gh-muted">
-                                            {(s.title || "?").trim().charAt(0).toUpperCase()}
+                                        <div className="w-full h-full flex items-center justify-center text-2xl font-black text-gh-l-muted dark:text-gh-muted">
+                                            {initial}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* ── Text column ── */}
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-bold truncate text-gh-l-text dark:text-gh-text group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        {s.title}
-                                    </p>
-                                    <p className="text-[10px] text-gh-l-muted dark:text-gh-muted truncate">
-                                        {s.episode_count} episodes
-                                        {follow.followerCount > 0 && ` · ${follow.followerCount} followers`}
-                                    </p>
-                                </div>
+                                {/* ── Text + buttons stacked ── */}
+                                <div className="min-w-0 flex-1 flex flex-col justify-between">
+                                    <div className="min-w-0">
+                                        {/* Title — wraps, doesn't truncate */}
+                                        <p className="text-sm font-bold leading-snug text-gh-l-text dark:text-gh-text group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                                            {s.title}
+                                        </p>
+                                        {/* Description line — full width now */}
+                                        <p className="text-[11px] text-gh-l-muted dark:text-gh-muted mt-0.5">
+                                            {s.episode_count} episodes
+                                            {follow.followerCount > 0 && ` · ${follow.followerCount} followers`}
+                                            {s.endorsement_count > 0 && ` · ${s.endorsement_count} endorsements`}
+                                        </p>
+                                    </div>
 
-                                {/* ── Unified action cluster — both buttons share one size system ── */}
-                                <div
-                                    className="flex items-center gap-1 shrink-0"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {onToggleFollow && (
-                                        <FollowButton
-                                            following={follow.following}
-                                            followerCount={follow.followerCount}
-                                            onClick={() => onToggleFollow(s.id)}
+                                    {/* ── Buttons on their own row ── */}
+                                    {/* ── Buttons pinned to the far right ── */}
+                                    <div
+                                        className="flex items-center justify-end gap-1.5 mt-2"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {onToggleFollow && (
+                                            <FollowButton
+                                                following={follow.following}
+                                                followerCount={follow.followerCount}
+                                                onClick={() => onToggleFollow(s.id)}
+                                                compact
+                                            />
+                                        )}
+                                        <EndorseButton
+                                            endorsed={s.user_endorsed}
+                                            count={s.endorsement_count}
+                                            onClick={() => onToggleEndorse(s.id)}
                                             compact
                                         />
-                                    )}
-                                    <EndorseButton
-                                        endorsed={s.user_endorsed}
-                                        count={s.endorsement_count}
-                                        onClick={() => onToggleEndorse(s.id)}
-                                        compact
-                                    />
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -2323,14 +2331,12 @@ const EpisodeRow = React.memo(function EpisodeRow({
     const clampedProgress = Math.max(0, Math.min(1, progress));
     const dashOffset = C * (1 - clampedProgress);
 
-    // 3 equal cells normally, 4 when admin (hide button joins the row)
-    const gridCols = isAdmin && onHide ? "grid-cols-4" : "grid-cols-3";
 
     return (
         <div
-            className={`group w-full rounded-2xl mb-1 overflow-hidden transition-all ${isActive
-                ? "bg-blue-50 dark:bg-blue-950/40"
-                : "hover:bg-gh-l-card dark:hover:bg-gh-card"
+            className={`group w-full rounded-2xl mb-2 overflow-hidden transition-colors duration-150 ${isActive
+                ? "bg-blue-50/70 dark:bg-blue-950/30"
+                : "bg-gh-l-card dark:bg-gh-card"
                 }`}
         >
             {/* ── TOP: everything that was there before, untouched ── */}
@@ -2435,20 +2441,21 @@ const EpisodeRow = React.memo(function EpisodeRow({
             </button>
 
             {/* ── BOTTOM: reactions only — full width, equal thirds ── */}
-            <div className={`grid ${gridCols} border-t border-gh-l-border/60 dark:border-gh-border/60 divide-x divide-gh-l-border/60 dark:divide-gh-border/60`}>
-                <ReactionCell
+            {/* ── BOTTOM: bare action icons — no bg, no pills, just tap targets ── */}
+            <div className="flex items-center gap-1 px-2 pb-2 pt-0.5">
+                <ReactionIcon
                     kind="like"
                     active={interaction?.liked ?? false}
                     count={interaction?.counts.like ?? 0}
                     onClick={() => onToggleReaction?.("like")}
                 />
-                <ReactionCell
+                <ReactionIcon
                     kind="love"
                     active={interaction?.loved ?? false}
                     count={interaction?.counts.love ?? 0}
                     onClick={() => onToggleReaction?.("love")}
                 />
-                <ReactionCell
+                <ReactionIcon
                     kind="save"
                     active={interaction?.saved ?? false}
                     count={interaction?.counts.save ?? 0}
@@ -2457,11 +2464,11 @@ const EpisodeRow = React.memo(function EpisodeRow({
                 {isAdmin && onHide && (
                     <button
                         onClick={onHide}
-                        className="flex items-center justify-center py-3 text-gh-l-muted dark:text-gh-l-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        className="ml-auto flex items-center justify-center h-11 w-11 rounded-full text-gh-l-muted dark:text-gh-muted hover:text-red-600 active:scale-95 transition-all"
                         title="Hide this episode"
                         aria-label="Hide this episode"
                     >
-                        <EyeOff size={16} />
+                        <EyeOff size={18} />
                     </button>
                 )}
             </div>
@@ -2472,10 +2479,7 @@ const EpisodeRow = React.memo(function EpisodeRow({
 // REACTION BUTTON — one small pill per reaction
 // ════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════
-// REACTION CELL — full-height, edge-to-edge cell used inside
-// the grid row at the bottom of every EpisodeRow.
-// ════════════════════════════════════════════════════════════
-const ReactionCell = React.memo(function ReactionCell({
+const ReactionIcon = React.memo(function ReactionIcon({
     kind, active, count, onClick,
 }: {
     kind: "like" | "love" | "save";
@@ -2487,30 +2491,47 @@ const ReactionCell = React.memo(function ReactionCell({
 
     const activeColor =
         kind === "love"
-            ? "text-rose-500 bg-rose-500/10"
+            ? "text-rose-500"
             : kind === "save"
-                ? "text-emerald-600 bg-emerald-500/10"
-                : "text-blue-500 bg-blue-500/10";
+                ? "text-emerald-600"
+                : "text-blue-600";
 
     const display =
         count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count > 0 ? String(count) : "";
+
+    // Bump the key whenever the *value* changes so the pop animation
+    // replays on every tap (on → off also pops, feels snappy).
+    const bumpKey = `${kind}-${count}-${active ? 1 : 0}`;
 
     return (
         <button
             onClick={(e) => { e.stopPropagation(); onClick(); }}
             className={`
                 flex items-center justify-center gap-1.5
-                py-3 md:py-2.5
-                text-[11px] font-bold tabular-nums
+                h-11 min-w-11 px-3
+                rounded-full
+                text-[12px] font-bold tabular-nums
                 transition-colors touch-manipulation select-none
                 ${active
                     ? activeColor
-                    : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text hover:bg-gh-l-hover/60 dark:hover:bg-gh-hover/60"}
+                    : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"}
             `}
             aria-label={`${kind}${count > 0 ? ` (${count})` : ""}`}
             aria-pressed={active}
         >
-            <Icon size={16} fill={active ? "currentColor" : "none"} />
+            <motion.span
+                key={bumpKey}
+                initial={{ scale: 0.85 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 600, damping: 18 }}
+                className="flex items-center justify-center"
+            >
+                <Icon
+                    size={18}
+                    fill={active ? "currentColor" : "none"}
+                    strokeWidth={active ? 0 : 2}
+                />
+            </motion.span>
             {display && <span>{display}</span>}
         </button>
     );
