@@ -37,14 +37,14 @@ function SubscriptionSkeleton() {
   return (
     <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-8 md:py-12 space-y-6 animate-pulse">
       <div className="space-y-3 text-center">
-        <div className="h-4 w-32 bg-muted rounded-full mx-auto" />
-        <div className="h-10 md:h-12 w-3/4 max-w-md bg-muted rounded-2xl mx-auto" />
-        <div className="h-4 w-2/3 max-w-sm bg-muted rounded-full mx-auto" />
+        <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
+        <div className="h-10 md:h-12 w-3/4 max-w-md bg-slate-200 dark:bg-slate-700 rounded-2xl mx-auto" />
+        <div className="h-4 w-2/3 max-w-sm bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
       </div>
       <div className="grid md:grid-cols-3 gap-4">
-        <div className="h-96 bg-muted/60 rounded-3xl" />
-        <div className="h-96 bg-muted/60 rounded-3xl" />
-        <div className="h-96 bg-muted/60 rounded-3xl" />
+        <div className="h-96 bg-slate-200/80 dark:bg-slate-700/60 rounded-3xl" />
+        <div className="h-96 bg-slate-200/80 dark:bg-slate-700/60 rounded-3xl" />
+        <div className="h-96 bg-slate-200/80 dark:bg-slate-700/60 rounded-3xl" />
       </div>
     </div>
   );
