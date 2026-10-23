@@ -1020,7 +1020,7 @@ Please provide a detailed discussion and guidance.`;
       />
 
       {/* ─── Body: one scroll container ─── */}
-      <main className="flex-1 min-h-0 overflow-y-auto">
+      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         <div className="w-full px-3 md:px-5 lg:px-6 py-3 md:py-5">
           <div className="flex flex-col items-center">
             <div

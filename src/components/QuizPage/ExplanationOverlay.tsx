@@ -284,7 +284,7 @@ export function ExplanationOverlay({
                     </div>
 
                     {/* RIGHT → Flashcard */}
-                    <div className="w-full bg-white dark:bg-transparent border-0 lg:h-full lg:min-h-0 lg:overflow-hidden flex flex-col">
+                    <div className="w-full mt-3 bg-white dark:bg-transparent border-0 lg:h-full lg:min-h-0 lg:overflow-hidden flex flex-col">
                         <div className="flex-1 lg:min-h-0 lg:overflow-y-auto hide-scrollbar overscroll-contain">
                             <Flashcard />
                         </div>
