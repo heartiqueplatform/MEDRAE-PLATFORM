@@ -16,7 +16,7 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import confetti from "canvas-confetti";
-
+import { Lightbulb, BookMarked } from "lucide-react";
 import {
     Trophy, Sparkles, ArrowRight, Heart, BookOpen, RefreshCw,
     ChevronRight, CheckCircle2, RotateCcw
@@ -51,7 +51,70 @@ interface Mistake {
 }
 
 type Tab = "needs-work" | "understood";
+// ═══════════════════════════════════════════════════════════════
+// INSIGHT BLOCK — Apple-style contained content surface
+// ═══════════════════════════════════════════════════════════════
+function InsightBlock({
+    tone = "neutral",
+    icon: Icon,
+    label,
+    children,
+}: {
+    tone?: "neutral" | "emerald" | "blue";
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    children: React.ReactNode;
+}) {
+    const toneMap = {
+        neutral: {
+            surface: "bg-slate-50/80 dark:bg-[#11161d]",
+            rail: "bg-slate-300 dark:bg-slate-700",
+            label: "text-slate-500 dark:text-slate-400",
+            icon: "text-slate-400 dark:text-slate-500",
+        },
+        emerald: {
+            surface: "bg-emerald-50/60 dark:bg-emerald-950/25",
+            rail: "bg-emerald-400 dark:bg-emerald-500",
+            label: "text-emerald-700 dark:text-emerald-400",
+            icon: "text-emerald-500 dark:text-emerald-400",
+        },
+        blue: {
+            surface: "bg-blue-50/60 dark:bg-blue-950/25",
+            rail: "bg-blue-400 dark:bg-blue-500",
+            label: "text-blue-700 dark:text-blue-400",
+            icon: "text-blue-500 dark:text-blue-400",
+        },
+    }[tone];
 
+    return (
+        <div
+            className={cn(
+                "relative overflow-hidden rounded-xl border border-slate-200/70 dark:border-slate-800/70",
+                toneMap.surface
+            )}
+        >
+            {/* Left rail — the single accent */}
+            <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", toneMap.rail)} />
+
+            <div className="pl-4 pr-3.5 py-3">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                    <Icon className={cn("w-3.5 h-3.5", toneMap.icon)} />
+                    <span
+                        className={cn(
+                            "text-[10px] font-bold uppercase tracking-[0.14em]",
+                            toneMap.label
+                        )}
+                    >
+                        {label}
+                    </span>
+                </div>
+                <div className="text-xs md:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}
 // ═══════════════════════════════════════════════════════════════
 // CACHE
 // ═══════════════════════════════════════════════════════════════
@@ -1422,14 +1485,17 @@ function NeedsWorkRow({
                             </div>
                         )}
 
-                        <p className="leading-relaxed text-xs md:text-sm">
-                            <strong>Explanation:</strong>{" "}
+                        <InsightBlock
+                            tone="neutral"
+                            icon={BookMarked}
+                            label="Explanation"
+                        >
                             {m.questions?.explanation ?? "No explanation available."}
-                        </p>
+                        </InsightBlock>
                         {m.questions?.additional && (
-                            <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
-                                <strong>Pro Tip:</strong> {m.questions.additional}
-                            </div>
+                            <InsightBlock tone="blue" icon={Lightbulb} label="Pro Tip">
+                                {m.questions.additional}
+                            </InsightBlock>
                         )}
                         {m.questions?.topic && (
                             <div className="mt-2">
@@ -1574,16 +1640,12 @@ function UnderstoodRow({
                     </CardHeader>
 
                     <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4 text-xs md:text-sm lg:text-base">
-                        <div className="rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2">
-                            <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1 text-[11px] uppercase tracking-wider">
-                                Correct Answer
-                            </p>
-                            <p className="text-sm md:text-base text-slate-800 dark:text-slate-100">
+                        <InsightBlock tone="emerald" icon={CheckCircle2} label="Correct Answer">
+                            <span className="text-sm md:text-base text-slate-800 dark:text-slate-100">
                                 <strong>{m.questions?.correct_answer}.</strong>{" "}
                                 {m.questions?.[`option_${m.questions?.correct_answer?.toLowerCase()}` as keyof Question] ?? "—"}
-                            </p>
-                        </div>
-
+                            </span>
+                        </InsightBlock>
                         {m.mistake_reason && (
                             <div
                                 className={`px-2 md:px-3 py-1.5 md:py-2 rounded-md border text-xs md:text-sm ${getReasonClass(
@@ -1594,15 +1656,17 @@ function UnderstoodRow({
                             </div>
                         )}
 
-                        <p className="leading-relaxed text-xs md:text-sm">
-                            <strong>Explanation:</strong>{" "}
+                        <InsightBlock
+                            tone="neutral"
+                            icon={BookMarked}
+                            label="Explanation"
+                        >
                             {m.questions?.explanation ?? "No explanation available."}
-                        </p>
-
+                        </InsightBlock>
                         {m.questions?.additional && (
-                            <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
-                                <strong>Pro Tip:</strong> {m.questions.additional}
-                            </div>
+                            <InsightBlock tone="blue" icon={Lightbulb} label="Pro Tip">
+                                {m.questions.additional}
+                            </InsightBlock>
                         )}
                         <motion.div
                             whileTap={{ scale: 0.95 }}

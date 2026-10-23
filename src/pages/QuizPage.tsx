@@ -190,12 +190,8 @@ export default function QuizPage() {
   // This kills the "page bouncing" when you tap Next on a long/short question.
   useEffect(() => {
     if (!hydrated) return;
-    const node = questionTopRef.current;
-    if (!node) return;
-    // scroll so the top of the question card is just below the sticky header
-    const headerOffset = 96; // px — adjust if your header is taller/shorter
-    const top = node.getBoundingClientRect().top + window.scrollY - headerOffset;
-    window.scrollTo({ top, behavior: "auto" }); // "auto" = instant, no janky smooth
+    const main = document.querySelector("main");
+    if (main) main.scrollTo({ top: 0, behavior: "auto" });
   }, [currentQuestionIndex, hydrated]);
   const [showReasonBox, setShowReasonBox] = useState<{ [key: string]: boolean }>(() => {
     const saved = localStorage.getItem("showReasonBox");
@@ -457,11 +453,11 @@ export default function QuizPage() {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const main = document.querySelector("main");
+    if (!main) return;
+    const handleScroll = () => setShowScrollTop(main.scrollTop > 300);
+    main.addEventListener("scroll", handleScroll, { passive: true });
+    return () => main.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Optimized loadQuiz with better caching
@@ -902,92 +898,111 @@ Please provide a detailed discussion and guidance.`;
   </p>
 
   return (
-    <div className="space-y-0 max-w-8xl mx-auto px-1 sm:px-6 lg:px-8  ">
-      <div className="flex flex-wrap justify-between items-center gap-2">
-        <header className="sticky top-0 rounded-xl  w-full bg-white/80 dark:bg-background backdrop-blur-md border-0 shadow-none">
-          <div className="max-w-7xl mx-auto px-4  py-3">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                  <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h1 className="text-lg sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate max-w-[250px] sm:max-w-none uppercase">
+    <div className="fixed inset-0 flex flex-col bg-background">
+      <header className="shrink-0 w-full border-b border-border bg-background/95 backdrop-blur-sm z-30">
+        <div className="w-full px-3 md:px-5 py-2.5 md:py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => {
+                  const answered = Object.keys(answers).length;
+                  const pending = answered - lastCheckpoint;
+                  if (pending > 0 && pending < 10) {
+                    const ok = window.confirm(
+                      `⚠️ Finish this batch first\n\n` +
+                      `You've answered ${pending} of the 10 questions in this batch. ` +
+                      `Your progress will only save after you complete all 10.\n\n` +
+                      `If you leave now, these ${pending} answer${pending === 1 ? "" : "s"} will be lost.\n\n` +
+                      `Leave anyway?`
+                    );
+                    if (!ok) return;
+                  }
+                  navigate(-1);
+                }}
+                aria-label="Back"
+                className="p-2 -ml-1 rounded-full hover:bg-muted transition-colors shrink-0"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="text-sm md:text-base font-black tracking-tight truncate uppercase">
                   {unit}
                 </h1>
-                {/* Show total count for premium users */}
                 {isPremium && totalQuestions > 0 && (
-                  <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-xl">
+                  <p className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                     {totalQuestions} total
-                  </span>
+                  </p>
                 )}
               </div>
-
-              <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6">
-                <Countdown
-                  date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
-                  onComplete={() => handleSubmit(true)}
-                  renderer={({ hours, minutes, seconds }) => (
-                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl border-0">
-                      <Timer className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
-                      <div className="flex items-center font-mono font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">
-                        <span>{String(hours).padStart(2, '0')}</span>
-                        <span className="mx-0.5 animate-none">:</span>
-                        <span>{String(minutes).padStart(2, '0')}</span>
-                        <span className="mx-0.5 animate-none">:</span>
-                        <span>{String(seconds).padStart(2, '0')}</span>
-                      </div>
+            </div>
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
+              <Countdown
+                date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
+                onComplete={() => handleSubmit(true)}
+                renderer={({ hours, minutes, seconds }) => (
+                  <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl border-0">
+                    <Timer className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
+                    <div className="flex items-center font-mono font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">
+                      <span>{String(hours).padStart(2, '0')}</span>
+                      <span className="mx-0.5 animate-none">:</span>
+                      <span>{String(minutes).padStart(2, '0')}</span>
+                      <span className="mx-0.5 animate-none">:</span>
+                      <span>{String(seconds).padStart(2, '0')}</span>
                     </div>
-                  )}
-                />
+                  </div>
+                )}
+              />
 
-                <div className="relative">
-                  <button
-                    onClick={() => setProgressOpen(!progressOpen)}
-                    className={`group flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-xl text-white shadow-md transition-all active:scale-95
+              <div className="relative">
+                <button
+                  onClick={() => setProgressOpen(!progressOpen)}
+                  className={`group flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-xl text-white shadow-md transition-all active:scale-95
               ${Object.keys(answers).length / questions.length < 0.5
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : Object.keys(answers).length / questions.length < 0.7
-                          ? 'bg-amber-500 hover:bg-amber-600'
-                          : 'bg-green-600 hover:bg-green-700'}
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : Object.keys(answers).length / questions.length < 0.7
+                        ? 'bg-amber-500 hover:bg-amber-600'
+                        : 'bg-green-600 hover:bg-green-700'}
             `}
-                  >
-                    <div className="flex flex-col items-start leading-none">
-                      <span className="text-[10px]  font-bold opacity-80">Progress</span>
-                      <span className="text-sm font-bold">
-                        {Object.keys(answers).length}/{questions.length}
-                      </span>
-                    </div>
-                    <div className="h-6 w-px bg-white/20" />
-                    {progressOpen ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                    <div
-                      className="absolute inset-0 bg-black/10 rounded-xl transition-all duration-1000"
-                      style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
-                    />
-                  </button>
-                </div>
+                >
+                  <div className="flex flex-col items-start leading-none">
+                    <span className="text-[10px]  font-bold opacity-80">Progress</span>
+                    <span className="text-sm font-bold">
+                      {Object.keys(answers).length}/{questions.length}
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-white/20" />
+                  {progressOpen ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                  <div
+                    className="absolute inset-0 bg-black/10 rounded-xl transition-all duration-1000"
+                    style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+                  />
+                </button>
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gray-100 dark:bg-gray-800">
-              <div
-                className="h-full bg-blue-600 transition-all duration-500 ease-out"
-                style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
-              />
-            </div>
           </div>
-        </header>
-        <QuizProgressOverlay
-          progressOpen={progressOpen}
-          setProgressOpen={setProgressOpen}
-          answers={answers}
-          questions={questions}
-          circleRefs={circleRefs}
-          setCurrentQuestionIndex={setCurrentQuestionIndex}
-        />
-      </div>
+        </div>
+
+        {/* Bottom progress bar */}
+        <div className="h-[2px] bg-muted">
+          <div
+            className="h-full bg-blue-600 transition-all duration-500 ease-out"
+            style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+          />
+        </div>
+      </header>
+
+      <QuizProgressOverlay
+        progressOpen={progressOpen}
+        setProgressOpen={setProgressOpen}
+        answers={answers}
+        questions={questions}
+        circleRefs={circleRefs}
+        setCurrentQuestionIndex={setCurrentQuestionIndex}
+      />
       <CheckpointOverlay
         checkpointOverlay={checkpointOverlay}
         quizId={quizId}
@@ -1000,336 +1015,316 @@ Please provide a detailed discussion and guidance.`;
         setCheckpointOverlay={setCheckpointOverlay}
         playSound={playSound}
         isDarkMode={isDarkMode}
-        referralCode={referralCode}          // 👈 pass this
-        referralStats={referralStats}        // 👈 pass this
+        referralCode={referralCode}
+        referralStats={referralStats}
       />
-      <div className="mt-1 flex justify-between items-center w-full gap-4"></div>
-      <div className="flex flex-col items-center">
-        <div
-          ref={questionTopRef}
-          className="w-full max-w-6xl min-h-[500px] relative px-0"
-        >
-          {/* Course Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-4 mt-2 scrollbar-hide">
-            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
-            {courseOptions.map((course) => (
-              <button
-                key={course}
-                onClick={() => {
-                  setSelectedCourse(course);
-                  setCurrentQuestionIndex(0);
-                }}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
-                  selectedCourse === course
-                    ? "bg-indigo-600 border-0 text-white shadow-md"
-                    : "bg-white dark:bg-muted/30 border-0 text-slate-600 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
-                )}
-              >
-                {course}
-              </button>
-            ))}
-          </div>
 
-          {/* Upgrade Banner for Free Users - Only show if premium is false AND there are more questions */}
-          {!isPremium && totalQuestions > QUESTIONS_PER_BATCH && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 rounded-xl border-0">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-
-                  <div>
-                    <p className="font-bold text-amber-800 dark:text-amber-300">
-                      {totalQuestions - QUESTIONS_PER_BATCH} more questions available!
-                    </p>
-                    <p className="text-sm text-amber-700 dark:text-amber-400">
-                      Upgrade to Pro to unlock all {totalQuestions} questions in this unit
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate("/subscription")}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2 rounded-xl transition-all shadow-md flex items-center gap-2"
-                >
-                  <Sparkles size={16} />
-                  Upgrade Now
-                </button>
-              </div>
-            </div>
-          )}
-
-          {filteredQuestions.length > 0 ? (
-            filteredQuestions.map((q, i) => {
-              const selectedAnswer = answers[q.id];
-              const showFeedback = feedbackShown[q.id];
-
-              // Only render the current question for performance
-              if (i !== currentQuestionIndex) return null;
-
-              // Check if this question should be locked for free users
-              const isLocked = isQuestionLocked(i);
-
-              if (isLocked) {
-                return (
-                  <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-muted/30 rounded-2xl border-0 shadow-xl text-center">
-                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-6">
-                      <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                      Unit Limit Reached
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-sm">
-                      You've mastered the first 20 questions! To access the remaining <b>{totalQuestions - QUESTIONS_PER_BATCH} questions</b> in this unit and unlock full clinical rationales, upgrade to a Pro plan.
-                    </p>
-                    <button
-                      onClick={() => navigate("/subscription")}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 group"
-                    >
-                      <span>Access Full Unit Content</span>
-                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={q.id} className="relative flex flex-col gap-0 w-full overflow-hidden">
-                  <div
+      {/* ─── Body: one scroll container ─── */}
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        <div className="w-full px-3 md:px-5 lg:px-6 py-3 md:py-5">
+          <div className="flex flex-col items-center">
+            <div
+              ref={questionTopRef}
+              className="w-full min-h-[500px] relative px-0"
+            >
+              {/* Course Filter Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-4 mt-2 scrollbar-hide">
+                <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+                {courseOptions.map((course) => (
+                  <button
+                    key={course}
+                    onClick={() => {
+                      setSelectedCourse(course);
+                      setCurrentQuestionIndex(0);
+                    }}
                     className={cn(
-                      "flex-1 px-4 md:px-4 py-3 md:py-3 transition-all duration-300",
-                      "md:shadow-sm md:rounded-xl md:my-2",
-                      "rounded-none my-0",
-                      "min-h-[660px]",        // ⬅️ NEW: prevents layout shift between short/long Qs
-                      understood[q.id]
-                        ? "bg-emerald-50/40 dark:bg-emerald-500/10"
-                        : notUnderstood[q.id]
-                          ? "bg-rose-50/40 dark:bg-rose-500/10"
-                          : "bg-white dark:bg-muted/40",
-                      "text-slate-900 dark:text-slate-100"
-                    )}>
-                    <div className="min-h-[140px] md:min-h-[140px] flex items-start justify-between gap-2 overflow-hidden">
-                      <p className="font-bold mb-1.5 md:mb-2 leading-relaxed text-sm md:text-base line-clamp-6 md:line-clamp-7">
-                        Q{i + 1}: {q.question_text}
-                      </p>
-                      {selectedAnswer && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">
-                          Answered
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 md:space-y-2 text-sm">
-                      {["A", "B", "C", "D"].map((letter) => {
-                        const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
-                        const isSelected = selectedAnswer === letter;
-                        const correct = q.correct_answer === letter;
-                        return (
-                          <button
-                            key={letter}
-                            className={`w-full text-left px-0 md:px-4 py-2.5 md:py-3 rounded-none md:rounded-md font-semibold
+                      "px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
+                      selectedCourse === course
+                        ? "bg-indigo-600 border-0 text-white shadow-md"
+                        : "bg-white dark:bg-muted/30 border-0 text-slate-600 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                    )}
+                  >
+                    {course}
+                  </button>
+                ))}
+              </div>
+
+              {filteredQuestions.length > 0 ? (
+                filteredQuestions.map((q, i) => {
+                  const selectedAnswer = answers[q.id];
+                  const showFeedback = feedbackShown[q.id];
+
+                  // Only render the current question for performance
+                  if (i !== currentQuestionIndex) return null;
+
+                  // Check if this question should be locked for free users
+                  const isLocked = isQuestionLocked(i);
+
+                  if (isLocked) {
+                    return (
+                      <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-muted/30 rounded-2xl border-0 shadow-xl text-center">
+                        <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-6">
+                          <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                          Unit Limit Reached
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-sm">
+                          You've mastered the first 20 questions! To access the remaining <b>{totalQuestions - QUESTIONS_PER_BATCH} questions</b> in this unit and unlock full clinical rationales, upgrade to a Pro plan.
+                        </p>
+                        <button
+                          onClick={() => navigate("/subscription")}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 group"
+                        >
+                          <span>Access Full Unit Content</span>
+                          <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={q.id}
+                      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-4 lg:gap-6 w-full"
+                    >
+                      {/* ─── LEFT: question card ─── */}
+                      <div
+                        className={cn(
+                          "flex flex-col px-4 py-3 md:py-4 transition-all duration-300",
+                          "shadow-sm rounded-xl",
+                          "min-h-[660px]",
+                          understood[q.id]
+                            ? "bg-emerald-50/40 dark:bg-emerald-500/10"
+                            : notUnderstood[q.id]
+                              ? "bg-rose-50/40 dark:bg-rose-500/10"
+                              : "bg-white dark:bg-muted/40",
+                          "text-slate-900 dark:text-slate-100"
+                        )}>
+                        <div className="flex items-start justify-between gap-2 mb-3 md:mb-4">
+                          <p className="font-bold leading-relaxed text-sm md:text-base">
+                            Q{i + 1}: {q.question_text}
+                          </p>
+                          {selectedAnswer && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">
+                              Answered
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1.5 md:space-y-2 text-sm">
+                          {["A", "B", "C", "D"].map((letter) => {
+                            const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
+                            const isSelected = selectedAnswer === letter;
+                            const correct = q.correct_answer === letter;
+                            return (
+                              <button
+                                key={letter}
+                                className={`w-full text-left px-0 md:px-4 py-2.5 md:py-3 rounded-none md:rounded-md font-semibold
 border-l-4 transition-all duration-150
 
 ${selectedAnswer
-                                ? correct
-                                  ? "bg-transparent border-0 text-black dark:text-white"
-                                  : "bg-transparent border-0 text-black dark:text-white"
-                                : "bg-transparent border-0 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-                              }
+                                    ? correct
+                                      ? "bg-transparent border-0 text-black dark:text-white"
+                                      : "bg-transparent border-0 text-black dark:text-white"
+                                    : "bg-transparent border-0 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  }
 
 ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
-                            onClick={async () => {
-                              // ⬅️ CHANGED: hard gate on hydration
-                              if (!hydrated) {
-                                console.warn("[QuizPage] option tap ignored — not hydrated yet");
-                                return;
-                              }
-                              if (selectedAnswer || quizFinished) return;
-                              if (!isMuted) {
-                                playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
-                              }
-                              const correct = q.correct_answer === letter;
-                              if (!correct) {
-                                setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
-                              }
-                              if (navigator.vibrate) {
-                                if (correct) {
-                                  navigator.vibrate(50);
-                                } else {
-                                  navigator.vibrate([100, 50, 100]);
-                                }
-                              }
-                              const endTime = Date.now();
-                              const timeTaken = (endTime - questionStartTime) / 1000;
-                              let confidence = "";
-                              let accuracy = 0;
-                              if (correct) {
-                                confidence = "High confidence";
-                                accuracy = 100;
-                              } else if (timeTaken <= 10) {
-                                confidence = "Overconfident";
-                                accuracy = Math.floor(Math.random() * 20);
-                              } else if (timeTaken <= 20) {
-                                confidence = "Medium confidence";
-                                accuracy = Math.floor(Math.random() * 30) + 50;
-                              } else {
-                                confidence = "Low confidence";
-                                accuracy = Math.floor(Math.random() * 30) + 20;
-                              }
-                              setConfidenceLevels((prev) => {
-                                const updated = { ...prev, [q.id]: confidence };
-                                localStorage.setItem("confidenceLevels", JSON.stringify(updated));
-                                return updated;
-                              });
-                              handleAnswer(q.id, letter);
-                              if (!userId) return;
-                              try {
-                                await supabase.from("live_answer_events").insert({
-                                  user_id: userId,
-                                  question_id: q.id,
-                                  event_type: correct ? "answered_correct" : "answered_wrong",
-                                  is_correct: correct,
-                                  streak_count: null,
-                                  points: correct ? 1 : 0,
-                                });
-                              } catch (err) {
-                                console.error("Error inserting live event:", err);
-                              }
+                                onClick={async () => {
+                                  // ⬅️ CHANGED: hard gate on hydration
+                                  if (!hydrated) {
+                                    console.warn("[QuizPage] option tap ignored — not hydrated yet");
+                                    return;
+                                  }
+                                  if (selectedAnswer || quizFinished) return;
+                                  if (!isMuted) {
+                                    playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
+                                  }
+                                  const correct = q.correct_answer === letter;
+                                  if (!correct) {
+                                    setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+                                  }
+                                  if (navigator.vibrate) {
+                                    if (correct) {
+                                      navigator.vibrate(50);
+                                    } else {
+                                      navigator.vibrate([100, 50, 100]);
+                                    }
+                                  }
+                                  const endTime = Date.now();
+                                  const timeTaken = (endTime - questionStartTime) / 1000;
+                                  let confidence = "";
+                                  let accuracy = 0;
+                                  if (correct) {
+                                    confidence = "High confidence";
+                                    accuracy = 100;
+                                  } else if (timeTaken <= 10) {
+                                    confidence = "Overconfident";
+                                    accuracy = Math.floor(Math.random() * 20);
+                                  } else if (timeTaken <= 20) {
+                                    confidence = "Medium confidence";
+                                    accuracy = Math.floor(Math.random() * 30) + 50;
+                                  } else {
+                                    confidence = "Low confidence";
+                                    accuracy = Math.floor(Math.random() * 30) + 20;
+                                  }
+                                  setConfidenceLevels((prev) => {
+                                    const updated = { ...prev, [q.id]: confidence };
+                                    localStorage.setItem("confidenceLevels", JSON.stringify(updated));
+                                    return updated;
+                                  });
+                                  handleAnswer(q.id, letter);
+                                  if (!userId) return;
+                                  try {
+                                    await supabase.from("live_answer_events").insert({
+                                      user_id: userId,
+                                      question_id: q.id,
+                                      event_type: correct ? "answered_correct" : "answered_wrong",
+                                      is_correct: correct,
+                                      streak_count: null,
+                                      points: correct ? 1 : 0,
+                                    });
+                                  } catch (err) {
+                                    console.error("Error inserting live event:", err);
+                                  }
 
-                            }}
-                          >
-                            <div
-                              className={`
+                                }}
+                              >
+                                <div
+                                  className={`
     flex justify-between items-center gap-2
-    min-h-[56px] md:min-h-[64px]
-    p-2 md:p-2.5 px-2 md:px-3.5 rounded-lg border transition-all duration-200
+    min-h-[48px] md:min-h-[52px]
+    py-2 px-3 md:px-4 rounded-lg transition-all duration-200
     ${!selectedAnswer
-                                  ? "border-0 bg-white hover:border-blue-400 dark:bg-slate-800 dark:hover:border-blue-500"
-                                  : "border-0 bg-white dark:bg-slate-800"
-                                }
+                                      ? "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60"
+                                      : "bg-white dark:bg-slate-800"
+                                    }
     ${selectedAnswer && q.correct_answer !== letter && selectedAnswer !== letter ? "opacity-50" : "opacity-100"}
   `}
-                            >
-                              <div className="flex items-center gap-2 md:gap-3">
-                                <span className={`text-xs font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-md border transition-colors duration-300 ${selectedAnswer && q.correct_answer === letter
-                                  ? "bg-emerald-500 border-0 text-white"
-                                  : selectedAnswer === letter && q.correct_answer !== letter
-                                    ? "bg-rose-500 border-0 text-white"
-                                    : "bg-slate-100 dark:bg-slate-700 border-0 text-slate-500 dark:text-slate-400"
-                                  }`}>
-                                  {letter}
-                                </span>
-                                <span className="text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                  {optionText}
-                                </span>
-                              </div>
-                              <div className="flex items-center ml-3 md:ml-4">
-                                {selectedAnswer && (
-                                  q.correct_answer === letter ? (
-                                    <div className="flex items-center gap-1 md:gap-1.5 animate-[pop_0.3s_ease-out]">
-                                      <span className="text-[9px] md:text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Correct</span>
-                                      <GraduationCap className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" />
-                                    </div>
-                                  ) : selectedAnswer === letter ? (
-                                    <div className="flex items-center gap-1 md:gap-1.5 animate-[shake_0.4s_ease-in-out]">
-                                      <span className="text-[9px] md:text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">Wrong</span>
-                                      <X className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-500 dark:text-rose-400" />
-                                    </div>
-                                  ) : null
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                                >
+                                  <div className="flex items-center gap-2 md:gap-3">
+                                    <span className={`text-xs font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-md border transition-colors duration-300 ${selectedAnswer && q.correct_answer === letter
+                                      ? "bg-emerald-500 border-0 text-white"
+                                      : selectedAnswer === letter && q.correct_answer !== letter
+                                        ? "bg-rose-500 border-0 text-white"
+                                        : "bg-slate-100 dark:bg-slate-700 border-0 text-slate-500 dark:text-slate-400"
+                                      }`}>
+                                      {letter}
+                                    </span>
+                                    <span className="text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                      {optionText}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center ml-3 md:ml-4">
+                                    {selectedAnswer && (
+                                      q.correct_answer === letter ? (
+                                        <div className="flex items-center gap-1 md:gap-1.5 animate-[pop_0.3s_ease-out]">
+                                          <span className="text-[9px] md:text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Correct</span>
+                                          <GraduationCap className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                      ) : selectedAnswer === letter ? (
+                                        <div className="flex items-center gap-1 md:gap-1.5 animate-[shake_0.4s_ease-in-out]">
+                                          <span className="text-[9px] md:text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">Wrong</span>
+                                          <X className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-500 dark:text-rose-400" />
+                                        </div>
+                                      ) : null
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                    <div className="flex items-center justify-center gap-2 md:gap-3 w-full mt-3 md:mt-0">
-                      <button
-                        onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                        disabled={currentQuestionIndex === 0}
-                        className="inline-flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 h-10 md:h-11 rounded-lg md:rounded-xl
+                        <div className="flex items-center justify-center gap-2 md:gap-3 w-full mt-3 md:mt-0">
+                          <button
+                            onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                            disabled={currentQuestionIndex === 0}
+                            className="inline-flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 h-10 md:h-11 rounded-lg md:rounded-xl
         border-0 bg-white text-gray-700
         dark:border-0 dark:bg-gray-900 dark:text-gray-200
         hover:bg-gray-50 dark:hover:bg-gray-800
         active:bg-gray-100 dark:active:bg-gray-700
         transition-all duration-200 font-semibold shadow-sm
         disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent text-xs md:text-sm"
-                      >
-                        <ChevronLeft size={16} className="md:size-18" />
-                        <span>Previous</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          // For premium users, just navigate to next question
-                          // For free users, show upgrade when trying to access beyond 20th
-                          if (!isPremium && currentQuestionIndex === 19) {
-                            navigate("/subscription");
-                          } else {
-                            setCurrentQuestionIndex(prev =>
-                              prev < filteredQuestions.length - 1 ? prev + 1 : prev
-                            );
-                          }
-                        }}
-                        disabled={currentQuestionIndex === filteredQuestions.length - 1 && isPremium}
-                        className={cn(
-                          "inline-flex items-center justify-center gap-1 md:gap-2 px-6 md:px-8 h-10 md:h-11 rounded-lg md:rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98] text-xs md:text-sm",
-                          (!isPremium && currentQuestionIndex === 19)
-                            ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
-                            : "bg-indigo-600 hover:bg-indigo-700 text-white",
-                          "disabled:opacity-30 disabled:cursor-not-allowed"
-                        )}
-                      >
-                        <span>
-                          {(() => {
-                            if (!isPremium && currentQuestionIndex === 19) return "Unlock 100+ Questions";
-                            if (currentQuestionIndex === filteredQuestions.length - 1) return "Finish";
-                            return "Next";
-                          })()}
-                        </span>
-                        {!isPremium && currentQuestionIndex === 19 ? (
-                          <Sparkles size={16} className="md:size-18" />
-                        ) : (
-                          <ChevronRight size={16} className="md:size-18" />
-                        )}
-                      </button>
-                      {selectedAnswer && (() => {
-                        const nextUnanswered = filteredQuestions.findIndex(
-                          (qq, idx) => idx > currentQuestionIndex && !answers[qq.id]
-                        );
-                        if (nextUnanswered === -1) return null;
-                        return (
-                          <button
-                            onClick={() => setCurrentQuestionIndex(nextUnanswered)}
-                            className="inline-flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 h-10 md:h-11 rounded-lg md:rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98] text-xs md:text-sm bg-emerald-600 hover:bg-emerald-700 text-white"
                           >
-                            <span>Skip to Q{nextUnanswered + 1}</span>
-                            <ChevronRight size={16} />
+                            <ChevronLeft size={16} className="md:size-18" />
+                            <span>Previous</span>
                           </button>
-                        );
-                      })()}
-                      <SubmitQuizButton
-                        quizFinished={quizFinished}
-                        answers={answers}
-                        questions={questions}
-                        handleSubmit={handleSubmit}
-                      />
-                    </div>
-                    <div className="mt-2 md:mt-1 flex flex-wrap items-center justify-between w-full gap-2 md:gap-3 border-0 pt-3 md:pt-4">
-                      <div className="flex items-center gap-1.5 md:gap-2 w-full flex-wrap">
-                        <button
-                          onClick={() => setOpenExplanationFor(q.id)}
-                          disabled={!showFeedback}
-                          className={`relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
+
+                          <button
+                            onClick={() => {
+                              // For premium users, just navigate to next question
+                              // For free users, show upgrade when trying to access beyond 20th
+                              if (!isPremium && currentQuestionIndex === 19) {
+                                navigate("/subscription");
+                              } else {
+                                setCurrentQuestionIndex(prev =>
+                                  prev < filteredQuestions.length - 1 ? prev + 1 : prev
+                                );
+                              }
+                            }}
+                            disabled={currentQuestionIndex === filteredQuestions.length - 1 && isPremium}
+                            className={cn(
+                              "inline-flex items-center justify-center gap-1 md:gap-2 px-6 md:px-8 h-10 md:h-11 rounded-lg md:rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98] text-xs md:text-sm",
+                              (!isPremium && currentQuestionIndex === 19)
+                                ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
+                                : "bg-indigo-600 hover:bg-indigo-700 text-white",
+                              "disabled:opacity-30 disabled:cursor-not-allowed"
+                            )}
+                          >
+                            <span>
+                              {(() => {
+                                if (!isPremium && currentQuestionIndex === 19) return "Unlock 100+ Questions";
+                                if (currentQuestionIndex === filteredQuestions.length - 1) return "Finish";
+                                return "Next";
+                              })()}
+                            </span>
+                            {!isPremium && currentQuestionIndex === 19 ? (
+                              <Sparkles size={16} className="md:size-18" />
+                            ) : (
+                              <ChevronRight size={16} className="md:size-18" />
+                            )}
+                          </button>
+                          {selectedAnswer && (() => {
+                            const nextUnanswered = filteredQuestions.findIndex(
+                              (qq, idx) => idx > currentQuestionIndex && !answers[qq.id]
+                            );
+                            if (nextUnanswered === -1) return null;
+                            return (
+                              <button
+                                onClick={() => setCurrentQuestionIndex(nextUnanswered)}
+                                className="inline-flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 h-10 md:h-11 rounded-lg md:rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98] text-xs md:text-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+                              >
+                                <span>Skip to Q{nextUnanswered + 1}</span>
+                                <ChevronRight size={16} />
+                              </button>
+                            );
+                          })()}
+                          <SubmitQuizButton
+                            quizFinished={quizFinished}
+                            answers={answers}
+                            questions={questions}
+                            handleSubmit={handleSubmit}
+                          />
+                        </div>
+                        <div className="mt-2 md:mt-1 flex flex-wrap items-center justify-between w-full gap-2 md:gap-3 border-0 pt-3 md:pt-4">
+                          <div className="flex items-center gap-1.5 md:gap-2 w-full flex-wrap">
+                            <button
+                              onClick={() => setOpenExplanationFor(q.id)}
+                              disabled={!showFeedback}
+                              className={`relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
     ${showFeedback
-                              ? "bg-white dark:bg-muted/30 border-0 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:border-cyan-200 dark:hover:border-cyan-800"
-                              : "bg-slate-50 dark:bg-slate-800/50 border-0 opacity-50 cursor-not-allowed"
-                            }`}
-                        >
-                          <BookOpen className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-colors ${showFeedback ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}`} />
-                          <span className={`text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] ${showFeedback ? "text-slate-700 dark:text-slate-300 group-hover:text-cyan-700 dark:group-hover:text-cyan-300" : "text-slate-400"}`}>
-                            Rationale
-                          </span>
-                        </button>
-                        {/*
+                                  ? "bg-white dark:bg-muted/30 border-0 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:border-cyan-200 dark:hover:border-cyan-800"
+                                  : "bg-slate-50 dark:bg-slate-800/50 border-0 opacity-50 cursor-not-allowed"
+                                }`}
+                            >
+                              <BookOpen className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-colors ${showFeedback ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}`} />
+                              <span className={`text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] ${showFeedback ? "text-slate-700 dark:text-slate-300 group-hover:text-cyan-700 dark:group-hover:text-cyan-300" : "text-slate-400"}`}>
+                                Rationale
+                              </span>
+                            </button>
+                            {/*
 <button
     onClick={() => {
         const optionsText = ["A", "B", "C", "D"]
@@ -1347,269 +1342,277 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
     </span>
 </button>
 */}
-                        <button
-                          onClick={toggleMute}
-                          className={`ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
+                            <button
+                              onClick={toggleMute}
+                              className={`ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
     ${isMuted
-                              ? "bg-slate-50 dark:bg-slate-800/50 border-0"
-                              : "bg-white dark:bg-muted/30 border-0 hover:border-indigo-200 dark:hover:border-indigo-800"}
+                                  ? "bg-slate-50 dark:bg-slate-800/50 border-0"
+                                  : "bg-white dark:bg-muted/30 border-0 hover:border-indigo-200 dark:hover:border-indigo-800"}
   `}
-                        >
-                          <div className="relative">
-                            {isMuted ? (
-                              <VolumeX className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 dark:text-slate-500 transition-colors" />
-                            ) : (
-                              <>
-                                <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-indigo-500 dark:text-indigo-400" />
-                                <span className="absolute inset-0 rounded-xl bg-indigo-400 animate-ping opacity-20" />
-                              </>
-                            )}
-                          </div>
-                          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300">
-                            {isMuted ? "Muted" : "Audio"}
-                          </span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 md:gap-2 w-full flex-wrap">
-                        <button
-                          onClick={handleReset}
-                          disabled={resetting}
-                          className={`relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm
-    ${resetting
-                              ? "bg-slate-100 dark:bg-slate-800 border-0 opacity-70 cursor-not-allowed"
-                              : "bg-white dark:bg-muted/30 border-0 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-0 active:scale-95"}
-  `}
-                        >
-                          {resetting ? (
-                            <svg
-                              className="animate-spin h-3.5 w-3.5 md:h-4 md:w-4 text-slate-500"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
                             >
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                            </svg>
-                          ) : (
-                            <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-600 dark:text-slate-400 group-hover:rotate-[-180deg] transition-transform duration-500" />
-                          )}
-                          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300">
-                            {resetting ? "Resetting..." : "Reset"}
-                          </span>
-                        </button>
+                              <div className="relative">
+                                {isMuted ? (
+                                  <VolumeX className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 dark:text-slate-500 transition-colors" />
+                                ) : (
+                                  <>
+                                    <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-indigo-500 dark:text-indigo-400" />
+                                    <span className="absolute inset-0 rounded-xl bg-indigo-400 animate-ping opacity-20" />
+                                  </>
+                                )}
+                              </div>
+                              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300">
+                                {isMuted ? "Muted" : "Audio"}
+                              </span>
+                            </button>
+                          </div>
 
-                        <button
-                          onClick={handleResetTimer}
-                          className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl bg-green-50 dark:bg-green-900/30 border-0 hover:bg-green-100 dark:hover:bg-green-800/50 active:scale-95 transition-all group shadow-sm"
-                        >
-                          <TimerReset className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-600 dark:text-green-300 group-hover:rotate-[-45deg] transition-transform duration-300" />
-                          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-green-700 dark:text-green-300">
-                            Timer
-                          </span>
-                        </button>
+                          <div className="flex items-center gap-1.5 md:gap-2 w-full flex-wrap">
+                            <button
+                              onClick={handleReset}
+                              disabled={resetting}
+                              className={`relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm
+    ${resetting
+                                  ? "bg-slate-100 dark:bg-slate-800 border-0 opacity-70 cursor-not-allowed"
+                                  : "bg-white dark:bg-muted/30 border-0 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-0 active:scale-95"}
+  `}
+                            >
+                              {resetting ? (
+                                <svg
+                                  className="animate-spin h-3.5 w-3.5 md:h-4 md:w-4 text-slate-500"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                </svg>
+                              ) : (
+                                <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-600 dark:text-slate-400 group-hover:rotate-[-180deg] transition-transform duration-500" />
+                              )}
+                              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300">
+                                {resetting ? "Resetting..." : "Reset"}
+                              </span>
+                            </button>
 
-                        <button
-                          onClick={() => handleReportQuestion(q)}
-                          className="ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border-0 bg-white dark:bg-muted/30 transition-all duration-300 group hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-800 shadow-sm active:scale-95"
-                        >
-                          <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors group-hover:animate-pulse" />
-                          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-600 dark:text-slate-400 group-hover:text-red-700 dark:group-hover:text-red-400">
-                            Report
+                            <button
+                              onClick={handleResetTimer}
+                              className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl bg-green-50 dark:bg-green-900/30 border-0 hover:bg-green-100 dark:hover:bg-green-800/50 active:scale-95 transition-all group shadow-sm"
+                            >
+                              <TimerReset className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-600 dark:text-green-300 group-hover:rotate-[-45deg] transition-transform duration-300" />
+                              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-green-700 dark:text-green-300">
+                                Timer
+                              </span>
+                            </button>
+
+                            <button
+                              onClick={() => handleReportQuestion(q)}
+                              className="ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border-0 bg-white dark:bg-muted/30 transition-all duration-300 group hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-800 shadow-sm active:scale-95"
+                            >
+                              <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors group-hover:animate-pulse" />
+                              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-600 dark:text-slate-400 group-hover:text-red-700 dark:group-hover:text-red-400">
+                                Report
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex flex-col items-center gap-3 w-full">
+                          <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            Question {currentQuestionIndex + 1} of {filteredQuestions.length}
                           </span>
-                        </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-2 flex flex-col items-center gap-3 w-full">
-                      <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Question {currentQuestionIndex + 1} of {filteredQuestions.length}
-                      </span>
+                      {/* ─── RIGHT: sticky insights + notes rail ─── */}
+                      <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100dvh-120px)] lg:overflow-y-auto custom-scrollbar">
+                        <QuestionInsights
+                          confidenceLevel={confidenceLevels[q.id]}
+                          showReasonBox={showReasonBox[q.id]}
+                          selectedReason={selectedReason[q.id]}
+                          reasonOptions={reasonOptions}
+                          onReasonSelect={async (reason) => {
+                            setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
+                            setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
+                            // 🔔 Reflection done — remove from pending queue and close any open sheet
+                            setPendingReflectionIds(prev => {
+                              const next = { ...prev };
+                              delete next[q.id];
+                              return next;
+                            });
+                            setReflectionSheetFor(null);
+                            if (!userId) return;
+                            try {
+                              const { error } = await supabase
+                                .from("user_mistakes")
+                                .update({ mistake_reason: reason })
+                                .eq("user_id", userId)
+                                .eq("question_id", q.id);
+                              if (error) throw error;
+                            } catch (err) {
+                              console.error("Error saving mistake reason:", err);
+                            }
+                          }}
+                        />
+                        <div className="w-full border-0 bg-transparent">
+                          <NotesEvaluationPanel
+                            q={q}
+                            userId={userId}
+                            notes={notes}
+                            setNotes={setNotes}
+                            understood={understood}
+                            setUnderstood={setUnderstood}
+                            notUnderstood={notUnderstood}
+                            setNotUnderstood={setNotUnderstood}
+                            attempts={attempts}
+                            setAttempts={setAttempts}
+                            saving={saving}
+                            setSaving={setSaving}
+                            saved={saved}
+                            setSaved={setSaved}
+                            helpOthersDisabled={helpOthersDisabled}
+                            setHelpOthersDisabled={setHelpOthersDisabled}
+                            setHelpMeHelpers={setHelpMeHelpers}
+                            setCurrentQuestionText={setCurrentQuestionText}
+                            setHelpMeOverlayOpen={setHelpMeOverlayOpen}
+                            saveNoteOffline={saveNoteOfflineFn}
+                            saveAnswersOffline={saveAnswersOffline}
+                            supabase={supabase}
+                          />
+                        </div>
+                      </aside>
                     </div>
-                  </div>
-                  <QuestionInsights
-                    confidenceLevel={confidenceLevels[q.id]}
-                    showReasonBox={showReasonBox[q.id]}
-                    selectedReason={selectedReason[q.id]}
-                    reasonOptions={reasonOptions}
-                    onReasonSelect={async (reason) => {
-                      setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
-                      setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
-                      // 🔔 Reflection done — remove from pending queue and close any open sheet
-                      setPendingReflectionIds(prev => {
-                        const next = { ...prev };
-                        delete next[q.id];
-                        return next;
-                      });
-                      setReflectionSheetFor(null);
-                      if (!userId) return;
-                      try {
-                        const { error } = await supabase
-                          .from("user_mistakes")
-                          .update({ mistake_reason: reason })
-                          .eq("user_id", userId)
-                          .eq("question_id", q.id);
-                        if (error) throw error;
-                      } catch (err) {
-                        console.error("Error saving mistake reason:", err);
-                      }
-                    }}
-                  />
-                  <div className="w-full border-0 bg-transparent">
-                    <NotesEvaluationPanel
-                      q={q}
-                      userId={userId}
-                      notes={notes}
-                      setNotes={setNotes}
-                      understood={understood}
-                      setUnderstood={setUnderstood}
-                      notUnderstood={notUnderstood}
-                      setNotUnderstood={setNotUnderstood}
-                      attempts={attempts}
-                      setAttempts={setAttempts}
-                      saving={saving}
-                      setSaving={setSaving}
-                      saved={saved}
-                      setSaved={setSaved}
-                      helpOthersDisabled={helpOthersDisabled}
-                      setHelpOthersDisabled={setHelpOthersDisabled}
-                      setHelpMeHelpers={setHelpMeHelpers}
-                      setCurrentQuestionText={setCurrentQuestionText}
-                      setHelpMeOverlayOpen={setHelpMeOverlayOpen}
-                      saveNoteOffline={saveNoteOfflineFn}
-                      saveAnswersOffline={saveAnswersOffline}
-                      supabase={supabase}
-                    />
-                  </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-0">
+                  <AlertTriangle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-600 dark:text-slate-400">No questions found for <b>{selectedCourse}</b> in this unit.</p>
+                  <button onClick={() => setSelectedCourse("All")} className="mt-4 text-indigo-600 font-bold">View All Questions</button>
                 </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-0">
-              <AlertTriangle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600 dark:text-slate-400">No questions found for <b>{selectedCourse}</b> in this unit.</p>
-              <button onClick={() => setSelectedCourse("All")} className="mt-4 text-indigo-600 font-bold">View All Questions</button>
+              )}
+
+
+
+              {/* Premium Badge - Only show for premium users */}
+              {isPremium && (
+                <div className="text-center mt-4 mb-2">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-xl">
+                    <Sparkles size={12} />
+                    Premium Access
+                    <Sparkles size={12} />
+                  </span>
+                </div>
+              )}
             </div>
-          )}
+            <ExplanationOverlay
+              open={!!openExplanationFor}
+              onClose={() => {
+                const closingId = openExplanationFor;
+                setOpenExplanationFor(null);
 
+                // 🔔 If this wrong answer hasn't been reflected on yet, show the sheet
+                const needsReflection =
+                  closingId &&
+                  pendingReflectionIds[closingId] &&
+                  !selectedReason[closingId];
 
+                if (needsReflection) {
+                  // small delay so the explanation overlay finishes animating out
+                  setTimeout(() => setReflectionSheetFor(closingId), 250);
+                } else {
+                  // ✅ No reflection needed — advance to the next question
+                  setCurrentQuestionIndex(prev =>
+                    prev < filteredQuestions.length - 1 ? prev + 1 : prev
+                  );
+                }
+              }}
+              isCorrect={
+                questions.find(q => q.id === openExplanationFor)?.correct_answer ===
+                answers[openExplanationFor || ""]
+              }
+              correctAnswer={
+                questions.find(q => q.id === openExplanationFor)?.correct_answer
+              }
+              explanation={
+                questions.find(q => q.id === openExplanationFor)?.explanation
+              }
+              additional={
+                questions.find(q => q.id === openExplanationFor)?.additional
+              }
+            />
 
-          {/* Premium Badge - Only show for premium users */}
-          {isPremium && (
-            <div className="text-center mt-4 mb-2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-xl">
-                <Sparkles size={12} />
-                Premium Access
-                <Sparkles size={12} />
-              </span>
-            </div>
-          )}
-        </div>
-        <ExplanationOverlay
-          open={!!openExplanationFor}
-          onClose={() => {
-            const closingId = openExplanationFor;
-            setOpenExplanationFor(null);
-
-            // 🔔 If this wrong answer hasn't been reflected on yet, show the sheet
-            const needsReflection =
-              closingId &&
-              pendingReflectionIds[closingId] &&
-              !selectedReason[closingId];
-
-            if (needsReflection) {
-              // small delay so the explanation overlay finishes animating out
-              setTimeout(() => setReflectionSheetFor(closingId), 250);
-            } else {
-              // ✅ No reflection needed — advance to the next question
-              setCurrentQuestionIndex(prev =>
-                prev < filteredQuestions.length - 1 ? prev + 1 : prev
-              );
-            }
-          }}
-          isCorrect={
-            questions.find(q => q.id === openExplanationFor)?.correct_answer ===
-            answers[openExplanationFor || ""]
-          }
-          correctAnswer={
-            questions.find(q => q.id === openExplanationFor)?.correct_answer
-          }
-          explanation={
-            questions.find(q => q.id === openExplanationFor)?.explanation
-          }
-          additional={
-            questions.find(q => q.id === openExplanationFor)?.additional
-          }
-        />
-
-        {/* 🔔 Instagram-style reflection prompt after wrong answers */}
-        <ReflectionSheet
-          open={!!reflectionSheetFor}
-          onClose={() => {
-            setReflectionSheetFor(null);
-            // ✅ After reflection is dismissed (picked or skipped), advance
-            setCurrentQuestionIndex(prev =>
-              prev < filteredQuestions.length - 1 ? prev + 1 : prev
-            );
-          }}
-          questionText={
-            questions.find(q => q.id === reflectionSheetFor)?.question_text
-          }
-          reasonOptions={reasonOptions}
-          onReasonSelect={async (reason) => {
-            const qid = reflectionSheetFor;
-            if (!qid) return;
-            setSelectedReason(prev => ({ ...prev, [qid]: reason }));
-            setShowReasonBox(prev => ({ ...prev, [qid]: false }));
-            setPendingReflectionIds(prev => {
-              const next = { ...prev };
-              delete next[qid];
-              return next;
-            });
-            if (!userId) return;
-            try {
-              await supabase
-                .from("user_mistakes")
-                .update({ mistake_reason: reason })
-                .eq("user_id", userId)
-                .eq("question_id", qid);
-            } catch (err) {
-              console.error("Error saving mistake reason from sheet:", err);
-            }
-          }}
-        />
-        <HelpMeOverlay
-          helpMeOverlayOpen={helpMeOverlayOpen}
-          setHelpMeOverlayOpen={setHelpMeOverlayOpen}
-          helpMeHelpers={helpMeHelpers}
-          currentQuestionText={currentQuestionText}
-        />
-        <QuizResultsPanel
-          quizFinished={quizFinished}
-          finalScore={finalScore}
-          questions={questions}
-          attempts={attempts}
-          playSound={playSound}
-        />
-        <OverlayAI
-          isOpen={isAIOverlayOpen}
-          onClose={() => setAIOverlayOpen(false)}
-          prefillQuestion={aiPrefillQuestion}
-          isDarkTheme={isDarkMode}
-        />
-        {
-          showScrollTop && (
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className={`fixed bottom-6 right-6 p-3 rounded-none sm:rounded-md-full shadow-lg hover:scale-110 transition-transform
+            {/* 🔔 Instagram-style reflection prompt after wrong answers */}
+            <ReflectionSheet
+              open={!!reflectionSheetFor}
+              onClose={() => {
+                setReflectionSheetFor(null);
+                // ✅ After reflection is dismissed (picked or skipped), advance
+                setCurrentQuestionIndex(prev =>
+                  prev < filteredQuestions.length - 1 ? prev + 1 : prev
+                );
+              }}
+              questionText={
+                questions.find(q => q.id === reflectionSheetFor)?.question_text
+              }
+              reasonOptions={reasonOptions}
+              onReasonSelect={async (reason) => {
+                const qid = reflectionSheetFor;
+                if (!qid) return;
+                setSelectedReason(prev => ({ ...prev, [qid]: reason }));
+                setShowReasonBox(prev => ({ ...prev, [qid]: false }));
+                setPendingReflectionIds(prev => {
+                  const next = { ...prev };
+                  delete next[qid];
+                  return next;
+                });
+                if (!userId) return;
+                try {
+                  await supabase
+                    .from("user_mistakes")
+                    .update({ mistake_reason: reason })
+                    .eq("user_id", userId)
+                    .eq("question_id", qid);
+                } catch (err) {
+                  console.error("Error saving mistake reason from sheet:", err);
+                }
+              }}
+            />
+            <HelpMeOverlay
+              helpMeOverlayOpen={helpMeOverlayOpen}
+              setHelpMeOverlayOpen={setHelpMeOverlayOpen}
+              helpMeHelpers={helpMeHelpers}
+              currentQuestionText={currentQuestionText}
+            />
+            <QuizResultsPanel
+              quizFinished={quizFinished}
+              finalScore={finalScore}
+              questions={questions}
+              attempts={attempts}
+              playSound={playSound}
+            />
+            <OverlayAI
+              isOpen={isAIOverlayOpen}
+              onClose={() => setAIOverlayOpen(false)}
+              prefillQuestion={aiPrefillQuestion}
+              isDarkTheme={isDarkMode}
+            />
+            {
+              showScrollTop && (
+                <button
+                  onClick={() => {
+                    document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className={`fixed bottom-6 right-6 p-3 rounded-full shadow-lg hover:scale-110 transition-transform z-40
       ${isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"}`}
-              aria-label="Scroll to top"
-            >
-              <ArrowUp size={20} strokeWidth={2} />
-            </button>
-          )
-        }
-      </div>
+                  aria-label="Scroll to top"
+                >
+                  <ArrowUp size={20} strokeWidth={2} />
+                </button>
+              )
+            }
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

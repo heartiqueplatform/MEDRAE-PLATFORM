@@ -917,7 +917,7 @@ export const MusicPlayer = () => {
                                 <div className="flex flex-col items-center">
                                     <span className="text-[15px] font-black tracking-[-0.02em] text-blue-black dark:text-white">
                                         {screen === "player" && "Medrae Studify"}
-                                        {screen === "episodes" && "Episodes"}
+                                        {screen === "episodes" && "Studify Episodes"}
                                         {screen === "admin" && "Manage Podcasts"}
                                     </span>
                                     <span className="text-[9px] text-gh-l-muted dark:text-gh-muted font-semibold">

@@ -264,6 +264,12 @@ const BottomBarWrapper = () => {
   const location = useLocation();
   const publicPaths = ["/", "/login", "/register"];
 
+  // 🆕 Fullscreen pages that own the entire viewport
+  const FULLSCREEN_PATHS = ["/medtube", "/quiz"];
+  if (FULLSCREEN_PATHS.some((p) => location.pathname.startsWith(p))) {
+    return null;
+  }
+
   // 🆕 HIDE on mobile (phones) - only show on tablet/desktop
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
     return null;
@@ -554,19 +560,20 @@ const AppContent = () => {
                           <Route path="/analytics" element={<StudentAnalyticsPage />} />
 
                           {/* Core features */}
+                          {/* Core features */}
                           <Route path="/my-mistakes" element={<MyMistakes />} />
                           <Route path="/ai-assistant" element={<AIAssistant />} />
                           <Route path="/calendar" element={<Calendar />} />
                           <Route path="/progress" element={<StudyProgress />} />
                           <Route path="/resources" element={<Resources />} />
-                          <Route path="/medtube" element={<MedTube />} />
+                          {/* /medtube moved to fullscreen routes below ⬇️ */}
                           <Route path="/announcements" element={<Announcements />} />
                           <Route path="/feedback" element={<Feedback />} />
                           <Route path="/settings" element={<Settings />} />
                           <Route path="/subscription" element={<Subscription />} />
                           <Route path="/notifications" element={<Notifications />} />
                           <Route path="/profile" element={<Profile />} />
-                          <Route path="/quiz" element={<QuizPage />} />
+                          {/* /quiz moved to fullscreen routes below ⬇️ */}
                           <Route path="/assessment-notes" element={<AssessmentNotes />} />
                           <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
                           <Route path="/feed" element={<Feed />} />
@@ -639,6 +646,24 @@ const AppContent = () => {
                         </Route>
 
                         {/* Full-screen / Independent Pages */}
+                        {/* Full-screen / Independent Pages */}
+                        {/* Full-screen / Independent Pages */}
+                        <Route
+                          path="/medtube"
+                          element={
+                            <PrivateRoute>
+                              <MedTube />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/quiz"
+                          element={
+                            <PrivateRoute>
+                              <QuizPage />
+                            </PrivateRoute>
+                          }
+                        />
                         <Route path="/terms" element={<TermsPage />} />
                         <Route path="/cookies" element={<CookiePolicyPage />} />
                         <Route path="/simulation/:paper_id" element={<SimulationPage />} />
