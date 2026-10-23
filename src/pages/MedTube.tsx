@@ -1,5 +1,8 @@
 "use client";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+  useEffect, useState, useRef, useCallback, useMemo, memo
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -25,13 +28,12 @@ import { useInView } from 'react-intersection-observer';
 // GRID CONSTANT
 // ═══════════════════════════════════════════════════════════════
 const VIDEO_GRID_CLASS =
-  "grid gap-3 md:gap-4 lg:gap-5 " +
-  "grid-cols-2 " +
+  "grid gap-4 md:gap-4 lg:gap-5 " +
+  "grid-cols-1 " +
   "sm:grid-cols-2 " +
   "md:grid-cols-3 " +
   "lg:grid-cols-3 " +
   "xl:grid-cols-3";
-
 // ═══════════════════════════════════════════════════════════════
 // SKELETONS
 // ═══════════════════════════════════════════════════════════════
@@ -571,6 +573,18 @@ export function MedTube() {
   const [page, setPage] = useState(0);
   const session = useSession();
   const user = session?.user || null;
+
+  // Tracks whether the auth session has finished hydrating at least once.
+  // Without this, `user` is null on first paint even for logged-in users,
+  // which flashes (or sticks) the welcome screen.
+  const [authReady, setAuthReady] = useState(false);
+  useEffect(() => {
+    // `useSession()` returns undefined while hydrating, then either a
+    // Session or null. Once we've seen anything other than undefined,
+    // we can trust the value.
+    if (session !== undefined) setAuthReady(true);
+  }, [session]);
+
   const [activeTab, setActiveTab] = useState("trending");
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -913,11 +927,15 @@ export function MedTube() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gh-l-canvas dark:bg-gh-canvas">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gh-l-text dark:text-gh-text mb-4">
+      <div className="fixed inset-0 flex items-center justify-center bg-gh-l-canvas dark:bg-gh-canvas px-6">
+        <div className="flex flex-col items-center justify-center text-center max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/15 flex items-center justify-center mb-5">
+            <Play className="w-8 h-8 text-indigo-500 dark:text-indigo-400" fill="currentColor" />
+          </div>
+          <h2 className="text-2xl font-black tracking-tight text-gh-l-text dark:text-gh-text mb-2">
             Welcome to Medrae MedTube
           </h2>
+
         </div>
       </div>
     );
@@ -1036,21 +1054,56 @@ export function MedTube() {
           </aside>
         )}
 
-        {drawerOpen && (
-          <div className="xl:hidden fixed inset-0 z-40 flex">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setDrawerOpen(false)} aria-hidden="true" />
-            <aside className="relative w-64 max-w-[80vw] h-full bg-gh-l-canvas dark:bg-gh-canvas border-r border-gh-l-border dark:border-gh-border shadow-xl flex flex-col">
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-gh-l-border dark:border-gh-border">
-                <span className="text-sm font-black text-gh-l-text dark:text-gh-text">Medrae MedTube</span>
-                <button onClick={() => setDrawerOpen(false)} aria-label="Close"
-                  className="p-1.5 rounded-full hover:bg-gh-l-hover dark:hover:bg-gh-hover">
-                  <X className="h-4 w-4 text-gh-l-text dark:text-gh-text" />
-                </button>
-              </div>
-              {SidebarContent}
-            </aside>
-          </div>
-        )}
+        <AnimatePresence>
+          {drawerOpen && (
+            <motion.div
+              className="xl:hidden fixed inset-0 z-40 flex"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {/* Backdrop */}
+              <motion.div
+                className="absolute inset-0 bg-black/50"
+                onClick={() => setDrawerOpen(false)}
+                aria-hidden="true"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              />
+
+              {/* Sliding panel */}
+              <motion.aside
+                className="relative w-64 max-w-[80vw] h-full bg-gh-l-canvas dark:bg-gh-canvas border-r border-gh-l-border dark:border-gh-border shadow-xl flex flex-col"
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 320,
+                  damping: 32,
+                  mass: 0.9,
+                }}
+              >
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-gh-l-border dark:border-gh-border">
+                  <span className="text-sm font-black text-gh-l-text dark:text-gh-text">
+                    Medrae MedTube
+                  </span>
+                  <button
+                    onClick={() => setDrawerOpen(false)}
+                    aria-label="Close"
+                    className="p-1.5 rounded-full hover:bg-gh-l-hover dark:hover:bg-gh-hover"
+                  >
+                    <X className="h-4 w-4 text-gh-l-text dark:text-gh-text" />
+                  </button>
+                </div>
+                {SidebarContent}
+              </motion.aside>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {watchingVideo ? (
           <WatchPage
@@ -1163,7 +1216,7 @@ export function MedTube() {
                         </div>
 
                         <CardHeader className="pb-1.5 px-3 pt-2.5">
-                          <CardTitle className="text-sm line-clamp-2 group-hover:text-primary transition-colors text-gh-l-text dark:text-gh-text">
+                          <CardTitle className="text-sm sm:line-clamp-2 group-hover:text-primary transition-colors text-gh-l-text dark:text-gh-text">
                             {video.title}
                           </CardTitle>
                           <div className="flex items-center gap-1.5 mt-1">
@@ -1181,7 +1234,7 @@ export function MedTube() {
                           <div className="flex items-center gap-1 text-[10px] text-gh-l-muted dark:text-gh-muted mb-1.5">
                             <Clock className="h-2.5 w-2.5" /> {formatDate(video.created_at)}
                           </div>
-                          <CardDescription className="line-clamp-2 text-xs mb-2 text-gh-l-muted dark:text-gh-muted">
+                          <CardDescription className="line-clamp-3 sm:line-clamp-2 text-xs mb-2 text-gh-l-muted dark:text-gh-muted">
                             {video.description}
                           </CardDescription>
                           <div className="flex flex-wrap gap-1 mb-2.5">
