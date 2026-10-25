@@ -13,7 +13,7 @@ import {
   GraduationCap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import { useHomeRoute } from "@/hooks/useHomeRoute";
 import React from 'react';
 import {
   CheckCircle2,
@@ -76,6 +76,7 @@ export default function SimulationPage() {
   };
 
   const navigate = useNavigate();
+  const home = useHomeRoute();   // 👈 ADD
   const [dismissed, setDismissed] = useState(false);
 
   // ── Mobile gate: now only fires when a paper is actually started ──
@@ -1176,252 +1177,262 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
     }
 
     return (
-      <div className="h-screen w-full bg-[#F8FAFC] px-2 py-4 md:p-6 lg:p-10 font-sans overflow-y-auto hide-scrollbar">
-        {/* Header Section */}
-        <div className="max-w-7xl mx-auto mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest uppercase text-xs mb-2">
-              <Zap className="w-4 h-4 fill-current" /> Examination Portal
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Available <span className="text-blue-600">Papers</span>
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+        {/* ── Sticky top bar with back arrow ─────────────────── */}
+        <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+            border-b border-gray-100 dark:border-gray-800
+            bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+            z-30 safe-top">
+          <button
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(20);
+              navigate(home, { replace: true });
+            }}
+            aria-label="Go back"
+            className="flex items-center justify-center h-10 w-10 rounded-full
+                bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                active:scale-95 transition-all touch-manipulation"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+              Examination Portal
             </h1>
-            <p className="text-slate-500 mt-2 font-medium text-sm md:text-base">
-              Select an assessment module to begin your simulation session.
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              {paperList.length} paper{paperList.length === 1 ? "" : "s"} available
             </p>
           </div>
+        </header>
 
-          <Link to="/dashboard">
-            <motion.button
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-slate-700 font-bold hover:bg-slate-50 transition-all"
-            >
-              <LayoutDashboard className="w-4 h-4 text-blue-600" />
-              Candidate Dashboard
-            </motion.button>
-          </Link>
-        </div>
+        {/* ── Internally-scrolling content ───────────────────── */}
+        <div
+          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+              custom-scrollbar overscroll-contain"
+        >
+          <div className="w-full px-2 py-4 md:p-6 lg:p-10 pb-24 safe-bottom font-sans">
 
-        {/* Grid Section */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {paperList.map((paper: any) => {
-            const canAccess = profile?.subscription_active ? true : paper.is_free;
-            const isLocked = !canAccess && !paper.is_done;
 
-            return (
-              <motion.div
-                key={paper.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                layout
-              >
-                <Card
-                  className={`group relative h-full flex flex-col border-0 shadow-none transition-all duration-300 rounded-2xl md:rounded-3xl overflow-hidden bg-white ${paper.is_done ? "bg-slate-50/50" : isLocked ? "bg-slate-50" : "hover:-translate-y-1"
-                    }`}
-                >
-                  {/* Status Bar — color strip, not a border */}
-                  <div className={`h-1.5 w-full ${paper.is_done ? "bg-green-500" : isLocked ? "bg-slate-300" : "bg-blue-600"
-                    }`} />
+            {/* Grid Section */}
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {paperList.map((paper: any) => {
+                const canAccess = profile?.subscription_active ? true : paper.is_free;
+                const isLocked = !canAccess && !paper.is_done;
 
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className={`p-3 rounded-2xl ${paper.is_done ? "bg-green-100 text-green-600" : isLocked ? "bg-slate-200 text-slate-500" : "bg-blue-50 text-blue-600"
-                        }`}>
-                        <FileText className="w-6 h-6" />
-                      </div>
+                return (
+                  <motion.div
+                    key={paper.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    layout
+                  >
+                    <Card
+                      className={`group relative h-full flex flex-col border-0 shadow-none transition-all duration-300 rounded-2xl md:rounded-3xl overflow-hidden bg-white ${paper.is_done ? "bg-slate-50/50" : isLocked ? "bg-slate-50" : "hover:-translate-y-1"
+                        }`}
+                    >
+                      {/* Status Bar — color strip, not a border */}
+                      <div className={`h-1.5 w-full ${paper.is_done ? "bg-green-500" : isLocked ? "bg-slate-300" : "bg-blue-600"
+                        }`} />
 
-                      <div className="flex flex-col items-end gap-2">
-                        {paper.is_done ? (
-                          <Badge className="bg-green-100 text-green-700 border-0 uppercase text-[10px] font-bold">Completed</Badge>
-                        ) : profile?.subscription_active ? (
-                          <Badge className="bg-blue-100 text-blue-700 border-0 uppercase text-[10px] font-bold flex gap-1 items-center">
-                            <Crown className="w-3 h-3" /> Premium Access
-                          </Badge>
-                        ) : paper.is_free ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-0 uppercase text-[10px] font-bold">Standard Free</Badge>
-                        ) : (
-                          <Badge className="bg-amber-100 text-amber-700 border-0 uppercase text-[10px] font-bold flex gap-1 items-center">
-                            <Lock className="w-3 h-3" /> Pro Required
-                          </Badge>
+                      <CardHeader className="pb-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className={`p-3 rounded-2xl ${paper.is_done ? "bg-green-100 text-green-600" : isLocked ? "bg-slate-200 text-slate-500" : "bg-blue-50 text-blue-600"
+                            }`}>
+                            <FileText className="w-6 h-6" />
+                          </div>
+
+                          <div className="flex flex-col items-end gap-2">
+                            {paper.is_done ? (
+                              <Badge className="bg-green-100 text-green-700 border-0 uppercase text-[10px] font-bold">Completed</Badge>
+                            ) : profile?.subscription_active ? (
+                              <Badge className="bg-blue-100 text-blue-700 border-0 uppercase text-[10px] font-bold flex gap-1 items-center">
+                                <Crown className="w-3 h-3" /> Premium Access
+                              </Badge>
+                            ) : paper.is_free ? (
+                              <Badge className="bg-emerald-100 text-emerald-700 border-0 uppercase text-[10px] font-bold">Standard Free</Badge>
+                            ) : (
+                              <Badge className="bg-amber-100 text-amber-700 border-0 uppercase text-[10px] font-bold flex gap-1 items-center">
+                                <Lock className="w-3 h-3" /> Pro Required
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <CardTitle className={`text-xl font-bold leading-tight ${isLocked ? "text-slate-400" : "text-slate-800"}`}>
+                          {paper.title}
+                        </CardTitle>
+                      </CardHeader>
+
+                      <CardContent className="flex-1">
+                        <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
+                          {paper.description || "Comprehensive NCK-aligned simulation paper covering core nursing competencies and clinical reasoning."}
+                        </p>
+                        {paper.duration && (
+                          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            <span>Duration: {paper.duration} minutes</span>
+                          </div>
                         )}
+                      </CardContent>
+
+                      <CardFooter className="pt-0 pb-6 px-6">
+                        {paper.is_done ? (
+                          <div className="w-full space-y-3">
+                            <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-xl">
+                              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                              <span className="text-xs font-bold uppercase tracking-tight">Record on file</span>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full border-0 bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all font-bold group"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setResettingPaper(paper.id);
+                                const { data: userData } = await supabase.auth.getUser();
+                                if (!userData?.user?.id) { setResettingPaper(null); return; }
+
+                                await supabase.from("simulation_results").delete().eq("paper_id", paper.id).eq("user_id", userData.user.id);
+                                localStorage.removeItem(`sim-answers-${paper.id}`);
+                                setPaperList((prev: any) => prev.map((p: any) => p.id === paper.id ? { ...p, is_done: false } : p));
+                                setResettingPaper(null);
+                              }}
+                              disabled={resettingPaper === paper.id}
+                            >
+                              <RotateCcw className={`w-4 h-4 mr-2 ${resettingPaper === paper.id ? "animate-spin" : "group-hover:-rotate-45 transition-transform"}`} />
+                              {resettingPaper === paper.id ? "Wiping Data..." : "Reset Submission"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            className={`w-full h-12 rounded-xl font-bold transition-all active:scale-[0.98] border-0 ${canAccess
+                              ? "bg-blue-600 hover:bg-blue-700 text-white group"
+                              : "bg-amber-500 hover:bg-amber-600 text-white"
+                              }`}
+                            onClick={() => {
+                              // ✅ Mobile gate — only blocks the exam, not browsing
+                              if (!isLaptop) {
+                                setShowMobileBlock(true);
+                                return;
+                              }
+                              if (canAccess) {
+                                setQuestionsLoading(true);
+                                setSelectedPaper(paper);
+                              } else {
+                                setSelectedPaperForOverlay(paper);
+                                setShowPremiumOverlay(true);
+                              }
+                            }}
+                          >
+                            {canAccess ? (
+                              <>
+                                Begin Assessment <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4 mr-2 animate-pulse" /> Unlock Assessment
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <AnimatePresence>
+              {showPremiumOverlay && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowPremiumOverlay(false)}
+                    className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                  />
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
+                  >
+                    <div className={`relative p-8 text-center ${isTutor ? 'bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500' : 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-500'}`}>
+                      <div className="absolute top-0 right-0 p-4">
+                        <button onClick={() => setShowPremiumOverlay(false)} className="text-white/80 hover:text-white">
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
+
+                      <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                        {isTutor ? <GraduationCap className="w-12 h-12 text-white" /> : <Lock className="w-12 h-12 text-white" />}
+                      </div>
+
+                      <h3 className="text-2xl font-bold text-white mb-2">
+                        {isTutor ? "Tutor Pro Access Required" : "Premium Assessment"}
+                      </h3>
+                      <p className="text-white/90 text-sm">
+                        {selectedPaperForOverlay?.title}
+                      </p>
                     </div>
 
-                    <CardTitle className={`text-xl font-bold leading-tight ${isLocked ? "text-slate-400" : "text-slate-800"}`}>
-                      {paper.title}
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent className="flex-1">
-                    <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
-                      {paper.description || "Comprehensive NCK-aligned simulation paper covering core nursing competencies and clinical reasoning."}
-                    </p>
-                    {paper.duration && (
-                      <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
-                        <Clock className="w-3 h-3" />
-                        <span>Duration: {paper.duration} minutes</span>
+                    <div className="p-8">
+                      <div className="space-y-4 mb-8">
+                        {(isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.features : STUDENT_SIMULATION_SUBSCRIPTION.features).map((feature, idx) => (
+                          <div key={idx} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                            <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </CardContent>
 
-                  <CardFooter className="pt-0 pb-6 px-6">
-                    {paper.is_done ? (
-                      <div className="w-full space-y-3">
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-xl">
-                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                          <span className="text-xs font-bold uppercase tracking-tight">Record on file</span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full border-0 bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all font-bold group"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            setResettingPaper(paper.id);
-                            const { data: userData } = await supabase.auth.getUser();
-                            if (!userData?.user?.id) { setResettingPaper(null); return; }
-
-                            await supabase.from("simulation_results").delete().eq("paper_id", paper.id).eq("user_id", userData.user.id);
-                            localStorage.removeItem(`sim-answers-${paper.id}`);
-                            setPaperList((prev: any) => prev.map((p: any) => p.id === paper.id ? { ...p, is_done: false } : p));
-                            setResettingPaper(null);
-                          }}
-                          disabled={resettingPaper === paper.id}
-                        >
-                          <RotateCcw className={`w-4 h-4 mr-2 ${resettingPaper === paper.id ? "animate-spin" : "group-hover:-rotate-45 transition-transform"}`} />
-                          {resettingPaper === paper.id ? "Wiping Data..." : "Reset Submission"}
-                        </Button>
+                      <div className="text-center mb-6">
+                        <span className="text-3xl font-bold">
+                          {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.currency : STUDENT_SIMULATION_SUBSCRIPTION.currency}
+                          {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.price : STUDENT_SIMULATION_SUBSCRIPTION.price}
+                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {' '} / {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.duration : STUDENT_SIMULATION_SUBSCRIPTION.duration}
+                        </span>
                       </div>
-                    ) : (
-                      <Button
-                        className={`w-full h-12 rounded-xl font-bold transition-all active:scale-[0.98] border-0 ${canAccess
-                          ? "bg-blue-600 hover:bg-blue-700 text-white group"
-                          : "bg-amber-500 hover:bg-amber-600 text-white"
-                          }`}
+
+                      <button
                         onClick={() => {
-                          // ✅ Mobile gate — only blocks the exam, not browsing
-                          if (!isLaptop) {
-                            setShowMobileBlock(true);
-                            return;
-                          }
-                          if (canAccess) {
-                            setQuestionsLoading(true);
-                            setSelectedPaper(paper);
-                          } else {
-                            setSelectedPaperForOverlay(paper);
-                            setShowPremiumOverlay(true);
-                          }
+                          setShowPremiumOverlay(false);
+                          navigate("/subscription", { state: { role: isTutor ? "tutor" : "student" } });
                         }}
+                        className={`w-full font-bold py-4 px-6 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group mb-3 border-0 ${isTutor
+                          ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
+                          }`}
                       >
-                        {canAccess ? (
-                          <>
-                            Begin Assessment <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 mr-2 animate-pulse" /> Unlock Assessment
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            );
-          })}
+                        <Sparkles className="w-5 h-5" />
+                        <span>
+                          {isTutor
+                            ? `Upgrade to Tutor Pro — ${TUTOR_SIMULATION_SUBSCRIPTION.currency} ${TUTOR_SIMULATION_SUBSCRIPTION.price}`
+                            : `Unlock All — ${STUDENT_SIMULATION_SUBSCRIPTION.currency} ${STUDENT_SIMULATION_SUBSCRIPTION.price} for ${STUDENT_SIMULATION_SUBSCRIPTION.duration}`
+                          }
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowPremiumOverlay(false)}
+                        className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium"
+                      >
+                        Maybe later
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-
-        <AnimatePresence>
-          {showPremiumOverlay && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowPremiumOverlay(false)}
-                className="absolute inset-0 bg-black/70 backdrop-blur-md"
-              />
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
-              >
-                <div className={`relative p-8 text-center ${isTutor ? 'bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500' : 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-500'}`}>
-                  <div className="absolute top-0 right-0 p-4">
-                    <button onClick={() => setShowPremiumOverlay(false)} className="text-white/80 hover:text-white">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                    {isTutor ? <GraduationCap className="w-12 h-12 text-white" /> : <Lock className="w-12 h-12 text-white" />}
-                  </div>
-
-                  <h3 className="text-2xl font-bold text-white mb-2">
-                    {isTutor ? "Tutor Pro Access Required" : "Premium Assessment"}
-                  </h3>
-                  <p className="text-white/90 text-sm">
-                    {selectedPaperForOverlay?.title}
-                  </p>
-                </div>
-
-                <div className="p-8">
-                  <div className="space-y-4 mb-8">
-                    {(isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.features : STUDENT_SIMULATION_SUBSCRIPTION.features).map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                        <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="text-center mb-6">
-                    <span className="text-3xl font-bold">
-                      {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.currency : STUDENT_SIMULATION_SUBSCRIPTION.currency}
-                      {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.price : STUDENT_SIMULATION_SUBSCRIPTION.price}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {' '} / {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.duration : STUDENT_SIMULATION_SUBSCRIPTION.duration}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setShowPremiumOverlay(false);
-                      navigate("/subscription", { state: { role: isTutor ? "tutor" : "student" } });
-                    }}
-                    className={`w-full font-bold py-4 px-6 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group mb-3 border-0 ${isTutor
-                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
-                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
-                      }`}
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    <span>
-                      {isTutor
-                        ? `Upgrade to Tutor Pro — ${TUTOR_SIMULATION_SUBSCRIPTION.currency} ${TUTOR_SIMULATION_SUBSCRIPTION.price}`
-                        : `Unlock All — ${STUDENT_SIMULATION_SUBSCRIPTION.currency} ${STUDENT_SIMULATION_SUBSCRIPTION.price} for ${STUDENT_SIMULATION_SUBSCRIPTION.duration}`
-                      }
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowPremiumOverlay(false)}
-                    className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium"
-                  >
-                    Maybe later
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
       </div>
     );
   }
-
   if (questionsLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">

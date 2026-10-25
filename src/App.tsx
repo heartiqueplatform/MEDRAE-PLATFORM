@@ -265,10 +265,27 @@ const BottomBarWrapper = () => {
   const publicPaths = ["/", "/login", "/register"];
 
   // 🆕 Fullscreen pages that own the entire viewport
-  const FULLSCREEN_PATHS = ["/medtube", "/quiz"];
-  if (FULLSCREEN_PATHS.some((p) => location.pathname.startsWith(p))) {
-    return null;
-  }
+  const FullscreenAware = () => {
+    const location = useLocation();
+    const FULLSCREEN = [
+      "/medtube",
+      "/quiz",
+      "/Medrae-quizzes",
+      "/subscription",
+      "/grouppay",
+      "/settings",      // 👈 one entry, all three routes
+    ];
+    if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
+    return (
+      <>
+        <FloatingStreakCandle />
+        <ProfileIncompleteChecker />
+        <Suspense fallback={null}>
+          <MedraeBot />
+        </Suspense>
+      </>
+    );
+  };
 
   // 🆕 HIDE on mobile (phones) - only show on tablet/desktop
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -569,19 +586,17 @@ const AppContent = () => {
                           {/* /medtube moved to fullscreen routes below ⬇️ */}
                           <Route path="/announcements" element={<Announcements />} />
                           <Route path="/feedback" element={<Feedback />} />
-                          <Route path="/settings" element={<Settings />} />
-                          <Route path="/subscription" element={<Subscription />} />
+
+
                           <Route path="/notifications" element={<Notifications />} />
                           <Route path="/profile" element={<Profile />} />
                           {/* /quiz moved to fullscreen routes below ⬇️ */}
                           <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                          <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
                           <Route path="/feed" element={<Feed />} />
 
-                          <Route path="/grouppay" element={<GroupPayHome />} />
+
                           <Route path="/streak/restore" element={<StreakRestore />} />
-                          <Route path="/grouppay/create" element={<CreateGroupPage />} />
-                          <Route path="/grouppay/:id" element={<GroupDetailsPage />} />
+
                           <Route path="/guide" element={<Guide />} />
                           {/* NURSING CURRICULUM ROUTES */}
                           <Route path="/nursing" element={<NursingHome />} />
@@ -646,24 +661,16 @@ const AppContent = () => {
                         </Route>
 
                         {/* Full-screen / Independent Pages */}
-                        {/* Full-screen / Independent Pages */}
-                        {/* Full-screen / Independent Pages */}
-                        <Route
-                          path="/medtube"
-                          element={
-                            <PrivateRoute>
-                              <MedTube />
-                            </PrivateRoute>
-                          }
-                        />
-                        <Route
-                          path="/quiz"
-                          element={
-                            <PrivateRoute>
-                              <QuizPage />
-                            </PrivateRoute>
-                          }
-                        />
+                        <Route path="/medtube" element={<PrivateRoute><MedTube /></PrivateRoute>} />
+                        <Route path="/quiz" element={<PrivateRoute><QuizPage /></PrivateRoute>} />
+                        <Route path="/Medrae-quizzes" element={<PrivateRoute><MedraeQuizzes /></PrivateRoute>} />
+                        <Route path="/subscription" element={<PrivateRoute><Subscription /></PrivateRoute>} />
+
+                        {/* 🆕 GroupPay — full-screen, no sidebar */}
+                        <Route path="/grouppay" element={<PrivateRoute><GroupPayHome /></PrivateRoute>} />
+                        <Route path="/grouppay/create" element={<PrivateRoute><CreateGroupPage /></PrivateRoute>} />
+                        <Route path="/grouppay/:id" element={<PrivateRoute><GroupDetailsPage /></PrivateRoute>} />
+                        <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
                         <Route path="/terms" element={<TermsPage />} />
                         <Route path="/cookies" element={<CookiePolicyPage />} />
                         <Route path="/simulation/:paper_id" element={<SimulationPage />} />

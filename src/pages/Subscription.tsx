@@ -12,13 +12,14 @@ import {
   Check, CreditCard, Smartphone, Loader2, AlertCircle, HelpCircle, Info,
   ShieldCheck, FileText, Settings as SettingsIcon, ChevronDown,
   CheckCircle2, XCircle, Clock, Receipt, Copy, Crown, Lock, Zap, Minus,
+  ChevronLeft,   // 👈 ADD THIS
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LegalTermsModal } from "@/components/subscription/LegalTermsModal";
 import { SubscriptionInfoModal } from "@/components/subscription/SubscriptionInfoModal";
 import { GroupPaySubscriptionCard } from "@/components/grouppay/GroupPaySubscriptionCard";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
-
+import { useHomeRoute } from "@/hooks/useHomeRoute";
 // ─────────────────────────────────────────────────────────────
 // Pricing
 // ─────────────────────────────────────────────────────────────
@@ -304,7 +305,14 @@ export function Subscription() {
   const session = useSession();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
+  const home = useHomeRoute();   // 👈 1) NEW
 
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const handleBack = () => {
+    if (navigator.vibrate) navigator.vibrate(20);
+    navigate(home, { replace: true });   // 👈 2) CHANGED — was "/dashboard"
+  };
   const [loading, setLoading] = useState(false);
   const [fetchingProfile, setFetchingProfile] = useState(true);
   const [overlayMessage, setOverlayMessage] = useState<{
@@ -592,8 +600,9 @@ export function Subscription() {
   const getTotalPlanDays = (sub: any) =>
     sub?.duration_type === "1-month" ? 30 : 60;
   // ✅ Only show skeleton if we have NO cached data to paint
+  // ✅ Only show skeleton if we have NO cached data to paint
   const hasCachedData = !!activeSub || transactions.length > 0;
-  if (fetchingProfile && !hasCachedData) return <SubscriptionSkeleton />;
+  const showSkeleton = fetchingProfile && !hasCachedData;
   // ── Role → tier resolution ─────────────────────────────────
   type PaidRole = "student" | "tutor" | "staff";
   const resolvePaidRole = (role: string | null | undefined): PaidRole => {
@@ -696,361 +705,393 @@ export function Subscription() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-6 md:py-10 space-y-8">
-      {overlayMessage && (
-        <OverlayMessage
-          message={overlayMessage.text}
-          type={overlayMessage.type}
-          onClose={() => setOverlayMessage(null)}
-        />
-      )}
-      {showInfoOverlay && (
-        <SubscriptionInfoModal
-          onClose={() => setShowInfoOverlay(false)}
-          durationMonths={2}
-          tutorPrice={PRICES.TUTOR.TWO_MONTHS}
-          studentPrice={PRICES.STUDENT.TWO_MONTHS}
-          staffPrice={PRICES.STAFF.TWO_MONTHS}
-        />
-      )}
-      {showLegalTerms && (
-        <LegalTermsModal
-          onClose={() => setShowLegalTerms(false)}
-          onAgree={() => {
-            setHasAgreedToTerms(true);
-            setShowLegalTerms(false);
-          }}
-        />
-      )}
-
-      {/* ─── Header ───────────────────────────────────────── */}
-      {/* ─── Header ───────────────────────────────────────── */}
-      <section className="pt-2 md:pt-6 max-w-2xl">
-        <h1 className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-          {hasActivePlan ? "Your plan" : "Choose your role plan"}
+    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+      {/* Sticky top bar with back arrow — full-screen chrome */}
+      <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+        border-b border-gray-100 dark:border-gray-800
+        bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+        z-30 safe-top">
+        <button
+          onClick={handleBack}
+          aria-label="Go back"
+          className="flex items-center justify-center h-10 w-10 rounded-full
+            bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+            active:scale-95 transition-all touch-manipulation"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+          Subscription
         </h1>
-        <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-          {hasActivePlan
-            ? "Manage your subscription and view your payment history."
-            : `You're signed in as ${roleLabel}. Pick a tier  cancel anytime by not renewing.`}
-        </p>
-      </section>
+      </header>
 
-      {/* ─── Active sub summary ─────────────────────────── */}
-      {hasActivePlan && activeSub && (
-        <Card className="rounded-3xl overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.06] via-primary/[0.02] to-transparent">
-          <CardContent className="p-5 md:p-6 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                  <Crown className="h-6 w-6 text-primary" strokeWidth={2.2} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold capitalize">
-                      {activeSub.plan_type.replace("_", " ")}
-                    </h3>
-                    <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px]">
-                      ACTIVE
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Started {new Date(activeSub.started_at).toLocaleDateString()}
-                    {activeSub.role_at_payment && (
-                      <> · <span className="capitalize">{activeSub.role_at_payment}</span></>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="text-left md:text-right">
-                <div className="text-3xl font-semibold tracking-tight tabular-nums">
-                  {getDaysRemaining(activeSub.expires_at)}
-                  <span className="text-base font-medium text-muted-foreground ml-1.5">
-                    days left
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="h-1.5 rounded-full bg-primary/10 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-1000"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    (getDaysRemaining(activeSub.expires_at) / getTotalPlanDays(activeSub)) * 100
-                  )}%`,
+      {/* Internally-scrolling content — no visible browser scrollbar */}
+      <div
+        ref={contentRef}
+        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+          custom-scrollbar overscroll-contain"
+      >
+        {showSkeleton ? (
+          <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-6 md:py-10 pb-24 safe-bottom">
+            <SubscriptionSkeleton />
+          </div>
+        ) : (
+          <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-6 md:py-10 space-y-8 pb-24 safe-bottom">
+            {overlayMessage && (
+              <OverlayMessage
+                message={overlayMessage.text}
+                type={overlayMessage.type}
+                onClose={() => setOverlayMessage(null)}
+              />
+            )}
+            {showInfoOverlay && (
+              <SubscriptionInfoModal
+                onClose={() => setShowInfoOverlay(false)}
+                durationMonths={2}
+                tutorPrice={PRICES.TUTOR.TWO_MONTHS}
+                studentPrice={PRICES.STUDENT.TWO_MONTHS}
+                staffPrice={PRICES.STAFF.TWO_MONTHS}
+              />
+            )}
+            {showLegalTerms && (
+              <LegalTermsModal
+                onClose={() => setShowLegalTerms(false)}
+                onAgree={() => {
+                  setHasAgreedToTerms(true);
+                  setShowLegalTerms(false);
                 }}
               />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            )}
 
-      {hasActivePlan && !activeSub && (
-        <Card className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
-          <CardContent className="p-5 md:p-6 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-              <Crown className="h-6 w-6 text-emerald-500" strokeWidth={2.2} />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="font-semibold">Premium active</h3>
-                <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px]">
-                  OFFLINE
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Showing your last known premium status.
+            {/* ─── Header ───────────────────────────────────────── */}
+            {/* ─── Header ───────────────────────────────────────── */}
+            <section className="pt-2 md:pt-6 max-w-2xl">
+              <h1 className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
+                {hasActivePlan ? "Your plan" : "Choose your role plan"}
+              </h1>
+              <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
+                {hasActivePlan
+                  ? "Manage your subscription and view your payment history."
+                  : `You're signed in as ${roleLabel}. Pick a tier  cancel anytime by not renewing.`}
               </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </section>
 
-      {/* ─── Role mismatch nudge ─────────────────────────── */}
-      {!activeSub && otherSubscriptions.length > 0 && (
-        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 md:p-5 flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold">Active plan on another role</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Your subscription covers{" "}
-              <strong className="capitalize">{otherSubscriptions[0]?.role_at_payment}</strong>.
-              Switch roles in Settings to use it.
-            </p>
-            <Button size="sm" className="mt-3 rounded-lg" onClick={() => navigate("/settings")}>
-              <SettingsIcon className="w-3.5 h-3.5 mr-1.5" />
-              Open Settings
-            </Button>
-          </div>
-        </div>
-      )}
+            {/* ─── Active sub summary ─────────────────────────── */}
+            {hasActivePlan && activeSub && (
+              <Card className="rounded-3xl overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.06] via-primary/[0.02] to-transparent">
+                <CardContent className="p-5 md:p-6 space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                        <Crown className="h-6 w-6 text-primary" strokeWidth={2.2} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold capitalize">
+                            {activeSub.plan_type.replace("_", " ")}
+                          </h3>
+                          <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px]">
+                            ACTIVE
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Started {new Date(activeSub.started_at).toLocaleDateString()}
+                          {activeSub.role_at_payment && (
+                            <> · <span className="capitalize">{activeSub.role_at_payment}</span></>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left md:text-right">
+                      <div className="text-3xl font-semibold tracking-tight tabular-nums">
+                        {getDaysRemaining(activeSub.expires_at)}
+                        <span className="text-base font-medium text-muted-foreground ml-1.5">
+                          days left
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-primary/10 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-1000"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (getDaysRemaining(activeSub.expires_at) / getTotalPlanDays(activeSub)) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-      {activeSub && activeSub.role_at_payment && activeSub.role_at_payment !== userRole && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold">Role and plan mismatch</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Plan covers{" "}
-              <strong className="capitalize">{activeSub.role_at_payment}</strong>, signed in as{" "}
-              <strong className="capitalize">{userRole}</strong>.
-            </p>
-            <Button size="sm" className="mt-3 rounded-lg" onClick={() => navigate("/settings")}>
-              <SettingsIcon className="w-3.5 h-3.5 mr-1.5" />
-              Fix in Settings
-            </Button>
-          </div>
-        </div>
-      )}
+            {hasActivePlan && !activeSub && (
+              <Card className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
+                <CardContent className="p-5 md:p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    <Crown className="h-6 w-6 text-emerald-500" strokeWidth={2.2} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold">Premium active</h3>
+                      <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px]">
+                        OFFLINE
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Showing your last known premium status.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-
-      {/* ─── TIER CARDS ──────────────────────────────────── */}
-      <section>
-        {/* Mobile: horizontal snap-scroll. Desktop: 3-col grid. */}
-        <div className="md:hidden -mx-4 px-4">
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
-            {tiers.map((t, i) => (
-              <div
-                key={t.key}
-                className="snap-center shrink-0 w-[85vw] max-w-sm"
-              >
-                <TierCard
-                  tier={t}
-                  index={i}
-                  hasActivePlan={hasActivePlan}
-                  selected={false}
-                  hasAgreedToTerms={hasAgreedToTerms}
-                  showTermsWarning={showTermsWarning}
-                  loading={loading}
-                  onSelect={() => onSelectTier(t.key as any)}
-                  onOpenTerms={() => setShowLegalTerms(true)}
-                  onOpenInfo={() => setShowInfoOverlay(true)}
-                />
-              </div>
-            ))}
-          </div>
-          {/* Dots indicator */}
-          <div className="flex justify-center gap-1.5 pt-1">
-            {tiers.map((t) => (
-              <span
-                key={t.key}
-                className={`h-1.5 rounded-full transition-all ${t.featured ? "w-6 bg-primary" : "w-1.5 bg-border"
-                  }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop grid */}
-        <div className="hidden md:grid md:grid-cols-3 gap-5 items-stretch">
-          {tiers.map((t, i) => (
-            <TierCard
-              key={t.key}
-              tier={t}
-              index={i}
-              hasActivePlan={hasActivePlan}
-              selected={false}
-              hasAgreedToTerms={hasAgreedToTerms}
-              showTermsWarning={showTermsWarning}
-              loading={loading}
-              onSelect={() => onSelectTier(t.key as any)}
-              onOpenTerms={() => setShowLegalTerms(true)}
-              onOpenInfo={() => setShowInfoOverlay(true)}
-            />
-          ))}
-        </div>
-
-        {/* Shared checkout strip */}
-        {!hasActivePlan && (
-          <div className="mt-6 rounded-2xl border border-border/60 bg-muted/30 p-4 md:p-5 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
-                    M-Pesa number
-                  </Label>
-                  <button
-                    onClick={() => setShowInfoOverlay(true)}
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
-                  >
-                    <HelpCircle className="h-3 w-3" />
-                    What's included
-                  </button>
-                </div>
-                <div className="relative">
-                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="0712 345 678"
-                    value={phoneNumber}
-                    onChange={(e) => {
-                      setPhoneNumber(e.target.value);
-                      // Clear the hint the moment the user starts typing
-                      if (showPhoneHint) setShowPhoneHint(false);
-                    }}
-                    className={`pl-10 h-12 rounded-xl bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors ${showPhoneHint ? "border-rose-400 ring-2 ring-rose-400/30" : ""
-                      }`}
-                    aria-invalid={showPhoneHint}
-                  />
-                </div>
-
-                {/* ✅ Smart inline hint — appears only when the user taps Pay
-                    without a valid number. Auto-clears on input or timeout. */}
-                <AnimatePresence>
-                  {showPhoneHint && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.15 }}
-                      className="text-[11px] font-medium text-rose-500 flex items-center gap-1.5 pt-1"
-                    >
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      Add your M-Pesa number above to continue — e.g. 0712 345 678
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="flex-1 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground">Terms</p>
-                <label className="flex items-start gap-2.5 cursor-pointer min-h-12">
-                  <input
-                    type="checkbox"
-                    checked={hasAgreedToTerms}
-                    onChange={(e) => {
-                      setHasAgreedToTerms(e.target.checked);
-                      if (e.target.checked) setShowTermsWarning(false);
-                    }}
-                    className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
-                  />
-                  <span className="text-xs leading-relaxed text-muted-foreground">
-                    I accept the{" "}
-                    <button
-                      type="button"
-                      onClick={() => setShowLegalTerms(true)}
-                      className="font-semibold text-primary underline underline-offset-2"
-                    >
-                      Terms
-                    </button>{" "}
-                    including the no-refund policy.
-                  </span>
-                </label>
-                {showTermsWarning && !hasAgreedToTerms && (
-                  <p className="text-xs font-medium text-rose-500">
-                    Accept the terms to continue.
+            {/* ─── Role mismatch nudge ─────────────────────────── */}
+            {!activeSub && otherSubscriptions.length > 0 && (
+              <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 md:p-5 flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Active plan on another role</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your subscription covers{" "}
+                    <strong className="capitalize">{otherSubscriptions[0]?.role_at_payment}</strong>.
+                    Switch roles in Settings to use it.
                   </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Secured by Safaricom
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5" />
-                  Instant activation
-                </span>
-              </div>
-              <button
-                onClick={() => setShowLegalTerms(true)}
-                className="text-primary hover:underline flex items-center gap-1.5"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Full terms
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-      {!activeSub && !hasActivePlan && paidRole === "student" && <GroupPaySubscriptionCard />}
-      {/* ─── Payment history ──────────────────────────────── */}
-      <section>
-        <Card className="rounded-3xl border-border/60">
-          <CardHeader className="px-6 pt-6 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Receipt className="h-4 w-4 text-muted-foreground" />
-                  Payment history
-                </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  {transactions.length === 0
-                    ? "Your transactions will appear here"
-                    : `${transactions.length} transaction${transactions.length === 1 ? "" : "s"}`}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="px-6 pb-6">
-            {transactions.length === 0 ? (
-              <div className="text-center py-10 space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto">
-                  <Receipt className="h-5 w-5 text-muted-foreground/60" />
+                  <Button size="sm" className="mt-3 rounded-lg" onClick={() => navigate("/settings")}>
+                    <SettingsIcon className="w-3.5 h-3.5 mr-1.5" />
+                    Open Settings
+                  </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">No payments yet</p>
-                <p className="text-xs text-muted-foreground/70">
-                  Complete a payment to see it here
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {transactions.map((p) => (
-                  <PaymentRow key={p.id} payment={p} />
-                ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+
+            {activeSub && activeSub.role_at_payment && activeSub.role_at_payment !== userRole && (
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Role and plan mismatch</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Plan covers{" "}
+                    <strong className="capitalize">{activeSub.role_at_payment}</strong>, signed in as{" "}
+                    <strong className="capitalize">{userRole}</strong>.
+                  </p>
+                  <Button size="sm" className="mt-3 rounded-lg" onClick={() => navigate("/settings")}>
+                    <SettingsIcon className="w-3.5 h-3.5 mr-1.5" />
+                    Fix in Settings
+                  </Button>
+                </div>
+              </div>
+            )}
 
 
-      </section>
+            {/* ─── TIER CARDS ──────────────────────────────────── */}
+            <section>
+              {/* Mobile: horizontal snap-scroll. Desktop: 3-col grid. */}
+              <div className="md:hidden -mx-4 px-4">
+                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
+                  {tiers.map((t, i) => (
+                    <div
+                      key={t.key}
+                      className="snap-center shrink-0 w-[85vw] max-w-sm"
+                    >
+                      <TierCard
+                        tier={t}
+                        index={i}
+                        hasActivePlan={hasActivePlan}
+                        selected={false}
+                        hasAgreedToTerms={hasAgreedToTerms}
+                        showTermsWarning={showTermsWarning}
+                        loading={loading}
+                        onSelect={() => onSelectTier(t.key as any)}
+                        onOpenTerms={() => setShowLegalTerms(true)}
+                        onOpenInfo={() => setShowInfoOverlay(true)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* Dots indicator */}
+                <div className="flex justify-center gap-1.5 pt-1">
+                  {tiers.map((t) => (
+                    <span
+                      key={t.key}
+                      className={`h-1.5 rounded-full transition-all ${t.featured ? "w-6 bg-primary" : "w-1.5 bg-border"
+                        }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Desktop grid */}
+              <div className="hidden md:grid md:grid-cols-3 gap-5 items-stretch">
+                {tiers.map((t, i) => (
+                  <TierCard
+                    key={t.key}
+                    tier={t}
+                    index={i}
+                    hasActivePlan={hasActivePlan}
+                    selected={false}
+                    hasAgreedToTerms={hasAgreedToTerms}
+                    showTermsWarning={showTermsWarning}
+                    loading={loading}
+                    onSelect={() => onSelectTier(t.key as any)}
+                    onOpenTerms={() => setShowLegalTerms(true)}
+                    onOpenInfo={() => setShowInfoOverlay(true)}
+                  />
+                ))}
+              </div>
+
+              {/* Shared checkout strip */}
+              {!hasActivePlan && (
+                <div className="mt-6 rounded-2xl border border-border/60 bg-muted/30 p-4 md:p-5 space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
+                          M-Pesa number
+                        </Label>
+                        <button
+                          onClick={() => setShowInfoOverlay(true)}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <HelpCircle className="h-3 w-3" />
+                          What's included
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="0712 345 678"
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            setPhoneNumber(e.target.value);
+                            // Clear the hint the moment the user starts typing
+                            if (showPhoneHint) setShowPhoneHint(false);
+                          }}
+                          className={`pl-10 h-12 rounded-xl bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors ${showPhoneHint ? "border-rose-400 ring-2 ring-rose-400/30" : ""
+                            }`}
+                          aria-invalid={showPhoneHint}
+                        />
+                      </div>
+
+                      {/* ✅ Smart inline hint — appears only when the user taps Pay
+                    without a valid number. Auto-clears on input or timeout. */}
+                      <AnimatePresence>
+                        {showPhoneHint && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.15 }}
+                            className="text-[11px] font-medium text-rose-500 flex items-center gap-1.5 pt-1"
+                          >
+                            <AlertCircle className="h-3 w-3 shrink-0" />
+                            Add your M-Pesa number above to continue — e.g. 0712 345 678
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground">Terms</p>
+                      <label className="flex items-start gap-2.5 cursor-pointer min-h-12">
+                        <input
+                          type="checkbox"
+                          checked={hasAgreedToTerms}
+                          onChange={(e) => {
+                            setHasAgreedToTerms(e.target.checked);
+                            if (e.target.checked) setShowTermsWarning(false);
+                          }}
+                          className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
+                        />
+                        <span className="text-xs leading-relaxed text-muted-foreground">
+                          I accept the{" "}
+                          <button
+                            type="button"
+                            onClick={() => setShowLegalTerms(true)}
+                            className="font-semibold text-primary underline underline-offset-2"
+                          >
+                            Terms
+                          </button>{" "}
+                          including the no-refund policy.
+                        </span>
+                      </label>
+                      {showTermsWarning && !hasAgreedToTerms && (
+                        <p className="text-xs font-medium text-rose-500">
+                          Accept the terms to continue.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Secured by Safaricom
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Zap className="h-3.5 w-3.5" />
+                        Instant activation
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setShowLegalTerms(true)}
+                      className="text-primary hover:underline flex items-center gap-1.5"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Full terms
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+            {!activeSub && !hasActivePlan && paidRole === "student" && <GroupPaySubscriptionCard />}
+            {/* ─── Payment history ──────────────────────────────── */}
+            <section>
+              <Card className="rounded-3xl border-border/60">
+                <CardHeader className="px-6 pt-6 pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Receipt className="h-4 w-4 text-muted-foreground" />
+                        Payment history
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-0.5">
+                        {transactions.length === 0
+                          ? "Your transactions will appear here"
+                          : `${transactions.length} transaction${transactions.length === 1 ? "" : "s"}`}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="px-6 pb-6">
+                  {transactions.length === 0 ? (
+                    <div className="text-center py-10 space-y-2">
+                      <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto">
+                        <Receipt className="h-5 w-5 text-muted-foreground/60" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No payments yet</p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Complete a payment to see it here
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {transactions.map((p) => (
+                        <PaymentRow key={p.id} payment={p} />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          </div>
+        )}           {/* /showSkeleton ternary */}
+      </div>         {/* /contentRef scroller */}
     </div>
   );
 }
