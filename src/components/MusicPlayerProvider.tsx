@@ -411,21 +411,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshEpisodes]);
 
-    // ═══════════════════════════════════════════════════════════
-    // ── 5. IMPERATIVE AUDIO SRC ──
-    // Only sets `audio.src` when it actually changes → no remount,
-    // no CORS preflight on every track tap, instant playback start.
-    // ═══════════════════════════════════════════════════════════
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        const next = tracks[currentIndex]?.src;
-        if (!next) return;
-        if (currentSrcRef.current === next) return;
-        currentSrcRef.current = next;
-        audio.src = next;
-        audio.load();
-    }, [tracks, currentIndex]);
+
 
     // ═══════════════════════════════════════════════════════════
     // ── 5b. Record playback into history whenever the current
@@ -472,19 +458,50 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     }, [tracks, currentIndex]);
 
     // ── 6. Play / pause / volume ──
+    // ═══════════════════════════════════════════════════════════
+    // ── 5. AUDIO SRC + PLAY/PAUSE + VOLUME ──
+    // One effect handles everything. Setting `src` and calling
+    // `play()` in the same commit is what makes streaming work:
+    // the browser begins buffering from the src assignment, and
+    // play() resolves as soon as the first chunks arrive.
+    //
+    // Do NOT call audio.load() — it resets readyState to 0 and
+    // forces a full re-buffer, which on a 60 MB podcast means
+    // the play() waits 20+ seconds before starting.
+    // ═══════════════════════════════════════════════════════════
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
+
+        const next = tracks[currentIndex]?.src;
+        if (!next) return;
+
+        // ── 1. Swap the source only when it actually changed ──
+        if (currentSrcRef.current !== next) {
+            currentSrcRef.current = next;
+            audio.src = next;
+            // NOTE: no audio.load() here — see comment above.
+        }
+
+        // ── 2. Apply volume + mute every time ──
         audio.volume = volume;
         audio.muted = muted;
 
-        if (isPlaying && tracks[currentIndex]?.src) {
-            audio.play().catch(() => { });
+        // ── 3. Drive play/pause ──
+        if (isPlaying) {
+            audio.play().catch((err: any) => {
+                if (err?.name === "AbortError") return; // normal race
+                console.warn("[MusicPlayer] play() failed:", err?.name, err?.message, {
+                    src: next?.slice(0, 80),
+                    readyState: audio.readyState,
+                    networkState: audio.networkState,
+                });
+                setLoading(false); // don't leave the spinner stuck
+            });
         } else {
             audio.pause();
         }
-    }, [isPlaying, currentIndex, volume, muted, tracks]);
-
+    }, [tracks, currentIndex, isPlaying, volume, muted]);
     // ═══════════════════════════════════════════════════════════
     // ── 7. PREFETCH NEXT TRACK ──
     // When <10s remain, warm the browser cache for the next episode
@@ -520,6 +537,37 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     // ── 8. Stable action callbacks ──
     const togglePlay = useCallback((force?: boolean) => {
         setIsPlaying((prev) => (force !== undefined ? force : !prev));
+    }, []);
+
+    // ✅ Attach lifecycle listeners to the <audio> element once so
+    //    `loading` flips off the moment audio is actually outputting,
+    //    not when the entire buffer is downloaded.
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const onPlaying = () => setLoading(false);
+        const onPlay = () => setLoading(false);
+        // Belt-and-suspenders: if the browser refuses to fire events,
+        // a 3-second timer after play() guarantees we drop the spinner.
+        let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+        const onPlayStart = () => {
+            if (safetyTimer) clearTimeout(safetyTimer);
+            safetyTimer = setTimeout(() => setLoading(false), 3000);
+        };
+
+        audio.addEventListener("playing", onPlaying);
+        audio.addEventListener("play", onPlayStart);
+        audio.addEventListener("play", onPlay);
+        audio.addEventListener("error", onPlaying);   // hide spinner on error too
+
+        return () => {
+            audio.removeEventListener("playing", onPlaying);
+            audio.removeEventListener("play", onPlayStart);
+            audio.removeEventListener("play", onPlay);
+            audio.removeEventListener("error", onPlaying);
+            if (safetyTimer) clearTimeout(safetyTimer);
+        };
     }, []);
 
     const toggleMute = useCallback(() => setMuted((prev) => !prev), []);

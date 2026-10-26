@@ -132,7 +132,18 @@ const preloadNotificationCount = () => {
 };
 
 const preloadTotalUsers = () => {
-  return getCachedAny<number>('total_users') || null;
+  // ✅ Read the SAME cache AllUsersPopover writes (all_users_cache_v4).
+  //    The `v2_total_users` key was never written by anyone, so it
+  //    always returned null → the badge flashed on every mount.
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("all_users_cache_v4");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const data = Array.isArray(parsed?.data) ? parsed.data : null;
+    if (data && data.length >= 0) return data.length;
+  } catch { /* ignore */ }
+  return null;
 };
 
 // ✅ PRE-LOAD THEME - Runs synchronously before component mount
@@ -328,7 +339,13 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   // ============================================================
   const [notificationCount, setNotificationCount] = useState(preloadNotificationCount);
   const [totalUsers, setTotalUsers] = useState<number | null>(preloadTotalUsers);
-
+  // ✅ Belt-and-suspenders: whenever totalUsers changes, ensure the
+  //    `v2_total_users` mirror stays in sync. `preloadTotalUsers` reads
+  //    `all_users_cache_v4` first, but this keeps a fallback aligned.
+  useEffect(() => {
+    if (typeof totalUsers !== 'number' || totalUsers < 0) return;
+    setCached('total_users', totalUsers);
+  }, [totalUsers]);
   // ✅ REFS
   const isMounted = useRef(true);
   const backgroundIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -751,7 +768,13 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                   Everyone else sees nothing; the component isn't
                   even mounted for them, so no network calls fire. */}
               {authUser?.id === "25f37970-c9b9-4c15-b8a2-514a912e3261" && (
-                <AllUsersPopover totalUsers={totalUsers} />
+                <AllUsersPopover
+                  totalUsers={totalUsers}
+                  onTotalUsersChange={(n) => {
+                    setTotalUsers(n);
+                    setCached('total_users', n); // optional — future-proof
+                  }}
+                />
               )}
 
               <Popover open={showOnlineUsers} onOpenChange={handleOnlinePopoverOpen}>

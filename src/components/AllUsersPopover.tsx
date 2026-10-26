@@ -8,6 +8,7 @@ import { UserProfileModal } from "@/components/UserProfileModal";
 
 const USERS_CACHE_KEY = "all_users_cache_v4";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const POLL_INTERVAL = 5 * 60 * 1000;  // 5 minutes
 
 // Memory cache
 let memoryCache: {
@@ -22,7 +23,10 @@ const isNewUser = (createdAt: string) => {
     return Date.now() - new Date(createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
 };
 
-// Get cached users
+/**
+ * Get cached users. Returns data only if it's still fresh (within TTL).
+ * Used to decide *whether to refetch* — not whether to render.
+ */
 const getCachedUsers = (): any[] | null => {
     // Check memory cache first
     if (memoryCache && Date.now() - memoryCache.timestamp < CACHE_DURATION) {
@@ -45,6 +49,26 @@ const getCachedUsers = (): any[] | null => {
     return null;
 };
 
+/**
+ * Get cached users IGNORING TTL — for instant paint.
+ * Age only decides *whether to refetch*, never *whether to render*.
+ */
+const getCachedUsersAny = (): any[] | null => {
+    if (memoryCache) return memoryCache.data;
+    try {
+        const raw = localStorage.getItem(USERS_CACHE_KEY);
+        if (!raw) return null;
+        const { data } = JSON.parse(raw);
+        if (Array.isArray(data)) {
+            memoryCache = { data, timestamp: Date.now() };
+            return data;
+        }
+    } catch {
+        // Ignore
+    }
+    return null;
+};
+
 const saveUsersToCache = (users: any[]) => {
     try {
         const timestamp = Date.now();
@@ -55,25 +79,44 @@ const saveUsersToCache = (users: any[]) => {
     }
 };
 
-export default function AllUsersPopover({ totalUsers: propTotalUsers }: { totalUsers?: number }) {
+export default function AllUsersPopover({
+    totalUsers: propTotalUsers,
+    onTotalUsersChange,
+}: {
+    totalUsers?: number;
+    onTotalUsersChange?: (n: number) => void;
+}) {
     const [open, setOpen] = useState(false);
     const [allProfiles, setAllProfiles] = useState<any[]>(() => {
-        // Initialize from cache
+        // ✅ Paint from disk instantly — any age, not just fresh.
+        // This is what stops the badge from jumping on remount.
         if (typeof window !== "undefined") {
-            const cached = getCachedUsers();
-            if (cached) {
-                return cached;
-            }
+            const cached = getCachedUsersAny();
+            if (cached) return cached;
         }
         return [];
     });
     const [loading, setLoading] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [totalCount, setTotalCount] = useState(propTotalUsers || 0);
+
+    // ✅ Initialize totalCount from the best available source.
+    // Priority: prop → cached array length → 0
+    const [totalCount, setTotalCount] = useState(() => {
+        if (typeof propTotalUsers === "number" && propTotalUsers > 0) {
+            return propTotalUsers;
+        }
+        if (typeof window !== "undefined") {
+            const cached = getCachedUsersAny();
+            if (cached) return cached.length;
+        }
+        return 0;
+    });
 
     const isMounted = useRef(true);
     const searchTimeoutRef = useRef<NodeJS.Timeout>();
+    // Prevent infinite loops: only push to parent when the value actually changes
+    const lastReportedCount = useRef<number | null>(null);
 
     useEffect(() => {
         isMounted.current = true;
@@ -85,23 +128,33 @@ export default function AllUsersPopover({ totalUsers: propTotalUsers }: { totalU
         };
     }, []);
 
-    // Update total count when profiles load
+    // ✅ Propagate total count to the parent only when it changes.
+    // This is what keeps Header's badge in sync with the drawer.
     useEffect(() => {
-        if (allProfiles.length > 0) {
-            setTotalCount(allProfiles.length);
+        if (totalCount > 0 && lastReportedCount.current !== totalCount) {
+            lastReportedCount.current = totalCount;
+            onTotalUsersChange?.(totalCount);
         }
-    }, [allProfiles]);
+    }, [totalCount, onTotalUsersChange]);
 
     // Fetch all users
     const fetchAllProfiles = useCallback(async (forceRefresh = false) => {
         if (!isMounted.current) return;
 
-        // Check cache first (unless force refresh)
+        // ✅ Always paint from disk first — any age — so the badge
+        // shows the last-known count instantly instead of flashing.
+        const anyCache = getCachedUsersAny();
+        if (anyCache && anyCache.length > 0) {
+            if (isMounted.current) {
+                setAllProfiles(anyCache);
+                setTotalCount(anyCache.length);
+            }
+        }
+
+        // ✅ TTL-gated cache check: if fresh AND not forced, skip network.
         if (!forceRefresh) {
-            const cached = getCachedUsers();
-            if (cached && cached.length > 0) {
-                setAllProfiles(cached);
-                setTotalCount(cached.length);
+            const fresh = getCachedUsers();
+            if (fresh && fresh.length > 0) {
                 return;
             }
         }
@@ -111,18 +164,15 @@ export default function AllUsersPopover({ totalUsers: propTotalUsers }: { totalU
         setLoading(true);
 
         try {
-            // Fetch ALL users (under 1000 is fine)
             const { data, error } = await supabase
                 .from("profiles")
                 .select("user_id, name, username, role, avatar_url, is_online, created_at")
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
-
             if (data && isMounted.current) {
                 setAllProfiles(data);
                 setTotalCount(data.length);
-                // Cache the data
                 saveUsersToCache(data);
             }
         } catch (err) {
@@ -139,19 +189,42 @@ export default function AllUsersPopover({ totalUsers: propTotalUsers }: { totalU
     const handleOpenChange = useCallback((isOpen: boolean) => {
         setOpen(isOpen);
         if (isOpen) {
-            // Always try to refresh in background when opened
             const cached = getCachedUsers();
             if (cached && cached.length > 0) {
-                // Show cached data immediately
+                // Paint cache instantly
                 setAllProfiles(cached);
                 setTotalCount(cached.length);
-                // Then refresh in background (silent update)
+                // Silent background refresh
                 fetchAllProfiles(true);
             } else {
-                // No cache, fetch with loading state
                 fetchAllProfiles(false);
             }
         }
+    }, [fetchAllProfiles]);
+
+    // ✅ Background poll — keeps the badge live without opening the drawer.
+    // Refresh every 5 min while the tab is visible, and on focus.
+    useEffect(() => {
+        if (!isMounted.current) return;
+
+        const poll = () => {
+            if (document.hidden) return;
+            if (!isMounted.current) return;
+            fetchAllProfiles(true);
+        };
+
+        const id = setInterval(poll, POLL_INTERVAL);
+        window.addEventListener("focus", poll);
+
+        // Also fire once shortly after mount so the badge refreshes
+        // even if the user never opens the drawer.
+        const initial = setTimeout(poll, 3000);
+
+        return () => {
+            clearInterval(id);
+            clearTimeout(initial);
+            window.removeEventListener("focus", poll);
+        };
     }, [fetchAllProfiles]);
 
     // Handle search with debounce (client-side filtering)
@@ -199,8 +272,9 @@ export default function AllUsersPopover({ totalUsers: propTotalUsers }: { totalU
                                 d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"
                             />
                         </svg>
-                        <Badge className="h-5 px-2 text-xs bg-blue-500 text-white">
-                            {totalCount || allProfiles.length || propTotalUsers || "-"}
+                        {/* ✅ Single source of truth — tabular-nums + min-w prevents width jumps */}
+                        <Badge className="h-5 px-2 text-xs bg-blue-500 text-white tabular-nums min-w-[2rem] text-center justify-center">
+                            {totalCount > 0 ? totalCount : "-"}
                         </Badge>
                     </div>
                 </PopoverTrigger>

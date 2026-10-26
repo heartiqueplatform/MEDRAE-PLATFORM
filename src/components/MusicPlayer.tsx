@@ -225,15 +225,7 @@ export const MusicPlayer = () => {
         };
     }, [audioRef, setProgress]);
 
-    // ---- play/pause/volume ----
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        audio.volume = volume;
-        audio.muted = muted;
-        if (isPlaying && tracks[currentIndex]?.src) audio.play().catch(() => { });
-        else audio.pause();
-    }, [isPlaying, currentIndex, volume, muted, tracks, audioRef]);
+
 
     // ---- progress & end ----
     useEffect(() => {
@@ -699,7 +691,11 @@ export const MusicPlayer = () => {
               * ⚡ PHONE PERF: src is driven imperatively by the provider,
               * not via React prop — avoids remount + CORS preflight on every track.
               */}
-            <audio ref={audioRef} crossOrigin="anonymous" />
+            <audio
+                ref={audioRef}
+                crossOrigin="anonymous"
+                preload="metadata"
+            />
             {/* ✅ Pre-warm the episodes list off-screen — keeps the heaviest
                 subtree mounted from app boot, so tapping Studify → Browse is instant. */}
             <div
