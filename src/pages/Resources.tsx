@@ -1071,22 +1071,6 @@ export function Resources() {
             <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0  bg-transparent dark:bg-transparent mx-0">
               <div className="absolute top-0 left-0 w-full h-1.5" />
 
-              {/* REMOVED PADDING FROM HEADER ON MOBILE */}
-              <CardHeader className="pb-2 relative px-3 sm:px-4 md:px-6 pt-3 md:pt-6 mx-0">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="p-2 md:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
-                    <Library className="h-6 w-6 md:h-7 md:w-7 text-blue-600 animate-pulse" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                      Notes & <span className="text-blue-600">Resources</span>
-                    </CardTitle>
-                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 tracking-[0.2em] mt-0.5 md:mt-1">
-                      KMTC & Private Institution Archive
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
 
               {/* REMOVED PADDING FROM CONTENT ON MOBILE */}
               <CardContent className="space-y-4 md:space-y-6 px-3 sm:px-4 md:px-0 pb-4 md:pb-6">

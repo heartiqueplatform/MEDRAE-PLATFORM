@@ -156,12 +156,23 @@ TopStudentCard.displayName = "TopStudentCard";
 // SKELETON
 // ============================================================
 const SkeletonCard = () => (
-    <div className="flex-shrink-0 w-40 p-4 rounded-xl bg-muted/50 border border-border animate-pulse">
+    <div
+        className="flex-shrink-0 w-40 p-4 rounded-xl border-0 bg-muted/30 shadow-none animate-pulse"
+        aria-hidden="true"
+    >
         <div className="flex flex-col items-center">
-            <div className="w-14 h-14 rounded-full bg-muted-foreground/20 mb-3" />
-            <div className="w-20 h-4 bg-muted-foreground/20 rounded-full mb-2" />
-            <div className="w-16 h-3 bg-muted-foreground/20 rounded-full mb-3" />
-            <div className="w-full h-12 bg-muted-foreground/10 rounded-xl" />
+            {/* Avatar placeholder — matches real avatar size */}
+            <div className="w-14 h-14 rounded-full bg-muted-foreground/10 mb-3" />
+
+            {/* Name + institution */}
+            <div className="w-20 h-4 rounded-full bg-muted-foreground/10 mb-2" />
+            <div className="w-16 h-3 rounded-full bg-muted-foreground/10 mb-3" />
+
+            {/* Metric pill — matches the real pill layout */}
+            <div className="w-full py-2 px-1 rounded-xl bg-muted/50 flex flex-col items-center gap-1.5">
+                <div className="w-10 h-3 rounded-full bg-muted-foreground/10" />
+                <div className="w-14 h-2 rounded-full bg-muted-foreground/10" />
+            </div>
         </div>
     </div>
 );

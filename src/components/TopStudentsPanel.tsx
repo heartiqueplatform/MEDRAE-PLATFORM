@@ -39,7 +39,18 @@ const questionCache = new Map();
 const topStudentsCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const REACTION_DEBOUNCE = 300;
-
+// ✅ Paint-from-disk helper — ignores TTL. TTL only decides
+// whether to *refetch*, never whether to *render*.
+const readCacheAny = <T,>(key: string): T | null => {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return JSON.parse(raw).data as T;
+    } catch {
+        return null;
+    }
+};
 // ============================================================
 // SVG ICONS — outline when inactive, filled when active
 // ============================================================
@@ -407,14 +418,20 @@ export const DailyTriviaCard = () => {
     const today = new Date().toISOString().slice(0, 10);
     const QUIZ_ID = today;
 
-    const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
+    const [questions, setQuestions] = useState<TriviaQuestion[]>(() =>
+        readCacheAny<TriviaQuestion[]>(`trivia_questions_${today}`) ?? []
+    );
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [currentIndex, setCurrentIndex] = useState(0);
     const [started, setStarted] = useState(false);
     const [completed, setCompleted] = useState(false);
     const [timer, setTimer] = useState(5 * 60);
-    const [loading, setLoading] = useState(true);
-    const [topStudents, setTopStudents] = useState<TopStudent[]>([]);
+    const [loading, setLoading] = useState(
+        () => (readCacheAny<TriviaQuestion[]>(`trivia_questions_${today}`)?.length ?? 0) === 0
+    );
+    const [topStudents, setTopStudents] = useState<TopStudent[]>(() =>
+        readCacheAny<TopStudent[]>(`trivia_top_${today}`) ?? []
+    );
     const [reactions, setReactions] = useState<Record<string, { like: number; fire: number; clap: number }>>({});
     const [myReactions, setMyReactions] = useState<Record<string, string[]>>({});
     const [attemptedToday, setAttemptedToday] = useState(false);
@@ -423,7 +440,10 @@ export const DailyTriviaCard = () => {
     const startTimeRef = useRef<number>(0);
     const [completedAt, setCompletedAt] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-    const [topLoading, setTopLoading] = useState(true);
+    // Skeleton only if we've never cached the top list today.
+    const [topLoading, setTopLoading] = useState(
+        () => readCacheAny<TopStudent[]>(`trivia_top_${today}`) === null
+    );
     const [showTimeWarning, setShowTimeWarning] = useState(false);
     const [autoSubmitCountdown, setAutoSubmitCountdown] = useState<number | null>(null);
 
@@ -483,24 +503,35 @@ export const DailyTriviaCard = () => {
 
             const cacheKey = `trivia_questions_${today}`;
 
+            // ✅ WhatsApp-style: paint cache instantly (any age), then refresh
+            // silently in the background only if stale.
+            const cached = readCacheAny<TriviaQuestion[]>(cacheKey);
+            if (cached && cached.length > 0) {
+                if (isMounted.current) {
+                    setQuestions(cached);
+                    setLoading(false);
+                }
+            }
+
+            // Check TTL to decide whether a refetch is even needed.
+            let needsRefetch = true;
             const stored = localStorage.getItem(cacheKey);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
-                    if (parsed.data && parsed.data.length > 0) {
-                        if (isMounted.current) {
-                            setQuestions(parsed.data);
-                            setLoading(false);
-                        }
-                        isFetchingQuestions.current = false;
-                        return;
+                    if (Array.isArray(parsed.data) && parsed.data.length > 0 &&
+                        Date.now() - (parsed.timestamp ?? 0) < CACHE_DURATION) {
+                        needsRefetch = false;
                     }
-                } catch {
-                    localStorage.removeItem(cacheKey);
-                }
+                } catch { /* ignore */ }
             }
 
-            if (isMounted.current) setLoading(true);
+            if (!needsRefetch) {
+                isFetchingQuestions.current = false;
+                return;
+            }
+
+            if (isMounted.current && !cached) setLoading(true);
 
             try {
                 const { data, error } = await supabase.rpc("get_daily_trivia_questions", {
@@ -535,25 +566,31 @@ export const DailyTriviaCard = () => {
         if (!isMounted.current || isFetchingTop.current) return;
 
         const cacheKey = `trivia_top_${today}`;
-        const stored = localStorage.getItem(cacheKey);
-        let hasCache = false;
 
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                if (parsed.data && parsed.data.length > 0) {
-                    hasCache = true;
-                    if (isMounted.current) {
-                        setTopStudents(parsed.data);
-                        setTopLoading(false);
-                    }
-                }
-            } catch {
-                localStorage.removeItem(cacheKey);
+        // ── 1. Paint from disk instantly (any age) ──────────────────
+        const cached = readCacheAny<TopStudent[]>(cacheKey);
+        if (Array.isArray(cached)) {
+            if (isMounted.current) {
+                setTopStudents(cached);
+                setTopLoading(false);
             }
         }
 
+        // ── 2. Check TTL — skip network if still fresh ──────────────
+        const stored = localStorage.getItem(cacheKey);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed.data) &&
+                    Date.now() - (parsed.timestamp ?? 0) < CACHE_DURATION) {
+                    isFetchingTop.current = false;
+                    return; // fresh → no network, no skeleton
+                }
+            } catch { /* ignore */ }
+        }
+
         isFetchingTop.current = true;
+
         try {
             const { data: results } = await supabase
                 .from("daily_trivia_results")
@@ -562,42 +599,51 @@ export const DailyTriviaCard = () => {
                 .order("score", { ascending: false })
                 .limit(10);
 
-            if (results && results.length > 0) {
-                const ids = results.map((r) => r.user_id);
-                const { data: profiles } = await supabase
-                    .from("profiles")
-                    .select("user_id, name, avatar_url, institution")
-                    .in("user_id", ids);
+            if (!isMounted.current) return;
 
-                const profileMap = new Map();
-                profiles?.forEach(p => profileMap.set(p.user_id, p));
-
-                const leaderboardData = results.map((r) => {
-                    const profile = profileMap.get(r.user_id);
-                    return {
-                        user_id: r.user_id,
-                        score: r.score,
-                        name: profile?.name || "Student",
-                        avatar_url: profile?.avatar_url || null,
-                        institution: profile?.institution || null,
-                        completedAt: r.created_at,
-                        timeUsed: r.time_used,
-                    };
-                });
-
-                if (isMounted.current) {
-                    setTopStudents(leaderboardData);
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        data: leaderboardData,
-                        timestamp: Date.now()
-                    }));
-                }
-            } else if (!hasCache && isMounted.current) {
+            // ── 3. Empty result → cache empty so next mount is instant ─
+            if (!results || results.length === 0) {
                 setTopStudents([]);
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: [],
+                    timestamp: Date.now(),
+                }));
+                return;
             }
+
+            // ── 4. Fetch profiles for the top 10 ────────────────────
+            const ids = results.map((r) => r.user_id);
+            const { data: profiles } = await supabase
+                .from("profiles")
+                .select("user_id, name, avatar_url, institution")
+                .in("user_id", ids);
+
+            if (!isMounted.current) return;
+
+            const profileMap = new Map<string, any>();
+            profiles?.forEach((p) => profileMap.set(p.user_id, p));
+
+            const leaderboardData = results.map((r) => {
+                const profile = profileMap.get(r.user_id);
+                return {
+                    user_id: r.user_id,
+                    score: r.score,
+                    name: profile?.name || "Student",
+                    avatar_url: profile?.avatar_url || null,
+                    institution: profile?.institution || null,
+                    completedAt: r.created_at,
+                    timeUsed: r.time_used,
+                };
+            });
+
+            setTopStudents(leaderboardData);
+            localStorage.setItem(cacheKey, JSON.stringify({
+                data: leaderboardData,
+                timestamp: Date.now(),
+            }));
         } catch (err) {
             console.error("❌ Leaderboard fetch failed:", err);
-            if (!hasCache && isMounted.current) setTopStudents([]);
+            // Keep whatever's on screen
         } finally {
             isFetchingTop.current = false;
             if (isMounted.current) setTopLoading(false);
