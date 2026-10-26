@@ -441,9 +441,27 @@ export const DailyTriviaCard = () => {
     const [completedAt, setCompletedAt] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     // Skeleton only if we've never cached the top list today.
-    const [topLoading, setTopLoading] = useState(
-        () => readCacheAny<TopStudent[]>(`trivia_top_${today}`) === null
-    );
+    // Show the skeleton if we've never fetched the leaderboard today.
+    // A cached empty array (nobody's played yet) counts as "fetched" —
+    // so we don't flash the skeleton on repeat visits. But a *stale*
+    // empty cache should still be treated as "checking" — hence the
+    // TTL check inside the initializer.
+    const [topLoading, setTopLoading] = useState(() => {
+        if (typeof window === "undefined") return true;
+        const raw = localStorage.getItem(`trivia_top_${today}`);
+        if (!raw) return true;                    // no cache at all → skeleton
+        try {
+            const parsed = JSON.parse(raw);
+            const age = Date.now() - (parsed.timestamp ?? 0);
+            if (age > CACHE_DURATION) {
+                // stale — if it's empty, we don't know yet, show skeleton
+                return Array.isArray(parsed.data) ? parsed.data.length === 0 : true;
+            }
+            return false;                          // fresh cache → no skeleton
+        } catch {
+            return true;
+        }
+    });
     const [showTimeWarning, setShowTimeWarning] = useState(false);
     const [autoSubmitCountdown, setAutoSubmitCountdown] = useState<number | null>(null);
 
@@ -572,7 +590,18 @@ export const DailyTriviaCard = () => {
         if (Array.isArray(cached)) {
             if (isMounted.current) {
                 setTopStudents(cached);
-                setTopLoading(false);
+                // Only hide the skeleton if we have rows OR the cache is fresh.
+                const storedForFreshness = localStorage.getItem(cacheKey);
+                let isFresh = false;
+                if (storedForFreshness) {
+                    try {
+                        const p = JSON.parse(storedForFreshness);
+                        isFresh = Date.now() - (p.timestamp ?? 0) < CACHE_DURATION;
+                    } catch { /* ignore */ }
+                }
+                if (cached.length > 0 || isFresh) {
+                    setTopLoading(false);
+                }
             }
         }
 
@@ -1159,9 +1188,22 @@ export const DailyTriviaCard = () => {
 
                         <div className="w-full overflow-x-auto overflow-y-hidden pb-4 pt-2 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
                             {topLoading && topStudents.length === 0 ? (
-                                <div className="flex gap-4 animate-pulse">
+                                <div className="flex gap-3">
                                     {Array.from({ length: 4 }).map((_, idx) => (
-                                        <div key={idx} className="flex-shrink-0 w-40 h-64 rounded-xl bg-muted/50 border-0" />
+                                        <div
+                                            key={idx}
+                                            className="flex-shrink-0 w-40 p-4 rounded-2xl border-0 bg-muted/30 shadow-none animate-pulse"
+                                            aria-hidden="true"
+                                        >
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 mb-3" />
+                                                <div className="w-20 h-4 rounded-full bg-muted-foreground/10 mb-2" />
+                                                <div className="w-16 h-3 rounded-full bg-muted-foreground/10 mb-3" />
+                                                <div className="w-14 h-3 rounded-full bg-muted-foreground/10 mb-1" />
+                                                <div className="w-20 h-3 rounded-full bg-muted-foreground/10 mb-4" />
+                                                <div className="w-full h-6 rounded-full bg-muted-foreground/10" />
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : topStudents.length === 0 ? (
