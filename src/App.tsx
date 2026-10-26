@@ -541,7 +541,7 @@ const AppContent = () => {
                         {/* Persistent Dashboard Layout */}
                         <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
                           {/* Core dashboards */}
-                          <Route path="/dashboard/student" element={<StudentDashboard />} />
+                          <Route path="/dashboard/student" element={null} />
                           <Route path="/dashboard/tutor" element={<TutorDashboard />} />
                           <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
@@ -578,7 +578,7 @@ const AppContent = () => {
 
                           {/* Core features */}
                           {/* Core features */}
-                          <Route path="/my-mistakes" element={<MyMistakes />} />
+                          <Route path="/my-mistakes" element={null} />
                           <Route path="/ai-assistant" element={<AIAssistant />} />
                           <Route path="/calendar" element={<Calendar />} />
                           <Route path="/progress" element={<StudyProgress />} />
@@ -592,7 +592,7 @@ const AppContent = () => {
                           <Route path="/profile" element={<Profile />} />
                           {/* /quiz moved to fullscreen routes below ⬇️ */}
                           <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                          <Route path="/feed" element={<Feed />} />
+                          <Route path="/feed" element={null} />
 
 
                           <Route path="/streak/restore" element={<StreakRestore />} />

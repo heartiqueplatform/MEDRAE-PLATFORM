@@ -350,22 +350,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     }
   }, [authUser?.id, isOnline, streak]);
 
-  const updateTotalUsersInBackground = useCallback(async () => {
-    if (!isOnline) return;
-
-    try {
-      const { count, error } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      if (!error && count && count !== totalUsers) {
-        setTotalUsers(count);
-        setCached('total_users', count);
-      }
-    } catch (err) {
-      // Silent fail - keep cached data
-    }
-  }, [isOnline, totalUsers]);
 
   const updateNotificationsInBackground = useCallback(async () => {
     if (!authUser?.id || !isOnline) return;
@@ -441,16 +425,15 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     const initialTimeout = setTimeout(() => {
       if (isMounted.current) {
         updateStreakInBackground();
-        updateTotalUsersInBackground();
         updateNotificationsInBackground();
         updateProfileInBackground();
       }
-    }, 3000);
+    }, 10000);
 
     backgroundIntervalRef.current = setInterval(() => {
       if (isMounted.current && isOnline) {
         updateStreakInBackground();
-        updateTotalUsersInBackground();
+
         updateNotificationsInBackground();
         updateProfileInBackground();
       }
@@ -462,8 +445,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         clearInterval(backgroundIntervalRef.current);
       }
     };
-  }, [isOnline, authUser?.id, updateStreakInBackground, updateTotalUsersInBackground, updateNotificationsInBackground, updateProfileInBackground]);
-
+  }, [isOnline, authUser?.id, updateStreakInBackground, updateNotificationsInBackground, updateProfileInBackground]);
   // ============================================================
   // ✅ LAZY FETCH: When user opens settings (force update)
   // ============================================================
@@ -473,12 +455,11 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
     await Promise.all([
       updateStreakInBackground(),
-      updateTotalUsersInBackground(),
+
       updateNotificationsInBackground(),
       updateProfileInBackground(),
     ]);
-  }, [authUser?.id, isOnline, updateStreakInBackground, updateTotalUsersInBackground, updateNotificationsInBackground, updateProfileInBackground]);
-
+  }, [authUser?.id, isOnline, updateStreakInBackground, updateNotificationsInBackground, updateProfileInBackground]);
   // ============================================================
   // ✅ Online users popover - LAZY fetch
   // ============================================================
@@ -514,7 +495,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       visibilityTimeout = setTimeout(() => {
         if (document.hasFocus() && isOnline) {
           updateStreakInBackground();
-          updateTotalUsersInBackground();
           updateProfileInBackground();
         }
       }, 2000);
@@ -525,8 +505,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (visibilityTimeout) clearTimeout(visibilityTimeout);
     };
-  }, [authUser?.id, isOnline, updateStreakInBackground, updateTotalUsersInBackground, updateProfileInBackground]);
-
+  }, [authUser?.id, isOnline, updateStreakInBackground, updateProfileInBackground]);
   // ============================================================
   // ✅ Event listeners (passive)
   // ============================================================

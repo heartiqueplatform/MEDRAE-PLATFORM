@@ -20,7 +20,7 @@ import { useUserRole } from "@/context/UserRoleContext";
 import { getProfileCache, setProfileCache } from "@/lib/profileCache";
 import { FloatingChatButton } from "../FloatingChatButton";
 import { ErrorBoundary } from "../ErrorBoundary";
-
+import { TabStack } from "./TabStack";
 // ✅ Lazy load heavy components
 const FloatingChat = lazy(() => import("@/components/FloatingChat"));
 
@@ -110,14 +110,13 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
 
         <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden max-w-[880px] mx-auto">
           <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
-
           <main
             data-scroll-container
             className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar outline-none"
           >
             <div className="flex flex-col min-h-full">
               <div className="flex-1 pt-4 px-0 md:px-4 lg:px-6">
-                <Outlet />
+                <TabStack />
               </div>
               <Footer mistakeCount={0} />
               <div className="h-20 md:hidden shrink-0" />

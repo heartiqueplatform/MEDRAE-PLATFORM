@@ -330,7 +330,7 @@ function QuickDuelStripBase({
                         .select("user_id, name, username, avatar_url, is_online")
                         .neq("user_id", userId)
                         .order("name", { ascending: true })
-                        .limit(200),
+                        .limit(50),
                 ]);
 
                 if (!isMountedRef.current) return;
@@ -396,11 +396,18 @@ function QuickDuelStripBase({
         isMountedRef.current = true;
         fetchData(false);
 
-        const onFocus = () => {
-            if (!document.hidden) fetchData(true);
+        const refreshIfStale = () => {
+            if (document.hidden) return;
+            // ✅ Only refetch if cache is older than the TTL.
+            // New users don't appear every 5 seconds — no need to hammer the DB.
+            const stale =
+                (readCache<Duel[]>(HISTORY_KEY) === null) &&
+                (readCache<Player[]>(PLAYERS_KEY) === null);
+            if (stale) fetchData(true);
         };
-        window.addEventListener("focus", onFocus);
-        document.addEventListener("visibilitychange", onFocus);
+
+        window.addEventListener("focus", refreshIfStale);
+        document.addEventListener("visibilitychange", refreshIfStale);
 
         const intervalId = setInterval(() => {
             if (!document.hidden) fetchData(true);
@@ -408,8 +415,8 @@ function QuickDuelStripBase({
 
         return () => {
             isMountedRef.current = false;
-            window.removeEventListener("focus", onFocus);
-            document.removeEventListener("visibilitychange", onFocus);
+            window.removeEventListener("focus", refreshIfStale);
+            document.removeEventListener("visibilitychange", refreshIfStale);
             clearInterval(intervalId);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

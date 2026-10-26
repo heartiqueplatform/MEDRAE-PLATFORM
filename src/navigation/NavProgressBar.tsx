@@ -29,28 +29,25 @@ export function NavProgressBar() {
     // COMPLETE — fires when the new route has actually committed
     useEffect(() => {
         setScale(1);
-        const t = setTimeout(() => setVisible(false), 240);
+        const t = setTimeout(() => setVisible(false), 200);
         return () => clearTimeout(t);
     }, [location.pathname]);
 
+    if (!visible) return null;
+
     return (
         <div
-            className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none"
-            style={{
-                height: "4px",
-                opacity: visible ? 1 : 0,
-                transition: "opacity 180ms ease-out",
-            }}
+            className="fixed top-0 left-0 right-0 z-[60] pointer-events-none"
+            style={{ height: "2.5px" }}
         >
             <div
                 style={{
                     height: "100%",
                     width: "100%",
-                    background: "linear-gradient(90deg, #3b82f6 0%, #2563eb 60%, #1d4ed8 100%)",
+                    background: "#3b82f6",
                     transform: `scaleX(${scale})`,
                     transformOrigin: "left",
-                    boxShadow: "0 0 12px rgba(59,130,246,0.75), 0 0 4px rgba(59,130,246,0.9)",
-                    borderRadius: "0 0 4px 0",
+                    borderRadius: "0 2px 2px 0",
                     transition:
                         scale === 0.8
                             ? "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)"

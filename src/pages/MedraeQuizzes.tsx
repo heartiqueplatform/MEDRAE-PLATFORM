@@ -276,9 +276,8 @@ export function MedraeQuizzes() {
   const [isPremium, setIsPremium] = useState<boolean>(
     () => getCachedPremium(user?.id) ?? false
   );
-  const [subscriptionChecked, setSubscriptionChecked] = useState(
-    () => getCachedPremium(user?.id) !== null
-  );
+  // Always consider "checked" so the page never blocks
+  const [subscriptionChecked, setSubscriptionChecked] = useState(true);
   const navigate = useNavigate();
   // Scroll the inner content container (not window) — used by back button
   const home = useHomeRoute();
@@ -556,8 +555,10 @@ export function MedraeQuizzes() {
     return allAvailableUnits[Math.floor(Math.random() * allAvailableUnits.length)];
   };
 
-  const isLoading = (unitsLoading && papers.length === 0) || (countsLoading && !unitCounts?.length);
-
+  // Only show skeleton when we truly have NOTHING to display.
+  // Once papers has ANY data (from cache), render the cards immediately.
+  // Question counts can update in the background without blocking the page.
+  const isLoading = papers.length === 0;
   const toggleDescription = (unitCode: string) => {
     setExpandedDescriptions(prev => ({
       ...prev,
@@ -565,10 +566,6 @@ export function MedraeQuizzes() {
     }));
   };
 
-  const hasSubscriptionCache = getCachedPremium(user?.id) !== null;
-  if (!subscriptionChecked && !hasSubscriptionCache && navigator.onLine) {
-    return <GlobalLoader />;
-  }
 
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
