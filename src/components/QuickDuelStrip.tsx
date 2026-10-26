@@ -146,18 +146,28 @@ function QuickDuelStripBase({
 }: Props) {
     const navigate = useNavigate();
 
-    const cachedHistory = useMemo(() => readCache<Duel[]>(HISTORY_KEY), []);
-    const cachedPlayers = useMemo(() => readCache<Player[]>(PLAYERS_KEY), []);
+    const cachedHistory = useMemo(() => readCacheAny<Duel[]>(HISTORY_KEY), []);
+    const cachedPlayers = useMemo(() => readCacheAny<Player[]>(PLAYERS_KEY), []);
+    // Prefer prop only if it's actually populated.
+    // Falls back to disk cache, then empty.
+    const seedHistory =
+        (initialHistory?.length ?? 0) > 0
+            ? initialHistory!
+            : (cachedHistory?.length ?? 0) > 0
+                ? cachedHistory!
+                : (initialHistory ?? cachedHistory ?? []);
 
-    const [history, setHistory] = useState<Duel[]>(
-        initialHistory ?? cachedHistory ?? []
-    );
-    const [players, setPlayers] = useState<Player[]>(
-        initialPlayers ?? cachedPlayers ?? []
-    );
+    const seedPlayers =
+        (initialPlayers?.length ?? 0) > 0
+            ? initialPlayers!
+            : (cachedPlayers?.length ?? 0) > 0
+                ? cachedPlayers!
+                : (initialPlayers ?? cachedPlayers ?? []);
+
+    const [history, setHistory] = useState<Duel[]>(seedHistory);
+    const [players, setPlayers] = useState<Player[]>(seedPlayers);
     const [loading, setLoading] = useState(
-        (initialHistory ?? cachedHistory ?? []).length === 0 &&
-        (initialPlayers ?? cachedPlayers ?? []).length === 0
+        seedHistory.length === 0 && seedPlayers.length === 0
     );
     const [refreshing, setRefreshing] = useState(false);
 
@@ -170,13 +180,28 @@ function QuickDuelStripBase({
     /* -------------------------------------------------------------- */
     /*  Referral state (lazy, once)                                    */
     /* -------------------------------------------------------------- */
-    const [referralCode, setReferralCode] = useState<string | null>(null);
-    const [referralStats, setReferralStats] = useState<ReferralStats>({
-        invites: 0,
-        pending: 0,
-        daysEarned: 0,
-    });
-    const [referralLoading, setReferralLoading] = useState(true);
+    const REFERRAL_CODE_KEY = "quick_duel_referral_code_v1";
+    const REFERRAL_STATS_KEY = "quick_duel_referral_stats_v1";
+
+    const cachedReferralCode = useMemo(
+        () => readCacheAny<string>(REFERRAL_CODE_KEY),
+        []
+    );
+    const cachedReferralStats = useMemo(
+        () => readCacheAny<ReferralStats>(REFERRAL_STATS_KEY),
+        []
+    );
+
+    const [referralCode, setReferralCode] = useState<string | null>(
+        cachedReferralCode ?? null
+    );
+    const [referralStats, setReferralStats] = useState<ReferralStats>(
+        cachedReferralStats ?? { invites: 0, pending: 0, daysEarned: 0 }
+    );
+    // Only show referral skeleton on first-ever visit (no cache at all).
+    const [referralLoading, setReferralLoading] = useState(
+        cachedReferralCode === null
+    );
     const [copied, setCopied] = useState(false);
     const referralFetchedRef = useRef(false);
 
@@ -184,6 +209,12 @@ function QuickDuelStripBase({
         if (!userId) return;
         if (referralFetchedRef.current) return;
         referralFetchedRef.current = true;
+
+        // Cache hit → skip network entirely. This is what stops the flicker.
+        if (cachedReferralCode !== null) {
+            setReferralLoading(false);
+            return;
+        }
 
         let cancelled = false;
         setReferralLoading(true);
@@ -196,6 +227,8 @@ function QuickDuelStripBase({
                 if (cancelled) return;
                 setReferralCode(code);
                 setReferralStats(stats);
+                writeCache(REFERRAL_CODE_KEY, code);
+                writeCache(REFERRAL_STATS_KEY, stats);
             } catch {
                 /* silent */
             } finally {
@@ -203,6 +236,7 @@ function QuickDuelStripBase({
             }
         })();
         return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
     const shareUrl = referralCode
@@ -298,9 +332,8 @@ function QuickDuelStripBase({
             if (!force && fetchedRef.current) return;
             fetchedRef.current = true;
 
-            const instantHistory = readCache<Duel[]>(HISTORY_KEY);
-            const instantPlayers = readCache<Player[]>(PLAYERS_KEY);
-
+            const instantHistory = readCacheAny<Duel[]>(HISTORY_KEY);
+            const instantPlayers = readCacheAny<Player[]>(PLAYERS_KEY);
             if (instantHistory && instantHistory.length > 0) {
                 setHistory(instantHistory);
                 setLoading(false);
@@ -373,10 +406,17 @@ function QuickDuelStripBase({
                     };
                 });
 
-                setHistory(duels);
-                setPlayers(mergedPlayers);
-                writeCache(HISTORY_KEY, duels);
-                writeCache(PLAYERS_KEY, mergedPlayers);
+                // Only overwrite cache when the network actually returned rows.
+                // A transient empty response must NOT wipe the user's cache, or
+                // they'll get a skeleton on next visit.
+                if (duelsRes.data) {
+                    setHistory(duels);
+                    writeCache(HISTORY_KEY, duels);
+                }
+                if (playersRes.data) {
+                    setPlayers(mergedPlayers);
+                    writeCache(PLAYERS_KEY, mergedPlayers);
+                }
             } catch {
                 /* silent */
             } finally {
@@ -388,7 +428,20 @@ function QuickDuelStripBase({
         },
         [userId]
     );
-
+    /**
+     * Read cache ignoring TTL — for rendering.
+     * Returns whatever is on disk, however old.
+     */
+    function readCacheAny<T>(key: string): T | null {
+        if (typeof window === "undefined") return null;
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            return JSON.parse(raw).d as T;
+        } catch {
+            return null;
+        }
+    }
     /* -------------------------------------------------------------- */
     /*  Lifecycle                                                      */
     /* -------------------------------------------------------------- */
@@ -548,15 +601,21 @@ function QuickDuelStripBase({
     /* -------------------------------------------------------------- */
     /*  Skeleton                                                       */
     /* -------------------------------------------------------------- */
-    if (loading && !lastDuel && sortedPlayers.length === 0) {
-        return <StripSkeleton />;
-    }
+    // Skeleton ONLY for users who have never had data on this device.
+    // Any cached data (regardless of age) → paint immediately, refresh
+    // silently in the background. Instagram-style.
+    const hasDiskCache =
+        (readCacheAny<Duel[]>(HISTORY_KEY)?.length ?? 0) > 0 ||
+        (readCacheAny<Player[]>(PLAYERS_KEY)?.length ?? 0) > 0;
 
-    if (!lastDuel && sortedPlayers.length === 0 && !initialHistory && !initialPlayers) {
-        const hasCache =
-            (readCache<Duel[]>(HISTORY_KEY)?.length ?? 0) > 0 ||
-            (readCache<Player[]>(PLAYERS_KEY)?.length ?? 0) > 0;
-        if (!hasCache) return <StripSkeleton />;
+    const hasVisibleData =
+        !!lastDuel ||
+        sortedPlayers.length > 0 ||
+        (initialHistory?.length ?? 0) > 0 ||
+        (initialPlayers?.length ?? 0) > 0;
+
+    if (!hasDiskCache && !hasVisibleData) {
+        return <StripSkeleton />;
     }
 
     /* -------------------------------------------------------------- */
@@ -716,7 +775,7 @@ function QuickDuelStripBase({
 
                         <button
                             onClick={() => handleRematch(lastDuel.opponent_id)}
-                            className="px-3.5 h-9 rounded-xl bg-blue-900 dark:bg-white text-white dark:text-slate-900 text-[10px]   tracking-wider active:scale-95 transition-transform shrink-0"
+                            className="px-3.5 h-9 rounded-xl bg-blue-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black tracking-wider active:scale-95 transition-transform shrink-0"
                             style={{ touchAction: "manipulation" }}
                         >
                             Rematch
@@ -919,7 +978,7 @@ function ChallengeOverlay({
                                     </motion.div>
                                 </div>
 
-                                <h3 className="text-xl   text-white mb-1">
+                                <h3 className="text-xl font-black text-white mb-1">
                                     Preparing Your Duel
                                 </h3>
                                 <p className="text-sm text-slate-400 mb-6">
@@ -957,7 +1016,7 @@ function ChallengeOverlay({
                                     <CheckCircle2 size={48} className="relative text-emerald-400" strokeWidth={1.8} />
                                 </motion.div>
 
-                                <h3 className="text-xl   text-white mb-1">
+                                <h3 className="text-xl font-black text-white mb-1">
                                     Ready!
                                 </h3>
                                 <p className="text-sm text-slate-400">
@@ -988,7 +1047,7 @@ function ChallengeOverlay({
                                     <AlertCircle size={48} className="relative text-rose-400" strokeWidth={1.8} />
                                 </div>
 
-                                <h3 className="text-xl   text-white mb-1">
+                                <h3 className="text-xl font-black text-white mb-1">
                                     Couldn't Prepare
                                 </h3>
                                 <p className="text-sm text-slate-400 mb-6">

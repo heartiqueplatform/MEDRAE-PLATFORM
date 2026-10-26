@@ -201,7 +201,16 @@ const getCachedProfile = () => {
     return null;
   }
 };
-
+const getCachedProfileAny = () => {
+  try {
+    const cached = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!cached) return null;
+    const { data } = JSON.parse(cached);
+    return data ?? null;
+  } catch {
+    return null;
+  }
+};
 const setCachedProfile = (profile: any) => {
   try {
     localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
@@ -323,7 +332,7 @@ const AppContent = () => {
 
   const [profile, setProfile] = useState<any>(() => {
     if (typeof window !== "undefined") {
-      return getCachedProfile();
+      return getCachedProfileAny();  // ✅ paint from disk, any age
     }
     return null;
   });
@@ -331,17 +340,15 @@ const AppContent = () => {
   const fetchUserProfile = useCallback(async () => {
     if (!user) return;
 
-    const cached = getCachedProfile();
-    if (cached) {
-      setProfile(cached);
-      // 🔧 Offline: don't even try the network. Return early
-      // so we never overwrite the cache with a null result.
+    // ✅ Always hydrate from disk first — any age.
+    const anyCache = getCachedProfileAny();
+    if (anyCache) setProfile(anyCache);
+
+    // ✅ TTL cache only gates the network call.
+    const fresh = getCachedProfile();
+    if (fresh) {
       if (isOfflineHint()) return;
-      // If the cached entry is still fresh, don't hit the network either.
-      // (getCachedProfile already returns stale entries offline; online
-      // it returns null for stale entries, so reaching this point online
-      // means the cache was fresh.)
-      return;
+      return;  // cache still fresh — skip network
     }
 
     // 🔧 Offline + no cache: there's nothing to fetch. Leave the

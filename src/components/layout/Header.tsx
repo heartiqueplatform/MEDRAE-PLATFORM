@@ -47,7 +47,19 @@ const setCached = (key: string, data: any) => {
     localStorage.setItem(`${CACHE_VERSION}_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
   } catch (e) { /* silent */ }
 };
-
+/**
+ * Read a cache entry ignoring TTL — used for instant paint.
+ * Age only decides *whether to refetch*, never *whether to render*.
+ */
+const getCachedAny = <T,>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(`${CACHE_VERSION}_${key}`);
+    if (!raw) return null;
+    return JSON.parse(raw).data as T;
+  } catch {
+    return null;
+  }
+};
 // ✅ Clear old cache
 const clearOldCache = () => {
   try {
@@ -76,7 +88,7 @@ const preloadUserData = () => {
     }
 
     // Fallback: try the Header's own versioned cache (v2_user_profile)
-    const ownCache = getCached('user_profile');
+    const ownCache = getCachedAny<any>('user_profile');
     if (ownCache?.name && ownCache.name !== "Unknown User") {
       return {
         name: ownCache.name,
@@ -103,8 +115,9 @@ const preloadUserData = () => {
 
 const preloadStreak = () => {
   try {
-    const cached = getCached('user_streak');
-    if (cached !== null && cached > 0) return cached;
+    // Paint from disk, any age — the TTL only governs refetch.
+    const cached = getCachedAny<number>('user_streak');
+    if (typeof cached === 'number' && cached > 0) return cached;
     const legacy = localStorage.getItem('userStreak');
     if (legacy) {
       const val = parseInt(legacy, 10);
@@ -115,11 +128,11 @@ const preloadStreak = () => {
 };
 
 const preloadNotificationCount = () => {
-  return getCached('notification_count') || 0;
+  return getCachedAny<number>('notification_count') || 0;
 };
 
 const preloadTotalUsers = () => {
-  return getCached('total_users') || null;
+  return getCachedAny<number>('total_users') || null;
 };
 
 // ✅ PRE-LOAD THEME - Runs synchronously before component mount
@@ -176,6 +189,22 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   const isOnline = useOnlineStatus();
 
   const { onlineUsers, onlineCount, loading: onlineLoading, refresh } = useOnlineUsers();
+  // ✅ WhatsApp-style: paint the badge from last-known count instantly.
+  // TTL is irrelevant for rendering — it only gates background refresh.
+  const ONLINE_COUNT_KEY = 'online_count';
+  const cachedOnlineCount = useMemo(
+    () => getCachedAny<number>(ONLINE_COUNT_KEY),
+    []
+  );
+  // Badge should never show a skeleton if we've ever seen a count before.
+  const showBadgeSkeleton = onlineLoading && cachedOnlineCount === null;
+
+  // Persist the latest count so the next mount paints instantly.
+  useEffect(() => {
+    if (!onlineLoading && typeof onlineCount === 'number') {
+      setCached(ONLINE_COUNT_KEY, onlineCount);
+    }
+  }, [onlineCount, onlineLoading]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
@@ -314,6 +343,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     try {
       const today = new Date().toISOString().split("T")[0];
 
+      // Always record today's login — cheap and idempotent.
       const { data: existing } = await supabase
         .from("login_activity")
         .select("id")
@@ -322,8 +352,15 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         .maybeSingle();
 
       if (!existing) {
-        await supabase.from("login_activity").insert([{ user_id: authUser.id, login_date: today }]);
+        await supabase
+          .from("login_activity")
+          .insert([{ user_id: authUser.id, login_date: today }]);
       }
+
+      // ✅ Only re-read the streak if our cache is stale.
+      // This is the WhatsApp-style "silent refresh" gate — no read
+      // when the cache is still fresh, but the login row is written.
+      if (getCached('user_streak') !== null) return;
 
       const { data, error } = await supabase
         .from("login_activity")
@@ -339,20 +376,21 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
           setStreak(newStreak);
           setCached('user_streak', newStreak);
           localStorage.setItem('userStreak', String(newStreak));
-
           window.dispatchEvent(new CustomEvent('streak-updated', {
-            detail: { streak: newStreak }
+            detail: { streak: newStreak },
           }));
         }
       }
     } catch (err) {
-      // Silent fail - keep cached data
+      // Silent fail — keep cached data.
     }
   }, [authUser?.id, isOnline, streak]);
 
-
   const updateNotificationsInBackground = useCallback(async () => {
     if (!authUser?.id || !isOnline) return;
+
+    // ✅ WhatsApp-style: skip the network if cache is still fresh.
+    if (getCached('notification_count') !== null) return;
 
     try {
       const { count, error } = await supabase
@@ -373,6 +411,9 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   // ✅ UPDATED: Uses shared profileCache - SILENT background update
   const updateProfileInBackground = useCallback(async () => {
     if (!authUser?.id || !isOnline) return;
+
+    // ✅ Skip network if shared profile cache is fresh.
+    if (getCached('user_profile') !== null) return;
 
     try {
       const { data, error } = await supabase
@@ -496,6 +537,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         if (document.hasFocus() && isOnline) {
           updateStreakInBackground();
           updateProfileInBackground();
+          // ✅ Silent online-count refresh — badge updates with no skeleton.
+          refresh?.();
         }
       }, 2000);
     };
@@ -717,7 +760,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     {/* ✅ Only render the badge once we've actually loaded the list.
                         While loading, show a quiet skeleton pill — same dimensions,
                         muted color — so the header doesn't jump when data arrives. */}
-                    {onlineLoading ? (
+                    {showBadgeSkeleton ? (
                       <Badge
                         className="h-5 sm:h-6 px-2 sm:px-2.5 text-[9px] sm:text-[10px] bg-muted text-muted-foreground border-0 flex items-center transition-all rounded-full shadow-none shrink-0"
                         aria-hidden="true"
@@ -726,10 +769,15 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                       </Badge>
                     ) : (
                       <Badge className="h-5 sm:h-6 px-2 sm:px-2.5 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center transition-all rounded-full shadow-none shrink-0">
-                        <span className="  leading-none flex items-center tabular-nums">
-                          {onlineBadgeText}
+                        <span className="leading-none flex items-center tabular-nums">
+                          {/* Prefer live count; fall back to last-known cache while loading. */}
+                          {onlineLoading
+                            ? (cachedOnlineCount ?? 0)
+                            : onlineBadgeText}
                           <span className="hidden lg:inline ml-1 tracking-tighter">
-                            {onlineBadgeText === 1 ? "Peer Online" : "Peers Online"}
+                            {(onlineLoading ? cachedOnlineCount ?? 0 : onlineBadgeText) === 1
+                              ? "Peer Online"
+                              : "Peers Online"}
                           </span>
                         </span>
                       </Badge>

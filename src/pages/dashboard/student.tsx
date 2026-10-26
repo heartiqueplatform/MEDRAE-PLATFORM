@@ -811,8 +811,8 @@ export default function StudentDashboard() {
         {/* ---- ABOVE THE FOLD: keep as-is, mounts immediately ---- */}
         <QuickDuelStrip
           userId={user?.id ?? ""}
-          initialHistory={initialCache.quickDuelHistory ?? []}
-          initialPlayers={initialCache.quickDuelPlayers ?? []}
+          initialHistory={initialCache.quickDuelHistory}
+          initialPlayers={initialCache.quickDuelPlayers}
         />
         <SchoolWarsCard currentUserInstitution={profileState?.institution} />
         <DailyTriviaCard />
