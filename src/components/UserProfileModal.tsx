@@ -571,7 +571,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                     {userData.duelStats.wins > 0 && (
                                         <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
                                             <Trophy size={12} />
-                                            <span className="text-[11px] font-black">
+                                            <span className="text-[11px]  ">
                                                 {userData.duelStats.wins}{" "}
                                                 {userData.duelStats.wins === 1
                                                     ? "duel won"

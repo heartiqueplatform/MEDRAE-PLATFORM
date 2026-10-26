@@ -101,7 +101,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                 <div className="flex items-center gap-2">
 
                     <div>
-                        <h2 className="text-sm font-black tracking-tight text-gh-l-text dark:text-gh-text leading-none">
+                        <h2 className="text-sm   tracking-tight text-gh-l-text dark:text-gh-text leading-none">
                             Studify Daily Pulse
                         </h2>
                         <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400  tracking-widest mt-0.5">
@@ -152,18 +152,18 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                     {/* meta */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[9px]   uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
                                 <Sparkles size={9} />
                                 Today's pick
                             </span>
                             {featured.showTitle && (
-                                <span className="hidden sm:inline text-[9px] font-black uppercase tracking-widest text-gh-l-muted dark:text-gh-muted truncate">
+                                <span className="hidden sm:inline text-[9px]   uppercase tracking-widest text-gh-l-muted dark:text-gh-muted truncate">
                                     · {featured.showTitle}
                                 </span>
                             )}
                         </div>
 
-                        <h3 className="text-base md:text-lg font-black tracking-tight text-gh-l-text dark:text-gh-text leading-snug line-clamp-2">
+                        <h3 className="text-base md:text-lg   tracking-tight text-gh-l-text dark:text-gh-text leading-snug line-clamp-2">
                             {featured.name}
                         </h3>
 
@@ -215,7 +215,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
 
                         {/* play CTA row */}
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-none">
+                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs   px-3 py-1.5 rounded-full shadow-none">
                                 <Play size={12} fill="white" className="ml-0.5" />
                                 Play now
                             </span>
@@ -231,7 +231,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
             {/* ── TOP 8 RANDOM PICKS ── */}
             <div className="mb-2 px-1 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-black tracking-tight text-gh-l-text dark:text-gh-text ">
+                    <h3 className="text-xs   tracking-tight text-gh-l-text dark:text-gh-text ">
                         Top 8~Eight for today
                     </h3>
                 </div>
@@ -347,10 +347,10 @@ function TopPickCard({
 
             {/* ── Full-width counter strip at the bottom ── */}
             <div className="w-full flex items-center justify-between px-3 py-2 bg-gh-l-hover dark:bg-gh-hover">
-                <span className="text-[10px] font-black  tracking-widest text-gh-l-muted dark:text-gh-muted">
+                <span className="text-[10px]    tracking-widest text-gh-l-muted dark:text-gh-muted">
                     Pick {index + 1}
                 </span>
-                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]   flex items-center justify-center">
                     {index + 1}
                 </span>
             </div>
@@ -428,10 +428,10 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
             </div>
 
             <div className="w-full flex items-center justify-between px-3 py-2 bg-gh-l-hover dark:bg-gh-hover">
-                <span className="text-[10px] font-black  tracking-widest text-gh-l-muted dark:text-gh-muted">
+                <span className="text-[10px]    tracking-widest text-gh-l-muted dark:text-gh-muted">
                     Apple Podcasts
                 </span>
-                <span className="w-5 h-5 rounded-full bg-[#8927EB] text-white text-[10px] font-black flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-[#8927EB] text-white text-[10px]   flex items-center justify-center">
                     →
                 </span>
             </div>

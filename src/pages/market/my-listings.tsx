@@ -570,7 +570,7 @@ export default function MyListings() {
                                         <div className="absolute top-2 md:top-3 right-2 md:right-3">
 
                                             <span
-                                                className={`px-2 md:px-3 py-0.5 md:py-1 rounded-lg text-[8px] md:text-[10px] font-black uppercase tracking-widest ${activeTab ===
+                                                className={`px-2 md:px-3 py-0.5 md:py-1 rounded-lg text-[8px] md:text-[10px]   uppercase tracking-widest ${activeTab ===
                                                     "active"
                                                     ? "bg-green-500 text-white"
                                                     : activeTab ===
@@ -599,7 +599,7 @@ export default function MyListings() {
 
                                         <div className="flex items-end justify-between mb-4 md:mb-6">
 
-                                            <div className="text-xl md:text-2xl font-black text-blue-600 dark:text-blue-400">
+                                            <div className="text-xl md:text-2xl   text-blue-600 dark:text-blue-400">
 
                                                 <span className="text-[10px] md:text-xs font-bold mr-0.5 md:mr-1">
                                                     {l.currency ||

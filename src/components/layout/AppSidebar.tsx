@@ -968,7 +968,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       {/* Footer */}
       <div className="mt-auto py-5 px-4 text-center select-none border-0">
 
-        <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
+        <p className="text-[7px]   tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
           Medrae Nursing All right reserved
         </p>
 

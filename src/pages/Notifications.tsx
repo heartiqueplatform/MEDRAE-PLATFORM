@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import React from 'react';
@@ -8,11 +8,13 @@ import {
   Bell, CheckCheck, Clock, CreditCard, BookOpen,
   ShoppingBag, PlayCircle, Trash2, Activity,
   FileText, ChevronRight, Home, Trophy, X, ExternalLink,
-  RefreshCw, Inbox
+  RefreshCw, Inbox, ChevronLeft
 } from 'lucide-react';
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { playSound } from "@/lib/soundManager";
 
 const CACHE_KEY_PREFIX = "notifs_cache_";
 
@@ -21,7 +23,7 @@ const CACHE_KEY_PREFIX = "notifs_cache_";
    ============================================================ */
 function NotificationSkeleton() {
   return (
-    <div className="space-y-2 px-4 md:px-0">
+    <div className="space-y-2">
       {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
@@ -47,6 +49,15 @@ function NotificationSkeleton() {
 
 export function Notifications() {
   const navigate = useNavigate();
+  const home = useHomeRoute();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const handleBack = useCallback(() => {
+    playSound("tap");
+    if (navigator.vibrate) navigator.vibrate(20);
+    navigate(home, { replace: true });
+  }, [navigate, home]);
+
   const [notifications, setNotifications] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -214,36 +225,67 @@ export function Notifications() {
     });
   };
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   return (
     <>
-      <div className="min-h-screen bg-slate-50/50 dark:bg-background pb-16 md:pb-20">
-        <div className="max-w-2xl mx-auto pt-4 md:pt-8 px-0 md:px-4">
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3 md:mb-4 px-4 md:px-0">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Notifications</h1>
-
-            </div>
-            {notifications.some(n => !n.is_read) && (
-              <Button variant="outline" size="sm" onClick={markAllAsRead} className="rounded-full border-0 bg-slate-100 dark:bg-slate-800 text-[9px] md:text-[10px] font-bold uppercase h-8 md:h-9 px-3">
-                <CheckCheck className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" /> Clear Unread
-              </Button>
-            )}
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+        {/* ── Sticky top bar with back arrow ─────────────────── */}
+        <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+            border-b border-gray-100 dark:border-gray-800
+            bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+            z-30 safe-top">
+          <button
+            onClick={handleBack}
+            aria-label="Go back"
+            className="flex items-center justify-center h-10 w-10 rounded-full
+                bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                active:scale-95 transition-all touch-manipulation"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+              Notifications
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              {unreadCount > 0
+                ? `${unreadCount} unread`
+                : notifications.length > 0
+                  ? "All caught up"
+                  : "Nothing yet"}
+            </p>
           </div>
-
-          {/* ------- STATE MACHINE ------- */}
-
-          {/* 1. FIRST LOAD — skeleton shimmer */}
-          {fetchState === "loading" && notifications.length === 0 && (
-            <div className="px-4 md:px-0">
-              <NotificationSkeleton />
-            </div>
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllAsRead}
+              className="rounded-full border-0 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold uppercase h-8 px-3 shrink-0"
+            >
+              <CheckCheck className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Clear Unread</span>
+            </Button>
           )}
+        </header>
 
-          {/* 2. ERROR — retry */}
-          {fetchState === "error" && (
-            <div className="px-4 md:px-0">
+        {/* ── Internally-scrolling content ───────────────────── */}
+        <div
+          ref={contentRef}
+          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+              custom-scrollbar overscroll-contain"
+        >
+          <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
+
+            {/* ------- STATE MACHINE ------- */}
+
+            {/* 1. FIRST LOAD — skeleton shimmer */}
+            {fetchState === "loading" && notifications.length === 0 && (
+              <NotificationSkeleton />
+            )}
+
+            {/* 2. ERROR — retry */}
+            {fetchState === "error" && (
               <div className="rounded-2xl border-0 bg-white dark:bg-muted/30 p-8 text-center">
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                   <RefreshCw className="w-5 h-5 text-slate-400" />
@@ -264,57 +306,55 @@ export function Notifications() {
                   Retry
                 </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* 3. LIST — has notifications */}
-          {notifications.length > 0 && (
-            <div className="space-y-2 px-4 md:px-0">
-              {notifications.map((n) => {
-                const style = getNotificationStyles(n.type);
-                return (
-                  <Card
-                    key={n.id}
-                    onClick={() => handleNotificationClick(n)}
-                    className={`transition-all cursor-pointer rounded-xl border-0 shadow-sm ${n.is_read
-                      ? 'opacity-60 bg-white dark:bg-slate-900/40'
-                      : 'bg-white dark:bg-muted/30 hover:shadow-md'
-                      }`}
-                  >
-                    <CardContent className="p-3 md:p-4 flex gap-2 md:gap-3 items-center">
-                      <div className={`h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-xl md:rounded-2xl ${style.bg} ${style.color} flex items-center justify-center`}>
-                        {style.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-0.5 md:mb-1">
-                          <span className={`text-[9px] md:text-[10px] font-black uppercase ${style.color}`}>{style.label}</span>
-                          <span className="text-[9px] md:text-[10px] text-slate-400">
-                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+            {/* 3. LIST — has notifications */}
+            {notifications.length > 0 && (
+              <div className="space-y-2">
+                {notifications.map((n) => {
+                  const style = getNotificationStyles(n.type);
+                  return (
+                    <Card
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`transition-all cursor-pointer rounded-xl border-0 shadow-sm ${n.is_read
+                        ? 'opacity-60 bg-white dark:bg-slate-900/40'
+                        : 'bg-white dark:bg-muted/30 hover:shadow-md'
+                        }`}
+                    >
+                      <CardContent className="p-3 md:p-4 flex gap-2 md:gap-3 items-center">
+                        <div className={`h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-xl md:rounded-2xl ${style.bg} ${style.color} flex items-center justify-center`}>
+                          {style.icon}
                         </div>
-                        <h3 className="text-xs md:text-sm font-bold truncate text-slate-900 dark:text-white">{n.title}</h3>
-                        <p className="text-[10px] md:text-xs text-slate-500 line-clamp-1">{n.message}</p>
-                      </div>
-                      <div className="flex flex-col justify-between items-end gap-2">
-                        <button
-                          onClick={(e) => deleteNotification(e, n.id)}
-                          className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/20 border-0"
-                          title="Delete notification"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                        <ChevronRight size={16} className="text-slate-300" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-0.5 md:mb-1">
+                            <span className={`text-[9px] md:text-[10px]   uppercase ${style.color}`}>{style.label}</span>
+                            <span className="text-[9px] md:text-[10px] text-slate-400">
+                              {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <h3 className="text-xs md:text-sm font-bold truncate text-slate-900 dark:text-white">{n.title}</h3>
+                          <p className="text-[10px] md:text-xs text-slate-500 line-clamp-1">{n.message}</p>
+                        </div>
+                        <div className="flex flex-col justify-between items-end gap-2">
+                          <button
+                            onClick={(e) => deleteNotification(e, n.id)}
+                            className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/20 border-0"
+                            title="Delete notification"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <ChevronRight size={16} className="text-slate-300" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
 
-          {/* 4. EMPTY */}
-          {fetchState === "ready" && notifications.length === 0 && (
-            <div className="px-4 md:px-0">
+            {/* 4. EMPTY */}
+            {fetchState === "ready" && notifications.length === 0 && (
               <div className="rounded-2xl border-0 bg-white dark:bg-muted/30 p-10 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                   <Inbox className="w-6 h-6 text-slate-400 dark:text-slate-500" />
@@ -326,9 +366,9 @@ export function Notifications() {
                   Notifications about your quizzes, simulations, billing, and account activity will appear here as they happen.
                 </p>
               </div>
-            </div>
-          )}
+            )}
 
+          </div>
         </div>
       </div>
 
@@ -340,10 +380,8 @@ export function Notifications() {
           className="fixed inset-0 z-[2147483647] flex items-end md:items-center justify-center p-0 md:p-4"
           onClick={() => setSelectedNotification(null)}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" />
 
-          {/* Sheet / Modal */}
           <div
             className="relative w-full md:max-w-lg md:w-full
               bg-white dark:bg-muted/30
@@ -356,24 +394,21 @@ export function Notifications() {
               border-0 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Soft gradient wash — same surface language as hero cards */}
             <div className="pointer-events-none absolute inset-0 z-0
               bg-gradient-to-br from-blue-50/40 via-transparent to-purple-50/30
               dark:from-blue-950/10 dark:via-transparent dark:to-purple-950/10" />
 
-            {/* Drag handle */}
             <div className="relative z-10 md:hidden flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
             </div>
 
-            {/* Header */}
             <div className="relative z-10 flex items-start justify-between p-4 md:p-6 shrink-0">
               <div className="flex items-center gap-3">
                 <div className={`h-12 w-12 rounded-2xl ${getNotificationStyles(selectedNotification.type).bg} ${getNotificationStyles(selectedNotification.type).color} flex items-center justify-center border-0`}>
                   {getNotificationStyles(selectedNotification.type).icon}
                 </div>
                 <div>
-                  <span className={`text-[10px] font-black uppercase ${getNotificationStyles(selectedNotification.type).color}`}>
+                  <span className={`text-[10px]   uppercase ${getNotificationStyles(selectedNotification.type).color}`}>
                     {getNotificationStyles(selectedNotification.type).label}
                   </span>
                   <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
@@ -389,10 +424,8 @@ export function Notifications() {
               </button>
             </div>
 
-            {/* Hairline separator without border */}
             <div className="relative z-10 h-px bg-slate-100 dark:bg-slate-800 shrink-0" />
 
-            {/* Body */}
             <div className="relative z-10 p-4 md:p-6 overflow-y-auto flex-1 min-h-0">
               <div className="mb-4">
                 <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
@@ -409,7 +442,6 @@ export function Notifications() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="relative z-10 flex gap-3 p-4 md:p-6 shrink-0
               bg-slate-50 dark:bg-slate-900/40
               md:rounded-b-3xl

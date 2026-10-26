@@ -315,7 +315,7 @@ export default function ResetPassword() {
                     <div className="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4">
                       <Mail className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white">Reset Password</h1>
+                    <h1 className="text-2xl   text-slate-800 dark:text-white">Reset Password</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
                       Enter your email address and we'll help you recover your account.
                     </p>
@@ -350,7 +350,7 @@ export default function ResetPassword() {
                     <div className="mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
                       <ShieldQuestion className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                     </div>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white">Security Check</h1>
+                    <h1 className="text-2xl   text-slate-800 dark:text-white">Security Check</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Please answer the question you set during registration.</p>
                   </div>
 
@@ -387,7 +387,7 @@ export default function ResetPassword() {
                     <div className="mx-auto w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-4">
                       <KeyRound className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white">New Password</h1>
+                    <h1 className="text-2xl   text-slate-800 dark:text-white">New Password</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Ensure your new password is at least 8 characters long.</p>
                   </div>
 

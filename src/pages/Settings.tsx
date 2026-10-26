@@ -154,8 +154,8 @@ function CountyPicker({
 // ─── Skeletons, FormFields, helpers (unchanged from your file) ───
 function SettingsSkeleton() {
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-2 md:px-2 py-1 md:py-2 pb-20 md:pb-4">
-      <div className="w-full md:max-w-full space-y-1 md:space-y-2 animate-pulse">
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-6xl space-y-3 md:space-y-4 animate-pulse">
         <Card className="w-full overflow-hidden p-1 md:p-2 rounded-none md:rounded-xl border-0 shadow-none">
           <div className="mt-1 md:mt-2">
             <div className="space-y-1 md:space-y-2">
@@ -532,8 +532,8 @@ export function Settings() {
         className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
             custom-scrollbar overscroll-contain"
       >
-        <div className="w-full px-2 md:px-4 py-2 md:py-4 pb-24 safe-bottom space-y-1 md:space-y-2">
-          <Card className="w-full overflow-hidden p-1 md:p-2 rounded-xl md:rounded-xl border-0 shadow-none">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom space-y-3 md:space-y-4">
+          <Card className="w-full overflow-hidden p-1 md:p-2 rounded-xl border border-slate-100 dark:border-gray-800 shadow-sm">
             <div className="mt-1 md:mt-2">
               <Tabs defaultValue="profile" className="space-y-1 md:space-y-2">
                 {/* h2 "Settings" removed — the sticky header already says it */}
@@ -584,7 +584,7 @@ export function Settings() {
               </TabsList>
             )}
             <TabsContent value="profile">
-              <Card className="rounded-none md:rounded-xl border-0 shadow-none">
+              <Card className="rounded-xl border border-slate-100 dark:border-gray-800 shadow-sm">
                 <CardHeader className="px-1 md:px-2 pt-1 md:pt-2">
                   <CardTitle className="text-lg md:text-xl">Edit Profile Information</CardTitle>
                   <CardDescription className="text-xs md:text-sm">

@@ -316,7 +316,7 @@ export default function DailyStatus() {
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-3">
                         <div>
-                            <CardTitle className="text-xl font-black tracking-tight dark:text-white">
+                            <CardTitle className="text-xl   tracking-tight dark:text-white">
                                 Community Pulse
                             </CardTitle>
                         </div>
@@ -493,7 +493,7 @@ export default function DailyStatus() {
                                                                     className="absolute left-0 top-full mt-2 z-50 w-56 p-4 rounded-2xl bg-white/95 dark:bg-muted/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-2xl"
                                                                 >
                                                                     <div className="space-y-2">
-                                                                        <p className="font-black text-sm dark:text-white truncate">
+                                                                        <p className="  text-sm dark:text-white truncate">
                                                                             {post.profiles?.name}
                                                                         </p>
                                                                         <p className="text-[10px] font-bold text-blue-500 uppercase">
@@ -516,7 +516,7 @@ export default function DailyStatus() {
                                                     </div>
 
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-black dark:text-white leading-tight">
+                                                        <span className="text-sm   dark:text-white leading-tight">
                                                             {post.profiles?.name}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">

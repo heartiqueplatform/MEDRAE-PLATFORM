@@ -56,7 +56,7 @@ const ConnectivityOverlay = () => (
             </div>
         </div>
         <div className="space-y-4 max-w-md">
-            <h2 className="text-3xl font-black text-white tracking-tight italic">
+            <h2 className="text-3xl   text-white tracking-tight italic">
                 CONNECTION <span className="text-blue-500">INTERRUPTED</span>
             </h2>
             <div className="flex items-center justify-center gap-2 text-slate-400 font-medium uppercase tracking-[0.2em] text-xs">
@@ -928,7 +928,7 @@ Keep striving — each step you take strengthens your nursing expertise and prep
                     {pendingAction === "submit" && (
                         <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-blue-500 flex items-center justify-center font-black text-blue-600 text-sm md:text-base">
+                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-blue-500 flex items-center justify-center   text-blue-600 text-sm md:text-base">
                                     {percentageScore}%
                                 </div>
                                 <div>
@@ -940,7 +940,7 @@ Keep striving — each step you take strengthens your nursing expertise and prep
                                     </p>
                                 </div>
                             </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tighter">
+                            <div className="text-xl md:text-2xl   text-slate-900 dark:text-white tracking-tighter">
                                 {correctCount}{" "}
                                 <span className="text-slate-300 dark:text-slate-600">/</span>{" "}
                                 {totalQuestions} Questions
@@ -1087,7 +1087,7 @@ Keep striving — each step you take strengthens your nursing expertise and prep
                                         {q.question_text.slice(0, 45)}...
                                     </span>
                                     {answers && answers[q.id] && (
-                                        <div className="mt-1 text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded px-1.5 py-0.5 inline-block">
+                                        <div className="mt-1 text-[10px]   text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded px-1.5 py-0.5 inline-block">
                                             {answers[q.id]}
                                         </div>
                                     )}
@@ -1290,7 +1290,7 @@ Keep striving — each step you take strengthens your nursing expertise and prep
                                 </div>
 
                                 <div className="text-center space-y-2">
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[8px] md:text-[10px] font-black uppercase tracking-widest border-0">
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[8px] md:text-[10px]   uppercase tracking-widest border-0">
                                         <ShieldAlert className="w-3 h-3" /> Security Protocol
                                     </div>
                                     <h2 className="text-xl md:text-3xl font-extrabold tracking-tight">

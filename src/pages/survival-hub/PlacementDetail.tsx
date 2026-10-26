@@ -92,7 +92,7 @@ const PlacementDetailPage = () => {
                     >
                         <ChevronLeft size={20} className="md:w-5 md:h-5" />
                     </button>
-                    <h1 className="text-sm md:text-base font-black uppercase tracking-widest dark:text-white">Clinical Intake Rules</h1>
+                    <h1 className="text-sm md:text-base   uppercase tracking-widest dark:text-white">Clinical Intake Rules</h1>
                 </div>
             </div>
 
@@ -102,7 +102,7 @@ const PlacementDetailPage = () => {
                     <div className="h-14 w-14 md:h-16 md:w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
                         <ShieldCheck className="text-blue-600 md:w-8 md:h-8" size={28} />
                     </div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">{site?.hospital_name}</h2>
+                    <h2 className="text-xl md:text-2xl   text-slate-900 dark:text-white">{site?.hospital_name}</h2>
                     <p className="text-xs md:text-sm text-slate-500">{site?.county} County • {site?.location}</p>
                 </div>
 
@@ -110,7 +110,7 @@ const PlacementDetailPage = () => {
                 <div className="bg-white dark:bg-muted/30 border-b md:border md:rounded-xl md:border-slate-100 dark:md:border-slate-800 md:shadow-xl">
                     <div className="bg-white dark:bg-gray-800 px-4 py-3.5 md:p-4 flex items-center gap-2">
                         <FileText size={16} className="md:w-[18px] md:h-[18px] text-amber-400" />
-                        <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-black dark:text-white">Intake Requirements & Rules</h3>
+                        <h3 className="text-[10px] md:text-xs   uppercase tracking-[0.2em] text-black dark:text-white">Intake Requirements & Rules</h3>
                     </div>
                     <div className="px-4 py-5 md:p-6 space-y-4">
                         <div className="flex gap-3 items-start">

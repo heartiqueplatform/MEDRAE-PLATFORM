@@ -116,7 +116,7 @@ export default function StreakRestore() {
                             <div className="absolute -bottom-20 -left-10 w-52 h-52 bg-rose-300/20 rounded-full blur-3xl pointer-events-none" />
 
                             <div className="relative">
-                                <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider
+                                <div className="inline-flex items-center gap-1.5 text-[10px]   uppercase tracking-wider
                                                 bg-white/20 backdrop-blur px-2.5 py-1 rounded-xl mb-4">
                                     <Sparkles size={11} />
                                     Restore reward
@@ -124,7 +124,7 @@ export default function StreakRestore() {
 
                                 <div className="flex items-end gap-3 mb-2">
                                     <Flame className="w-8 h-8 text-yellow-200 drop-shadow" strokeWidth={2.4} />
-                                    <span className="text-5xl md:text-6xl font-black tracking-tight leading-none tabular-nums">
+                                    <span className="text-5xl md:text-6xl   tracking-tight leading-none tabular-nums">
                                         {streak.current}
                                     </span>
                                     <span className="text-sm font-semibold opacity-80 mb-2">days</span>

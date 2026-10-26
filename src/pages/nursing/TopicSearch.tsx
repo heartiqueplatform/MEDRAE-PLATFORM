@@ -120,7 +120,7 @@ export default function TopicSearch() {
                         {/* Title + Stats */}
                         <div className="flex flex-col gap-4 md:gap-5 md:flex-row md:items-end md:justify-between">
                             <div>
-                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight">
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl   tracking-tight">
                                     Jump to any topic
                                 </h1>
                                 <p className="mt-2 md:mt-3 max-w-2xl text-xs md:text-sm lg:text-base leading-6 text-slate-600 dark:text-slate-300">

@@ -379,7 +379,7 @@ export default function SuggestionBox() {
                 {/* Header */}
                 <div className="mb-4 md:mb-6 flex flex-wrap items-center justify-between gap-3 md:gap-4">
                     <div>
-                        <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 md:gap-2">
+                        <h3 className="text-xl md:text-2xl   text-slate-900 dark:text-white flex items-center gap-1.5 md:gap-2">
                             💡 {SUGGESTION_LABEL_PLURAL}
                             <span className="text-sm font-normal text-slate-400">({suggestions.length})</span>
                         </h3>

@@ -445,7 +445,7 @@ const AddHousingPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => navigate('/subscription')}
-                                    className="w-full mt-3 md:mt-4 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 text-white text-[10px] md:text-xs font-black py-2.5 md:py-3 rounded-lg md:rounded-xl transition-all active:scale-[0.98]"
+                                    className="w-full mt-3 md:mt-4 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 text-white text-[10px] md:text-xs   py-2.5 md:py-3 rounded-lg md:rounded-xl transition-all active:scale-[0.98]"
                                 >
                                     UPGRADE TO PUBLISH LISTING
                                 </button>

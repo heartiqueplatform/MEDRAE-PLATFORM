@@ -240,7 +240,7 @@ export function EpisodeSearchBar({
 
                         {grouped.map(([show, items]) => (
                             <div key={show}>
-                                <div className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
+                                <div className="px-4 pt-3 pb-1 text-[10px]   uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
                                     {show}
                                 </div>
                                 {items.map((r) => {

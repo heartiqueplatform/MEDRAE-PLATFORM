@@ -466,7 +466,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
 
         const chip = (label: string) => (
             <span
-                className="text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-md"
+                className="text-[10px]   uppercase tracking-[0.2em] px-2.5 py-1 rounded-md"
                 style={{ background: chipBgColor, color: isDark ? theme.accent : theme.primary }}
             >
                 {label}
@@ -496,7 +496,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                         style={{ background: tipBgColor, borderColor: theme.tipBorder }}>
                         <div className="flex items-center gap-2 mb-1">
                             <Sparkles className="w-4 h-4" style={{ color: theme.tipBorder }} />
-                            <span className="text-[10px] font-black uppercase tracking-widest"
+                            <span className="text-[10px]   uppercase tracking-widest"
                                 style={{ color: tipTextColor }}>
                                 {lowerLine.startsWith("nck loves this:") ? "NCK Loves This" : "High-Yield Exam Tip"}
                             </span>
@@ -534,7 +534,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                 return (
                     <div key={index} className="my-3 p-3 rounded-lg border border-dashed"
                         style={{ background: chipBgColor, borderColor: theme.accent }}>
-                        <span className="text-[9px] font-black uppercase tracking-widest"
+                        <span className="text-[9px]   uppercase tracking-widest"
                             style={{ color: isDark ? theme.accent : theme.primary }}>
                             NCK Trick
                         </span>
@@ -590,7 +590,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                             <UnitIcon className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-white/80 leading-none mb-1.5">
+                            <h2 className="text-[10px]   uppercase tracking-[0.25em] text-white/80 leading-none mb-1.5">
                                 {card.related_unit || theme.name} · {card.type.replace(/_/g, " ")}
                             </h2>
                             {card.title && (
@@ -603,7 +603,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
 
                     <div className="flex flex-wrap gap-2 mt-3 px-4">
                         {card.difficulty && (
-                            <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-md backdrop-blur-sm
+                            <span className={`text-[9px] uppercase   px-2 py-0.5 rounded-md backdrop-blur-sm
                                 ${card.difficulty.toLowerCase() === "hard"
                                     ? "bg-red-500/40 text-red-50"
                                     : card.difficulty.toLowerCase() === "medium"
@@ -646,14 +646,14 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                     <div className="flex items-center gap-2 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
                         <Activity className="w-4 h-4 text-white/80 shrink-0" />
                         <div className="min-w-0 flex-1">
-                            <p className="text-[8px] uppercase font-black text-white/60">Exam Priority</p>
+                            <p className="text-[8px] uppercase   text-white/60">Exam Priority</p>
                             <p className="text-[11px] font-bold text-white truncate">{card.exam_relevance || "Standard"}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
                         <ImageIcon className="w-4 h-4 text-white/80 shrink-0" />
                         <div className="min-w-0 flex-1">
-                            <p className="text-[8px] uppercase font-black text-white/60">Reference</p>
+                            <p className="text-[8px] uppercase   text-white/60">Reference</p>
                             <p className="text-[11px] font-bold text-white truncate">{card.source || "Verified"}</p>
                         </div>
                     </div>

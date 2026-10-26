@@ -716,7 +716,7 @@ function QuickDuelStripBase({
 
                         <button
                             onClick={() => handleRematch(lastDuel.opponent_id)}
-                            className="px-3.5 h-9 rounded-xl bg-blue-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black tracking-wider active:scale-95 transition-transform shrink-0"
+                            className="px-3.5 h-9 rounded-xl bg-blue-900 dark:bg-white text-white dark:text-slate-900 text-[10px]   tracking-wider active:scale-95 transition-transform shrink-0"
                             style={{ touchAction: "manipulation" }}
                         >
                             Rematch
@@ -919,7 +919,7 @@ function ChallengeOverlay({
                                     </motion.div>
                                 </div>
 
-                                <h3 className="text-xl font-black text-white mb-1">
+                                <h3 className="text-xl   text-white mb-1">
                                     Preparing Your Duel
                                 </h3>
                                 <p className="text-sm text-slate-400 mb-6">
@@ -957,7 +957,7 @@ function ChallengeOverlay({
                                     <CheckCircle2 size={48} className="relative text-emerald-400" strokeWidth={1.8} />
                                 </motion.div>
 
-                                <h3 className="text-xl font-black text-white mb-1">
+                                <h3 className="text-xl   text-white mb-1">
                                     Ready!
                                 </h3>
                                 <p className="text-sm text-slate-400">
@@ -988,7 +988,7 @@ function ChallengeOverlay({
                                     <AlertCircle size={48} className="relative text-rose-400" strokeWidth={1.8} />
                                 </div>
 
-                                <h3 className="text-xl font-black text-white mb-1">
+                                <h3 className="text-xl   text-white mb-1">
                                     Couldn't Prepare
                                 </h3>
                                 <p className="text-sm text-slate-400 mb-6">

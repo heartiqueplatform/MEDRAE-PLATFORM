@@ -207,7 +207,7 @@ export function NotificationPreferences({
                             <TelegramLogo className="w-6 h-6" />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black uppercase text-[#229ED9]">
+                            <span className="text-[10px]   uppercase text-[#229ED9]">
                                 Telegram
                             </span>
                             <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mt-0.5">

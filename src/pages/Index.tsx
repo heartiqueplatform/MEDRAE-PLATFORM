@@ -328,7 +328,7 @@ const Index = () => {
               />
             </div>
 
-            <h1 className="text-center text-4xl font-black tracking-wide">
+            <h1 className="text-center text-4xl   tracking-wide">
               <span style={{ color: "#e90000" }}>
                 MEDRAE
               </span>
@@ -610,7 +610,7 @@ const Index = () => {
 
         {/* Background Marquee */}
         <div className="absolute w-full left-0 top-[70%] overflow-hidden z-0 pointer-events-none opacity-20 md:opacity-10">
-          <div className="absolute whitespace-nowrap animate-marquee text-[40px] md:text-[50px] lg:text-[70px] font-black text-slate-900 md:text-white select-none pointer-events-none tracking-tighter">
+          <div className="absolute whitespace-nowrap animate-marquee text-[40px] md:text-[50px] lg:text-[70px]   text-slate-900 md:text-white select-none pointer-events-none tracking-tighter">
             <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
             <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
             <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
@@ -654,7 +654,7 @@ const Index = () => {
         {/* Content on the background image */}
         <div className="relative z-10 flex items-end justify-center h-full pb-10 md:pb-16">
           <div className="text-center text-white px-4">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl   tracking-tight">
               Welcome to <span className="text-red-500">Medrae</span> Nursing
             </h1>
             <p className="text-sm md:text-lg lg:text-xl mt-2 md:mt-3 font-medium text-white/90">
@@ -665,7 +665,7 @@ const Index = () => {
 
         {/* Top Marquee */}
         <div className="hidden md:block absolute w-full left-0 top-10 overflow-hidden z-0 pointer-events-none select-none opacity-10">
-          <div className="whitespace-nowrap animate-marquee text-[30px] md:text-[30px] lg:text-[30px] font-black text-white tracking-tighter">
+          <div className="whitespace-nowrap animate-marquee text-[30px] md:text-[30px] lg:text-[30px]   text-white tracking-tighter">
             <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
             <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
             <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
@@ -755,7 +755,7 @@ const Index = () => {
                       </div>
                       <div className="absolute inset-0 flex flex-col justify-end p-10 text-white text-left space-y-4">
                         <div className="w-12 h-1 bg-blue-500 rounded-full mb-2 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-                        <div className="text-xl md:text-2xl font-black leading-tight tracking-tight drop-shadow-lg">
+                        <div className="text-xl md:text-2xl   leading-tight tracking-tight drop-shadow-lg">
                           {typeof slide.text === "string"
                             ? slide.text
                             : React.isValidElement(slide.text)
@@ -833,25 +833,25 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
             <div className="space-y-1">
-              <p className="text-4xl md:text-5xl lg:text-6xl font-black tabular-nums">
+              <p className="text-4xl md:text-5xl lg:text-6xl   tabular-nums">
                 {studentCount.toLocaleString()}+
               </p>
               <p className="text-sm md:text-base font-medium text-blue-200">Active Students</p>
             </div>
             <div className="space-y-1">
-              <p className="text-4xl md:text-5xl lg:text-6xl font-black tabular-nums">
+              <p className="text-4xl md:text-5xl lg:text-6xl   tabular-nums">
                 {questionCount.toLocaleString()}+
               </p>
               <p className="text-sm md:text-base font-medium text-blue-200">Practice Questions</p>
             </div>
             <div className="space-y-1">
-              <p className="text-4xl md:text-5xl lg:text-6xl font-black tabular-nums">
+              <p className="text-4xl md:text-5xl lg:text-6xl   tabular-nums">
                 {successRate}%
               </p>
               <p className="text-sm md:text-base font-medium text-blue-200">Avg Score Improvement</p>
             </div>
             <div className="space-y-1">
-              <p className="text-4xl md:text-5xl lg:text-6xl font-black">4.8★</p>
+              <p className="text-4xl md:text-5xl lg:text-6xl  ">4.8★</p>
               <p className="text-sm md:text-base font-medium text-blue-200">User Rating</p>
             </div>
           </div>
@@ -869,7 +869,7 @@ const Index = () => {
           <AnimatedSection direction="up">
             <div className="text-center mb-10 md:mb-16 space-y-3 md:space-y-4 px-4 md:px-0">
 
-              <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-800">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl   tracking-tighter text-slate-800">
                 Everything You Need to <br />
                 <span className="text-blue-600 italic">Pass the NCK, FQEs & Nursing Exams</span>
               </h2>
@@ -936,7 +936,7 @@ const Index = () => {
                         {feature.description}
                       </CardDescription>
                       {isHighlighted && (
-                        <div className="mt-3 inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-wider">
+                        <div className="mt-3 inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-[8px] md:text-[9px]   uppercase tracking-wider">
                           <Timer className="w-3 h-3" />
                           Timed • Pressure Test • Instant Results
                         </div>
@@ -1022,7 +1022,7 @@ const Index = () => {
               {/* Header */}
               <div className="text-center mb-12 md:mb-16">
                 <h2
-                  className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight"
+                  className="text-3xl md:text-4xl lg:text-5xl   tracking-tight"
                   style={{ color: "#e6edf3" }}
                 >
                   The Medrae Nursing AI Algorithm
@@ -1047,7 +1047,7 @@ const Index = () => {
                       <div className="flex items-center gap-2 mb-4">
                         <Gauge className="w-6 h-6" style={{ color: "#8b949e" }} />
                         <span
-                          className="text-sm font-black uppercase tracking-widest"
+                          className="text-sm   uppercase tracking-widest"
                           style={{ color: "#8b949e" }}
                         >
                           Real-Time Prediction
@@ -1065,7 +1065,7 @@ const Index = () => {
                               Your Predicted NCK Score
                             </p>
                             <p
-                              className="text-5xl md:text-6xl font-black"
+                              className="text-5xl md:text-6xl  "
                               style={{ color: "#e6edf3" }}
                             >
                               95%
@@ -1108,7 +1108,7 @@ const Index = () => {
                             style={{ backgroundColor: "#0d1117" }}
                           >
                             <p
-                              className="text-2xl font-black"
+                              className="text-2xl  "
                               style={{ color: "#e6edf3" }}
                             >
                               {stat.value}
@@ -1128,7 +1128,7 @@ const Index = () => {
                     <div className="space-y-6">
                       <div>
                         <h3
-                          className="text-xl md:text-2xl font-black"
+                          className="text-xl md:text-2xl  "
                           style={{ color: "#e6edf3" }}
                         >
                           Know Your Strengths. Fix Your Weaknesses.
@@ -1223,7 +1223,7 @@ const Index = () => {
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 md:gap-16 relative z-10 px-4 md:px-0">
               {/* Text Content Column */}
               <div className="lg:w-3/5 space-y-8 md:space-y-10 order-2 lg:order-1">
-                <div className="inline-flex items-center gap-2 text-purple-600 font-black text-[10px] md:text-xs uppercase tracking-[0.2em]">
+                <div className="inline-flex items-center gap-2 text-purple-600   text-[10px] md:text-xs uppercase tracking-[0.2em]">
                   <div className="h-px w-6 md:w-8 bg-purple-600" /> Our Purpose
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-12">
@@ -1233,7 +1233,7 @@ const Index = () => {
                       <div className="p-2.5 md:p-3 bg-white rounded-xl shadow-sm text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-500 group-hover:rotate-6">
                         <Target className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
-                      <h3 className="text-xl md:text-2xl font-black text-slate-800">Our Mission</h3>
+                      <h3 className="text-xl md:text-2xl   text-slate-800">Our Mission</h3>
                     </div>
                     <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">
                       To eliminate random, unstructured revision and replace it with a focused nursing exam system that builds confidence through repeated, intelligent practice <span className="text-2xl font-bold tracking-tight text-black">(I.P)</span>.
@@ -1245,7 +1245,7 @@ const Index = () => {
                       <div className="p-2.5 md:p-3 bg-white rounded-xl shadow-sm text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500 group-hover:rotate-6">
                         <Eye className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
-                      <h3 className="text-xl md:text-2xl font-black text-slate-800">Our Vision</h3>
+                      <h3 className="text-xl md:text-2xl   text-slate-800">Our Vision</h3>
                     </div>
                     <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">
                       To become Kenya's most trusted nursing exam preparation platform by helping students pass faster through structured, measurable, and performance-driven practice <span className="text-2xl font-bold tracking-tight text-black">(P.D.P)</span>.
@@ -1257,8 +1257,8 @@ const Index = () => {
                       <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8" />
                     </div>
                     <div>
-                      <h4 className="text-[10px] md:text-xs uppercase font-black tracking-widest text-slate-400 mb-1">Our Core Slogan</h4>
-                      <p className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent italic">
+                      <h4 className="text-[10px] md:text-xs uppercase   tracking-widest text-slate-400 mb-1">Our Core Slogan</h4>
+                      <p className="text-2xl md:text-3xl   bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent italic">
                         "Advancing nursing education and student success."
                       </p>
                     </div>
@@ -1282,7 +1282,7 @@ const Index = () => {
                       style={{ opacity: heroMediaLoaded[activeHeroStory] ? 1 : 0 }}
                     />
                     <div className="absolute top-4 left-0 w-full overflow-hidden pointer-events-none z-20">
-                      <div className="inline-block whitespace-nowrap animate-marquee text-white/40 font-black text-sm tracking-widest">
+                      <div className="inline-block whitespace-nowrap animate-marquee text-white/40   text-sm tracking-widest">
                         <span className="mx-8 uppercase">Medrae</span>
                         <span className="mx-8 uppercase">Medrae</span>
                       </div>
@@ -1317,7 +1317,7 @@ const Index = () => {
                 {/* Text Content */}
                 <div className="lg:w-1/2 text-center lg:text-left space-y-6 md:space-y-8">
 
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.1] tracking-tighter">
+                  <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl   text-white leading-[1.1] tracking-tighter">
                     Ready to Pass Your <br />
                     <span className="text-blue-200 italic">Nursing, FQEs & NCK Exams?</span>
                   </h2>
@@ -1329,7 +1329,7 @@ const Index = () => {
                   <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 md:gap-4 pt-2 md:pt-4">
                     <Button
                       size="xl"
-                      className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-black text-base md:text-lg shadow-2xl shadow-blue-900/20 transition-all active:scale-[0.98] group hover:scale-[1.05]"
+                      className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-white text-blue-700 hover:bg-blue-50   text-base md:text-lg shadow-2xl shadow-blue-900/20 transition-all active:scale-[0.98] group hover:scale-[1.05]"
                       onClick={() => navigate('/register')}
                     >
                       Get Started Now

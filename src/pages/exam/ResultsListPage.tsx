@@ -378,7 +378,7 @@ const ResultsListPage = () => {
                                         {isReleased ? (
                                             <>
                                                 <div className="text-right">
-                                                    <div className="flex items-center justify-end gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-base md:text-lg">
+                                                    <div className="flex items-center justify-end gap-1.5 text-emerald-600 dark:text-emerald-400   text-base md:text-lg">
                                                         <Trophy className="h-4 w-4" />
                                                         {res.score}/{res.total_questions}
                                                     </div>

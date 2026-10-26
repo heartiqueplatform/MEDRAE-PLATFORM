@@ -77,7 +77,7 @@ export const PlacementCard = ({ site, onDelete }: { site: any, onDelete: (id: st
 
             <div className="p-4 md:p-5">
                 <div className="mb-2 md:mb-3 flex items-center justify-between flex-wrap gap-1">
-                    <span className="rounded-full bg-amber-100 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[10px] font-black text-amber-700 uppercase tracking-tighter dark:bg-amber-900/30 dark:text-amber-400">
+                    <span className="rounded-full bg-amber-100 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[10px]   text-amber-700 uppercase tracking-tighter dark:bg-amber-900/30 dark:text-amber-400">
                         {site.county}
                     </span>
                     <div className="flex items-center gap-1.5 md:gap-2">
@@ -99,7 +99,7 @@ export const PlacementCard = ({ site, onDelete }: { site: any, onDelete: (id: st
                     </div>
                 </div>
 
-                <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white leading-tight truncate">{site.hospital_name}</h3>
+                <h3 className="text-base md:text-lg   text-slate-900 dark:text-white leading-tight truncate">{site.hospital_name}</h3>
                 <p className="text-[10px] md:text-xs text-slate-500 mb-3 md:mb-4">{site.location}</p>
 
                 {/* Wards Section — no border */}
@@ -115,7 +115,7 @@ export const PlacementCard = ({ site, onDelete }: { site: any, onDelete: (id: st
                 <div className="grid grid-cols-1 gap-1.5 md:gap-2 mt-3 md:mt-4">
                     <button
                         onClick={() => navigate(`/survival-hub/placements/${site.id}`)}
-                        className="flex items-center justify-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-blue-600 py-2.5 md:py-3.5 text-[10px] md:text-xs font-black uppercase tracking-widest text-white active:scale-95 transition-all"
+                        className="flex items-center justify-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-blue-600 py-2.5 md:py-3.5 text-[10px] md:text-xs   uppercase tracking-widest text-white active:scale-95 transition-all"
                     >
                         <FileText size={14} className="md:w-4 md:h-4" />
                         View Intake Rules

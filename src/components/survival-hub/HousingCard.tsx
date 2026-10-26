@@ -145,7 +145,7 @@ export const HousingCard = ({
                         {house.name}
                     </h3>
                     {house.verified && (
-                        <div className="flex items-center gap-0.5 md:gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[8px] md:text-[9px] font-black px-1.5 md:px-2 py-0.5 md:py-1 rounded-full uppercase tracking-tighter shrink-0 ml-2">
+                        <div className="flex items-center gap-0.5 md:gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[8px] md:text-[9px]   px-1.5 md:px-2 py-0.5 md:py-1 rounded-full uppercase tracking-tighter shrink-0 ml-2">
                             <ShieldCheck size={8} className="md:w-2.5 md:h-2.5" />
                             Verified
                         </div>
@@ -168,8 +168,8 @@ export const HousingCard = ({
                 {/* 5. Amenities & Price */}
                 <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl">
                     <div>
-                        <p className="text-[8px] md:text-[9px] uppercase text-slate-400 font-black tracking-widest">Price / Night</p>
-                        <p className="text-base md:text-xl font-black text-emerald-600 dark:text-emerald-400">
+                        <p className="text-[8px] md:text-[9px] uppercase text-slate-400   tracking-widest">Price / Night</p>
+                        <p className="text-base md:text-xl   text-emerald-600 dark:text-emerald-400">
                             KSh {house.price_per_night?.toLocaleString() || 0}
                         </p>
                     </div>

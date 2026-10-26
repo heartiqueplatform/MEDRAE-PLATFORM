@@ -1,7 +1,9 @@
 import {
   User, Mail, Phone, MapPin, School, Calendar, Edit, Camera, Eye, EyeOff, Briefcase, Building2,
-  Wifi, WifiOff, RefreshCw
+  Wifi, WifiOff, RefreshCw, ChevronLeft,
 } from "lucide-react";
+import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { playSound } from "@/lib/soundManager";
 import {
   Card, CardContent, CardHeader, CardTitle
 } from "@/components/ui/card";
@@ -189,6 +191,15 @@ export function Profile() {
   const supabaseClient = useSupabaseClient();
   const user = session?.user || null;
   const navigate = useNavigate();
+
+  // 👇 full-screen chrome
+  const home = useHomeRoute();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const handleBack = useCallback(() => {
+    playSound("tap");
+    if (navigator.vibrate) navigator.vibrate(20);
+    navigate(home, { replace: true });
+  }, [navigate, home]);
 
   const [showDialog, setShowDialog] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -579,52 +590,81 @@ export function Profile() {
   // RENDER GATES
   // ─────────────────────────────────────────────────────────────
 
-  // 1. OFFLINE + NO USABLE CACHE → hard stop
   if (isOffline && !isProfileReady(profileState) && !hasCachedProfile) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center px-4 py-8">
-        <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
-          <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
-          <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
-
-          <div className="relative flex flex-col items-center">
-            <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
-              <WifiOff className="h-6 w-6 md:h-7 md:w-7" />
-            </div>
-
-            <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+        {/* Sticky top bar with back arrow */}
+        <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+            border-b border-gray-100 dark:border-gray-800
+            bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+            z-30 safe-top">
+          <button
+            onClick={handleBack}
+            aria-label="Go back"
+            className="flex items-center justify-center h-10 w-10 rounded-full
+                bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                active:scale-95 transition-all touch-manipulation"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+              Profile
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
               You're offline
-            </h2>
-
-            <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
-              We can't load your profile without a connection, and there's
-              nothing cached on this device yet. Reconnect to the internet and
-              your details will appear here automatically.
             </p>
+          </div>
+        </header>
 
-            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-              <WifiOff className="h-3 w-3" />
-              No connection
-            </div>
+        {/* Internally-scrolling content */}
+        <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+            custom-scrollbar overscroll-contain safe-bottom">
+          <div className="min-h-full flex items-center justify-center px-4 py-8">
+            <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
+              <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
+              <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
 
-            <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button
-                onClick={() => {
-                  if (navigator.onLine) {
-                    fetchProfile();
-                    fetchSubscription();
-                  } else {
-                    toast({
-                      title: "Still offline",
-                      description: "Reconnect to the internet and try again.",
-                    });
-                  }
-                }}
-                className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-              >
-                <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                Check connection
-              </Button>
+              <div className="relative flex flex-col items-center">
+                <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+                  <WifiOff className="h-6 w-6 md:h-7 md:w-7" />
+                </div>
+
+                <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
+                  You're offline
+                </h2>
+
+                <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  We can't load your profile without a connection, and there's
+                  nothing cached on this device yet. Reconnect to the internet and
+                  your details will appear here automatically.
+                </p>
+
+                <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                  <WifiOff className="h-3 w-3" />
+                  No connection
+                </div>
+
+                <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button
+                    onClick={() => {
+                      if (navigator.onLine) {
+                        fetchProfile();
+                        fetchSubscription();
+                      } else {
+                        toast({
+                          title: "Still offline",
+                          description: "Reconnect to the internet and try again.",
+                        });
+                      }
+                    }}
+                    className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                    Check connection
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -637,51 +677,80 @@ export function Profile() {
   //    This kills the "No username yet / Add your phone" flash
   //    entirely: nothing partial ever reaches the profile shell.
   if (!isProfileReady(profileState)) {
-    // Only fall through to "not set up yet" after a real,
-    // token-authenticated load attempt finished and returned empty.
-    if (hasLoadedOnce && !isLoading && user && !isOffline) {
-      return (
-        <div className="min-h-screen w-full flex items-center justify-center px-4 py-8">
-          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
-            <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
-            <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
+    return (
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+        {/* Sticky top bar with back arrow */}
+        <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+            border-b border-gray-100 dark:border-gray-800
+            bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+            z-30 safe-top">
+          <button
+            onClick={handleBack}
+            aria-label="Go back"
+            className="flex items-center justify-center h-10 w-10 rounded-full
+                bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                active:scale-95 transition-all touch-manipulation"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+              Profile
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              {hasLoadedOnce && !isLoading && user && !isOffline
+                ? "Complete your profile to continue"
+                : "Loading your profile…"}
+            </p>
+          </div>
+        </header>
 
-            <div className="relative flex flex-col items-center">
-              <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                <User className="h-6 w-6 md:h-7 md:w-7" />
-              </div>
+        {/* Internally-scrolling content */}
+        <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+            custom-scrollbar overscroll-contain safe-bottom">
+          {hasLoadedOnce && !isLoading && user && !isOffline ? (
+            <div className="min-h-full flex items-center justify-center px-4 py-8">
+              <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
+                <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
+                <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
 
-              <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
-                Profile not set up yet
-              </h2>
+                <div className="relative flex flex-col items-center">
+                  <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <User className="h-6 w-6 md:h-7 md:w-7" />
+                  </div>
 
-              <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Head to Settings to complete your profile and unlock the full
-                experience.
-              </p>
+                  <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
+                    Profile not set up yet
+                  </h2>
 
-              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                <Wifi className="h-3 w-3" />
-                Online
-              </div>
+                  <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Head to Settings to complete your profile and unlock the full
+                    experience.
+                  </p>
 
-              <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  onClick={() => navigate("/settings")}
-                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                  Complete Profile
-                </Button>
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <Wifi className="h-3 w-3" />
+                    Online
+                  </div>
+
+                  <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button
+                      onClick={() => navigate("/settings")}
+                      className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                    >
+                      <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                      Complete Profile
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <ProfileSkeleton />
+          )}
         </div>
-      );
-    }
-
-    // Otherwise — still loading. Skeleton.
-    return <ProfileSkeleton />;
+      </div>
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -691,252 +760,287 @@ export function Profile() {
   const initials = profileState?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "ME";
 
   return (
-    <div className="space-y-2 px-2 py-2 border-0 md:max-w-full mx-auto w-full pb-20 md:pb-6">
-      <Tabs defaultValue="overview" className="space-y-2">
-        <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
-          <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
-          <TabsTrigger value="stats" className="rounded-xl">Statistics</TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-xl">Account</TabsTrigger>
-        </TabsList>
+    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+      {/* Sticky top bar with back arrow */}
+      <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+          border-b border-gray-100 dark:border-gray-800
+          bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+          z-30 safe-top">
+        <button
+          onClick={handleBack}
+          aria-label="Go back"
+          className="flex items-center justify-center h-10 w-10 rounded-full
+              bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+              active:scale-95 transition-all touch-manipulation"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+            Profile
+          </h1>
+          <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+            Your account and statistics
+          </p>
+        </div>
+      </header>
 
-        <TabsContent value="overview" className="space-y-2">
-          {/* Profile Card */}
-          <Card className="border-0 shadow-none rounded-xl">
-            <CardContent className="p-2 md:p-4">
-              <div className="flex items-center gap-2 mb-2 md:mb-4">
-                <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                <h1 className="text-xl md:text-2xl font-bold">My Profile</h1>
-              </div>
-              <div className="flex flex-col md:flex-row items-start gap-2 md:gap-4">
-                <div className="relative flex-shrink-0">
-                  <Avatar className="h-20 w-20 md:h-24 md:w-24 rounded-xl">
-                    <AvatarImage src={profileState?.avatar_url || undefined} className="object-cover rounded-xl" loading="lazy" />
-                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl font-semibold rounded-xl">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-xl shadow-none border-0" onClick={handleAvatarUpdate}>
-                    <Camera className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  </Button>
-                </div>
+      {/* Internally-scrolling content */}
+      <div
+        ref={contentRef}
+        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+            custom-scrollbar overscroll-contain"
+      >
+        <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
+          <Tabs defaultValue="overview" className="space-y-2">
 
-                <div className="flex-1 space-y-2 w-full">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <div>
-                      <h2 className="text-xl md:text-2xl font-bold">{displayName}</h2>
-                      {profileState?.username ? (
-                        <p className="text-muted-foreground text-sm">@{profileState.username}</p>
-                      ) : (
-                        <p className="text-muted-foreground/60 italic text-xs md:text-sm">
-                          No username yet
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {profileState?.role && (
-                        <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0 rounded-xl">
-                          {profileState.role}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted rounded-xl">
-                        {activePlan || "Free"}
-                      </Badge>
-                    </div>
+            <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
+              <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
+              <TabsTrigger value="stats" className="rounded-xl">Statistics</TabsTrigger>
+              <TabsTrigger value="settings" className="rounded-xl">Account</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-2">
+              {/* Profile Card */}
+              <Card className="border-0 shadow-none rounded-xl">
+                <CardContent className="p-2 md:p-4">
+                  <div className="flex items-center gap-2 mb-2 md:mb-4">
+                    <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    <h1 className="text-xl md:text-2xl font-bold">My Profile</h1>
                   </div>
-
-                  {profileState?.bio?.trim() ? (
-                    <p className="text-muted-foreground text-xs md:text-sm">{profileState.bio}</p>
-                  ) : (
-                    <p className="text-muted-foreground/60 italic text-xs md:text-sm">
-                      No bio yet — add one from Settings to personalize your profile.
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <InfoRow icon={Mail} value={profileState?.email} fallback="email" />
-                      <InfoRow icon={Phone} value={profileState?.phone} fallback="phone number" />
-                      <InfoRow icon={MapPin} value={profileState?.county} fallback="county" />
-                    </div>
-                    <div className="space-y-2">
-                      <InfoRow icon={School} value={profileState?.institution} fallback="institution" />
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
-                        {profileState?.joined_date ? (
-                          <span className="text-xs md:text-sm">
-                            Joined {new Date(profileState.joined_date).toLocaleDateString(undefined, {
-                              year: "numeric", month: "short", day: "numeric",
-                            })}
-                          </span>
-                        ) : (
-                          <EmptyValue />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
-                    <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit My Profile
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Academic Card */}
-          <Card className="border-0 shadow-none rounded-xl">
-            <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
-              <CardTitle className="text-base md:text-lg">Academic & Professional Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
-              {(() => {
-                const items = [
-                  profileState?.course && { label: "Course", value: profileState.course },
-                  profileState?.block && { label: "Block/Class", value: profileState.block },
-                  profileState?.nck_number && { label: "NCK / Exam Number", value: profileState.nck_number },
-                  profileState?.specialization && { label: "Specialization", value: profileState.specialization },
-                  profileState?.workplace && { label: "Workplace", value: profileState.workplace, icon: Building2 },
-                  profileState?.employment_type && {
-                    label: "Employment Type",
-                    value: profileState.employment_type.replace("_", " "),
-                    icon: Briefcase,
-                    capitalize: true,
-                  },
-                  profileState?.years_experience !== undefined &&
-                  profileState?.years_experience !== null && {
-                    label: "Years of Experience",
-                    value: `${profileState.years_experience} years`,
-                  },
-                  profileState?.license_status && {
-                    label: "License Status",
-                    value: profileState.license_status.replace("_", " "),
-                    capitalize: true,
-                  },
-                ].filter(Boolean) as Array<{
-                  label: string;
-                  value: string;
-                  icon?: any;
-                  capitalize?: boolean;
-                }>;
-
-                if (items.length === 0) {
-                  return (
-                    <div className="text-center py-2 md:py-4">
-                      <p className="text-muted-foreground/70 italic text-xs md:text-sm">
-                        No academic or professional details added yet.
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={handleProfileUpdate}
-                        className="mt-2 text-xs md:text-sm border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
-                      >
-                        <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Add details
+                  <div className="flex flex-col md:flex-row items-start gap-2 md:gap-4">
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="h-20 w-20 md:h-24 md:w-24 rounded-xl">
+                        <AvatarImage src={profileState?.avatar_url || undefined} className="object-cover rounded-xl" loading="lazy" />
+                        <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl font-semibold rounded-xl">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-xl shadow-none border-0" onClick={handleAvatarUpdate}>
+                        <Camera className="h-3.5 w-3.5 md:h-4 md:w-4" />
                       </Button>
                     </div>
-                  );
-                }
 
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {items.map((item) => (
-                      <div key={item.label}>
-                        <label className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
-                          {item.icon && <item.icon className="h-2.5 w-2.5 md:h-3 md:w-3" />}
-                          {item.label}
-                        </label>
-                        <p className={`font-medium text-xs md:text-sm ${item.capitalize ? "capitalize" : ""}`}>
-                          {item.value}
-                        </p>
+                    <div className="flex-1 space-y-2 w-full">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                        <div>
+                          <h2 className="text-xl md:text-2xl font-bold">{displayName}</h2>
+                          {profileState?.username ? (
+                            <p className="text-muted-foreground text-sm">@{profileState.username}</p>
+                          ) : (
+                            <p className="text-muted-foreground/60 italic text-xs md:text-sm">
+                              No username yet
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {profileState?.role && (
+                            <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0 rounded-xl">
+                              {profileState.role}
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted rounded-xl">
+                            {activePlan || "Free"}
+                          </Badge>
+                        </div>
                       </div>
-                    ))}
+
+                      {profileState?.bio?.trim() ? (
+                        <p className="text-muted-foreground text-xs md:text-sm">{profileState.bio}</p>
+                      ) : (
+                        <p className="text-muted-foreground/60 italic text-xs md:text-sm">
+                          No bio yet — add one from Settings to personalize your profile.
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                          <InfoRow icon={Mail} value={profileState?.email} fallback="email" />
+                          <InfoRow icon={Phone} value={profileState?.phone} fallback="phone number" />
+                          <InfoRow icon={MapPin} value={profileState?.county} fallback="county" />
+                        </div>
+                        <div className="space-y-2">
+                          <InfoRow icon={School} value={profileState?.institution} fallback="institution" />
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                            {profileState?.joined_date ? (
+                              <span className="text-xs md:text-sm">
+                                Joined {new Date(profileState.joined_date).toLocaleDateString(undefined, {
+                                  year: "numeric", month: "short", day: "numeric",
+                                })}
+                              </span>
+                            ) : (
+                              <EmptyValue />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
+                        <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit My Profile
+                      </Button>
+                    </div>
                   </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </CardContent>
+              </Card>
 
-        <TabsContent value="stats" className="space-y-2">
-          <Card className="border-0 shadow-none rounded-xl">
-            <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
-              <CardTitle className="text-base md:text-lg">Platform Statistics</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 md:p-4 text-center">
-              <p className="text-sm md:text-lg font-medium text-muted-foreground">{getDaysMessage()}</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              {/* Academic Card */}
+              <Card className="border-0 shadow-none rounded-xl">
+                <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
+                  <CardTitle className="text-base md:text-lg">Academic & Professional Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
+                  {(() => {
+                    const items = [
+                      profileState?.course && { label: "Course", value: profileState.course },
+                      profileState?.block && { label: "Block/Class", value: profileState.block },
+                      profileState?.nck_number && { label: "NCK / Exam Number", value: profileState.nck_number },
+                      profileState?.specialization && { label: "Specialization", value: profileState.specialization },
+                      profileState?.workplace && { label: "Workplace", value: profileState.workplace, icon: Building2 },
+                      profileState?.employment_type && {
+                        label: "Employment Type",
+                        value: profileState.employment_type.replace("_", " "),
+                        icon: Briefcase,
+                        capitalize: true,
+                      },
+                      profileState?.years_experience !== undefined &&
+                      profileState?.years_experience !== null && {
+                        label: "Years of Experience",
+                        value: `${profileState.years_experience} years`,
+                      },
+                      profileState?.license_status && {
+                        label: "License Status",
+                        value: profileState.license_status.replace("_", " "),
+                        capitalize: true,
+                      },
+                    ].filter(Boolean) as Array<{
+                      label: string;
+                      value: string;
+                      icon?: any;
+                      capitalize?: boolean;
+                    }>;
 
-        <TabsContent value="settings" className="space-y-2">
-          <Card className="border-0 shadow-none rounded-xl">
-            <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
-              <CardTitle className="text-base md:text-lg">Account Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
-              <p className="text-muted-foreground text-xs md:text-sm">Update your account settings and preferences in the Settings page.</p>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
-                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit Profile
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowLogoutDialog(true)}
-                  className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
-                >
-                  Logout
-                </Button>
-
-                <LogoutDialog
-                  open={showLogoutDialog}
-                  onOpenChange={setShowLogoutDialog}
-                  onConfirm={handleLogout}
-                  userName={profileState?.name || profileState?.username}
-                  streakDays={profileState?.streak_days}
-                />
-                <Button
-                  variant="destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none rounded-xl"
-                >
-                  Delete My Account
-                </Button>
-
-                <DeleteAccountDialog
-                  open={showDeleteDialog}
-                  onOpenChange={setShowDeleteDialog}
-                  onConfirm={handleDeleteAccount}
-                  userName={profileState?.name}
-                  username={profileState?.username}
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDialog(true)}
-                  className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
-                >
-                  Change Password
-                </Button>
-
-                <ChangePasswordDialog
-                  open={showDialog}
-                  onOpenChange={setShowDialog}
-                  onSubmit={async (newPassword) => {
-                    const { error } = await supabase.auth.updateUser({ password: newPassword });
-                    if (error) {
-                      toast({ title: "Error", description: error.message });
-                    } else {
-                      toast({
-                        title: "Password updated",
-                        description: "Your new password is now active.",
-                      });
-                      setShowDialog(false);
+                    if (items.length === 0) {
+                      return (
+                        <div className="text-center py-2 md:py-4">
+                          <p className="text-muted-foreground/70 italic text-xs md:text-sm">
+                            No academic or professional details added yet.
+                          </p>
+                          <Button
+                            variant="outline"
+                            onClick={handleProfileUpdate}
+                            className="mt-2 text-xs md:text-sm border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                          >
+                            <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Add details
+                          </Button>
+                        </div>
+                      );
                     }
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {items.map((item) => (
+                          <div key={item.label}>
+                            <label className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
+                              {item.icon && <item.icon className="h-2.5 w-2.5 md:h-3 md:w-3" />}
+                              {item.label}
+                            </label>
+                            <p className={`font-medium text-xs md:text-sm ${item.capitalize ? "capitalize" : ""}`}>
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="stats" className="space-y-2">
+              <Card className="border-0 shadow-none rounded-xl">
+                <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
+                  <CardTitle className="text-base md:text-lg">Platform Statistics</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 md:p-4 text-center">
+                  <p className="text-sm md:text-lg font-medium text-muted-foreground">{getDaysMessage()}</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="settings" className="space-y-2">
+              <Card className="border-0 shadow-none rounded-xl">
+                <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
+                  <CardTitle className="text-base md:text-lg">Account Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
+                  <p className="text-muted-foreground text-xs md:text-sm">Update your account settings and preferences in the Settings page.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
+                      <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit Profile
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLogoutDialog(true)}
+                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                    >
+                      Logout
+                    </Button>
+
+                    <LogoutDialog
+                      open={showLogoutDialog}
+                      onOpenChange={setShowLogoutDialog}
+                      onConfirm={handleLogout}
+                      userName={profileState?.name || profileState?.username}
+                      streakDays={profileState?.streak_days}
+                    />
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none rounded-xl"
+                    >
+                      Delete My Account
+                    </Button>
+
+                    <DeleteAccountDialog
+                      open={showDeleteDialog}
+                      onOpenChange={setShowDeleteDialog}
+                      onConfirm={handleDeleteAccount}
+                      userName={profileState?.name}
+                      username={profileState?.username}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDialog(true)}
+                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                    >
+                      Change Password
+                    </Button>
+
+                    <ChangePasswordDialog
+                      open={showDialog}
+                      onOpenChange={setShowDialog}
+                      onSubmit={async (newPassword) => {
+                        const { error } = await supabase.auth.updateUser({ password: newPassword });
+                        if (error) {
+                          toast({ title: "Error", description: error.message });
+                        } else {
+                          toast({
+                            title: "Password updated",
+                            description: "Your new password is now active.",
+                          });
+                          setShowDialog(false);
+                        }
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

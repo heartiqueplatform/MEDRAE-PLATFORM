@@ -187,7 +187,7 @@ export default function NursingModule() {
 
                         <div className="flex flex-col gap-4 md:gap-5 md:flex-row md:items-end md:justify-between">
                             <div>
-                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight">Choose module</h1>
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl   tracking-tight">Choose module</h1>
                                 <p className="mt-2 md:mt-3 max-w-2xl text-xs md:text-sm lg:text-base leading-6 text-slate-600 dark:text-slate-300">{headerDescription}</p>
                             </div>
 
@@ -329,7 +329,7 @@ export default function NursingModule() {
                                                 <span className={`rounded-full px-2 md:px-2.5 py-0.5 md:py-1 text-[10px] md:text-xs font-bold ring-1 ${style.badge}`}>{style.label}</span>
                                             )}
                                         </div>
-                                        <h2 className="line-clamp-2 text-base md:text-lg font-black text-slate-950 dark:text-white">{mod.title}</h2>
+                                        <h2 className="line-clamp-2 text-base md:text-lg   text-slate-950 dark:text-white">{mod.title}</h2>
                                         {isLocked ? (
                                             <p className="mt-0.5 md:mt-1 text-[10px] md:text-xs font-bold text-amber-600 dark:text-amber-400">{formatNumberWithImpact(mod.total_questions || 0)} questions waiting</p>
                                         ) : isUnlockedNow ? (

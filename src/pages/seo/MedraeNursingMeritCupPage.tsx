@@ -118,7 +118,7 @@ export default function MedraeNursingMeritCupPage() {
 
                 {/* ============ HERO ============ */}
                 <section className="text-center">
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl">
+                    <h1 className="text-3xl   tracking-tight text-slate-900 sm:text-5xl">
                         Medrae National Nursing{" "}
                         <span className="text-blue-700">Merit Cup</span>
                     </h1>
@@ -307,7 +307,7 @@ export default function MedraeNursingMeritCupPage() {
                                 Any registered nursing student in a KMTC or
                                 NCK-accredited diploma programme.
                             </p>
-                            <p className="mt-4 text-2xl font-black text-slate-900">
+                            <p className="mt-4 text-2xl   text-slate-900">
                                 KSh 999
                             </p>
                         </div>
@@ -324,7 +324,7 @@ export default function MedraeNursingMeritCupPage() {
                                 Nurses in internship or within their first
                                 year of practice preparing for the NCK exam.
                             </p>
-                            <p className="mt-4 text-2xl font-black text-slate-900">
+                            <p className="mt-4 text-2xl   text-slate-900">
                                 KSh 999
                             </p>
                         </div>
@@ -342,7 +342,7 @@ export default function MedraeNursingMeritCupPage() {
                                 benchmark their knowledge and earn CPD
                                 recognition.
                             </p>
-                            <p className="mt-4 text-2xl font-black text-slate-900">
+                            <p className="mt-4 text-2xl   text-slate-900">
                                 KSh 1,499
                             </p>
                         </div>
@@ -454,7 +454,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-blue-800">
                                     1st Place
                                 </p>
-                                <p className="mt-2 text-3xl font-black text-slate-900">
+                                <p className="mt-2 text-3xl   text-slate-900">
                                     KSh 12,000
                                 </p>
                                 <p className="mt-1 text-[12px] text-slate-600">
@@ -465,7 +465,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-blue-800">
                                     2nd Place
                                 </p>
-                                <p className="mt-2 text-3xl font-black text-slate-900">
+                                <p className="mt-2 text-3xl   text-slate-900">
                                     KSh 8,000
                                 </p>
                                 <p className="mt-1 text-[12px] text-slate-600">
@@ -476,7 +476,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-blue-800">
                                     3rd Place
                                 </p>
-                                <p className="mt-2 text-3xl font-black text-slate-900">
+                                <p className="mt-2 text-3xl   text-slate-900">
                                     KSh 6,000
                                 </p>
                                 <p className="mt-1 text-[12px] text-slate-600">
@@ -497,7 +497,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-blue-800">
                                     1st Place
                                 </p>
-                                <p className="mt-2 text-3xl font-black text-slate-900">
+                                <p className="mt-2 text-3xl   text-slate-900">
                                     KSh 16,000
                                 </p>
                                 <p className="mt-1 text-[12px] text-slate-600">
@@ -508,7 +508,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-blue-800">
                                     2nd Place
                                 </p>
-                                <p className="mt-2 text-3xl font-black text-slate-900">
+                                <p className="mt-2 text-3xl   text-slate-900">
                                     KSh 12,000
                                 </p>
                                 <p className="mt-1 text-[12px] text-slate-600">
@@ -519,7 +519,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-blue-800">
                                     3rd Place
                                 </p>
-                                <p className="mt-2 text-3xl font-black text-slate-900">
+                                <p className="mt-2 text-3xl   text-slate-900">
                                     KSh 10,000
                                 </p>
                                 <p className="mt-1 text-[12px] text-slate-600">
@@ -687,7 +687,7 @@ export default function MedraeNursingMeritCupPage() {
                     </div>
                     <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
                         <div>
-                            <p className="text-2xl font-black text-blue-900">
+                            <p className="text-2xl   text-blue-900">
                                 500+
                             </p>
                             <p className="text-[13px] font-medium text-blue-800">
@@ -695,7 +695,7 @@ export default function MedraeNursingMeritCupPage() {
                             </p>
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-blue-900">
+                            <p className="text-2xl   text-blue-900">
                                 Fixed
                             </p>
                             <p className="text-[13px] font-medium text-blue-800">
@@ -703,7 +703,7 @@ export default function MedraeNursingMeritCupPage() {
                             </p>
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-blue-900">
+                            <p className="text-2xl   text-blue-900">
                                 100%
                             </p>
                             <p className="text-[13px] font-medium text-blue-800">

@@ -22,7 +22,7 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
                     <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
                         <div className="flex items-center gap-1 rounded-full bg-blue-50 px-1.5 md:px-2 py-0.5 md:py-1 dark:bg-blue-900/20">
                             <span className="h-1 w-1 md:h-1.5 md:w-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-                            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                            <span className="text-[8px] md:text-[9px]   uppercase tracking-wider text-blue-600 dark:text-blue-400">
                                 {center.county}
                             </span>
                         </div>
@@ -70,7 +70,7 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
                     </div>
                     <div>
                         <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest opacity-80">Community</p>
-                        <p className="text-xs md:text-sm font-black">Find Exam Buddies</p>
+                        <p className="text-xs md:text-sm  ">Find Exam Buddies</p>
                     </div>
                 </div>
                 <Sparkles className="relative z-10 opacity-50 group-hover/buddy:rotate-12 transition-transform" size={18} />

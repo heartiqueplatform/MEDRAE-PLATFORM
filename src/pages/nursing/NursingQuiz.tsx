@@ -527,7 +527,7 @@ export default function NursingQuiz() {
 
                         <div className="flex flex-col gap-4 md:gap-5 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight">
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl   tracking-tight">
                                     Practice question
                                 </h1>
                                 <p className="mt-2 md:mt-3 max-w-xl text-xs md:text-sm lg:text-base leading-6 text-slate-600 dark:text-slate-300">
@@ -539,17 +539,17 @@ export default function NursingQuiz() {
                                 <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
                                     <Target className="mx-auto mb-0.5 md:mb-1 h-3.5 w-3.5 md:h-4 md:w-4 text-emerald-600 dark:text-emerald-300" />
                                     <p className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400">Score</p>
-                                    <p className="text-xs font-black">{correctCount}/{questions.length}</p>
+                                    <p className="text-xs  ">{correctCount}/{questions.length}</p>
                                 </div>
                                 <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
                                     <ClipboardCheck className="mx-auto mb-0.5 md:mb-1 h-3.5 w-3.5 md:h-4 md:w-4 text-cyan-600 dark:text-cyan-300" />
                                     <p className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400">Done</p>
-                                    <p className="text-xs font-black">{answeredCount}/{questions.length}</p>
+                                    <p className="text-xs  ">{answeredCount}/{questions.length}</p>
                                 </div>
                                 <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
                                     <SkipForward className="mx-auto mb-0.5 md:mb-1 h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 dark:text-amber-300" />
                                     <p className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400">Skipped</p>
-                                    <p className="text-xs font-black">{skipped.size}</p>
+                                    <p className="text-xs  ">{skipped.size}</p>
                                 </div>
                             </div>
                         </div>
@@ -586,7 +586,7 @@ export default function NursingQuiz() {
                             {/* Left-aligned question stem */}
                             <div>
                                 <p className="text-[10px] md:text-xs font-bold uppercase text-slate-400">Question stem</p>
-                                <h2 className="mt-0.5 md:mt-1 text-base md:text-lg lg:text-xl font-black leading-7 text-slate-950 dark:text-white text-left">
+                                <h2 className="mt-0.5 md:mt-1 text-base md:text-lg lg:text-xl   leading-7 text-slate-950 dark:text-white text-left">
                                     {q?.stem}
                                 </h2>
                             </div>
@@ -649,7 +649,7 @@ export default function NursingQuiz() {
                                         className={`group flex w-full items-start justify-between gap-3 md:gap-4 rounded-xl md:rounded-2xl p-3 md:p-4 text-left shadow-sm transition focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-default dark:focus:ring-emerald-500/20 ${optionClass}`}
                                     >
                                         <div className="flex min-w-0 gap-2 md:gap-3">
-                                            <span className={`flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full text-xs md:text-sm font-black transition ${isAnswered && isCorrect ? "bg-emerald-600 text-white" : isAnswered && isSelected && !isCorrect ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-600 group-hover:bg-emerald-600 group-hover:text-white dark:bg-slate-700 dark:text-slate-300"}`}>
+                                            <span className={`flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full text-xs md:text-sm   transition ${isAnswered && isCorrect ? "bg-emerald-600 text-white" : isAnswered && isSelected && !isCorrect ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-600 group-hover:bg-emerald-600 group-hover:text-white dark:bg-slate-700 dark:text-slate-300"}`}>
                                                 {String.fromCharCode(65 + index)}
                                             </span>
                                             <span className="pt-0.5 md:pt-1 text-xs md:text-sm lg:text-base font-semibold leading-6">
@@ -689,7 +689,7 @@ export default function NursingQuiz() {
                                 <button
                                     onClick={finishQuiz}
                                     disabled={!allQuestionsDone || isSubmitting}
-                                    className={`inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-black text-white shadow-lg transition ${allQuestionsDone && !isSubmitting
+                                    className={`inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm   text-white shadow-lg transition ${allQuestionsDone && !isSubmitting
                                         ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
                                         : "bg-slate-400 cursor-not-allowed opacity-50"
                                         }`}
@@ -704,7 +704,7 @@ export default function NursingQuiz() {
                             ) : (
                                 <button
                                     onClick={nextQuestion}
-                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-emerald-600 px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-emerald-600 px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm   text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                                 >
                                     Next
                                     <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -721,7 +721,7 @@ export default function NursingQuiz() {
                                     ) : (
                                         <XCircle className="h-4 w-4 md:h-5 md:w-5 text-rose-600 dark:text-rose-300" />
                                     )}
-                                    <p className={`text-sm md:text-base font-black ${options.find((o: any) => o.is_correct)?.text === answers[q.id] ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>
+                                    <p className={`text-sm md:text-base   ${options.find((o: any) => o.is_correct)?.text === answers[q.id] ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>
                                         {options.find((o: any) => o.is_correct)?.text === answers[q.id] ? "✅ Correct answer" : "❌ Review this one"}
                                     </p>
                                 </div>
@@ -786,22 +786,22 @@ export default function NursingQuiz() {
                             <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
                             Quiz complete
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-black tracking-tight">You finished strong!</h2>
+                        <h2 className="text-2xl md:text-3xl   tracking-tight">You finished strong!</h2>
                         <div className="mt-3 md:mt-4 grid grid-cols-3 gap-3 md:gap-4 max-w-xs mx-auto">
                             <div className="rounded-lg md:rounded-xl bg-slate-50 p-2.5 md:p-3 dark:bg-slate-800/70">
                                 <p className="text-[10px] md:text-xs text-slate-500">Correct</p>
-                                <p className="text-lg md:text-xl font-black text-emerald-600">{correctCount}</p>
+                                <p className="text-lg md:text-xl   text-emerald-600">{correctCount}</p>
                             </div>
                             <div className="rounded-lg md:rounded-xl bg-slate-50 p-2.5 md:p-3 dark:bg-slate-800/70">
                                 <p className="text-[10px] md:text-xs text-slate-500">Wrong</p>
-                                <p className="text-lg md:text-xl font-black text-rose-600">{answeredCount - correctCount}</p>
+                                <p className="text-lg md:text-xl   text-rose-600">{answeredCount - correctCount}</p>
                             </div>
                             <div className="rounded-lg md:rounded-xl bg-slate-50 p-2.5 md:p-3 dark:bg-slate-800/70">
                                 <p className="text-[10px] md:text-xs text-slate-500">Skipped</p>
-                                <p className="text-lg md:text-xl font-black text-amber-600">{skipped.size}</p>
+                                <p className="text-lg md:text-xl   text-amber-600">{skipped.size}</p>
                             </div>
                         </div>
-                        <p className="mt-3 md:mt-4 text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-300">
+                        <p className="mt-3 md:mt-4 text-xl md:text-2xl   text-emerald-600 dark:text-emerald-300">
                             {score}/{questions.length}
                         </p>
                         <p className="mt-1.5 md:mt-2 text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-300">
@@ -815,7 +815,7 @@ export default function NursingQuiz() {
                         <div className="mt-5 md:mt-6 flex flex-col gap-2 md:gap-3 sm:flex-row sm:justify-center">
                             <button
                                 onClick={retryQuiz}
-                                className="inline-flex items-center justify-center gap-1.5 md:gap-2 rounded-xl md:rounded-2xl bg-emerald-600 px-4 md:px-5 py-2.5 md:py-3 text-xs md:text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+                                className="inline-flex items-center justify-center gap-1.5 md:gap-2 rounded-xl md:rounded-2xl bg-emerald-600 px-4 md:px-5 py-2.5 md:py-3 text-xs md:text-sm   text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                             >
                                 <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                 Retry quiz

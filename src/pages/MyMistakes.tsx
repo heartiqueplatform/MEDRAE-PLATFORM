@@ -1033,7 +1033,7 @@ export default function MyMistakes() {
                     <div className="relative bg-white/90 backdrop-blur-sm dark:bg-slate-900/90 border-0 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 p-6 md:p-10 text-center overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent dark:from-emerald-500/5 pointer-events-none" />
                         <div className="flex justify-center mb-4 md:mb-6">
-                            <Badge className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/30 border-emerald-200 dark:border-emerald-500/30 px-3 md:px-4 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+                            <Badge className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/30 border-emerald-200 dark:border-emerald-500/30 px-3 md:px-4 py-1 rounded-full text-[9px] md:text-[10px]   uppercase tracking-[0.2em] shadow-sm">
                                 Milestone Achieved
                             </Badge>
                         </div>
@@ -1050,7 +1050,7 @@ export default function MyMistakes() {
                             </motion.div>
                         </div>
                         <div className="space-y-2 md:space-y-3 mb-8 md:mb-10">
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                            <h2 className="text-2xl md:text-3xl   text-slate-900 dark:text-white tracking-tight leading-tight">
                                 Flawless <span className="text-emerald-500 dark:text-emerald-400">Performance</span>
                             </h2>
                             <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm leading-relaxed font-medium">
@@ -1111,7 +1111,7 @@ export default function MyMistakes() {
                         >
                             <span>{t.label}</span>
                             <span className={cn(
-                                "min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black flex items-center justify-center",
+                                "min-w-[20px] h-5 px-1.5 rounded-full text-[10px]   flex items-center justify-center",
                                 active
                                     ? "bg-white/20 text-white dark:bg-slate-900/15 dark:text-slate-900"
                                     : "bg-white dark:bg-[#0d1117] text-slate-500 dark:text-slate-400"
@@ -1622,7 +1622,7 @@ function UnderstoodRow({
                             <div className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-500/20">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             </div>
-                            <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                            <span className="text-[10px] md:text-[11px]   uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
                                 Understood
                             </span>
                         </div>

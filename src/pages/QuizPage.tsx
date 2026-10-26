@@ -141,6 +141,8 @@ export default function QuizPage() {
     total: number;
   } | null>(null);
   const circleRefs = useRef([]);
+  const questionStripRef = useRef<HTMLDivElement | null>(null);
+
   const questionTopRef = useRef<HTMLDivElement | null>(null);
   // Total question count (used by premium badge + upgrade banner)
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -177,6 +179,20 @@ export default function QuizPage() {
     },
     [userId]
   );
+  useEffect(() => {
+    const strip = questionStripRef.current;
+    if (!strip) return;
+
+    const chip = strip.querySelector<HTMLElement>(
+      `[data-strip-idx="${currentQuestionIndex}"]`
+    );
+    if (!chip) return;
+
+    const targetLeft =
+      chip.offsetLeft - strip.clientWidth / 2 + chip.clientWidth / 2;
+
+    strip.scrollTo({ left: targetLeft, behavior: "smooth" });
+  }, [currentQuestionIndex]);
   useEffect(() => {
     if (currentQuestionIndex !== undefined && circleRefs.current[currentQuestionIndex]) {
       circleRefs.current[currentQuestionIndex].scrollIntoView({
@@ -900,99 +916,164 @@ Please provide a detailed discussion and guidance.`;
   return (
     <div className="fixed inset-0 flex flex-col bg-background">
       <header className="shrink-0 w-full border-b border-border bg-background/95 backdrop-blur-sm z-30">
-        <div className="w-full px-3 md:px-5 py-2.5 md:py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <button
-                onClick={() => {
-                  const answered = Object.keys(answers).length;
-                  const pending = answered - lastCheckpoint;
-                  if (pending > 0 && pending < 10) {
-                    const ok = window.confirm(
-                      `⚠️ Finish this batch first\n\n` +
-                      `You've answered ${pending} of the 10 questions in this batch. ` +
-                      `Your progress will only save after you complete all 10.\n\n` +
-                      `If you leave now, these ${pending} answer${pending === 1 ? "" : "s"} will be lost.\n\n` +
-                      `Leave anyway?`
-                    );
-                    if (!ok) return;
-                  }
-                  navigate(-1);
-                }}
-                aria-label="Back"
-                className="p-2 -ml-1 rounded-full hover:bg-muted transition-colors shrink-0"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <div className="min-w-0">
-                <h1 className="text-sm md:text-base font-black tracking-tight truncate uppercase">
-                  {unit}
-                </h1>
-                {isPremium && totalQuestions > 0 && (
-                  <p className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                    {totalQuestions} total
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 md:gap-3 shrink-0">
-              <Countdown
-                date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
-                onComplete={() => handleSubmit(true)}
-                renderer={({ hours, minutes, seconds }) => (
-                  <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl border-0">
-                    <Timer className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
-                    <div className="flex items-center font-mono font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">
-                      <span>{String(hours).padStart(2, '0')}</span>
-                      <span className="mx-0.5 animate-none">:</span>
-                      <span>{String(minutes).padStart(2, '0')}</span>
-                      <span className="mx-0.5 animate-none">:</span>
-                      <span>{String(seconds).padStart(2, '0')}</span>
-                    </div>
-                  </div>
-                )}
-              />
+        <div className="w-full px-3 md:px-5 py-2.5 md:py-3 space-y-2">
 
-              <div className="relative">
-                <button
-                  onClick={() => setProgressOpen(!progressOpen)}
-                  className={`group flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-xl text-white shadow-md transition-all active:scale-95
-              ${Object.keys(answers).length / questions.length < 0.5
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : Object.keys(answers).length / questions.length < 0.7
-                        ? 'bg-amber-500 hover:bg-amber-600'
-                        : 'bg-green-600 hover:bg-green-700'}
-            `}
-                >
-                  <div className="flex flex-col items-start leading-none">
-                    <span className="text-[10px]  font-bold opacity-80">Progress</span>
-                    <span className="text-sm font-bold">
-                      {Object.keys(answers).length}/{questions.length}
-                    </span>
-                  </div>
-                  <div className="h-6 w-px bg-white/20" />
-                  {progressOpen ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                  <div
-                    className="absolute inset-0 bg-black/10 rounded-xl transition-all duration-1000"
-                    style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
-                  />
-                </button>
-              </div>
+          {/* ── Row 1: back + full title ── */}
+          <div className="flex items-start gap-2 min-w-0">
+            <button
+              onClick={() => {
+                const answered = Object.keys(answers).length;
+                const pending = answered - lastCheckpoint;
+                if (pending > 0 && pending < 10) {
+                  const ok = window.confirm(
+                    `⚠️ Finish this batch first\n\n` +
+                    `You've answered ${pending} of the 10 questions in this batch. ` +
+                    `Your progress will only save after you complete all 10.\n\n` +
+                    `If you leave now, these ${pending} answer${pending === 1 ? "" : "s"} will be lost.\n\n` +
+                    `Leave anyway?`
+                  );
+                  if (!ok) return;
+                }
+                navigate(-1);
+              }}
+              aria-label="Back"
+              className="p-2 -ml-1 rounded-full hover:bg-muted transition-colors shrink-0"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <h1 className="break-words">
+                {unit}
+              </h1>
+              <p className="text-muted-foreground mt-0.5">
+                Question {currentQuestionIndex + 1} of {filteredQuestions.length}
+                {" · "}
+                <span className={cn(
+                  Object.keys(answers).length / Math.max(filteredQuestions.length, 1) < 0.5
+                    ? "text-red-500"
+                    : Object.keys(answers).length / Math.max(filteredQuestions.length, 1) < 0.7
+                      ? "text-amber-500"
+                      : "text-emerald-500"
+                )}>
+                  {Object.keys(answers).length} answered
+                </span>
+                {isPremium && totalQuestions > 0 && (
+                  <> · {totalQuestions} total</>
+                )}
+              </p>
             </div>
+          </div>
+
+          {/* ── Row 2: timer + avatars + open-modal chip (Edit 2 handles this) ── */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Timer — compact on mobile */}
+            <Countdown
+              date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
+              onComplete={() => handleSubmit(true)}
+              renderer={({ hours, minutes, seconds }) => (
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-2.5 py-1.5 rounded-lg border-0 shrink-0">
+                  <Timer className="w-3.5 h-3.5 text-red-600 dark:text-red-400 animate-pulse" />
+                  <div className="flex items-center font-mono text-red-600 dark:text-red-400">
+                    <span>{String(hours).padStart(2, '0')}</span>
+                    <span className="mx-0.5">:</span>
+                    <span>{String(minutes).padStart(2, '0')}</span>
+                    <span className="mx-0.5">:</span>
+                    <span>{String(seconds).padStart(2, '0')}</span>
+                  </div>
+                </div>
+              )}
+            />
+
+            {/* Avatar strip — quick jump to any question + open-modal chip */}
+            {/* Right cluster: scrolling number strip + pinned chevron */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
+
+              {/* Scrolling number strip — story-style */}
+              <div
+                ref={questionStripRef}
+                className="flex items-center gap-1.5 min-w-0 flex-1 justify-start
+           h-11
+           overflow-x-auto scrollbar-hide scroll-smooth
+           cursor-grab active:cursor-grabbing select-none"
+                onPointerDown={(e) => {
+                  const el = e.currentTarget;
+                  const startX = e.clientX;
+                  const startScroll = el.scrollLeft;
+                  let moved = false;
+
+                  const onMove = (ev: PointerEvent) => {
+                    const dx = ev.clientX - startX;
+                    if (Math.abs(dx) > 4) moved = true;
+                    el.scrollLeft = startScroll - dx;
+                  };
+                  const onUp = () => {
+                    el.removeEventListener("pointermove", onMove);
+                    el.removeEventListener("pointerup", onUp);
+                    el.removeEventListener("pointercancel", onUp);
+                    if (moved) el.dataset.dragged = "1";
+                  };
+                  el.addEventListener("pointermove", onMove);
+                  el.addEventListener("pointerup", onUp);
+                  el.addEventListener("pointercancel", onUp);
+                }}
+              >
+                {filteredQuestions.map((q, idx) => {
+                  const isAnswered = !!answers[q.id];
+                  const isCurrent = idx === currentQuestionIndex;
+                  const isLocked = isQuestionLocked(idx);
+                  return (
+                    <button
+                      key={q.id}
+                      data-strip-idx={idx}
+                      onClick={() => {
+                        if (questionStripRef.current?.dataset.dragged === "1") {
+                          delete questionStripRef.current.dataset.dragged;
+                          return;
+                        }
+                        setCurrentQuestionIndex(idx);
+                        questionTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      className={cn(
+                        "shrink-0 flex items-center justify-center rounded-full transition-all duration-300",
+                        isCurrent
+                          ? "w-8 h-8 bg-indigo-600 text-white ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                          : "w-6 h-6",
+                        isLocked
+                          ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30"
+                          : isAnswered
+                            ? "bg-emerald-500 text-white"
+                            : "bg-muted text-muted-foreground hover:bg-muted/70"
+                      )}
+                      aria-label={`Go to question ${idx + 1}`}
+                      title={isLocked ? "Premium required" : `Question ${idx + 1}`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Pinned chevron — never scrolls, always visible on the right */}
+              <button
+                onClick={() => setProgressOpen(true)}
+                className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white transition-all active:scale-95"
+                aria-label="Open full progress"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+            </div>
+          </div>
+
+          {/* Bottom progress bar */}
+          <div className="h-[2px] bg-muted -mx-3 md:-mx-5 mt-1">
+            <div
+              className="h-full bg-blue-600 transition-all duration-500 ease-out"
+              style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+            />
           </div>
         </div>
 
-        {/* Bottom progress bar */}
-        <div className="h-[2px] bg-muted">
-          <div
-            className="h-full bg-blue-600 transition-all duration-500 ease-out"
-            style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
-          />
-        </div>
       </header>
 
       <QuizProgressOverlay
@@ -1038,7 +1119,7 @@ Please provide a detailed discussion and guidance.`;
                       setCurrentQuestionIndex(0);
                     }}
                     className={cn(
-                      "px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
+                      "px-4 py-1.5 rounded-xl whitespace-nowrap transition-all border",
                       selectedCourse === course
                         ? "bg-indigo-600 border-0 text-white shadow-md"
                         : "bg-white dark:bg-muted/30 border-0 text-slate-600 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
@@ -1093,7 +1174,7 @@ Please provide a detailed discussion and guidance.`;
                         className={cn(
                           "flex flex-col px-4 py-3 md:py-4 transition-all duration-300",
                           "shadow-sm rounded-xl",
-                          "min-h-[660px]",
+
                           understood[q.id]
                             ? "bg-emerald-50/40 dark:bg-emerald-500/10"
                             : notUnderstood[q.id]
@@ -1219,12 +1300,12 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                                     {selectedAnswer && (
                                       q.correct_answer === letter ? (
                                         <div className="flex items-center gap-1 md:gap-1.5 animate-[pop_0.3s_ease-out]">
-                                          <span className="text-[9px] md:text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Correct</span>
+                                          <span className="text-[9px] md:text-[10px]   text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Correct</span>
                                           <GraduationCap className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                       ) : selectedAnswer === letter ? (
                                         <div className="flex items-center gap-1 md:gap-1.5 animate-[shake_0.4s_ease-in-out]">
-                                          <span className="text-[9px] md:text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">Wrong</span>
+                                          <span className="text-[9px] md:text-[10px]   text-rose-600 dark:text-rose-400 uppercase tracking-tight">Wrong</span>
                                           <X className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-500 dark:text-rose-400" />
                                         </div>
                                       ) : null

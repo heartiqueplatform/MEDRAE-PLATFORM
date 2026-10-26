@@ -913,7 +913,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
                                     </svg>
                                 </div>
-                                <h2 className="flex-1 text-[15px] font-black tracking-tight">
+                                <h2 className="flex-1 text-[15px]   tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
                                     <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-1 align-middle">
@@ -1083,7 +1083,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         {/* FOOTER */}
                                         <div className="mt-2 pt-6 pb-2 text-center select-none border-t border-slate-200 dark:border-[#21262d]">
 
-                                            <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-[#6e7681] opacity-80">
+                                            <p className="text-[7px]   tracking-[0.2em] text-slate-400 dark:text-[#6e7681] opacity-80">
                                                 Medrae Nursing All rights reserved
                                             </p>
 

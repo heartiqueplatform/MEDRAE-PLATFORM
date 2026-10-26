@@ -469,7 +469,7 @@ function ChallengeTabs({
                                                 loading="lazy"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400   text-lg">
                                                 {challenge.from_user?.name?.[0]?.toUpperCase() || "?"}
                                             </div>
                                         )}
@@ -535,7 +535,7 @@ function ChallengeTabs({
                                                 loading="lazy"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400   text-lg">
                                                 {challenge.to_user?.name?.[0]?.toUpperCase() || "?"}
                                             </div>
                                         )}
@@ -688,7 +688,7 @@ function ChallengeTabs({
                                 {Icon && <Icon size={14} className={isActive ? "text-blue-600 dark:text-white" : "text-slate-400"} />}
                                 <span className="uppercase tracking-tight">{tab.label}</span>
                                 {tab.badge > 0 && (
-                                    <span className={`flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full text-[10px] font-black text-white border-2 border-white dark:border-slate-800 ${tab.color || 'bg-slate-500'}`}>
+                                    <span className={`flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full text-[10px]   text-white border-2 border-white dark:border-slate-800 ${tab.color || 'bg-slate-500'}`}>
                                         {tab.badge}
                                     </span>
                                 )}
@@ -1573,7 +1573,7 @@ export default function ChallengePage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">Medrae Nursing Challenge</h2>
+                                        <h2 className="text-xs   text-slate-900 dark:text-white uppercase tracking-tight leading-none">Medrae Nursing Challenge</h2>
                                         <p className="text-[8px] font-bold text-slate-400  tracking-widest mt-0.5">{activeChallenge?.status === "self" ? "Setting Benchmark" : "Peer Challenge"}</p>
                                     </div>
                                 </div>
@@ -1584,12 +1584,12 @@ export default function ChallengePage() {
                                             <circle cx="22" cy="22" r="18" stroke="currentColor" strokeWidth="2.5" fill="none" strokeDasharray={`${2 * Math.PI * 18}`} strokeDashoffset={`${2 * Math.PI * 18 * (1 - timeLeft / 300)}`} className={`transition-all duration-1000 ${timeLeft < 30 ? 'text-rose-500' : 'text-blue-500'}`} />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <span className={`text-xs font-black tabular-nums ${timeLeft < 30 ? 'text-rose-500 animate-pulse' : 'text-slate-700 dark:text-slate-300'}`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                                            <span className={`text-xs   tabular-nums ${timeLeft < 30 ? 'text-rose-500 animate-pulse' : 'text-slate-700 dark:text-slate-300'}`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Question</p>
-                                        <p className="text-lg font-black text-slate-800 dark:text-white">{currentQIndex + 1} <span className="text-xs text-slate-400">/ {activeChallenge.questions.length}</span></p>
+                                        <p className="text-[8px]   text-slate-400 uppercase tracking-widest">Question</p>
+                                        <p className="text-lg   text-slate-800 dark:text-white">{currentQIndex + 1} <span className="text-xs text-slate-400">/ {activeChallenge.questions.length}</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -1632,11 +1632,11 @@ export default function ChallengePage() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 backdrop-blur-sm">
                                         <Zap size={11} className="text-blue-600 fill-current" />
-                                        <span className="text-[10px] font-black text-blue-600  tracking-wider">Clinical</span>
+                                        <span className="text-[10px]   text-blue-600  tracking-wider">Clinical</span>
                                     </div>
                                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10">
                                         <Trophy size={11} className="text-amber-600" />
-                                        <span className="text-[10px] font-black text-amber-600 tracking-wider">{activeChallenge?.status === "self" ? "Target" : "vs Peer"}</span>
+                                        <span className="text-[10px]   text-amber-600 tracking-wider">{activeChallenge?.status === "self" ? "Target" : "vs Peer"}</span>
                                     </div>
                                 </div>
 
@@ -1675,7 +1675,7 @@ export default function ChallengePage() {
                                                     }`}
                                                 style={{ touchAction: 'manipulation' }}
                                             >
-                                                <div className={`relative z-10 h-7 w-7 shrink-0 rounded-lg flex items-center justify-center font-black text-xs transition-all duration-200 ${isSelected
+                                                <div className={`relative z-10 h-7 w-7 shrink-0 rounded-lg flex items-center justify-center   text-xs transition-all duration-200 ${isSelected
                                                     ? "bg-white/20 text-white"
                                                     : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20"
                                                     }`}>{opt}</div>
@@ -1726,17 +1726,17 @@ export default function ChallengePage() {
                 {loading && isInitialLoad && players.length === 0 && challenges.length === 0 ? (<><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>) : (<>
                     <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
                         <Trophy className="mx-auto mb-1.5 text-emerald-600 dark:text-emerald-400" size={18} />
-                        <p className="text-xl font-black text-emerald-700 dark:text-emerald-400 leading-none">{wins}</p>
+                        <p className="text-xl   text-emerald-700 dark:text-emerald-400 leading-none">{wins}</p>
                         <p className="text-[9px] font-bold text-emerald-600/60 uppercase tracking-widest mt-1.5">Wins</p>
                     </div>
                     <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10">
                         <Flame className="mx-auto mb-1.5 text-rose-600 dark:text-rose-400" size={18} />
-                        <p className="text-xl font-black text-rose-700 dark:text-rose-400 leading-none">{losses}</p>
+                        <p className="text-xl   text-rose-700 dark:text-rose-400 leading-none">{losses}</p>
                         <p className="text-[9px] font-bold text-rose-600/60 uppercase tracking-widest mt-1.5">Losses</p>
                     </div>
                     <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10">
                         <Clock className="mx-auto mb-1.5 text-amber-600 dark:text-amber-400" size={18} />
-                        <p className="text-xl font-black text-amber-700 dark:text-amber-400 leading-none">{unseenIncomingCount}</p>
+                        <p className="text-xl   text-amber-700 dark:text-amber-400 leading-none">{unseenIncomingCount}</p>
                         <p className="text-[9px] font-bold text-amber-600/60 uppercase tracking-widest mt-1.5">Pending</p>
                     </div>
                 </>)}
@@ -1804,8 +1804,8 @@ export default function ChallengePage() {
                             <motion.div initial={{ scale: 0.8, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.8, y: 40, opacity: 0 }} transition={{ type: "spring", damping: 15 }} className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden" onClick={e => e.stopPropagation()}>
                                 <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
                                 <div className="relative mb-6"><div className="absolute inset-0 bg-amber-400/30 blur-2xl rounded-full" /><motion.div animate={{ y: [0, -15, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}><Trophy size={64} className="relative text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" /></motion.div></div>
-                                <div className="space-y-3 mb-8"><div><p className="text-amber-500 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Champion</p><h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Victory!</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Clinical dominance established. You've out-performed your peer.</p></div>
-                                <Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowWinOverlay(false); }} className="h-12 px-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl border-0 text-sm">Continue</Button>
+                                <div className="space-y-3 mb-8"><div><p className="text-amber-500 text-[10px]   uppercase tracking-[0.4em] mb-2">Champion</p><h1 className="text-4xl md:text-5xl   text-slate-900 dark:text-white tracking-tighter italic uppercase">Victory!</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Clinical dominance established. You've out-performed your peer.</p></div>
+                                <Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowWinOverlay(false); }} className="h-12 px-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900   uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl border-0 text-sm">Continue</Button>
                                 <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Clinical Challenge</p>
                             </motion.div>
                         </motion.div>
@@ -1823,8 +1823,8 @@ export default function ChallengePage() {
                             <motion.div initial={{ scale: 0.8, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.8, y: 40, opacity: 0 }} transition={{ type: "spring", damping: 15 }} className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden" onClick={e => e.stopPropagation()}>
                                 <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-rose-400 to-transparent" />
                                 <div className="relative mb-6"><div className="absolute inset-0 bg-rose-400/30 blur-2xl rounded-full" /><motion.div animate={{ y: [0, -10, 0, -5, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}><Flame size={64} className="relative text-rose-500 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]" /></motion.div></div>
-                                <div className="space-y-3 mb-8"><div><p className="text-rose-500 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Outcome</p><h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Defeat</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Every loss is a lesson. Knowledge is power, and power grows with persistence.</p></div>
-                                <div className="flex flex-col gap-3 w-full"><Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowLossOverlay(false); }} className="h-12 px-10 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-rose-500/30 border-0 text-sm">Try Another Battle</Button><p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1">Rise Again • Stronger Than Before</p></div>
+                                <div className="space-y-3 mb-8"><div><p className="text-rose-500 text-[10px]   uppercase tracking-[0.4em] mb-2">Outcome</p><h1 className="text-4xl md:text-5xl   text-slate-900 dark:text-white tracking-tighter italic uppercase">Defeat</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Every loss is a lesson. Knowledge is power, and power grows with persistence.</p></div>
+                                <div className="flex flex-col gap-3 w-full"><Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowLossOverlay(false); }} className="h-12 px-10 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white   uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-rose-500/30 border-0 text-sm">Try Another Battle</Button><p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1">Rise Again • Stronger Than Before</p></div>
                             </motion.div>
                         </motion.div>
                     )}

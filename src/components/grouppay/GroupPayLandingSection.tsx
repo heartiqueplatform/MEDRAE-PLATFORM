@@ -256,7 +256,7 @@ const GroupPayLandingSection = () => {
                 <AnimatedSection direction="up">
                     <div className="text-center mb-12 md:mb-16 px-4 md:px-0">
                         <h2
-                            className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter leading-[1.05]"
+                            className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl   tracking-tighter leading-[1.05]"
                             style={{ color: GH.text }}
                         >
                             Study together.
@@ -286,14 +286,14 @@ const GroupPayLandingSection = () => {
                                 <div className="flex items-center gap-2">
                                     <PiggyBank className="w-5 h-5 md:w-6 md:h-6" style={{ color: GH.green }} />
                                     <span
-                                        className="text-[10px] md:text-xs font-black uppercase tracking-widest"
+                                        className="text-[10px] md:text-xs   uppercase tracking-widest"
                                         style={{ color: GH.textMuted }}
                                     >
                                         Smart savings for nursing students
                                     </span>
                                 </div>
                                 <h3
-                                    className="text-2xl md:text-4xl lg:text-5xl font-black leading-tight"
+                                    className="text-2xl md:text-4xl lg:text-5xl   leading-tight"
                                     style={{ color: GH.text }}
                                 >
                                     Pay less.
@@ -340,7 +340,7 @@ const GroupPayLandingSection = () => {
                                                 Per member
                                             </p>
                                             <p
-                                                className="text-3xl font-black tabular-nums"
+                                                className="text-3xl   tabular-nums"
                                                 style={{ color: GH.green }}
                                             >
                                                 {CURRENCY} {GROUP_2MO}
@@ -405,7 +405,7 @@ const GroupPayLandingSection = () => {
                                 </p>
                                 {feature.saving && (
                                     <div
-                                        className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-wider"
+                                        className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] md:text-[10px]   uppercase tracking-wider"
                                         style={{ backgroundColor: GH.greenBg, color: GH.green }}
                                     >
                                         <Sparkles className="w-3 h-3" />
@@ -421,7 +421,7 @@ const GroupPayLandingSection = () => {
                 <AnimatedSection direction="up" delay={250}>
                     <div className="mb-12 md:mb-16 px-3 md:px-0">
                         <h3
-                            className="text-xl md:text-2xl lg:text-3xl font-black mb-6 md:mb-8 text-center"
+                            className="text-xl md:text-2xl lg:text-3xl   mb-6 md:mb-8 text-center"
                             style={{ color: GH.text }}
                         >
                             How much can you save?
@@ -445,7 +445,7 @@ const GroupPayLandingSection = () => {
                                         </span>
                                         {plan.recommended && (
                                             <Badge
-                                                className="border-0 text-white text-[9px] font-black uppercase tracking-wider"
+                                                className="border-0 text-white text-[9px]   uppercase tracking-wider"
                                                 style={{ backgroundColor: GH.green }}
                                             >
                                                 Best value
@@ -453,7 +453,7 @@ const GroupPayLandingSection = () => {
                                         )}
                                     </div>
                                     <p
-                                        className="text-2xl md:text-3xl font-black tabular-nums"
+                                        className="text-2xl md:text-3xl   tabular-nums"
                                         style={{ color: plan.recommended ? GH.green : GH.text }}
                                     >
                                         {plan.price}
@@ -499,7 +499,7 @@ const GroupPayLandingSection = () => {
                         style={{ backgroundColor: GH.surface }}
                     >
                         <h3
-                            className="text-lg md:text-xl lg:text-2xl font-black mb-4 md:mb-6 text-center"
+                            className="text-lg md:text-xl lg:text-2xl   mb-4 md:mb-6 text-center"
                             style={{ color: GH.text }}
                         >
                             Why students love GroupPay
@@ -541,7 +541,7 @@ const GroupPayLandingSection = () => {
                             style={{ backgroundColor: GH.surface }}
                         >
                             <h3
-                                className="text-2xl md:text-4xl lg:text-5xl font-black mb-3 md:mb-4 leading-tight"
+                                className="text-2xl md:text-4xl lg:text-5xl   mb-3 md:mb-4 leading-tight"
                                 style={{ color: GH.text }}
                             >
                                 Ready to split the cost?
@@ -556,7 +556,7 @@ const GroupPayLandingSection = () => {
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <Button
                                     size="lg"
-                                    className="border-0 rounded-2xl text-white font-black text-base md:text-lg px-8 md:px-10 py-5 md:py-6 hover:scale-105 transition-all duration-300 group"
+                                    className="border-0 rounded-2xl text-white   text-base md:text-lg px-8 md:px-10 py-5 md:py-6 hover:scale-105 transition-all duration-300 group"
                                     style={{ backgroundColor: GH.green }}
                                     onClick={handleJoinClick}
                                 >

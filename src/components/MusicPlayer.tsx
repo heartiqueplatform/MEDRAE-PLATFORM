@@ -843,7 +843,7 @@ export const MusicPlayer = () => {
                         >
                             {/* Track info */}
                             <div className="flex flex-col min-w-0 max-w-[130px]">
-                                <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                                <span className="text-[9px]   text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
                                     {isPlaying ? "Now playing" : "Paused"}
                                 </span>
                                 <span className="text-[12px] font-bold text-gh-l-text dark:text-gh-text truncate leading-tight mt-0.5">
@@ -915,7 +915,7 @@ export const MusicPlayer = () => {
                                     </button>
                                 )}
                                 <div className="flex flex-col items-center">
-                                    <span className="text-[15px] font-black tracking-[-0.02em] text-blue-black dark:text-white">
+                                    <span className="text-[15px]   tracking-[-0.02em] text-blue-black dark:text-white">
                                         {screen === "player" && "Medrae Studify"}
                                         {screen === "episodes" && "Studify Episodes"}
                                         {screen === "admin" && "Manage Podcasts"}
@@ -940,7 +940,7 @@ export const MusicPlayer = () => {
                                 </button>
 
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[15px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
+                                    <span className="text-[15px]   tracking-[-0.02em] text-slate-900 dark:text-white">
                                         Medrae Studify
                                     </span>
                                     <span className="text-[10px] text-gh-l-muted dark:text-gh-muted font-semibold">
@@ -979,7 +979,7 @@ export const MusicPlayer = () => {
                                     {screen === "admin" ? (
                                         <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-4 md:p-5">
                                             <div className="flex items-center justify-between mb-4">
-                                                <h2 className="text-sm font-black text-gh-l-text dark:text-gh-text">
+                                                <h2 className="text-sm   text-gh-l-text dark:text-gh-text">
                                                     Manage Podcasts
                                                 </h2>
                                                 <button
@@ -1086,7 +1086,7 @@ export const MusicPlayer = () => {
                                         >
                                             <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card p-4">
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <h2 className="text-sm font-black text-gh-l-text dark:text-gh-text">
+                                                    <h2 className="text-sm   text-gh-l-text dark:text-gh-text">
                                                         Manage Podcasts
                                                     </h2>
                                                     <button
@@ -1131,7 +1131,7 @@ export const MusicPlayer = () => {
                                         onClick={(e) => e.stopPropagation()}
                                         className="bg-gh-l-canvas dark:bg-gh-card rounded-2xl shadow-0 p-5 w-full max-w-sm"
                                     >
-                                        <h3 className="text-sm font-black text-gh-l-text dark:text-gh-text mb-1">
+                                        <h3 className="text-sm   text-gh-l-text dark:text-gh-text mb-1">
                                             Hide this episode?
                                         </h3>
                                         <p className="text-xs text-gh-l-muted dark:text-gh-muted mb-4">
@@ -1303,7 +1303,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                         </p>
                     )}
                     {currentInteraction && currentInteraction.playCount > 0 && (
-                        <p className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[10px] font-black uppercase tracking-wider">
+                        <p className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[10px]   uppercase tracking-wider">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
                             </svg>
@@ -1442,7 +1442,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
         p-3 touch-manipulation
     "
                                     >
-                                        <span className="text-[10px] font-black tabular-nums text-slate-500 dark:text-gh-muted">
+                                        <span className="text-[10px]   tabular-nums text-slate-500 dark:text-gh-muted">
                                             {volPct}%
                                         </span>
                                         <VlcVolumeSlider
@@ -1639,7 +1639,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                         <Headphones size={14} className="text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
+                        <h3 className="text-[11px]   uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
                             Continue listening
                         </h3>
                     </div>
@@ -1743,7 +1743,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                                                         }`}
                                                 />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-lg font-black text-gh-l-muted dark:text-gh-muted">
+                                                <div className="w-full h-full flex items-center justify-center text-lg   text-gh-l-muted dark:text-gh-muted">
                                                     {initial}
                                                 </div>
                                             )}
@@ -1778,7 +1778,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                                             )}
                                         </div>
                                         {(s.endorsement_count > 0 || follow.followerCount > 0) && (
-                                            <span className={`absolute -bottom-1 -right-1 min-w-[20px] h-[20px] px-1.5 rounded-full text-[9px] font-black flex items-center justify-center shadow-sm ${active
+                                            <span className={`absolute -bottom-1 -right-1 min-w-[20px] h-[20px] px-1.5 rounded-full text-[9px]   flex items-center justify-center shadow-sm ${active
                                                 ? "bg-blue-600 text-white"
                                                 : "bg-gh-l-card dark:bg-gh-card text-gh-l-text dark:text-gh-text"
                                                 }`}>
@@ -1848,7 +1848,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-2xl font-black text-gh-l-muted dark:text-gh-muted">
+                                        <div className="w-full h-full flex items-center justify-center text-2xl   text-gh-l-muted dark:text-gh-muted">
                                             {initial}
                                         </div>
                                     )}
@@ -1990,7 +1990,7 @@ function AdminContent(props: any) {
     return (
         <div className="space-y-5">
             <div className="rounded-xl bg-gh-l-card dark:bg-gh-card p-5 shadow-none">
-                <h3 className="text-sm font-black tracking-tight text-gh-l-text dark:text-gh-text mb-1">
+                <h3 className="text-sm   tracking-tight text-gh-l-text dark:text-gh-text mb-1">
                     Add a nursing podcast
                 </h3>
                 <p className="text-[11px] text-gh-l-muted dark:text-gh-muted mb-4">
@@ -2028,7 +2028,7 @@ function AdminContent(props: any) {
             </div>
 
             <div>
-                <h3 className="text-sm font-black tracking-tight text-gh-l-text dark:text-gh-text mb-3">
+                <h3 className="text-sm   tracking-tight text-gh-l-text dark:text-gh-text mb-3">
                     Your shows
                 </h3>
                 {shows.length === 0 && (
@@ -2135,7 +2135,7 @@ const EndorseButton = React.memo(function EndorseButton({
             <span>{endorsed ? "Endorsed" : "Endorse"}</span>
             {countLabel && (
                 <span
-                    className={`text-[10px] font-black ${endorsed ? "text-white/80" : "text-gh-l-muted dark:text-gh-muted"
+                    className={`text-[10px]   ${endorsed ? "text-white/80" : "text-gh-l-muted dark:text-gh-muted"
                         }`}
                 >
                     {countLabel}
@@ -2190,7 +2190,7 @@ const FollowButton = React.memo(function FollowButton({
             <span>{following ? "Following" : "Follow"}</span>
             {countLabel && (
                 <span
-                    className={`text-[10px] font-black ${following ? "text-white/70 dark:text-slate-900/70" : "text-gh-l-muted dark:text-gh-muted"
+                    className={`text-[10px]   ${following ? "text-white/70 dark:text-slate-900/70" : "text-gh-l-muted dark:text-gh-muted"
                         }`}
                 >
                     {countLabel}
@@ -2249,7 +2249,7 @@ const ContinueListeningRow = React.memo(function ContinueListeningRow({
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px] font-black">
+                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px]  ">
                             ▶
                         </div>
                     )}
@@ -2282,7 +2282,7 @@ const ContinueListeningRow = React.memo(function ContinueListeningRow({
                     </p>
                 </div>
 
-                <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                <span className="shrink-0 text-[10px]   uppercase tracking-wider text-blue-600 dark:text-blue-400">
                     {entry.position > 5 ? "Resume" : "Play"}
                 </span>
             </button>
@@ -2354,7 +2354,7 @@ const EpisodeRow = React.memo(function EpisodeRow({
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px] font-black">
+                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px]  ">
                             {index + 1}
                         </div>
                     )}
@@ -2420,13 +2420,13 @@ const EpisodeRow = React.memo(function EpisodeRow({
                             </>
                         )}
                         {downloaded && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider">
+                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[8px]   uppercase tracking-wider">
                                 <CheckCircle2 size={8} />
                                 Downloaded
                             </span>
                         )}
                         {interaction && interaction.playCount > 0 && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider">
+                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[8px]   uppercase tracking-wider">
                                 <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
                                 </svg>
@@ -2442,7 +2442,7 @@ const EpisodeRow = React.memo(function EpisodeRow({
 
             {/* ── BOTTOM: reactions only — full width, equal thirds ── */}
             {/* ── BOTTOM: bare action icons — no bg, no pills, just tap targets ── */}
-            <div className="flex items-center gap-1 px-2 pb-2 pt-0.5">
+            <div className="flex items-center gap-1 px-1 pb-2 pt-0.5">
                 <ReactionIcon
                     kind="like"
                     active={interaction?.liked ?? false}
@@ -2507,15 +2507,15 @@ const ReactionIcon = React.memo(function ReactionIcon({
         <button
             onClick={(e) => { e.stopPropagation(); onClick(); }}
             className={`
-                flex items-center justify-center gap-1.5
-                h-11 min-w-11 px-3
-                rounded-full
-                text-[12px] font-bold tabular-nums
-                transition-colors touch-manipulation select-none
-                ${active
+    flex items-center justify-center gap-1
+    h-11 px-1.5
+    rounded-full
+    text-[11px] font-semibold tabular-nums
+    transition-colors touch-manipulation select-none
+    ${active
                     ? activeColor
                     : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"}
-            `}
+`}
             aria-label={`${kind}${count > 0 ? ` (${count})` : ""}`}
             aria-pressed={active}
         >
@@ -2532,7 +2532,11 @@ const ReactionIcon = React.memo(function ReactionIcon({
                     strokeWidth={active ? 0 : 2}
                 />
             </motion.span>
-            {display && <span>{display}</span>}
+            {display && (
+                <span className="text-[10px] font-medium tabular-nums opacity-80">
+                    {display}
+                </span>
+            )}
         </button>
     );
 });

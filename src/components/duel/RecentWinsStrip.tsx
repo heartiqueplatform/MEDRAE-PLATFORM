@@ -31,7 +31,7 @@ export const RecentWinsStrip = memo(function RecentWinsStrip({
             {/* Header */}
             <div className="flex items-center gap-2 px-3 md:px-0 mb-2">
                 <Trophy size={13} className="text-amber-500" />
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <h3 className="text-[11px]   uppercase tracking-widest text-slate-400 dark:text-slate-500">
                     Recent wins
                 </h3>
             </div>

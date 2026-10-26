@@ -140,11 +140,11 @@ export default function PostCheckpointShareCard({
                             {/* Reward math */}
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 p-2.5 text-center">
-                                    <p className="text-2xl font-black text-violet-600 dark:text-violet-400 leading-none">+2</p>
+                                    <p className="text-2xl   text-violet-600 dark:text-violet-400 leading-none">+2</p>
                                     <p className={`text-[10px] font-bold uppercase ${textSub} mt-1`}>Days for you</p>
                                 </div>
                                 <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 p-2.5 text-center">
-                                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
+                                    <p className="text-2xl   text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
                                     <p className={`text-[10px] font-bold uppercase ${textSub} mt-1`}>Day for them</p>
                                 </div>
                             </div>

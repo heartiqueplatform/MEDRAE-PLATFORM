@@ -403,11 +403,11 @@ const ReferralShareModal = memo(
                         </button>
 
                         <div className="relative">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl text-white mb-3">
+                            <span className="inline-flex items-center gap-1 text-[10px]   uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl text-white mb-3">
                                 <Flame size={11} /> Limited reward
                             </span>
 
-                            <h3 className="text-xl font-black text-white leading-tight">
+                            <h3 className="text-xl   text-white leading-tight">
                                 Get <span className="text-yellow-300">FREE Premium</span>{" "}
                                 for every friend
                             </h3>
@@ -417,13 +417,13 @@ const ReferralShareModal = memo(
                     <div className="flex-1 overflow-y-auto p-5 space-y-3">
                         <div className="grid grid-cols-2 gap-2">
                             <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3 text-center">
-                                <p className="text-3xl font-black text-violet-600 dark:text-violet-400 leading-none">+2</p>
+                                <p className="text-3xl   text-violet-600 dark:text-violet-400 leading-none">+2</p>
                                 <p className="text-[10px] font-bold uppercase tracking-wide mt-1 text-slate-500 dark:text-slate-400">
                                     Days for you
                                 </p>
                             </div>
                             <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3 text-center">
-                                <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
+                                <p className="text-3xl   text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
                                 <p className="text-[10px] font-bold uppercase tracking-wide mt-1 text-slate-500 dark:text-slate-400">
                                     Day for them
                                 </p>
@@ -576,7 +576,7 @@ const StreakWelcomeModal = memo(
 
                         <div className="inline-flex items-center justify-center gap-2 mb-2">
                             <Flame className="w-7 h-7 text-amber-500" />
-                            <span className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                            <span className="text-5xl   text-slate-900 dark:text-white tracking-tight">
                                 {streak}
                             </span>
                         </div>
@@ -617,7 +617,7 @@ const StreakWelcomeModal = memo(
                                     <Gift size={16} />
                                     Share &amp; earn Premium
                                 </span>
-                                <span className="text-[11px] font-black bg-white/20 backdrop-blur px-2 py-1 rounded-lg">
+                                <span className="text-[11px]   bg-white/20 backdrop-blur px-2 py-1 rounded-lg">
                                     +2 days
                                 </span>
                             </button>

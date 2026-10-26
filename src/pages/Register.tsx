@@ -405,7 +405,7 @@ export function Register() {
                   <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600 p-1.5 md:p-2 shadow-lg shadow-blue-200">
                     <img src="/pwa-192x192.jpeg" alt="Logo" className="w-full h-full object-contain invert" />
                   </div>
-                  <CardTitle className="text-lg md:text-2xl font-black tracking-tight text-slate-800">
+                  <CardTitle className="text-lg md:text-2xl   tracking-tight text-slate-800">
                     Hello! Love seeing you get started
                   </CardTitle>
                 </div>

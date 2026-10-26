@@ -494,12 +494,12 @@ export default function MarketFeed({ user }: any) {
                                     {/* Status Badges (top-left) */}
                                     <div className="absolute top-2 md:top-3 left-2 md:left-3 flex flex-col gap-1.5 md:gap-2">
                                         {l.is_featured && (
-                                            <span className="bg-yellow-400 text-black text-[8px] md:text-[10px] font-black px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg uppercase">
+                                            <span className="bg-yellow-400 text-black text-[8px] md:text-[10px]   px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg uppercase">
                                                 Featured
                                             </span>
                                         )}
                                         {l.status === "sold" && (
-                                            <span className="bg-red-600 text-white text-[8px] md:text-[10px] font-black px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg uppercase">
+                                            <span className="bg-red-600 text-white text-[8px] md:text-[10px]   px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg uppercase">
                                                 Sold Out
                                             </span>
                                         )}
@@ -542,7 +542,7 @@ export default function MarketFeed({ user }: any) {
                                         </span>
                                     </div>
 
-                                    <div className="text-xl md:text-2xl font-black text-gray-900 dark:text-white mb-2 md:mb-4">
+                                    <div className="text-xl md:text-2xl   text-gray-900 dark:text-white mb-2 md:mb-4">
                                         <span className="text-xs md:text-sm font-normal text-gray-500 mr-0.5 md:mr-1">KES</span>
                                         {Number(l.price).toLocaleString()}
                                     </div>

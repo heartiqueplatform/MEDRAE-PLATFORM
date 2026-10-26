@@ -385,7 +385,7 @@ export default function NursingHome() {
                                 KRCHN Nursing Curriculum
                             </div>
 
-                            <h1 className="text-2xl md:text-3xl lg:text-5xl font-black tracking-tight">
+                            <h1 className="text-2xl md:text-3xl lg:text-5xl   tracking-tight">
                                 Choose your nursing year
                             </h1>
 
@@ -521,10 +521,10 @@ export default function NursingHome() {
                                     <div className="relative flex items-start justify-between gap-3 md:gap-4">
                                         <div>
                                             <div className="mb-3 md:mb-4 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-                                                <span className="text-base md:text-lg font-black">{index + 1}</span>
+                                                <span className="text-base md:text-lg  ">{index + 1}</span>
                                             </div>
 
-                                            <h3 className="text-base md:text-lg font-black text-slate-950 dark:text-white">{year.year_name}</h3>
+                                            <h3 className="text-base md:text-lg   text-slate-950 dark:text-white">{year.year_name}</h3>
 
                                             <p className="mt-1.5 md:mt-2 text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
                                                 {formatNumberWithImpact(year.total_questions || 0)} questions · Open units, notes, clinical topics, and revision content for this stage.

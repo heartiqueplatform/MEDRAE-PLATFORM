@@ -121,7 +121,7 @@ const NotFound = () => {
               alt="MEDRAE"
               className="w-20 h-20 rounded-2xl shadow-2xl border border-white/20 mb-6"
             />
-            <h1 className="text-6xl font-black tracking-tight mb-2">
+            <h1 className="text-6xl   tracking-tight mb-2">
               <span className="text-red-500">Medrae</span> Nursing
             </h1>
             <p className="text-white/70 text-lg font-medium">Kenya's Premier Nursing Platform</p>
@@ -180,10 +180,10 @@ const NotFound = () => {
                 <Activity className="w-8 h-8 text-indigo-600 animate-pulse" />
               </div>
               <div>
-                <h2 className="text-sm font-black tracking-[0.2em] uppercase text-indigo-500">
+                <h2 className="text-sm   tracking-[0.2em] uppercase text-indigo-500">
                   Status: Route Offline
                 </h2>
-                <p className="text-3xl font-black tracking-tight">404 Not Found</p>
+                <p className="text-3xl   tracking-tight">404 Not Found</p>
               </div>
             </div>
           </motion.div>

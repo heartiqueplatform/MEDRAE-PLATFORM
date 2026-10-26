@@ -353,7 +353,7 @@ const TutorExamList = () => {
                                         <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-500" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                                        <h2 className="text-xl sm:text-2xl   text-slate-900 dark:text-white tracking-tight">
                                             Your <span className="text-amber-600">Exam Papers</span>
                                         </h2>
                                         <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -395,7 +395,7 @@ const TutorExamList = () => {
                                                         {exam.title || "Untitled Exam"}
                                                     </span>
                                                     {editingExamId === exam.id && (
-                                                        <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                                                        <span className="text-[8px] sm:text-[10px]   uppercase tracking-widest bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
                                                             Editing
                                                         </span>
                                                     )}
@@ -434,7 +434,7 @@ const TutorExamList = () => {
 
                                             <button
                                                 onClick={() => handleContinueExam(exam.id)}
-                                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-lg sm:rounded-xl transition-all duration-200 ${editingExamId === exam.id
+                                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs   uppercase tracking-widest rounded-lg sm:rounded-xl transition-all duration-200 ${editingExamId === exam.id
                                                     ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/30'
                                                     : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none'
                                                     }`}
@@ -456,7 +456,7 @@ const TutorExamList = () => {
                                                 <button
                                                     type="submit"
                                                     form="exam-form"
-                                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs   uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                                                 >
                                                     <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                     <span>Update Exam</span>
@@ -487,7 +487,7 @@ const TutorExamList = () => {
                                     <FileSearch className="w-10 h-10 text-amber-600 dark:text-amber-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                                    <h3 className="text-xl sm:text-2xl   text-slate-900 dark:text-white">
                                         No Exams Created Yet
                                     </h3>
                                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md">
@@ -524,7 +524,7 @@ const TutorExamList = () => {
                             <PlusCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                            <h1 className="text-xl sm:text-3xl   text-slate-900 dark:text-white tracking-tight">
                                 {editingExamId ? "Edit" : "Create New"} <span className="text-blue-600">Exam Session</span>
                             </h1>
                             <p className="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -539,7 +539,7 @@ const TutorExamList = () => {
                         <div className="space-y-3 sm:space-y-4">
                             <div className="flex items-center gap-2 mb-3 sm:mb-4 border-b pb-2 dark:border-slate-800">
                                 <FileText className="w-4 h-4 text-blue-500" />
-                                <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Exam Identity</h3>
+                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-400">Exam Identity</h3>
                             </div>
 
                             <div className="space-y-3 sm:space-y-4">
@@ -591,7 +591,7 @@ const TutorExamList = () => {
                         <div className="space-y-3 sm:space-y-4">
                             <div className="flex items-center gap-2 mb-3 sm:mb-4 border-b pb-2 dark:border-slate-800">
                                 <ShieldAlert className="w-4 h-4 text-rose-500" />
-                                <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Security & Proctoring</h3>
+                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-400">Security & Proctoring</h3>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -656,12 +656,12 @@ const TutorExamList = () => {
                         <div className="space-y-3 sm:space-y-4">
                             <div className="flex items-center gap-2 mb-3 sm:mb-4 border-0 pb-2">
                                 <Clock className="w-4 h-4 text-cyan-500" />
-                                <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Scheduling & Release</h3>
+                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-400">Scheduling & Release</h3>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-slate-50 dark:bg-slate-800/30 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-0">
                                 <div className="space-y-3 sm:space-y-4">
-                                    <h4 className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Exam Window</h4>
+                                    <h4 className="text-[8px] sm:text-[10px]   text-slate-400 uppercase tracking-widest text-center">Exam Window</h4>
                                     <div className="space-y-1">
                                         <label className="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">Scheduled Start (Your Local Time)</label>
                                         <input
@@ -685,7 +685,7 @@ const TutorExamList = () => {
                                 </div>
 
                                 <div className="space-y-3 sm:space-y-4">
-                                    <h4 className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Publicity Window</h4>
+                                    <h4 className="text-[8px] sm:text-[10px]   text-slate-400 uppercase tracking-widest text-center">Publicity Window</h4>
                                     <div className="space-y-1">
                                         <label className="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">Released At (Your Local Time)</label>
                                         <input
@@ -714,7 +714,7 @@ const TutorExamList = () => {
                         <div className="bg-white dark:bg-slate-950 p-4 sm:p-8 rounded-2xl sm:rounded-[2rem] shadow-xl border-0 dark:border-slate-800">
                             <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-slate-200 dark:border-slate-800 pb-2">
                                 <Globe className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-500">
+                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-600 dark:text-slate-500">
                                     Visibility & Automation
                                 </h3>
                             </div>
@@ -739,7 +739,7 @@ const TutorExamList = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group w-full relative h-14 sm:h-16 overflow-hidden rounded-2xl sm:rounded-[2rem] bg-blue-600 text-white font-black text-base sm:text-lg uppercase tracking-widest shadow-2xl shadow-blue-200 dark:shadow-none hover:bg-blue-700 disabled:bg-slate-300 transition-all active:scale-[0.98]"
+                            className="group w-full relative h-14 sm:h-16 overflow-hidden rounded-2xl sm:rounded-[2rem] bg-blue-600 text-white   text-base sm:text-lg uppercase tracking-widest shadow-2xl shadow-blue-200 dark:shadow-none hover:bg-blue-700 disabled:bg-slate-300 transition-all active:scale-[0.98]"
                         >
                             <span className="relative z-10 flex items-center justify-center gap-2">
                                 {loading ? (

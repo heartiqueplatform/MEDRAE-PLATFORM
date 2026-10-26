@@ -1,12 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, Pin, Calendar, Users, AlertCircle, Info, CheckCircle, XCircle, Mail } from "lucide-react";
+import {
+  Bell, Pin, Calendar, Users, AlertCircle, Info, CheckCircle, XCircle, Mail, ChevronLeft,
+} from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
+import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { playSound } from "@/lib/soundManager";
 
 /* ============================================================
    BRAND ICONS — exact SVG paths, no dependencies
@@ -36,17 +41,27 @@ const InstagramIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
 );
 
 /* ============================================================
-   SOCIAL LINKS CONFIG — your real accounts
+   SOCIAL LINKS CONFIG
    ============================================================ */
 const SOCIAL_LINKS = {
   facebook: "https://web.facebook.com/share/g/1AY4nC9Hcp/",
-  whatsapp: "https://wa.me/254704473503",           // 0704473503 → international
+  whatsapp: "https://wa.me/254704473503",
   tiktok: "https://www.tiktok.com/@medraenursing",
   instagram: "https://www.instagram.com/medraenursing",
   email: "mailto:medraenursing@gmail.com",
 };
 
 export function Announcements() {
+  const navigate = useNavigate();
+  const home = useHomeRoute();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const handleBack = useCallback(() => {
+    playSound("tap");
+    if (navigator.vibrate) navigator.vibrate(20);
+    navigate(home, { replace: true });
+  }, [navigate, home]);
+
   const [readAnnouncements, setReadAnnouncements] = useState<string[]>(() => {
     const stored = localStorage.getItem("readAnnouncements");
     return stored ? JSON.parse(stored) : [];
@@ -155,41 +170,73 @@ export function Announcements() {
   const pinnedAnnouncements = announcements.filter((a) => a.pinned);
   const regularAnnouncements = announcements.filter((a) => !a.pinned);
 
+  // ── Shell wrapper for every state (loading / full content) ──
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+      <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+          border-b border-gray-100 dark:border-gray-800
+          bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+          z-30 safe-top">
+        <button
+          onClick={handleBack}
+          aria-label="Go back"
+          className="flex items-center justify-center h-10 w-10 rounded-full
+              bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+              active:scale-95 transition-all touch-manipulation"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+            Announcements
+          </h1>
+          <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+            {unreadCount > 0
+              ? `${unreadCount} unread`
+              : announcements.length > 0
+                ? "All caught up"
+                : "Updates from the Medrae team"}
+          </p>
+        </div>
+        {unreadCount > 0 && (
+          <Badge className="px-2 py-1 shrink-0 border-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-bold text-[10px]">
+            {unreadCount}
+          </Badge>
+        )}
+      </header>
+      <div
+        ref={contentRef}
+        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+            custom-scrollbar overscroll-contain"
+      >
+        <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
-    return <GlobalLoader />;
+    return (
+      <Shell>
+        <GlobalLoader />
+      </Shell>
+    );
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-50/50 dark:bg-background pb-16 md:pb-10">
-      <div className="w-full max-w-4xl mx-auto px-1 pt-4 space-y-4">
+    <Shell>
+      <div className="w-full space-y-4">
 
         {/* ============================================ */}
-        {/* HEADER + SOCIAL STRIP — edge to edge on mobile */}
+        {/* SOCIAL STRIP */}
         {/* ============================================ */}
         <div className="w-full">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-                Announcements
-              </h1>
-              <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Stay updated with important updates from the Medrae team
-              </p>
-            </div>
-            {unreadCount > 0 && (
-              <Badge className="px-1.5 py-1 shrink-0 border-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-normal text-xs self-start">
-                {unreadCount} unread
-              </Badge>
-            )}
-          </div>
-
-          {/* Social strip — borderless, brand-colored icons */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">
               Follow us
             </span>
 
-            {/* Facebook */}
             <a
               href={SOCIAL_LINKS.facebook}
               target="_blank"
@@ -204,7 +251,6 @@ export function Announcements() {
               <span className="text-[11px] font-medium hidden sm:inline">Facebook</span>
             </a>
 
-            {/* WhatsApp */}
             <a
               href={SOCIAL_LINKS.whatsapp}
               target="_blank"
@@ -219,7 +265,6 @@ export function Announcements() {
               <span className="text-[11px] font-medium hidden sm:inline">WhatsApp</span>
             </a>
 
-            {/* TikTok */}
             <a
               href={SOCIAL_LINKS.tiktok}
               target="_blank"
@@ -235,7 +280,6 @@ export function Announcements() {
               <span className="text-[11px] font-medium hidden sm:inline">TikTok</span>
             </a>
 
-            {/* Instagram */}
             <a
               href={SOCIAL_LINKS.instagram}
               target="_blank"
@@ -250,7 +294,6 @@ export function Announcements() {
               <span className="text-[11px] font-medium hidden sm:inline">Instagram</span>
             </a>
 
-            {/* Email */}
             <a
               href={SOCIAL_LINKS.email}
               aria-label="Email Medrae"
@@ -267,7 +310,7 @@ export function Announcements() {
         </div>
 
         {/* ============================================ */}
-        {/* TABS — borderless */}
+        {/* TABS */}
         {/* ============================================ */}
         <div className="w-full">
           <Tabs defaultValue="all" className="space-y-3 md:space-y-4">
@@ -295,7 +338,7 @@ export function Announcements() {
             {/* All */}
             <TabsContent value="all" className="space-y-3 md:space-y-4 outline-none">
               {pinnedAnnouncements.length > 0 && (
-                <div className="space-y-3 px-1 md:px-0">
+                <div className="space-y-3">
                   <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <Pin className="h-3.5 w-3.5" />
                     Pinned
@@ -317,38 +360,35 @@ export function Announcements() {
 
               <div className="space-y-3 md:space-y-4">
                 {pinnedAnnouncements.length > 0 && (
-                  <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 px-1 md:px-0 uppercase tracking-wider">
+                  <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Recent
                   </h3>
                 )}
                 {regularAnnouncements.map((a) => (
-                  <div key={a.id} className="px-1 md:px-0">
-                    <AnnouncementCard
-                      announcement={a}
-                      markAsRead={markAsRead}
-                      readAnnouncements={readAnnouncements}
-                      getTypeIcon={getTypeIcon}
-                      getTypeColor={getTypeColor}
-                      getPriorityColor={getPriorityColor}
-                      formatDate={formatDate}
-                    />
-                  </div>
+                  <AnnouncementCard
+                    key={a.id}
+                    announcement={a}
+                    markAsRead={markAsRead}
+                    readAnnouncements={readAnnouncements}
+                    getTypeIcon={getTypeIcon}
+                    getTypeColor={getTypeColor}
+                    getPriorityColor={getPriorityColor}
+                    formatDate={formatDate}
+                  />
                 ))}
               </div>
 
               {announcements.length === 0 && (
-                <div className="px-1 md:px-0">
-                  <div className="rounded-2xl bg-white dark:bg-muted/30 p-10 text-center border-0">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <Bell className="w-6 h-6 text-slate-400 dark:text-slate-500" />
-                    </div>
-                    <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white">
-                      No announcements yet
-                    </h3>
-                    <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
-                      Updates and announcements from the Medrae team will appear here.
-                    </p>
+                <div className="rounded-2xl bg-white dark:bg-muted/30 p-10 text-center border-0">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                   </div>
+                  <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white">
+                    No announcements yet
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    Updates and announcements from the Medrae team will appear here.
+                  </p>
                 </div>
               )}
             </TabsContent>
@@ -356,23 +396,53 @@ export function Announcements() {
             {/* Pinned */}
             <TabsContent value="pinned" className="space-y-3 md:space-y-4 outline-none">
               {pinnedAnnouncements.length === 0 ? (
-                <div className="px-1 md:px-0">
-                  <div className="rounded-2xl bg-white dark:bg-muted/30 p-10 text-center border-0">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <Pin className="w-6 h-6 text-slate-400 dark:text-slate-500" />
-                    </div>
-                    <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white">
-                      No pinned announcements
-                    </h3>
-                    <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
-                      Important announcements will be pinned here for quick access.
-                    </p>
+                <div className="rounded-2xl bg-white dark:bg-muted/30 p-10 text-center border-0">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Pin className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                   </div>
+                  <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white">
+                    No pinned announcements
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    Important announcements will be pinned here for quick access.
+                  </p>
                 </div>
               ) : (
                 pinnedAnnouncements.map((a) => (
-                  <div key={a.id} className="px-1 md:px-0">
+                  <AnnouncementCard
+                    key={a.id}
+                    announcement={a}
+                    markAsRead={markAsRead}
+                    readAnnouncements={readAnnouncements}
+                    getTypeIcon={getTypeIcon}
+                    getTypeColor={getTypeColor}
+                    getPriorityColor={getPriorityColor}
+                    formatDate={formatDate}
+                  />
+                ))
+              )}
+            </TabsContent>
+
+            {/* Unread */}
+            <TabsContent value="unread" className="space-y-3 md:space-y-4 outline-none">
+              {announcements.filter((a) => !readAnnouncements.includes(a.id)).length === 0 ? (
+                <div className="rounded-2xl bg-white dark:bg-muted/30 p-10 text-center border-0">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                  </div>
+                  <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white">
+                    You're all caught up
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    You have no unread announcements.
+                  </p>
+                </div>
+              ) : (
+                announcements
+                  .filter((a) => !readAnnouncements.includes(a.id))
+                  .map((a) => (
                     <AnnouncementCard
+                      key={a.id}
                       announcement={a}
                       markAsRead={markAsRead}
                       readAnnouncements={readAnnouncements}
@@ -381,49 +451,13 @@ export function Announcements() {
                       getPriorityColor={getPriorityColor}
                       formatDate={formatDate}
                     />
-                  </div>
-                ))
-              )}
-            </TabsContent>
-
-            {/* Unread */}
-            <TabsContent value="unread" className="space-y-3 md:space-y-4 outline-none">
-              {announcements.filter((a) => !readAnnouncements.includes(a.id)).length === 0 ? (
-                <div className="px-1 md:px-0">
-                  <div className="rounded-2xl bg-white dark:bg-muted/30 p-10 text-center border-0">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-slate-400 dark:text-slate-500" />
-                    </div>
-                    <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white">
-                      You're all caught up
-                    </h3>
-                    <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
-                      You have no unread announcements.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                announcements
-                  .filter((a) => !readAnnouncements.includes(a.id))
-                  .map((a) => (
-                    <div key={a.id} className="px-1 md:px-0">
-                      <AnnouncementCard
-                        announcement={a}
-                        markAsRead={markAsRead}
-                        readAnnouncements={readAnnouncements}
-                        getTypeIcon={getTypeIcon}
-                        getTypeColor={getTypeColor}
-                        getPriorityColor={getPriorityColor}
-                        formatDate={formatDate}
-                      />
-                    </div>
                   ))
               )}
             </TabsContent>
           </Tabs>
         </div>
       </div>
-    </div>
+    </Shell>
   );
 }
 
@@ -440,7 +474,7 @@ function AnnouncementCard({
 
   return (
     <Card className="border-0 rounded-2xl shadow-none bg-white dark:bg-muted/30 overflow-hidden">
-      <CardHeader className="px-1 py-4 pb-2">
+      <CardHeader className="px-4 py-4 pb-2">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
           <div className="space-y-2 flex-1 min-w-0">
             <div className="flex items-center flex-wrap gap-2">
@@ -474,7 +508,7 @@ function AnnouncementCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="px-1 pb-4">
+      <CardContent className="px-4 pb-4">
         <CardDescription className="text-sm md:text-[15px] mb-4 text-slate-600 dark:text-slate-300 leading-relaxed">
           {announcement.content}
         </CardDescription>

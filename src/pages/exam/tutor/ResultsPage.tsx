@@ -201,7 +201,7 @@ const ExamResultsPage = () => {
                 {/* Header */}
                 <div className="flex justify-between items-center px-4 md:px-0 pt-4 md:pt-0">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">Exam Results Dashboard</h1>
+                        <h1 className="text-xl md:text-2xl   text-slate-900 dark:text-white">Exam Results Dashboard</h1>
                         <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">View and manage student performance</p>
                     </div>
                     <Button onClick={refreshResults} disabled={refreshing} variant="outline" className="gap-1.5 text-xs md:text-sm h-9">
@@ -217,7 +217,7 @@ const ExamResultsPage = () => {
                             <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4">
                                 <FileSearch className="w-8 h-8 md:w-10 md:h-10 text-slate-300 dark:text-slate-600" />
                             </div>
-                            <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mb-2 md:mb-3 tracking-tight">No Records Found..Refresh Page</h2>
+                            <h2 className="text-xl md:text-2xl   text-slate-900 dark:text-white mb-2 md:mb-3 tracking-tight">No Records Found..Refresh Page</h2>
                             <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                                 Exam results will populate here automatically once students submit their answers.
                             </p>
@@ -239,10 +239,10 @@ const ExamResultsPage = () => {
                                         <Badge className={`text-[10px] md:text-xs ${paper.is_released ? "bg-blue-500" : "bg-amber-500"}`}>
                                             {paper.is_released ? "Public" : "Draft"}
                                         </Badge>
-                                        <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">ID: {paper.id.slice(0, 8)}</span>
+                                        <span className="text-[9px] md:text-[10px]   uppercase text-slate-400 tracking-widest">ID: {paper.id.slice(0, 8)}</span>
                                         <Badge variant="outline" className="text-[9px] md:text-[10px]">{results.length} Candidates</Badge>
                                     </div>
-                                    <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{paper.title}</h1>
+                                    <h1 className="text-xl md:text-2xl   text-slate-900 dark:text-white tracking-tight">{paper.title}</h1>
                                 </div>
                                 <Button
                                     onClick={() => releaseResults(paper.id)}
@@ -266,7 +266,7 @@ const ExamResultsPage = () => {
 
                             {/* Candidate Roster */}
                             <div className="space-y-3 md:space-y-4 px-4 md:px-0">
-                                <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-400">Candidate Performance</h3>
+                                <h3 className="text-[10px] md:text-xs   uppercase tracking-[0.2em] text-slate-400">Candidate Performance</h3>
                                 {results.map((student: any) => {
                                     const percent = student.total_questions > 0 ? ((student.score / student.total_questions) * 100) : 0;
                                     const isExpanded = expandedStudent === student.id;
@@ -299,11 +299,11 @@ const ExamResultsPage = () => {
                                                 <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto justify-between md:justify-end">
                                                     <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer select-none bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
                                                         <input type="checkbox" className="w-3.5 h-3.5 md:w-4 md:h-4 rounded border-slate-300 text-indigo-600" checked={!!student.is_released} onChange={() => toggleStudentRelease(student.id, student.is_released ?? false)} />
-                                                        <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-500">Release</span>
+                                                        <span className="text-[9px] md:text-[10px]   uppercase text-slate-500">Release</span>
                                                     </label>
 
                                                     <div className="text-right">
-                                                        <div className="text-lg md:text-xl font-black text-slate-900 dark:text-white">{student.score} <span className="text-slate-400 text-xs md:text-sm">/ {student.total_questions}</span></div>
+                                                        <div className="text-lg md:text-xl   text-slate-900 dark:text-white">{student.score} <span className="text-slate-400 text-xs md:text-sm">/ {student.total_questions}</span></div>
                                                         <div className="w-20 md:w-24"><Progress value={percent} className={`h-1 md:h-1.5 mt-0.5 md:mt-1 ${percent > 70 ? "bg-emerald-500" : percent > 40 ? "bg-amber-500" : "bg-rose-500"}`} /></div>
                                                     </div>
 
@@ -316,7 +316,7 @@ const ExamResultsPage = () => {
                                             {isExpanded && (
                                                 <div className="px-4 md:px-6 pb-6 md:pb-8 space-y-4 md:space-y-6">
                                                     <Separator className="opacity-50" />
-                                                    <h4 className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-black uppercase text-slate-400 tracking-widest"><ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" /> Review</h4>
+                                                    <h4 className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs   uppercase text-slate-400 tracking-widest"><ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" /> Review</h4>
                                                     {student.answers?.length > 0 ? (
                                                         student.answers.map((ans: any, idx: number) => (
                                                             <div key={ans.id || idx} className="p-4 md:p-5 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
@@ -334,7 +334,7 @@ const ExamResultsPage = () => {
                                                                         const isCorrect = ans.exam_questions?.correct_answer === opt;
                                                                         return (
                                                                             <div key={opt} className={`p-2 md:p-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-medium border ${isCorrect ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 text-emerald-700" : isSelected ? "bg-rose-50 dark:bg-rose-500/10 border-rose-200 text-rose-700" : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 text-slate-500"}`}>
-                                                                                <span className="font-black mr-1.5 md:mr-2">{opt}:</span>{ans.exam_questions?.[`option_${opt.toLowerCase()}`] || "N/A"}
+                                                                                <span className="  mr-1.5 md:mr-2">{opt}:</span>{ans.exam_questions?.[`option_${opt.toLowerCase()}`] || "N/A"}
                                                                                 {isSelected && !isCorrect && <span className="ml-1.5 italic text-[9px] md:text-[10px]">(Student)</span>}
                                                                                 {isCorrect && <span className="ml-1.5 italic text-[9px] md:text-[10px]">(Key)</span>}
                                                                             </div>
@@ -382,8 +382,8 @@ function StatCard({ label, value, icon, color }: any) {
                 <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center mb-2 md:mb-3 transition-transform group-hover:scale-110 ${colors[color]}`}>
                     {React.cloneElement(icon, { size: 16 })}
                 </div>
-                <p className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-0.5 md:mb-1">{label}</p>
-                <p className="text-lg md:text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{value}</p>
+                <p className="text-[9px] md:text-[10px]   uppercase text-slate-400 tracking-widest leading-none mb-0.5 md:mb-1">{label}</p>
+                <p className="text-lg md:text-2xl   text-slate-900 dark:text-white tracking-tighter">{value}</p>
             </CardContent>
         </Card>
     );

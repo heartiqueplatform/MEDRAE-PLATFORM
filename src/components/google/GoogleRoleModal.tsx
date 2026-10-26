@@ -29,7 +29,7 @@ export default function GoogleRoleModal({
                 {/* HEADER */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                     <div>
-                        <h2 className="text-xl font-black text-slate-800">
+                        <h2 className="text-xl   text-slate-800">
                             Continue with Google
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">

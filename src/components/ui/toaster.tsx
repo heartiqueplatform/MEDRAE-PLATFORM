@@ -44,7 +44,7 @@ function ToastWithSound({ id, title, description, action, variant, ...props }: a
         <div className="flex flex-col flex-1 pt-0.5">
           <span
             className={cn(
-              "text-[10px] uppercase tracking-[0.1em] font-black mb-0.5",
+              "text-[10px] uppercase tracking-[0.1em]   mb-0.5",
               variant === "success" && "text-emerald-600 dark:text-emerald-400",
               variant === "error" && "text-rose-600 dark:text-rose-400",
               variant === "achievement" && "text-purple-600 dark:text-purple-400",

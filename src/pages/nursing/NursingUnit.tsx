@@ -201,7 +201,7 @@ export default function NursingUnit() {
                             </div>
                         </div>
 
-                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight">
+                        <h1 className="text-2xl md:text-3xl lg:text-4xl   tracking-tight">
                             Module units
                         </h1>
                         <p className="mt-2 md:mt-3 max-w-2xl text-xs md:text-sm lg:text-base leading-6 text-slate-600 dark:text-slate-300">
@@ -347,11 +347,11 @@ export default function NursingUnit() {
                                     >
                                         <div className="flex min-w-0 items-center gap-3 md:gap-4">
                                             <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-xl md:rounded-2xl bg-gradient-to-br from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-600/20">
-                                                <span className="text-base md:text-lg font-black">{index + 1}</span>
+                                                <span className="text-base md:text-lg  ">{index + 1}</span>
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-[10px] md:text-xs font-bold uppercase text-slate-400">Unit {index + 1}</p>
-                                                <h2 className="line-clamp-2 text-base md:text-lg font-black text-slate-950 dark:text-white">{unit.title}</h2>
+                                                <h2 className="line-clamp-2 text-base md:text-lg   text-slate-950 dark:text-white">{unit.title}</h2>
                                                 <p className="mt-0.5 md:mt-1 text-[10px] md:text-xs text-slate-500 dark:text-slate-400">
                                                     <HelpCircle className="inline h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1" />
                                                     {unit.total_questions || 0} questions

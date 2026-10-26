@@ -153,7 +153,7 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
             </div>
 
             <div className="space-y-0.5 sm:space-y-1">
-              <h2 className="text-xl sm:text-2xl font-black text-white px-2">
+              <h2 className="text-xl sm:text-2xl   text-white px-2">
                 {config.title}
               </h2>
               <p className="text-sm sm:text-lg font-bold text-white/90 px-2">
@@ -1133,7 +1133,7 @@ export default function StudentDashboard() {
                   <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
                     <Newspaper className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                  <DialogTitle className="text-xl   tracking-tight text-slate-900 dark:text-white">
                     Quizzes Bank Insights
                   </DialogTitle>
                 </div>
@@ -1146,7 +1146,7 @@ export default function StudentDashboard() {
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
                       <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
                       <span className="text-[10px] font-bold text-slate-500   tracking-wider">Your Feed Attempts</span>
-                      <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
+                      <p className="text-2xl   text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
                     </div>
 
                     {/* ✅ Shows SKELETON while loading, DATA when ready */}
@@ -1230,7 +1230,7 @@ export default function StudentDashboard() {
           <section className="mt-1 space-y-2">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 px-2 sm:px-0">
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                <h2 className="text-2xl   tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                   Proctorium Papers V1
                   <span className="text-xs font-bold px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full">
                     {cachedSimulationPapers.length} Available

@@ -67,7 +67,7 @@ const ErrorState = () => (
         <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mb-4">
             <Users className="h-8 w-8 text-rose-600 dark:text-rose-400" />
         </div>
-        <h1 className="text-xl font-black text-slate-900 dark:text-slate-100">
+        <h1 className="text-xl   text-slate-900 dark:text-slate-100">
             Couldn't load your invite code
         </h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs">
@@ -261,7 +261,7 @@ export default function LinkGenerator() {
                 <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mb-4 shadow-lg">
                     <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-3xl   bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
                     Invite a Nurse
                 </h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm max-w-[300px] mx-auto leading-relaxed">
@@ -273,7 +273,7 @@ export default function LinkGenerator() {
             <div className="mt-5 w-full max-w-md bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-2xl p-4 border border-violet-200 dark:border-violet-900/50">
                 <div className="flex items-center gap-2 mb-3">
                     <Gift className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                    <p className="text-xs font-black uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                    <p className="text-xs   uppercase tracking-wider text-violet-700 dark:text-violet-300">
                         What You Both Get
                     </p>
                 </div>
@@ -320,7 +320,7 @@ export default function LinkGenerator() {
 
                 {/* Your stats — only if > 0 */}
                 {stats.invites > 0 && (
-                    <div className="mt-3 pt-3 border-t border-violet-200 dark:border-violet-900/50 flex items-center justify-center gap-3 text-[11px] font-black text-violet-700 dark:text-violet-300">
+                    <div className="mt-3 pt-3 border-t border-violet-200 dark:border-violet-900/50 flex items-center justify-center gap-3 text-[11px]   text-violet-700 dark:text-violet-300">
                         <span>👥 {stats.invites} joined</span>
                         <span>·</span>
                         <span>🎁 {stats.daysEarned} days earned</span>
@@ -336,11 +336,11 @@ export default function LinkGenerator() {
                     <QRCodeDisplay value={fullRedirectUrl} qrRef={qrRef} />
 
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                        <p className="text-[10px]   uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                             Your Personal Code
                         </p>
                         <div className="flex items-center justify-center gap-2">
-                            <p className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 tracking-widest uppercase font-mono">
+                            <p className="text-xl sm:text-2xl   text-blue-600 dark:text-blue-400 tracking-widest uppercase font-mono">
                                 {shortCode}
                             </p>
                             <button

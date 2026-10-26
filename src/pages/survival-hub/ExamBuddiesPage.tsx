@@ -156,7 +156,7 @@ const ExamBuddiesPage = () => {
                         <div className="h-14 w-14 md:h-16 md:w-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl md:rounded-3xl flex items-center justify-center text-blue-600 mb-3 md:mb-4">
                             <Users size={28} className="md:w-8 md:h-8" />
                         </div>
-                        <h2 className="text-lg md:text-xl font-black dark:text-white mb-1">Sitting here in {currentCycle}?</h2>
+                        <h2 className="text-lg md:text-xl   dark:text-white mb-1">Sitting here in {currentCycle}?</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 md:mb-6">Join the list so others can connect with you for study or logistics.</p>
 
                         {!userGlobalStatus ? (
@@ -216,7 +216,7 @@ const ExamBuddiesPage = () => {
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-6">
                         {/* Left Side: Content */}
                         <div className="flex-1 text-center md:text-left">
-                            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50 mb-3 border border-white/20">
+                            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px]   uppercase tracking-[0.2em] text-emerald-50 mb-3 border border-white/20">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
@@ -224,7 +224,7 @@ const ExamBuddiesPage = () => {
                                 Live Community
                             </div>
 
-                            <h3 className="text-xl md:text-2xl font-black text-white leading-tight mb-2 tracking-tighter">
+                            <h3 className="text-xl md:text-2xl   text-white leading-tight mb-2 tracking-tighter">
                                 Medrae Exam <br />Candidate Hub
                             </h3>
 
@@ -249,7 +249,7 @@ const ExamBuddiesPage = () => {
                                 href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full bg-white text-emerald-700 hover:bg-emerald-50 px-5 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest text-center transition-all shadow-lg active:scale-95"
+                                className="w-full bg-white text-emerald-700 hover:bg-emerald-50 px-5 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl   text-[10px] md:text-xs uppercase tracking-widest text-center transition-all shadow-lg active:scale-95"
                             >
                                 Join Now
                             </a>
@@ -260,7 +260,7 @@ const ExamBuddiesPage = () => {
                 {/* Candidates List - Mobile Feed Style */}
                 <div className="space-y-0 md:space-y-3">
                     <div className="flex items-center justify-between px-3 md:px-2 py-3 md:py-0">
-                        <h3 className="font-black text-slate-800 dark:text-slate-200 flex items-center gap-2 text-base md:text-lg">
+                        <h3 className="  text-slate-800 dark:text-slate-200 flex items-center gap-2 text-base md:text-lg">
                             Candidates
                             <span className="text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2.5 md:px-3 py-0.5 rounded-full text-[10px] md:text-xs">{buddies.length}</span>
                         </h3>
@@ -296,12 +296,12 @@ const ExamBuddiesPage = () => {
 
                                             <div className="flex gap-1.5 mt-1.5 md:mt-2">
                                                 {buddy.is_looking_for_roommate && (
-                                                    <span className="px-1.5 md:px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] md:text-[9px] font-black uppercase rounded flex md:rounded-md items-center gap-0.5 md:gap-1">
+                                                    <span className="px-1.5 md:px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] md:text-[9px]   uppercase rounded flex md:rounded-md items-center gap-0.5 md:gap-1">
                                                         <BedDouble size={9} className="md:w-2.5 md:h-2.5" /> Room
                                                     </span>
                                                 )}
                                                 {buddy.is_looking_for_study_partner && (
-                                                    <span className="px-1.5 md:px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] md:text-[9px] font-black uppercase rounded flex md:rounded-md items-center gap-0.5 md:gap-1">
+                                                    <span className="px-1.5 md:px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] md:text-[9px]   uppercase rounded flex md:rounded-md items-center gap-0.5 md:gap-1">
                                                         <BookOpen size={9} className="md:w-2.5 md:h-2.5" /> Study
                                                     </span>
                                                 )}
@@ -344,7 +344,7 @@ const ExamBuddiesPage = () => {
                         </button>
 
                         {/* --- EDITED HEADER SECTION --- */}
-                        <h3 className="text-2xl font-black dark:text-white mb-2">
+                        <h3 className="text-2xl   dark:text-white mb-2">
                             {isRegisteredElsewhere ? "Switch Stations?" : "Almost there!"}
                         </h3>
                         <p className="text-slate-500 text-sm mb-8">
@@ -357,7 +357,7 @@ const ExamBuddiesPage = () => {
                         <div className="space-y-6">
                             {/* Phone Input */}
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-2 ml-1">WhatsApp Number</label>
+                                <label className="block text-[10px]   uppercase tracking-[0.2em] text-blue-600 mb-2 ml-1">WhatsApp Number</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
                                         <Phone size={18} />
@@ -379,14 +379,14 @@ const ExamBuddiesPage = () => {
                                     className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefRoommate ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
                                 >
                                     <BedDouble size={20} />
-                                    <span className="text-[10px] font-black uppercase">Need Room</span>
+                                    <span className="text-[10px]   uppercase">Need Room</span>
                                 </button>
                                 <button
                                     onClick={() => setPrefStudy(!prefStudy)}
                                     className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefStudy ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
                                 >
                                     <BookOpen size={20} />
-                                    <span className="text-[10px] font-black uppercase">Study Partner</span>
+                                    <span className="text-[10px]   uppercase">Study Partner</span>
                                 </button>
                             </div>
 
@@ -394,7 +394,7 @@ const ExamBuddiesPage = () => {
                             <button
                                 onClick={handleJoinSubmit}
                                 disabled={isJoining}
-                                className={`w-full ${isRegisteredElsewhere ? 'bg-amber-500' : 'bg-blue-600'} hover:scale-[1.02] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-xl`}
+                                className={`w-full ${isRegisteredElsewhere ? 'bg-amber-500' : 'bg-blue-600'} hover:scale-[1.02] text-white   py-5 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-xl`}
                             >
                                 {isJoining ? (
                                     <Loader2 className="animate-spin" />

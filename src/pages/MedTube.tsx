@@ -501,7 +501,7 @@ function WatchPage({
 
           {/* ─── Right: Up next ─── */}
           <aside className="min-w-0 lg:sticky lg:top-0 lg:self-start">
-            <h2 className="text-xs font-black uppercase tracking-widest text-gh-l-muted dark:text-gh-muted mb-2">
+            <h2 className="text-xs   uppercase tracking-widest text-gh-l-muted dark:text-gh-muted mb-2">
               Up next
             </h2>
             {relatedVideos.length === 0 ? (
@@ -932,7 +932,7 @@ export function MedTube() {
           <div className="w-16 h-16 rounded-2xl bg-indigo-500/15 flex items-center justify-center mb-5">
             <Play className="w-8 h-8 text-indigo-500 dark:text-indigo-400" fill="currentColor" />
           </div>
-          <h2 className="text-2xl font-black tracking-tight text-gh-l-text dark:text-gh-text mb-2">
+          <h2 className="text-2xl   tracking-tight text-gh-l-text dark:text-gh-text mb-2">
             Welcome to Medrae MedTube
           </h2>
 
@@ -948,7 +948,7 @@ export function MedTube() {
   const SidebarContent = (
     <div className="flex flex-col h-full">
       <div className="px-3 py-3 border-b border-gh-l-border dark:border-gh-border">
-        <p className="text-[10px] font-black uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
+        <p className="text-[10px]   uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
           Browse
         </p>
       </div>
@@ -1018,7 +1018,7 @@ export function MedTube() {
         </div>
 
         <div className="min-w-0 flex-1 flex flex-col items-center">
-          <h1 className="text-sm md:text-base font-black tracking-tight text-gh-l-text dark:text-gh-text leading-none">
+          <h1 className="text-sm md:text-base   tracking-tight text-gh-l-text dark:text-gh-text leading-none">
             Medrae MedTube
           </h1>
           <span className="text-[9px] md:text-[10px] font-semibold text-gh-l-muted dark:text-gh-muted  tracking-widest mt-0.5 truncate max-w-[60vw]">
@@ -1088,7 +1088,7 @@ export function MedTube() {
                 }}
               >
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gh-l-border dark:border-gh-border">
-                  <span className="text-sm font-black text-gh-l-text dark:text-gh-text">
+                  <span className="text-sm   text-gh-l-text dark:text-gh-text">
                     Medrae MedTube
                   </span>
                   <button

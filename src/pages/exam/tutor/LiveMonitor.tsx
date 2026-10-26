@@ -224,7 +224,7 @@ const TutorLiveMonitor = () => {
                                     <Layers className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                                    <h1 className="text-xl sm:text-2xl   text-slate-900 dark:text-white tracking-tight">
                                         Question <span className="text-indigo-600">Studio</span>
                                     </h1>
                                     <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">Curating Exam: {questions.length} Questions Loaded</p>
@@ -237,7 +237,7 @@ const TutorLiveMonitor = () => {
                             <Button
                                 onClick={handleSaveAndExit}
                                 disabled={saving}
-                                className="h-10 sm:h-12 px-4 sm:px-6 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                className="h-10 sm:h-12 px-4 sm:px-6 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white   uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 {saving ? (
                                     <>
@@ -254,12 +254,12 @@ const TutorLiveMonitor = () => {
 
                             <div className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-800 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl shadow-sm border-0">
                                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-center">
-                                    <span className="block text-lg sm:text-xl font-black text-slate-900 dark:text-white">{questions.length}</span>
+                                    <span className="block text-lg sm:text-xl   text-slate-900 dark:text-white">{questions.length}</span>
                                     <span className="text-[8px] sm:text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest">Total Qs</span>
                                 </div>
                                 <Separator orientation="vertical" className="h-6 sm:h-8 bg-slate-200 dark:bg-slate-700" />
                                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-center">
-                                    <span className="block text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400">{questions.reduce((acc: number, q: any) => acc + (q.marks || 0), 0)}</span>
+                                    <span className="block text-lg sm:text-xl   text-blue-600 dark:text-blue-400">{questions.reduce((acc: number, q: any) => acc + (q.marks || 0), 0)}</span>
                                     <span className="text-[8px] sm:text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest">Total Marks</span>
                                 </div>
                             </div>
@@ -276,7 +276,7 @@ const TutorLiveMonitor = () => {
                                 <div className="bg-slate-900 dark:bg-slate-950 p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                                     <div className="flex items-center gap-2 text-white">
                                         {editingId ? <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" /> : <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />}
-                                        <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em]">
+                                        <span className="text-[9px] sm:text-[11px]   uppercase tracking-[0.2em]">
                                             {editingId ? "Editor Mode" : "Composer Mode"}
                                         </span>
                                     </div>
@@ -306,7 +306,7 @@ const TutorLiveMonitor = () => {
                                                 { id: 'D', val: optionD, set: setOptionD },
                                             ].map((opt) => (
                                                 <div key={opt.id} className="relative group">
-                                                    <span className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 font-black text-[10px] sm:text-xs ${correctAnswer === opt.id ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                                                    <span className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2   text-[10px] sm:text-xs ${correctAnswer === opt.id ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>
                                                         {opt.id}
                                                     </span>
                                                     <input
@@ -349,7 +349,7 @@ const TutorLiveMonitor = () => {
                                         <Button
                                             type="submit"
                                             disabled={loading}
-                                            className={`w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg sm:shadow-xl ${editingId
+                                            className={`w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl   uppercase tracking-widest transition-all shadow-lg sm:shadow-xl ${editingId
                                                 ? "bg-amber-500 hover:bg-amber-600 shadow-amber-100 dark:shadow-amber-900/30 dark:hover:bg-amber-600"
                                                 : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100 dark:shadow-indigo-900/30 dark:hover:bg-indigo-700"
                                                 } text-xs sm:text-sm text-white hover:text-white`}
@@ -376,7 +376,7 @@ const TutorLiveMonitor = () => {
                                     type="file"
                                     accept=".csv"
                                     onChange={handleCSVUpload}
-                                    className="block w-full text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-full file:border-0 file:text-[8px] sm:file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50 transition-all cursor-pointer"
+                                    className="block w-full text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-full file:border-0 file:text-[8px] sm:file:text-[10px] file:  file:uppercase file:tracking-widest file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50 transition-all cursor-pointer"
                                 />
                             </div>
                         </div>
@@ -386,7 +386,7 @@ const TutorLiveMonitor = () => {
                             <div className="flex items-center justify-between mb-2 px-1 sm:px-2">
                                 <div className="flex items-center gap-1.5 sm:gap-2">
                                     <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 dark:text-slate-500" />
-                                    <h3 className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Question Bank</h3>
+                                    <h3 className="text-[9px] sm:text-xs   uppercase tracking-widest text-slate-400 dark:text-slate-500">Question Bank</h3>
                                 </div>
                                 <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] sm:text-[10px] border-0">Live Sync Active</Badge>
                             </div>
@@ -402,7 +402,7 @@ const TutorLiveMonitor = () => {
                                     <Card key={q.id} className="border-0 shadow-sm hover:shadow-md transition-all rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900/50 overflow-hidden group">
                                         <div className="flex">
                                             <div className="w-10 sm:w-12 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center py-3 sm:py-4 border-r border-slate-100 dark:border-slate-800">
-                                                <span className="text-[10px] sm:text-xs font-black text-slate-300 dark:text-slate-600">#{index + 1}</span>
+                                                <span className="text-[10px] sm:text-xs   text-slate-300 dark:text-slate-600">#{index + 1}</span>
                                             </div>
                                             <div className="flex-1 p-3 sm:p-5 relative">
                                                 <p className="font-bold text-slate-800 dark:text-slate-200 pr-12 sm:pr-16 leading-snug text-sm sm:text-base">
@@ -412,7 +412,7 @@ const TutorLiveMonitor = () => {
                                                 <div className="grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-1.5 sm:gap-y-2 mt-3 sm:mt-4">
                                                     {['a', 'b', 'c', 'd'].map((char) => (
                                                         <div key={char} className="flex items-start gap-1.5 sm:gap-2">
-                                                            <span className={`text-[8px] sm:text-[10px] font-black mt-0.5 ${q.correct_answer.toLowerCase() === char ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                                                            <span className={`text-[8px] sm:text-[10px]   mt-0.5 ${q.correct_answer.toLowerCase() === char ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>
                                                                 {char.toUpperCase()}
                                                             </span>
                                                             <span className={`text-[10px] sm:text-xs ${q.correct_answer.toLowerCase() === char ? 'font-bold text-slate-700 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -423,11 +423,11 @@ const TutorLiveMonitor = () => {
                                                 </div>
 
                                                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-50 dark:border-slate-800">
-                                                    <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-1.5 sm:px-2 py-0.5 rounded">
+                                                    <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px]   text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-1.5 sm:px-2 py-0.5 rounded">
                                                         <Award className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                                         {q.marks} MARKS
                                                     </div>
-                                                    <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px] font-black text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-1.5 sm:px-2 py-0.5 rounded">
+                                                    <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px]   text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-1.5 sm:px-2 py-0.5 rounded">
                                                         <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                                         KEY: {q.correct_answer}
                                                     </div>

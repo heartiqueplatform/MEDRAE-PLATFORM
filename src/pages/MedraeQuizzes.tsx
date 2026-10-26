@@ -977,7 +977,7 @@ export function MedraeQuizzes() {
                                           setBubbleKey(`bd:${unit.code}:hot`);
                                           if (navigator.vibrate) navigator.vibrate(15);
                                         }}
-                                        className="relative inline-flex items-center gap-0.5 text-[10px] font-black text-orange-600 dark:text-orange-400 px-1.5 py-0.5 -mx-1.5 -my-0.5 rounded-md hover:bg-orange-50 dark:hover:bg-orange-950/30 active:scale-95 transition-all touch-manipulation"
+                                        className="relative inline-flex items-center gap-0.5 text-[10px]   text-orange-600 dark:text-orange-400 px-1.5 py-0.5 -mx-1.5 -my-0.5 rounded-md hover:bg-orange-50 dark:hover:bg-orange-950/30 active:scale-95 transition-all touch-manipulation"
                                         title={`${stats?.recentStarts24h ?? 0} students started this in the last 24h`}
                                         aria-label="Trending hot right now"
                                       >

@@ -241,7 +241,7 @@ Medrae - Advancing Nursing Education`;
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                    <h1 className="text-2xl md:text-3xl   text-slate-900 dark:text-white tracking-tight">
                         Assessment <span className="text-indigo-600">Dashboard</span>
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -271,30 +271,30 @@ Medrae - Advancing Nursing Education`;
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <Card className="border-0 shadow-sm bg-white dark:bg-muted/30">
                     <CardContent className="p-4 md:p-6">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Assessments</p>
-                        <p className="text-2xl font-black text-slate-900 dark:text-white">{recentAssessments.length}</p>
+                        <p className="text-[10px]   uppercase text-slate-400 tracking-widest">Total Assessments</p>
+                        <p className="text-2xl   text-slate-900 dark:text-white">{recentAssessments.length}</p>
                     </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-white dark:bg-muted/30">
                     <CardContent className="p-4 md:p-6">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Published</p>
-                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                        <p className="text-[10px]   uppercase text-slate-400 tracking-widest">Published</p>
+                        <p className="text-2xl   text-emerald-600 dark:text-emerald-400">
                             {recentAssessments.filter(e => e.is_released).length}
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-white dark:bg-muted/30">
                     <CardContent className="p-4 md:p-6">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Drafts</p>
-                        <p className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                        <p className="text-[10px]   uppercase text-slate-400 tracking-widest">Drafts</p>
+                        <p className="text-2xl   text-amber-600 dark:text-amber-400">
                             {recentAssessments.filter(e => !e.is_released).length}
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="border-0 shadow-sm bg-white dark:bg-muted/30">
                     <CardContent className="p-4 md:p-6">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Students</p>
-                        <p className="text-2xl font-black text-blue-600 dark:text-blue-400">0</p>
+                        <p className="text-[10px]   uppercase text-slate-400 tracking-widest">Students</p>
+                        <p className="text-2xl   text-blue-600 dark:text-blue-400">0</p>
                     </CardContent>
                 </Card>
             </div>
@@ -440,7 +440,7 @@ Medrae - Advancing Nursing Education`;
             {/* Recent Assessments */}
             <div>
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-black text-slate-900 dark:text-white">Recent Assessments</h2>
+                    <h2 className="text-lg   text-slate-900 dark:text-white">Recent Assessments</h2>
                     {recentAssessments.length > 0 && (
                         <Button variant="ghost" size="sm" onClick={() => navigate("/tutor/exams")}>
                             View All

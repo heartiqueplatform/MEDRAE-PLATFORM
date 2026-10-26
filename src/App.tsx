@@ -273,7 +273,14 @@ const BottomBarWrapper = () => {
       "/Medrae-quizzes",
       "/subscription",
       "/grouppay",
-      "/settings",      // 👈 one entry, all three routes
+      "/settings",
+      "/feedback",
+      "/help",
+      "/profile",
+      "/notifications",
+      "/announcements",
+      "/resources",
+      "/assessment-notes",   // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
     return (
@@ -571,7 +578,7 @@ const AppContent = () => {
                           <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
                           <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
                           <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
-                          <Route path="/help" element={<HelpCenter />} />
+
 
                           {/* Analytics */}
                           <Route path="/analytics" element={<StudentAnalyticsPage />} />
@@ -582,16 +589,8 @@ const AppContent = () => {
                           <Route path="/ai-assistant" element={<AIAssistant />} />
                           <Route path="/calendar" element={<Calendar />} />
                           <Route path="/progress" element={<StudyProgress />} />
-                          <Route path="/resources" element={<Resources />} />
-                          {/* /medtube moved to fullscreen routes below ⬇️ */}
-                          <Route path="/announcements" element={<Announcements />} />
-                          <Route path="/feedback" element={<Feedback />} />
 
 
-                          <Route path="/notifications" element={<Notifications />} />
-                          <Route path="/profile" element={<Profile />} />
-                          {/* /quiz moved to fullscreen routes below ⬇️ */}
-                          <Route path="/assessment-notes" element={<AssessmentNotes />} />
                           <Route path="/feed" element={null} />
 
 
@@ -665,7 +664,13 @@ const AppContent = () => {
                         <Route path="/quiz" element={<PrivateRoute><QuizPage /></PrivateRoute>} />
                         <Route path="/Medrae-quizzes" element={<PrivateRoute><MedraeQuizzes /></PrivateRoute>} />
                         <Route path="/subscription" element={<PrivateRoute><Subscription /></PrivateRoute>} />
-
+                        <Route path="/feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
+                        <Route path="/help" element={<PrivateRoute><HelpCenter /></PrivateRoute>} />
+                        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                        <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+                        <Route path="/resources" element={<PrivateRoute><Resources /></PrivateRoute>} />
+                        <Route path="/announcements" element={<PrivateRoute><Announcements /></PrivateRoute>} />
+                        <Route path="/assessment-notes" element={<PrivateRoute><AssessmentNotes /></PrivateRoute>} />
                         {/* 🆕 GroupPay — full-screen, no sidebar */}
                         <Route path="/grouppay" element={<PrivateRoute><GroupPayHome /></PrivateRoute>} />
                         <Route path="/grouppay/create" element={<PrivateRoute><CreateGroupPage /></PrivateRoute>} />

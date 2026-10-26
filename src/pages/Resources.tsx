@@ -27,42 +27,142 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  FileText,
-  Layers, Sparkles, Lock,
-  XCircle,
-  Video,
-  CheckCircle2,
-  FilePlus,
-  Library,
-  Info,
-  Trash2,
-  Link,
-  Heart,
-  Search,
-  Download,
-  Eye,
-  X,
-  UploadCloud,
-  DownloadCloud,
-  Calendar,
-  CloudCheck,
-  ChevronDown,
-  GraduationCap,
-  Briefcase,
-  Megaphone,
-  Building,
-  BookOpen,
-  Tag,
+  FileText, Layers, Sparkles, Lock, XCircle, Video, CheckCircle2,
+  FilePlus, Library, Info, Trash2, Link, Heart, Search, Download,
+  Eye, X, UploadCloud, DownloadCloud, Calendar, CloudCheck, ChevronDown,
+  GraduationCap, Briefcase, Megaphone, Building, BookOpen, Tag,
+  ChevronLeft,   // 👈 ADD
 } from "lucide-react";
 import { saveFile, getFile } from "@/lib/offlineStorage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
 import { UnitPics } from "@/components/deco/UnitPics";
-
+import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { playSound } from "@/lib/soundManager";
 // Cache helpers
 // Cache helpers
 const notesCache = new Map();
 const statsCache = new Map();
+
+// ── Per-block visual identity ─────────────────────────────
+type BlockTheme = {
+  bar: string;
+  iconBg: string;
+  iconColor: string;
+  badgeBg: string;
+  badgeText: string;
+  footerBg: string;
+  footerBorder: string;
+  cardBg: string;
+  cardBorder: string;
+  cardHoverBorder: string;
+};
+
+const BLOCK_THEME: Record<string, BlockTheme> = {
+  "PTS": {
+    bar: "bg-blue-500",
+    iconBg: "bg-blue-100 dark:bg-blue-950/40",
+    iconColor: "text-blue-700 dark:text-blue-300",
+    badgeBg: "bg-blue-200/80 dark:bg-blue-950/60",
+    badgeText: "text-blue-800 dark:text-blue-200",
+    footerBg: "bg-blue-100/60 dark:bg-blue-950/30",
+    footerBorder: "border-blue-200/70 dark:border-blue-900/50",
+    cardBg: "bg-blue-50 dark:bg-blue-950/25",
+    cardBorder: "border-blue-100 dark:border-blue-900/40",
+    cardHoverBorder: "hover:border-blue-300 dark:hover:border-blue-700",
+  },
+  "BLOCK 1": {
+    bar: "bg-emerald-500",
+    iconBg: "bg-emerald-100 dark:bg-emerald-950/40",
+    iconColor: "text-emerald-700 dark:text-emerald-300",
+    badgeBg: "bg-emerald-200/80 dark:bg-emerald-950/60",
+    badgeText: "text-emerald-800 dark:text-emerald-200",
+    footerBg: "bg-emerald-100/60 dark:bg-emerald-950/30",
+    footerBorder: "border-emerald-200/70 dark:border-emerald-900/50",
+    cardBg: "bg-emerald-50 dark:bg-emerald-950/25",
+    cardBorder: "border-emerald-100 dark:border-emerald-900/40",
+    cardHoverBorder: "hover:border-emerald-300 dark:hover:border-emerald-700",
+  },
+  "BLOCK 2": {
+    bar: "bg-violet-500",
+    iconBg: "bg-violet-100 dark:bg-violet-950/40",
+    iconColor: "text-violet-700 dark:text-violet-300",
+    badgeBg: "bg-violet-200/80 dark:bg-violet-950/60",
+    badgeText: "text-violet-800 dark:text-violet-200",
+    footerBg: "bg-violet-100/60 dark:bg-violet-950/30",
+    footerBorder: "border-violet-200/70 dark:border-violet-900/50",
+    cardBg: "bg-violet-50 dark:bg-violet-950/25",
+    cardBorder: "border-violet-100 dark:border-violet-900/40",
+    cardHoverBorder: "hover:border-violet-300 dark:hover:border-violet-700",
+  },
+  "BLOCK 3": {
+    bar: "bg-amber-500",
+    iconBg: "bg-amber-100 dark:bg-amber-950/40",
+    iconColor: "text-amber-700 dark:text-amber-300",
+    badgeBg: "bg-amber-200/80 dark:bg-amber-950/60",
+    badgeText: "text-amber-800 dark:text-amber-200",
+    footerBg: "bg-amber-100/60 dark:bg-amber-950/30",
+    footerBorder: "border-amber-200/70 dark:border-amber-900/50",
+    cardBg: "bg-amber-50 dark:bg-amber-950/25",
+    cardBorder: "border-amber-100 dark:border-amber-900/40",
+    cardHoverBorder: "hover:border-amber-300 dark:hover:border-amber-700",
+  },
+  "BLOCK 4": {
+    bar: "bg-rose-500",
+    iconBg: "bg-rose-100 dark:bg-rose-950/40",
+    iconColor: "text-rose-700 dark:text-rose-300",
+    badgeBg: "bg-rose-200/80 dark:bg-rose-950/60",
+    badgeText: "text-rose-800 dark:text-rose-200",
+    footerBg: "bg-rose-100/60 dark:bg-rose-950/30",
+    footerBorder: "border-rose-200/70 dark:border-rose-900/50",
+    cardBg: "bg-rose-50 dark:bg-rose-950/25",
+    cardBorder: "border-rose-100 dark:border-rose-900/40",
+    cardHoverBorder: "hover:border-rose-300 dark:hover:border-rose-700",
+  },
+  "BLOCK 5": {
+    bar: "bg-cyan-500",
+    iconBg: "bg-cyan-100 dark:bg-cyan-950/40",
+    iconColor: "text-cyan-700 dark:text-cyan-300",
+    badgeBg: "bg-cyan-200/80 dark:bg-cyan-950/60",
+    badgeText: "text-cyan-800 dark:text-cyan-200",
+    footerBg: "bg-cyan-100/60 dark:bg-cyan-950/30",
+    footerBorder: "border-cyan-200/70 dark:border-cyan-900/50",
+    cardBg: "bg-cyan-50 dark:bg-cyan-950/25",
+    cardBorder: "border-cyan-100 dark:border-cyan-900/40",
+    cardHoverBorder: "hover:border-cyan-300 dark:hover:border-cyan-700",
+  },
+  "BLOCK 6": {
+    bar: "bg-indigo-500",
+    iconBg: "bg-indigo-100 dark:bg-indigo-950/40",
+    iconColor: "text-indigo-700 dark:text-indigo-300",
+    badgeBg: "bg-indigo-200/80 dark:bg-indigo-950/60",
+    badgeText: "text-indigo-800 dark:text-indigo-200",
+    footerBg: "bg-indigo-100/60 dark:bg-indigo-950/30",
+    footerBorder: "border-indigo-200/70 dark:border-indigo-900/50",
+    cardBg: "bg-indigo-50 dark:bg-indigo-950/25",
+    cardBorder: "border-indigo-100 dark:border-indigo-900/40",
+    cardHoverBorder: "hover:border-indigo-300 dark:hover:border-indigo-700",
+  },
+  "OTHER": {
+    bar: "bg-slate-500",
+    iconBg: "bg-slate-100 dark:bg-slate-800",
+    iconColor: "text-slate-700 dark:text-slate-300",
+    badgeBg: "bg-slate-200/80 dark:bg-slate-800",
+    badgeText: "text-slate-700 dark:text-slate-300",
+    footerBg: "bg-slate-100/60 dark:bg-slate-900/50",
+    footerBorder: "border-slate-200 dark:border-slate-800",
+    cardBg: "bg-slate-50 dark:bg-slate-900/30",
+    cardBorder: "border-slate-200 dark:border-slate-800",
+    cardHoverBorder: "hover:border-slate-300 dark:hover:border-slate-700",
+  },
+};
+const DEFAULT_THEME = BLOCK_THEME["OTHER"];
+
+function themeForBlock(block: string | null | undefined): BlockTheme {
+  if (!block) return DEFAULT_THEME;
+  return BLOCK_THEME[block.toUpperCase()] ?? DEFAULT_THEME;
+}
+
 const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours — catalog rarely changes
 
 // Role-based subscription pricing - FOR DISPLAY ONLY in the upgrade overlay
@@ -125,11 +225,19 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
-
 export function Resources() {
   // ORIGINAL subscription hook - this is the ONLY source of truth for access
   const { isPremium, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
+
+  // 👇 full-screen chrome
+  const home = useHomeRoute();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const handleBack = useCallback(() => {
+    playSound("tap");
+    if (navigator.vibrate) navigator.vibrate(20);
+    navigate(home, { replace: true });
+  }, [navigate, home]);
 
   // User role state - ONLY used for displaying different pricing in the overlay
   const [userRole, setUserRole] = useState<"student" | "tutor" | "staff" | null>(null);
@@ -897,23 +1005,74 @@ export function Resources() {
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
-
   if (subscriptionLoading) {
-    return <GlobalLoader />;
+    return (
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+        <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3 border-b border-gray-100 dark:border-gray-800 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 z-30 safe-top">
+          <button
+            onClick={handleBack}
+            aria-label="Go back"
+            className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all touch-manipulation"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+              Notes & Resources
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              Loading your library…
+            </p>
+          </div>
+        </header>
+        <div className="flex-1 min-h-0 w-full overflow-hidden flex items-center justify-center">
+          <GlobalLoader />
+        </div>
+      </div>
+    );
   }
 
   return (
     <>
-      {/* EDGE-TO-EDGE ON MOBILE - COMPLETELY REMOVED ALL PADDING/MARGINS */}
-      <div className="min-h-screen w-full flex justify-center bg-transparent px-[1px] md:px-4  lg:px-6">
-        <div className="w-full max-w-full space-y-0 md:space-y-6 py-0 md:py-6 px-0 sm:px-0">
-          <div className="w-full max-w-full mx-auto space-y-0 px-[1px] sm:px-6 pt-0 sm:pt-4">
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+
+        {/* Sticky top bar with back arrow */}
+        <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+            border-b border-gray-100 dark:border-gray-800
+            bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+            z-30 safe-top">
+          <button
+            onClick={handleBack}
+            aria-label="Go back"
+            className="flex items-center justify-center h-10 w-10 rounded-full
+                bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                active:scale-95 transition-all touch-manipulation"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+              Notes & <span className="text-blue-600">Resources</span>
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              KMTC & Private Institution Archive
+            </p>
+          </div>
+        </header>
+
+        {/* Internally-scrolling content */}
+        <div
+          ref={contentRef}
+          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+              custom-scrollbar overscroll-contain"
+        >
+          <div className="w-full mx-auto max-w-7xl px-0 sm:px-4 md:px-6 lg:px-8 py-0 sm:py-4 md:py-6 pb-24 safe-bottom">
             {/* REMOVED ALL CARD STYLING ON MOBILE - NO BORDERS, NO ROUNDED, NO PADDING */}
             <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0  bg-transparent dark:bg-transparent mx-0">
               <div className="absolute top-0 left-0 w-full h-1.5" />
 
               {/* REMOVED PADDING FROM HEADER ON MOBILE */}
-              <CardHeader className="pb-2 relative px-3 md:px-6 pt-3 md:pt-6 mx-0">
+              <CardHeader className="pb-2 relative px-3 sm:px-4 md:px-6 pt-3 md:pt-6 mx-0">
                 <div className="flex items-center gap-3 md:gap-4">
                   <div className="p-2 md:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
                     <Library className="h-6 w-6 md:h-7 md:w-7 text-blue-600 animate-pulse" />
@@ -930,7 +1089,7 @@ export function Resources() {
               </CardHeader>
 
               {/* REMOVED PADDING FROM CONTENT ON MOBILE */}
-              <CardContent className="space-y-4 md:space-y-6 px-[1px] md:px-6 pb-0 md:pb-6">
+              <CardContent className="space-y-4 md:space-y-6 px-3 sm:px-4 md:px-0 pb-4 md:pb-6">
                 {/* ============ OFFLINE / SYNC-FAILED BANNER ============ */}
                 {(!isOnline || lastSyncFailed) && (
                   <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border-0 text-amber-800 dark:text-amber-300 text-xs md:text-sm font-semibold px-3 py-2 rounded-xl mx-2 md:mx-0">
@@ -1269,129 +1428,134 @@ export function Resources() {
                           {headerLabel}
                         </h2>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 md:gap-4 w-full">
                           {loadingNotes ? (
                             Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
                           ) : notesToShow.length > 0 ? (
                             notesToShow.map((note, index) => (
                               <React.Fragment key={note.id}>
                                 {/* CARD - COMPLETELY EDGE-TO-EDGE ON MOBILE */}
-                                <div
-                                  className="group flex flex-col justify-between transition-all duration-300 border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer"
-                                  onClick={() => setDetailsOverlayNote(note)}
-                                >
-                                  <div className="p-3 md:p-5 pb-1 md:pb-2">
-                                    <div className="space-y-2 md:space-y-3">
-                                      <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-1.5 md:gap-2">
-                                          <div className="p-1.5 md:p-2 bg-gray-50 dark:bg-gray-900 rounded-lg md:rounded-xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
-                                            {getTypeIcon(note.file_type)}
+                                {(() => {
+                                  const theme = themeForBlock(note.block);
+                                  return (
+                                    <div
+                                      className={`group relative flex flex-col justify-between transition-all duration-300 border-0 border-b sm:border sm:rounded-xl ${theme.cardBg} ${theme.cardBorder} ${theme.cardHoverBorder} rounded-none sm:rounded-xl shadow-none sm:shadow-sm hover:shadow-xl overflow-hidden cursor-pointer`}
+                                      onClick={() => setDetailsOverlayNote(note)}
+                                    >
+
+                                      <div className="p-3 md:p-5 pb-1 md:pb-2 sm:pl-4 md:pl-6">
+                                        <div className="space-y-2 md:space-y-3">
+                                          <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+                                              <div className={`p-1.5 md:p-2 rounded-lg md:rounded-xl ${theme.iconBg} ${theme.iconColor} transition-colors`}>
+                                                {getTypeIcon(note.file_type)}
+                                              </div>
+                                              <Badge className={`${getTypeColor(note.file_type)} border-none font-bold text-[8px] md:text-[10px] tracking-widest px-1.5 md:px-2`}>
+                                                {note.file_type?.toUpperCase() || "PDF"}
+                                              </Badge>
+                                              {note.block && (
+                                                <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-wider ${theme.badgeBg} ${theme.badgeText}`}>
+                                                  {note.block}
+                                                </span>
+                                              )}
+                                            </div>
+                                            {offlineFiles.includes(note.id) && (
+                                              <div className="flex items-center gap-1 text-[8px] md:text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
+                                                <CloudCheck className="w-2 h-2 md:w-3 md:h-3" /> PRESERVED
+                                              </div>
+                                            )}
                                           </div>
-                                          <Badge className={`${getTypeColor(note.file_type)} border-none font-bold text-[8px] md:text-[10px] tracking-widest px-1.5 md:px-2`}>
-                                            {note.file_type?.toUpperCase() || "PDF"}
-                                          </Badge>
-                                          {isSearching && note.block && (
-                                            <Badge variant="outline" className="text-[8px] md:text-[10px]">
-                                              {note.block}
-                                            </Badge>
+
+                                          <div className="space-y-0.5 md:space-y-1">
+                                            <CardTitle className="text-base md:text-lg font-bold leading-snug text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3rem]">
+                                              {note.title}
+                                            </CardTitle>
+                                            <CardDescription className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                                              {note.description || "No description provided"}
+                                            </CardDescription>
+                                          </div>
+
+                                          <div className="flex flex-wrap gap-1.5 md:gap-2 pt-0.5 md:pt-1">
+                                            <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-0.5 md:gap-1">
+                                              <Calendar className="w-2 h-2 md:w-3 md:h-3" />
+                                              {new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </span>
+                                            {note.is_featured && (
+                                              <span className="text-[7px] md:text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 md:px-2 py-0.5 rounded-md flex items-center gap-0.5 md:gap-1">
+                                                <Sparkles className="w-2 h-2 md:w-3 md:h-3" /> Featured
+                                              </span>
+                                            )}
+                                            {note.download_count > 0 && (
+                                              <span className="text-[8px] md:text-[10px] font-bold text-gray-400 flex items-center gap-0.5 md:gap-1">
+                                                <Download className="w-2 h-2 md:w-3 md:h-3" /> {note.download_count}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="p-3 md:p-5 pt-1 md:pt-2 space-y-3 md:space-y-5">
+                                        <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
+                                          {note.file_type === "pdf" && (
+                                            <>
+                                              <Button size="sm" variant="secondary" className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleViewNote(note);
+                                                }}>
+                                                {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<Eye className="h-3 w-3 md:h-4 md:w-4" /> View
+                                              </Button>
+                                              <Button size="sm" variant="secondary" onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownloadNote(note);
+                                              }}
+                                                className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3">
+                                                {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<DownloadCloud className="h-3 w-3 md:h-4 md:w-4" /> Cache
+                                              </Button>
+                                            </>
+                                          )}
+                                          {session?.user?.id === note.uploaded_by && (
+                                            <Button size="sm" variant="ghost" className="rounded-md md:rounded-xl p-1.5 md:p-2 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-all ml-auto h-7 md:h-9"
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (!confirm("Delete this resource forever?")) return;
+                                                try {
+                                                  const storagePath = note.file_url.split("/notes/")[1];
+                                                  if (storagePath) await supabase.storage.from("notes").remove([storagePath]);
+                                                  await supabase.from("notes").delete().eq("id", note.id);
+                                                  if (isMounted.current) setNotes(prev => prev.filter(n => n.id !== note.id));
+                                                } catch (err) { alert("Failed to delete resource"); }
+                                              }}>
+                                              <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                                            </Button>
                                           )}
                                         </div>
-                                        {offlineFiles.includes(note.id) && (
-                                          <div className="flex items-center gap-1 text-[8px] md:text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
-                                            <CloudCheck className="w-2 h-2 md:w-3 md:h-3" /> PRESERVED
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="space-y-0.5 md:space-y-1">
-                                        <CardTitle className="text-base md:text-lg font-bold leading-snug text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3rem]">
-                                          {note.title}
-                                        </CardTitle>
-                                        <CardDescription className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                                          {note.description || "No description provided"}
-                                        </CardDescription>
-                                      </div>
-
-                                      <div className="flex flex-wrap gap-1.5 md:gap-2 pt-0.5 md:pt-1">
-                                        <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-0.5 md:gap-1">
-                                          <Calendar className="w-2 h-2 md:w-3 md:h-3" />
-                                          {new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </span>
-                                        {note.is_featured && (
-                                          <span className="text-[7px] md:text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 md:px-2 py-0.5 rounded-md flex items-center gap-0.5 md:gap-1">
-                                            <Sparkles className="w-2 h-2 md:w-3 md:h-3" /> Featured
-                                          </span>
-                                        )}
-                                        {note.download_count > 0 && (
-                                          <span className="text-[8px] md:text-[10px] font-bold text-gray-400 flex items-center gap-0.5 md:gap-1">
-                                            <Download className="w-2 h-2 md:w-3 md:h-3" /> {note.download_count}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="p-3 md:p-5 pt-1 md:pt-2 space-y-3 md:space-y-5">
-                                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
-                                      {note.file_type === "pdf" && (
-                                        <>
-                                          <Button size="sm" variant="secondary" className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3"
-                                            onClick={(e) => {
+                                        <div className={`flex items-center justify-between p-2 md:p-3 rounded-lg md:rounded-2xl border ${theme.footerBg} ${theme.footerBorder}`}>
+                                          <div className="flex items-center gap-2 md:gap-4">
+                                            <div className="flex items-center gap-1 group/stat">
+                                              <div className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm"><Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-blue-500" /></div>
+                                              <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300">{viewCounts[note.id] || 0}</span>
+                                            </div>
+                                            <button onClick={(e) => {
                                               e.stopPropagation();
-                                              handleViewNote(note);
-                                            }}>
-                                            {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<Eye className="h-3 w-3 md:h-4 md:w-4" /> View
-                                          </Button>
-                                          <Button size="sm" variant="secondary" onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDownloadNote(note);
-                                          }}
-                                            className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3">
-                                            {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<DownloadCloud className="h-3 w-3 md:h-4 md:w-4" /> Cache
-                                          </Button>
-                                        </>
-                                      )}
-                                      {session?.user?.id === note.uploaded_by && (
-                                        <Button size="sm" variant="ghost" className="rounded-md md:rounded-xl p-1.5 md:p-2 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-all ml-auto h-7 md:h-9"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (!confirm("Delete this resource forever?")) return;
-                                            try {
-                                              const storagePath = note.file_url.split("/notes/")[1];
-                                              if (storagePath) await supabase.storage.from("notes").remove([storagePath]);
-                                              await supabase.from("notes").delete().eq("id", note.id);
-                                              if (isMounted.current) setNotes(prev => prev.filter(n => n.id !== note.id));
-                                            } catch (err) { alert("Failed to delete resource"); }
-                                          }}>
-                                          <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 p-2 md:p-3 rounded-lg md:rounded-2xl border border-gray-100 dark:border-gray-800">
-                                      <div className="flex items-center gap-2 md:gap-4">
-                                        <div className="flex items-center gap-1 group/stat">
-                                          <div className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm"><Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-blue-500" /></div>
-                                          <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300">{viewCounts[note.id] || 0}</span>
-                                        </div>
-                                        <button onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleLike(note.id);
-                                        }} className="flex items-center gap-1 group/like transition-transform active:scale-125">
-                                          <div className={`p-1 rounded shadow-sm transition-colors ${bookmarkedItems.includes(note.id) ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-gray-800'}`}>
-                                            <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "text-red-500 fill-current" : "text-gray-400"}`} />
+                                              toggleLike(note.id);
+                                            }} className="flex items-center gap-1 group/like transition-transform active:scale-125">
+                                              <div className={`p-1 rounded shadow-sm transition-colors ${bookmarkedItems.includes(note.id) ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-gray-800'}`}>
+                                                <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "text-red-500 fill-current" : "text-gray-400"}`} />
+                                              </div>
+                                              <span className={`text-[10px] md:text-xs font-bold ${bookmarkedItems.includes(note.id) ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                {likeCounts[note.id] || 0}
+                                              </span>
+                                            </button>
                                           </div>
-                                          <span className={`text-[10px] md:text-xs font-bold ${bookmarkedItems.includes(note.id) ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                            {likeCounts[note.id] || 0}
-                                          </span>
-                                        </button>
-                                      </div>
-                                      <div className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                        {isSearching && note.course ? note.course : "Library"}
+                                          <div className={`text-[7px] md:text-[9px] font-bold uppercase tracking-widest ${theme.badgeText}`}>
+                                            {isSearching && note.course ? note.course : "Library"}
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                </div>
-
+                                  );
+                                })()}
                                 <UnitPics position={index + 1} />
                               </React.Fragment>
                             ))
@@ -1460,25 +1624,27 @@ export function Resources() {
               </CardContent>
             </div>
           </div>
-
-          {fullscreenNote && (
-            <div ref={fullscreenRef} className="fixed inset-0 bg-black z-50 flex flex-col">
-              <div className="flex justify-end p-2">
-                <Button onClick={() => setFullscreenNote(null)} variant="ghost" className="text-white"><X className="h-6 w-6" /></Button>
-              </div>
-              {fullscreenNote.file_type === 'pdf' ? (
-                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                  <Viewer fileUrl={fullscreenNote.file_url} plugins={[defaultLayoutPluginInstance]} theme={isDarkMode ? "dark" : "light"} renderLoader={() => <GlobalLoader message="Medrae is Downloading PDF..." />} />
-                </Worker>
-              ) : (
-                <iframe src={fullscreenNote.file_url} className="flex-1 w-full" style={{ border: "none" }} title={fullscreenNote.title} />
-              )}
-            </div>
-          )}
         </div>
       </div>
+      {/* End of shell — the three closers above are: padding wrapper, contentRef scroller, h-[100dvh] root */}
+
+      {fullscreenNote && (
+        <div ref={fullscreenRef} className="fixed inset-0 bg-black z-50 flex flex-col">
+          <div className="flex justify-end p-2">
+            <Button onClick={() => setFullscreenNote(null)} variant="ghost" className="text-white"><X className="h-6 w-6" /></Button>
+          </div>
+          {fullscreenNote.file_type === 'pdf' ? (
+            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+              <Viewer fileUrl={fullscreenNote.file_url} plugins={[defaultLayoutPluginInstance]} theme={isDarkMode ? "dark" : "light"} renderLoader={() => <GlobalLoader message="Medrae is Downloading PDF..." />} />
+            </Worker>
+          ) : (
+            <iframe src={fullscreenNote.file_url} className="flex-1 w-full" style={{ border: "none" }} title={fullscreenNote.title} />
+          )}
+        </div>
+      )}
 
       {/* PREMIUM UPGRADE OVERLAY - same as before */}
+      {/* PREMIUM UPGRADE OVERLAY */}
       <AnimatePresence>
         {showPremiumOverlay && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
@@ -1524,10 +1690,11 @@ export function Resources() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        )
+        }
+      </AnimatePresence >
 
-      {/* DETAILS OVERLAY - FULL EDGE-TO-EDGE ON MOBILE */}
+      {/* DETAILS OVERLAY */}
       <AnimatePresence>
         {detailsOverlayNote && (
           <div className="fixed inset-0 z-[250] flex items-center justify-center p-0 md:p-4">
@@ -1716,8 +1883,9 @@ export function Resources() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        )
+        }
+      </AnimatePresence >
     </>
   );
 }

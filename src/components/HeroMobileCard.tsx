@@ -59,10 +59,10 @@ const HeroMobileCard = () => {
                         />
                     </div>
                     <div className="text-center">
-                        <h1 className="text-4xl font-black tracking-tighter bg-clip-text text-red-500 bg-gradient-to-b from-white to-white/60">
+                        <h1 className="text-4xl   tracking-tighter bg-clip-text text-red-500 bg-gradient-to-b from-white to-white/60">
                             MEDRAE
                         </h1>
-                        <h1 className="text-xl font-black tracking-tighter bg-clip-text text-white bg-gradient-to-b from-white to-white/60">
+                        <h1 className="text-xl   tracking-tighter bg-clip-text text-white bg-gradient-to-b from-white to-white/60">
                             -NURSING-
                         </h1>
                         <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">

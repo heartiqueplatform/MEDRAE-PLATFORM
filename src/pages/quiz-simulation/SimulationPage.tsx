@@ -990,7 +990,7 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
           {pendingAction === "submit" && (
             <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-blue-500 flex items-center justify-center font-black text-blue-600 text-sm md:text-base">
+                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-blue-500 flex items-center justify-center   text-blue-600 text-sm md:text-base">
                   {percentageScore}%
                 </div>
                 <div>
@@ -1002,7 +1002,7 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
                   </p>
                 </div>
               </div>
-              <div className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tighter">
+              <div className="text-xl md:text-2xl   text-slate-900 dark:text-white tracking-tighter">
                 {correctCount}{" "}
                 <span className="text-slate-300 dark:text-slate-600">/</span>{" "}
                 {questions.length} Questions
@@ -1149,7 +1149,7 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
                     {q.question_text.slice(0, 45)}...
                   </span>
                   {answers && answers[q.id] && (
-                    <div className="mt-1 text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded px-1.5 py-0.5 inline-block">
+                    <div className="mt-1 text-[10px]   text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded px-1.5 py-0.5 inline-block">
                       {answers[q.id]}
                     </div>
                   )}
@@ -1761,7 +1761,7 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
 
               <div className="text-center space-y-4">
 
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border-0 text-gray-700 text-[10px] font-black uppercase tracking-widest">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border-0 text-gray-700 text-[10px]   uppercase tracking-widest">
                   <ShieldAlert className="w-3.5 h-3.5" /> Security Protocol Active
                 </div>
 
@@ -1932,7 +1932,7 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
                   }}
                   whileHover={cameraStream && audioStream ? { scale: 1.05 } : {}}
                   whileTap={{ scale: 0.95 }}
-                  className={`relative group px-12 py-5 rounded-full font-black text-sm uppercase tracking-[0.3em] transition-all border-0
+                  className={`relative group px-12 py-5 rounded-full   text-sm uppercase tracking-[0.3em] transition-all border-0
             ${cameraStream && audioStream
                       ? 'bg-gray-900 text-white shadow-md hover:bg-black'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'

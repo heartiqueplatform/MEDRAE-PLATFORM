@@ -104,7 +104,7 @@ const TutorExamDetails = () => {
                                 <div className="bg-indigo-600 p-2 sm:p-2.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none">
                                     <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
-                                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                                <h1 className="text-xl sm:text-2xl md:text-3xl   text-slate-900 dark:text-white tracking-tight">
                                     Add Exam <span className="text-indigo-600 dark:text-indigo-400">Instructions</span>
                                 </h1>
                             </div>
@@ -170,7 +170,7 @@ INSTRUCTIONS TO CANDIDATES:
                                 <Button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full h-12 sm:h-14 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg sm:shadow-xl shadow-indigo-200/50 dark:shadow-none transition-all active:scale-[0.98] disabled:opacity-50 group"
+                                    className="w-full h-12 sm:h-14 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl sm:rounded-2xl   text-xs sm:text-sm uppercase tracking-widest shadow-lg sm:shadow-xl shadow-indigo-200/50 dark:shadow-none transition-all active:scale-[0.98] disabled:opacity-50 group"
                                 >
                                     {loading ? (
                                         <span className="flex items-center gap-2">

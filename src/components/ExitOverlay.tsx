@@ -117,7 +117,7 @@ const ExitOverlay = ({ isOpen, onExit }) => {
                     <img src="/pwa-192x192.jpeg" alt="Logo" className="w-14 h-14 object-contain rounded-xl" />
                 </div>
 
-                <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">
+                <h2 className="text-3xl   text-slate-900 mb-4 tracking-tight">
                     Until We Meet Again
                 </h2>
 
@@ -140,13 +140,13 @@ const ExitOverlay = ({ isOpen, onExit }) => {
                 {/* Final Button with Audio Trigger */}
                 <Button
                     onClick={handleFinalExit}
-                    className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xl shadow-xl shadow-blue-200 transition-all active:scale-95 transform hover:-translate-y-1"
+                    className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white   text-xl shadow-xl shadow-blue-200 transition-all active:scale-95 transform hover:-translate-y-1"
                 >
                     Take Care & Goodbye
                 </Button>
 
                 <div className="mt-8 pt-4">
-                    <p className="text-[10px] text-slate-300 uppercase tracking-[0.4em] font-black">
+                    <p className="text-[10px] text-slate-300 uppercase tracking-[0.4em]  ">
                         Medrae Academic Excellence
                     </p>
                 </div>

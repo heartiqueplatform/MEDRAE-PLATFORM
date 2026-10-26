@@ -120,7 +120,7 @@ const ShowCard = ({ show, index }: { show: any; index: number }) => {
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white text-4xl font-black">
+                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white text-4xl  ">
                         {initial}
                     </div>
                 )}
@@ -128,7 +128,7 @@ const ShowCard = ({ show, index }: { show: any; index: number }) => {
 
                 <div className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-[3px] rounded-full bg-red-500/95">
                     <CircleDot className="w-2.5 h-2.5 text-white animate-pulse" />
-                    <span className="text-[9px] font-black text-white uppercase tracking-wider">New</span>
+                    <span className="text-[9px]   text-white uppercase tracking-wider">New</span>
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -222,7 +222,7 @@ const PodcastShowcaseSection = () => {
                     }}
                 >
 
-                    <h2 className="text-[34px] md:text-5xl lg:text-[56px] font-black tracking-[-0.03em] text-white leading-[1.02]">
+                    <h2 className="text-[34px] md:text-5xl lg:text-[56px]   tracking-[-0.03em] text-white leading-[1.02]">
                         More than a study app.
                         <br />
                         <span className="text-blue-400">
@@ -267,7 +267,7 @@ const PodcastShowcaseSection = () => {
 
                                 {/* header */}
                                 <div className="px-6 flex items-center justify-between">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-400">
+                                    <p className="text-[10px]   uppercase tracking-[0.28em] text-blue-400">
                                         Now Playing
                                     </p>
                                     <Radio className="w-3.5 h-3.5 text-slate-500" />
@@ -336,7 +336,7 @@ const PodcastShowcaseSection = () => {
                                 {/* up next mini list */}
                                 <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 pt-4 bg-gradient-to-t from-[#161b22] via-[#161b22]/95 to-transparent">
                                     <div className="flex items-center gap-2 mb-2.5">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.22em] text-slate-500">
+                                        <span className="text-[9px]   uppercase tracking-[0.22em] text-slate-500">
                                             Up Next
                                         </span>
                                         <div className="flex-1 h-px bg-white/[0.06]" />
@@ -365,7 +365,7 @@ const PodcastShowcaseSection = () => {
                     {/* ── RIGHT: Benefits list ── */}
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-2xl md:text-3xl lg:text-[34px] font-black text-white tracking-[-0.02em] leading-[1.15]">
+                            <h3 className="text-2xl md:text-3xl lg:text-[34px]   text-white tracking-[-0.02em] leading-[1.15]">
                                 Built for the nurse
                                 <br />
                                 <span className="text-slate-500">who's got a full plate.</span>
@@ -415,7 +415,7 @@ const PodcastShowcaseSection = () => {
                         <div className="pt-2">
                             <button
                                 onClick={() => navigate('/register')}
-                                className="group inline-flex items-center gap-2.5 px-7 py-4 rounded-2xl bg-white text-slate-900 font-black text-[14px] tracking-tight hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                                className="group inline-flex items-center gap-2.5 px-7 py-4 rounded-2xl bg-white text-slate-900   text-[14px] tracking-tight hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
                             >
                                 <Headphones className="w-[18px] h-[18px]" strokeWidth={2.4} />
                                 Unlock the Podcast Network
@@ -434,11 +434,11 @@ const PodcastShowcaseSection = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <Radio className="w-4 h-4 text-blue-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-400">
+                                <span className="text-[10px]   uppercase tracking-[0.28em] text-blue-400">
                                     Inside the app
                                 </span>
                             </div>
-                            <h3 className="text-xl md:text-2xl font-black text-white tracking-[-0.02em]">
+                            <h3 className="text-xl md:text-2xl   text-white tracking-[-0.02em]">
                                 {hasRealShows ? 'Trending in the nursing community' : 'Shows waiting for you'}
                             </h3>
                         </div>
@@ -470,7 +470,7 @@ const PodcastShowcaseSection = () => {
                         I still feel like a nurse and not just a student cramming for exams."
                     </p>
                     <div className="flex items-center gap-3 mt-5">
-                        <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-[13px] font-black">
+                        <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-[13px]  ">
                             SK
                         </div>
                         <div>

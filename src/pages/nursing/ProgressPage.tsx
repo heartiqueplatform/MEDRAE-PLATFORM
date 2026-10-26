@@ -121,7 +121,7 @@ const StatCard = React.memo(({ icon, label, value, subtitle, color }: StatCardPr
             <div className="flex items-start justify-between">
                 <div className="min-w-0">
                     <p className="text-[9px] md:text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">{label}</p>
-                    <p className="mt-0.5 md:mt-1 text-xl md:text-2xl font-black text-slate-900 dark:text-white">{value}</p>
+                    <p className="mt-0.5 md:mt-1 text-xl md:text-2xl   text-slate-900 dark:text-white">{value}</p>
                     {subtitle && (
                         <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
                     )}
@@ -159,7 +159,7 @@ const AttemptRow = React.memo(({ attempt, index, onView }: AttemptRowProps) => {
             onClick={handleClick}
         >
             <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                <div className={`flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${attempt.is_correct ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                <div className={`flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full text-xs   text-white ${attempt.is_correct ? 'bg-emerald-500' : 'bg-rose-500'}`}>
                     {attempt.is_correct ? <Check size={12} /> : <X size={12} />}
                 </div>
                 <div className="min-w-0">
@@ -198,7 +198,7 @@ const WeakAreaRow = React.memo(({ area, index }: { area: WeakArea; index: number
     return (
         <div className="flex items-center justify-between p-2.5 md:p-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition rounded-xl">
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                <span className="text-[10px] md:text-xs font-black text-slate-400 w-4 md:w-5">{index + 1}</span>
+                <span className="text-[10px] md:text-xs   text-slate-400 w-4 md:w-5">{index + 1}</span>
                 <div className="min-w-0">
                     <p className="text-xs md:text-sm font-medium text-slate-900 dark:text-white truncate max-w-[140px] sm:max-w-[200px] md:max-w-[300px]">
                         {area.question_text || 'Question'}
@@ -603,7 +603,7 @@ export default function ProgressPage() {
                                     <div className="p-1.5 md:p-2 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-lg md:rounded-xl">
                                         <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-white" />
                                     </div>
-                                    <h1 className="text-xl md:text-2xl lg:text-3xl font-black tracking-tight">Progress Dashboard</h1>
+                                    <h1 className="text-xl md:text-2xl lg:text-3xl   tracking-tight">Progress Dashboard</h1>
                                 </div>
                             </div>
 
@@ -664,21 +664,21 @@ export default function ProgressPage() {
                     <div className="rounded-2xl bg-white/70 p-3 md:p-5 backdrop-blur dark:bg-muted/30 flex items-center justify-between">
                         <div>
                             <p className="text-[10px] md:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Correct</p>
-                            <p className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-300">{summary?.correct_answers || 0}</p>
+                            <p className="text-xl md:text-2xl   text-emerald-600 dark:text-emerald-300">{summary?.correct_answers || 0}</p>
                         </div>
                         <CheckCircle2 className="h-6 w-6 md:h-8 md:w-8 text-emerald-500" />
                     </div>
                     <div className="rounded-2xl bg-white/70 p-3 md:p-5 backdrop-blur dark:bg-muted/30 flex items-center justify-between">
                         <div>
                             <p className="text-[10px] md:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Incorrect</p>
-                            <p className="text-xl md:text-2xl font-black text-rose-600 dark:text-rose-300">{summary?.incorrect_answers || 0}</p>
+                            <p className="text-xl md:text-2xl   text-rose-600 dark:text-rose-300">{summary?.incorrect_answers || 0}</p>
                         </div>
                         <XCircle className="h-6 w-6 md:h-8 md:w-8 text-rose-500" />
                     </div>
                     <div className="rounded-2xl bg-white/70 p-3 md:p-5 backdrop-blur dark:bg-muted/30 flex items-center justify-between">
                         <div>
                             <p className="text-[10px] md:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Skipped</p>
-                            <p className="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-300">{summary?.skipped_questions || 0}</p>
+                            <p className="text-xl md:text-2xl   text-amber-600 dark:text-amber-300">{summary?.skipped_questions || 0}</p>
                         </div>
                         <SkipForward className="h-6 w-6 md:h-8 md:w-8 text-amber-500" />
                     </div>
@@ -751,15 +751,15 @@ export default function ProgressPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                         <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
-                            <p className="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-300">{summary?.questions_mastered || 0}</p>
+                            <p className="text-2xl md:text-3xl   text-emerald-600 dark:text-emerald-300">{summary?.questions_mastered || 0}</p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 md:mt-1">Mastered (80%+)</p>
                         </div>
                         <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
-                            <p className="text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-300">{summary?.questions_needing_review || 0}</p>
+                            <p className="text-2xl md:text-3xl   text-amber-600 dark:text-amber-300">{summary?.questions_needing_review || 0}</p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 md:mt-1">Needs Review (50-79%)</p>
                         </div>
                         <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
-                            <p className="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-300">{needsPractice}</p>
+                            <p className="text-2xl md:text-3xl   text-rose-600 dark:text-rose-300">{needsPractice}</p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 md:mt-1">Needs Practice (&lt;50%)</p>
                         </div>
                     </div>

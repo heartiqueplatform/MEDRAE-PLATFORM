@@ -128,11 +128,11 @@ const ReferralShareModal = memo(({
 
                     <div className="relative">
                         {/* Eyebrow */}
-                        <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl text-white mb-3">
+                        <span className="inline-flex items-center gap-1 text-[10px]   uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl text-white mb-3">
                             <Flame size={11} /> Limited reward
                         </span>
 
-                        <h3 className="text-xl font-black text-white leading-tight">
+                        <h3 className="text-xl   text-white leading-tight">
                             Get <span className="text-yellow-300">FREE Premium</span>{" "}
                             for every friend
                         </h3>
@@ -144,13 +144,13 @@ const ReferralShareModal = memo(({
                     {/* Reward math */}
                     <div className="grid grid-cols-2 gap-2">
                         <div className={`rounded-xl ${surfaceAlt} p-3 text-center`}>
-                            <p className="text-3xl font-black text-violet-600 dark:text-violet-400 leading-none">+2</p>
+                            <p className="text-3xl   text-violet-600 dark:text-violet-400 leading-none">+2</p>
                             <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${textSub}`}>
                                 Days for you
                             </p>
                         </div>
                         <div className={`rounded-xl ${surfaceAlt} p-3 text-center`}>
-                            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
+                            <p className="text-3xl   text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
                             <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${textSub}`}>
                                 Day for them
                             </p>

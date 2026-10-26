@@ -10,7 +10,7 @@ export const ExamCenterCardSkeleton = () => {
                     <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
                         <div className="flex items-center gap-1 rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 md:px-2 py-0.5 md:py-1">
                             <span className="h-1 w-1 md:h-1.5 md:w-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
-                            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <span className="text-[8px] md:text-[9px]   uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 <div className="h-2 w-12 rounded bg-slate-300 dark:bg-slate-600" />
                             </span>
                         </div>

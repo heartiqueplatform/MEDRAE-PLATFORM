@@ -154,7 +154,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <h2 className="text-3xl font-black tracking-tight animate-in slide-in-from-bottom-4 duration-700 delay-100 text-center">
+                            <h2 className="text-3xl   tracking-tight animate-in slide-in-from-bottom-4 duration-700 delay-100 text-center">
                                 <span className="text-red-600">MEDRAE</span>{' '}
                                 <span className="text-slate-800">NURSING</span>
                             </h2>
@@ -176,14 +176,14 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                             className="h-16 w-16 rounded-xl shadow-lg border-2 border-white"
                         />
                         <div>
-                            <h2 className="text-2xl font-black tracking-tight">
+                            <h2 className="text-2xl   tracking-tight">
                                 <span className="text-red-600">MEDRAE</span>{' '}
                                 <span className="text-slate-800">NURSING</span>
                             </h2>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                                 Kenya's No.1 Nursing Network
                             </p>
-                            <div className="flex items-center gap-2 mt-1 text-[8px] font-black text-blue-600 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 mt-1 text-[8px]   text-blue-600 uppercase tracking-widest">
                                 <span className="bg-blue-50 px-2 py-0.5 rounded-full">2,231+ Students</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="bg-purple-50 px-2 py-0.5 rounded-full text-purple-600">❤️ Wellness First</span>
@@ -193,7 +193,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
 
                     {/* Welcome Message - Desktop */}
                     <div className="hidden md:block mb-6">
-                        <h1 className="text-3xl lg:text-4xl font-black text-slate-800 leading-tight">
+                        <h1 className="text-3xl lg:text-4xl   text-slate-800 leading-tight">
                             Welcome to Your<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                                 Nursing Success Journey
@@ -322,7 +322,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                     <div className="flex flex-col items-center gap-3 md:gap-4 animate-in slide-in-from-bottom-4 duration-700 delay-500 mt-4">
                         <div className="w-full space-y-2 md:space-y-3">
                             <button
-                                className={`w-full h-12 md:h-14 rounded-xl md:rounded-2xl font-black text-sm md:text-base transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 relative overflow-hidden ${!allMediaReady || !agreedToTerms
+                                className={`w-full h-12 md:h-14 rounded-xl md:rounded-2xl   text-sm md:text-base transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 relative overflow-hidden ${!allMediaReady || !agreedToTerms
                                     ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                                     : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-blue-200/50 hover:shadow-blue-300/50 hover:scale-[1.02]"
                                     }`}
@@ -364,7 +364,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                             <p className="text-slate-500 text-xs md:text-sm font-medium text-center">
                                 Already have an account?{' '}
                                 <span
-                                    className="text-blue-600 font-black cursor-pointer hover:underline transition-all hover:text-purple-600"
+                                    className="text-blue-600   cursor-pointer hover:underline transition-all hover:text-purple-600"
                                     onClick={() => window.location.href = "/login"}
                                 >
                                     Log in here
@@ -375,11 +375,11 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                         {/* Enhanced Progress Bar with Status */}
                         <div className="w-full max-w-sm space-y-1.5 md:space-y-2">
                             <div className="flex justify-between items-end px-1">
-                                <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                <span className="text-[8px] md:text-[9px]   text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                     <span className={`w-1.5 h-1.5 rounded-full ${allMediaReady ? 'bg-green-500' : downloadError ? 'bg-red-500' : 'bg-blue-500 animate-pulse'}`} />
                                     {downloadError ? 'Error' : allMediaReady ? 'Ready' : 'Loading'}
                                 </span>
-                                <span className="text-xs font-black text-slate-700 tabular-nums">
+                                <span className="text-xs   text-slate-700 tabular-nums">
                                     {allMediaReady ? "100%" : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
                                 </span>
                             </div>
@@ -453,11 +453,11 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                             {/* Badge - Smaller and positioned well */}
                             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 w-fit">
                                 <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Welcome to Medrae</span>
+                                <span className="text-[10px]   uppercase tracking-widest">Welcome to Medrae</span>
                             </div>
 
                             {/* Main Message - Smaller text for better fit */}
-                            <h2 className="text-3xl lg:text-4xl xl:text-5xl font-black leading-tight">
+                            <h2 className="text-3xl lg:text-4xl xl:text-5xl   leading-tight">
                                 Your Mind Meets<br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">
                                     Your Nursing Career
@@ -475,17 +475,17 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                             {/* Stats - Smaller and compact */}
                             <div className="flex items-center gap-6 pt-2">
                                 <div>
-                                    <p className="text-2xl lg:text-3xl font-black">2,231+</p>
+                                    <p className="text-2xl lg:text-3xl  ">2,231+</p>
                                     <p className="text-[10px] text-blue-200/70 uppercase tracking-wider">Active Students</p>
                                 </div>
                                 <div className="w-px h-10 bg-white/20" />
                                 <div>
-                                    <p className="text-2xl lg:text-3xl font-black">95%</p>
+                                    <p className="text-2xl lg:text-3xl  ">95%</p>
                                     <p className="text-[10px] text-blue-200/70 uppercase tracking-wider">Accuracy Rate</p>
                                 </div>
                                 <div className="w-px h-10 bg-white/20" />
                                 <div>
-                                    <p className="text-2xl lg:text-3xl font-black">❤️</p>
+                                    <p className="text-2xl lg:text-3xl  ">❤️</p>
                                     <p className="text-[10px] text-blue-200/70 uppercase tracking-wider">Wellness First</p>
                                 </div>
                             </div>

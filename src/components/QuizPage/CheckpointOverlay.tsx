@@ -391,7 +391,7 @@ export function CheckpointOverlay({
                                                         Score
                                                     </span>
                                                 </div>
-                                                <div className={`text-lg sm:text-2xl font-black ${textMain}`}>
+                                                <div className={`text-lg sm:text-2xl   ${textMain}`}>
                                                     {stats.score}/{checkpointOverlay.total}
                                                 </div>
                                             </div>
@@ -403,7 +403,7 @@ export function CheckpointOverlay({
                                                         Accuracy
                                                     </span>
                                                 </div>
-                                                <div className={`text-lg sm:text-2xl font-black ${textMain}`}>
+                                                <div className={`text-lg sm:text-2xl   ${textMain}`}>
                                                     {stats.probability}%
                                                 </div>
                                             </div>
@@ -416,7 +416,7 @@ export function CheckpointOverlay({
                                                     </span>
                                                 </div>
                                                 <div
-                                                    className={`text-lg sm:text-2xl font-black ${stats.probability >= 70
+                                                    className={`text-lg sm:text-2xl   ${stats.probability >= 70
                                                         ? "text-emerald-600"
                                                         : textMain
                                                         }`}
@@ -532,13 +532,13 @@ export function CheckpointOverlay({
                                     <div className="flex-1 overflow-y-auto p-6 sm:p-8">
                                         {/* Eyebrow */}
                                         <div className="flex justify-center mb-3">
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 px-2.5 py-1 rounded-xl">
+                                            <span className="inline-flex items-center gap-1 text-[10px]   uppercase tracking-wider bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 px-2.5 py-1 rounded-xl">
                                                 <Flame size={11} /> Limited reward
                                             </span>
                                         </div>
 
                                         {/* Headline */}
-                                        <h2 className={`text-2xl sm:text-3xl font-black ${textMain} text-center leading-tight mb-2`}>
+                                        <h2 className={`text-2xl sm:text-3xl   ${textMain} text-center leading-tight mb-2`}>
                                             Want <span className="text-violet-600 dark:text-violet-400">more questions</span>?
                                         </h2>
                                         <p className={`${textSub} text-sm text-center mb-5 leading-relaxed px-2`}>
@@ -550,13 +550,13 @@ export function CheckpointOverlay({
                                         {/* Reward math */}
                                         <div className="grid grid-cols-2 gap-2 mb-4">
                                             <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 p-3 text-center">
-                                                <p className="text-3xl font-black text-violet-600 dark:text-violet-400 leading-none">+2</p>
+                                                <p className="text-3xl   text-violet-600 dark:text-violet-400 leading-none">+2</p>
                                                 <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${textSub}`}>
                                                     Days for you
                                                 </p>
                                             </div>
                                             <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
-                                                <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
+                                                <p className="text-3xl   text-emerald-600 dark:text-emerald-400 leading-none">+1</p>
                                                 <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${textSub}`}>
                                                     Day for them
                                                 </p>
@@ -603,7 +603,7 @@ export function CheckpointOverlay({
                                         {/* ── PRIMARY CTA: WhatsApp ── */}
                                         <button
                                             onClick={handleShareWhatsApp}
-                                            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+                                            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white   text-base flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
                                         >
                                             <Share2 size={18} />
                                             Share on WhatsApp

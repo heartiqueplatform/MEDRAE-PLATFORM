@@ -153,7 +153,7 @@ export default function Feed() {
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
-
+  const [scrolled, setScrolled] = useState(false);
   const openViewer = (img) => {
     if (!img || !img.image_url) {
       console.error("Cannot open viewer: No image or URL", img);
@@ -225,31 +225,47 @@ export default function Feed() {
     const data = await response.json();
     return data.secure_url;
   };
-
   const handleImageUpload = async () => {
     if (!uploadFiles || uploadFiles.length === 0 || !user)
       return alert("Select one or more images first.");
     setUploading(true);
     uploadControllers.current = [];
     try {
-      const uploadedImages = [];
+      // ── 1. Upload every file to Cloudinary first ──
+      const urls: string[] = [];
       for (const file of uploadFiles) {
         const cloudinaryUrl = await uploadToCloudinary(file);
-        const { error: insertError, data: insertedData } = await supabase
-          .from("qfeed_images")
-          .insert({
-            image_url: cloudinaryUrl,
-            storage_path: "cloudinary",
-            added_by: user.id,
-            title: imageTitle || null,
-            description: imageDescription || null,
-          })
-          .select()
-          .single();
-        if (insertError) throw insertError;
-        uploadedImages.push(insertedData);
+        urls.push(cloudinaryUrl);
       }
-      setFeedImages((prev) => [...uploadedImages, ...prev]);
+
+      // ── 2. Generate ONE group id for this whole post ──
+      //     Every pic in this upload shares it, so the feed
+      //     knows they belong to the same post (carousel).
+      const postGroupId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      // ── 3. Insert all pics in ONE batch ──
+      const rows = urls.map((url, i) => ({
+        image_url: url,
+        storage_path: "cloudinary",
+        added_by: user.id,
+        title: imageTitle || null,
+        description: imageDescription || null,
+        post_group_id: postGroupId,
+        post_group_order: i,
+      }));
+
+      const { error: insertError, data: insertedData } = await supabase
+        .from("qfeed_images")
+        .insert(rows)
+        .select();
+
+      if (insertError) throw insertError;
+
+      // ── 4. Prepend to feed ──
+      setFeedImages((prev) => [...(insertedData || []), ...prev]);
       setUploadFiles([]);
       setImageTitle("");
       setImageDescription("");
@@ -414,6 +430,8 @@ export default function Feed() {
             storage_path: "cloudinary",
             added_by: row.added_by,
             created_at: row.created_at,
+            post_group_id: row.post_group_id,
+            post_group_order: row.post_group_order,
             profiles: {
               name: row.uploader_name,
               avatar_url: row.uploader_avatar,
@@ -915,7 +933,6 @@ export default function Feed() {
   };
 
   // Load more images when scrolling near bottom
-  // Load more images when scrolling near bottom
   useEffect(() => {
     const handleScroll = () => {
       const container = document.querySelector('[data-scroll-container]') as HTMLElement | null;
@@ -932,7 +949,32 @@ export default function Feed() {
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, [hasMoreImages, isLoadingImages]);
-  const [scrolled, setScrolled] = useState(false);
+
+  // ── Auto-load questions when the sentinel scrolls into view ──
+  // This replaces the "Explore More" button. When the user reaches
+  // the bottom, we silently fetch the next page of questions. If
+  // there's nothing left, `hasMore` goes false and we stop.
+  useEffect(() => {
+    const node = loaderRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      {
+        root: null, // viewport
+        rootMargin: "600px 0px", // trigger 600px before bottom
+        threshold: 0,
+      }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -1001,6 +1043,8 @@ export default function Feed() {
               storage_path: "cloudinary",
               added_by: row.added_by,
               created_at: row.created_at,
+              post_group_id: row.post_group_id,
+              post_group_order: row.post_group_order,
               profiles: {
                 name: row.uploader_name,
                 avatar_url: row.uploader_avatar,
@@ -1017,6 +1061,8 @@ export default function Feed() {
           ref={scrollContainerRef}
           className="p-0 max-w-4xl mx-auto space-y-4 hide-scrollbar"
         >
+
+
           <AnimatePresence>
             {feedbackMessage && (
               <motion.div
@@ -1094,10 +1140,9 @@ export default function Feed() {
               <motion.div
                 key={q.id}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="relative w-full max-w-screen-lg mx-auto mb-5"
-                ref={index === questions.length - 1 ? loaderRef : null}
+                className="relative w-full max-w-screen-lg mx-auto mb-5 px-2 sm:px-3"
               >
-                <Card className="relative bg-transparent dark:bg-muted/90 lg:bg-gray-100 lg:dark:bg-muted/90 border-0 shadow-none rounded-xl overflow-visible transition-all">
+                <Card className="relative bg-white dark:bg-muted/90 border border-gray-200/80 dark:border-gray-800/60 shadow-sm hover:shadow-md rounded-2xl overflow-hidden transition-all duration-200">
                   <CardContent className="flex flex-col gap-2 p-2 w-full">
                     <div className="flex justify-between items-center mb-1">
                       <p className="text-sm font-semibold text-blue-500 dark:text-blue-400 tracking-wide">
@@ -1280,22 +1325,27 @@ export default function Feed() {
               </motion.div>
 
             );
-            if (
-              (index + 1) % 10 === 0 &&
-              hasMore &&
-              index === questions.length - 1
-            ) {
-              cards.push(
-                <div key={`load-more-${index}`} className="flex justify-center py-6">
-                </div>
+
+
+            // ⬇️ NEW: insert a media panel every 3rd question
+            if (index % 3 === 2 && feedImages.length > 0) {
+              const groups = new Map<string, any[]>();
+              for (const im of feedImages) {
+                const key = im.post_group_id || `single_${im.id}`;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(im);
+              }
+              const posts = Array.from(groups.entries()).map(
+                ([groupId]) => ({ groupId })
               );
-            }
-            if (feedImages?.length > 0) {
+              const slotIdx = Math.floor(index / 3);
+              const post = posts[slotIdx % posts.length];
+
               cards.push(
                 <FeedMediaPanel
-                  key={`feed-media-${index}`}
+                  key={`media-inline-${index}-${post.groupId}`}
                   index={index}
-
+                  groupKey={post.groupId}
                   feedImages={feedImages}
                   loadedImages={loadedImages}
                   setLoadedImages={setLoadedImages}
@@ -1317,69 +1367,43 @@ export default function Feed() {
                 />
               );
             }
+
             return cards;
           })}
           {hasMore && (
-            <div className="flex flex-col items-center justify-center py-12 w-full">
-              <AnimatePresence mode="wait">
-                {!loading ? (
-                  <motion.button
-                    key="load-button"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      if (navigator.vibrate) navigator.vibrate(60);
-                      loadMore();
-                    }}
-                    className="
-            group relative flex items-center gap-3 px-8 py-4
-            bg-white dark:bg-gray-800
-            text-blue-600 dark:text-blue-400
-            font-bold rounded-full
-            shadow-[0_4px_20px_rgba(0,0,0,0.1)]
-            hover:shadow-[0_8px_30px_rgba(37,99,235,0.2)]
-            border border-blue-100 dark:border-gray-700
-            transition-all duration-300
-          "
-                  >
-                    <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                    <span className="tracking-wide">Explore More</span>
-                    <div className="absolute inset-0 rounded-full bg-blue-500/5 blur-xl group-hover:bg-blue-500/10 transition-colors" />
-                  </motion.button>
-                ) : (
-                  <motion.div
-                    key="loader"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    className="relative flex items-center justify-center"
-                  >
-                    <div className="w-16 h-16 border-4 border-blue-100 dark:border-gray-800 rounded-full" />
-                    <motion.div
-                      className="absolute w-16 h-16 border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
-                      >
-                        <div className="w-3 h-3 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.6)]" />
-                      </motion.div>
-                    </div>
-                    <motion.p
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-8 text-xs font-medium text-blue-600 uppercase tracking-widest whitespace-nowrap"
-                    >
-                      Curating Feed...
-                    </motion.p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div
+              ref={loaderRef}
+              className="flex flex-col items-center justify-center py-8 w-full"
+            >
+              {loading ? (
+                <div className="flex flex-col items-center justify-center gap-2 h-16">
+                  <div className="flex items-center justify-center gap-1.5">
+                    {[0, 1, 2].map((i) => (
+                      <motion.span
+                        key={i}
+                        className="block w-1.5 h-1.5 rounded-full bg-blue-500/70 dark:bg-blue-400/70"
+                        animate={{
+                          scale: [1, 1.4, 1],
+                          opacity: [0.4, 1, 0.4],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: i * 0.15,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 tracking-wide">
+                    Loading more…
+                  </p>
+                </div>
+              ) : (
+                // Invisible trigger — IntersectionObserver will hit this
+                // the moment it scrolls into view.
+                <div className="h-16 w-full" />
+              )}
             </div>
           )}
           <TermsButton />
@@ -1390,91 +1414,88 @@ export default function Feed() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
                   className="fixed inset-0 z-[99999] bg-black flex items-center justify-center"
                   onClick={closeViewer}
                 >
-                  {/* Loading spinner (visible until image loads) */}
-                  {!loadedImages[activeImage.id] && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <GlobalLoader />
-                    </div>
-                  )}
-
-                  <motion.img
+                  {/*
+                    The image fills the screen.
+                    • We use a plain <img>, NOT motion.img — a motion.img
+                      remounts and re-fades, causing the black flash.
+                    • We give it a `src` that is IDENTICAL to the one in
+                      the feed (w_800 / f_auto / q_auto), so the browser
+                      serves it straight from cache → no re-download.
+                    • We do NOT show a spinner while loadedImages[id] is
+                      false, because the browser already has the image.
+                      If for some reason it's missing, the image simply
+                      appears 50ms late — still far better than a loader
+                      on top of a black screen.
+                  */}
+                  <img
                     key={activeImage.id}
                     src={
                       activeImage.image_url?.includes("cloudinary")
-                        ? activeImage.image_url.replace("/upload/", "/upload/f_auto,q_auto/")
+                        ? activeImage.image_url.replace(
+                          "/upload/",
+                          "/upload/w_800,f_auto,q_auto/"
+                        )
                         : activeImage.image_url
                     }
                     alt={activeImage.title || "Image"}
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    onLoad={() =>
-                      setLoadedImages((prev) => ({ ...prev, [activeImage.id]: true }))
-                    }
                     onError={(e) => {
-                      console.error("Failed to load image:", activeImage.image_url);
+                      console.error(
+                        "Failed to load image:",
+                        activeImage.image_url
+                      );
                       e.currentTarget.src = "/fallback-image.jpg";
-                      setLoadedImages((prev) => ({ ...prev, [activeImage.id]: true }));
                     }}
-                    className="w-full h-full object-contain select-none"
+                    onClick={(e) => e.stopPropagation()}
+                    className="max-w-full max-h-full object-contain select-none"
                     draggable={false}
                   />
 
                   {/* Description overlay */}
                   {activeImage.description && (
-                    <motion.p
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
                       className="absolute bottom-6 left-0 right-0 text-gray-200 text-sm text-center max-w-xl mx-auto px-4 pointer-events-none"
                     >
                       {activeImage.description}
-                    </motion.p>
+                    </div>
                   )}
 
-                  {/* Delete button — top-left so it doesn't overlap the close X */}
+                  {/* Delete button — top-left */}
                   {activeImage.added_by === user?.id && (
-                    <motion.button
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteImage(activeImage);
                         closeViewer();
                       }}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
                       className="absolute top-5 left-5 text-white bg-black/50 hover:bg-red-600 p-3 rounded-full backdrop-blur-sm"
                       aria-label="Delete image"
                     >
                       <Trash2 size={20} />
-                    </motion.button>
+                    </button>
                   )}
 
                   {/* Close button — top-right */}
-                  <motion.button
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       closeViewer();
                     }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
                     className="absolute top-5 right-5 text-white bg-black/50 hover:bg-black/80 p-3 rounded-full backdrop-blur-sm"
                     aria-label="Close"
                   >
                     <X size={20} />
-                  </motion.button>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>,
             document.body
           )}
-          <div
-            ref={loaderRef}
-            className="flex flex-col items-center justify-center py-4 w-full"
-          />
+
           <CommentsModal
             activeQuestion={activeQuestion}
             setActiveQuestion={setActiveQuestion}

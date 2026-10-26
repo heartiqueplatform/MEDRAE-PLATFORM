@@ -611,7 +611,7 @@ export default function Algorithm() {
                                             </span>
                                         )}
                                     </div>
-                                    <span className={`text-lg font-black flex-shrink-0 ${isWeak ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                                    <span className={`text-lg   flex-shrink-0 ${isWeak ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
                                         {unit.average_score.toFixed(0)}%
                                     </span>
                                 </div>
@@ -669,13 +669,13 @@ export default function Algorithm() {
                 <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/10 border-0">
                     <div className="flex items-center gap-1.5 mb-2">
                         <Trophy className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />
-                        <h4 className="text-[10px] font-black text-green-800 dark:text-green-300 uppercase tracking-wider">Strengths</h4>
+                        <h4 className="text-[10px]   text-green-800 dark:text-green-300 uppercase tracking-wider">Strengths</h4>
                     </div>
                     {data.rankings?.strongest.length > 0 ? (
                         data.rankings.strongest.slice(0, 3).map((item, i) => (
                             <div key={i} className="flex justify-between items-center py-1 border-b border-green-200/30 dark:border-green-800/20 last:border-0">
                                 <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate mr-2">{i + 1}. {item.value.unit_name}</span>
-                                <span className="text-xs font-black text-green-700 dark:text-green-400">{item.value.average_score.toFixed(0)}%</span>
+                                <span className="text-xs   text-green-700 dark:text-green-400">{item.value.average_score.toFixed(0)}%</span>
                             </div>
                         ))
                     ) : (
@@ -686,7 +686,7 @@ export default function Algorithm() {
                 <div className="p-3 rounded-xl bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/10 border-0">
                     <div className="flex items-center gap-1.5 mb-2">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-700 dark:text-red-400" />
-                        <h4 className="text-[10px] font-black text-red-800 dark:text-red-300 uppercase tracking-wider">Focus Areas</h4>
+                        <h4 className="text-[10px]   text-red-800 dark:text-red-300 uppercase tracking-wider">Focus Areas</h4>
                     </div>
                     {data.rankings?.weakest.length > 0 ? (
                         data.rankings.weakest.slice(0, 3).map((item, i) => (
@@ -713,7 +713,7 @@ export default function Algorithm() {
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-800/50 border border-gray-100 dark:border-gray-700/30">
                     <div className="flex items-center gap-1.5 mb-2">
                         <Sparkles className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-                        <h3 className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Study Plan</h3>
+                        <h3 className="text-[10px]   text-blue-600 dark:text-blue-400 uppercase tracking-wider">Study Plan</h3>
                     </div>
                     <div className="space-y-1.5">
                         {data.recommendations.slice(0, 3).map((rec, i) => (

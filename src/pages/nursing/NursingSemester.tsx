@@ -114,7 +114,7 @@ export default function NursingSemester() {
 
                         <div className="flex flex-col gap-4 md:gap-5 md:flex-row md:items-end md:justify-between">
                             <div>
-                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight">
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl   tracking-tight">
                                     Choose semester
                                 </h1>
                                 <p className="mt-2 md:mt-3 max-w-2xl text-xs md:text-sm lg:text-base leading-6 text-slate-600 dark:text-slate-300">
@@ -165,10 +165,10 @@ export default function NursingSemester() {
                                 <div className="relative flex items-start justify-between gap-3 md:gap-4">
                                     <div>
                                         <div className="mb-3 md:mb-4 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-gradient-to-br from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-600/20">
-                                            <span className="text-base md:text-lg font-black">{index + 1}</span>
+                                            <span className="text-base md:text-lg  ">{index + 1}</span>
                                         </div>
 
-                                        <h2 className="text-base md:text-lg font-black text-slate-950 dark:text-white">
+                                        <h2 className="text-base md:text-lg   text-slate-950 dark:text-white">
                                             {sem.semester_name}
                                         </h2>
 

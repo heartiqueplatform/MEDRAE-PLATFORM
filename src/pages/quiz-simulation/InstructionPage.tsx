@@ -268,7 +268,7 @@ export default function InstructionPage() {
                       <div className="absolute inset-0 border-2 border-indigo-400 rounded-full animate-ping opacity-50" />
                     </div>
                     <div className="mt-5 flex flex-col items-center gap-1">
-                      <span className="text-white font-mono text-lg font-black">
+                      <span className="text-white font-mono text-lg  ">
                         {scanProgress}%
                       </span>
                       <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-[0.3em]">
@@ -376,7 +376,7 @@ export default function InstructionPage() {
                 {loudWarning && (
                   <div className="absolute inset-x-3 top-3 z-40 bg-red-600/90 backdrop-blur-md text-white py-2 px-3 rounded-xl flex items-center justify-center gap-2 animate-pulse">
                     <VolumeX className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-center">
+                    <span className="text-[10px]   uppercase tracking-widest text-center">
                       High Ambient Noise Detected
                     </span>
                   </div>
@@ -551,7 +551,7 @@ export default function InstructionPage() {
             </div>
 
             <Button
-              className={`w-full max-w-md h-14 text-base md:text-lg font-black transition-all duration-300 rounded-2xl group ${canStart
+              className={`w-full max-w-md h-14 text-base md:text-lg   transition-all duration-300 rounded-2xl group ${canStart
                 ? "bg-green-600 hover:bg-green-700 text-white"
                 : "bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600"
                 }`}

@@ -100,7 +100,7 @@ const KRCHNCurriculum = () => {
                 {/* Header */}
                 <div className="text-center mb-10 md:mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 px-4 md:px-0">
 
-                    <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl   tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Complete{" "}
                         <span className="text-emerald-600 italic">Nursing</span>{" "}
                         Curriculum
@@ -167,7 +167,7 @@ const KRCHNCurriculum = () => {
                             style={{ animationDelay: `${stat.delay}ms`, animationFillMode: 'both' }}
                         >
                             <stat.icon className={`w-6 h-6 md:w-10 md:h-10 mx-auto mb-1.5 md:mb-3 ${stat.color}`} />
-                            <p className={`text-2xl md:text-4xl font-black ${stat.color} tabular-nums transition-all duration-200`}>
+                            <p className={`text-2xl md:text-4xl   ${stat.color} tabular-nums transition-all duration-200`}>
                                 {stat.count.toLocaleString()}{stat.suffix}
                             </p>
                             <p className="text-[10px] md:text-sm font-semibold text-slate-600 mt-0.5 md:mt-1">{stat.label}</p>
@@ -181,10 +181,10 @@ const KRCHNCurriculum = () => {
                     <div className="md:border-0 bg-white md:rounded-2xl md:shadow-lg md:hover:shadow-2xl md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-left-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
                         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-5 md:p-6 text-white">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
-                                <span className="text-4xl md:text-5xl font-black opacity-30">01</span>
+                                <span className="text-4xl md:text-5xl   opacity-30">01</span>
                                 <GraduationCap className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
                             </div>
-                            <h3 className="text-xl md:text-2xl font-black">Year 1</h3>
+                            <h3 className="text-xl md:text-2xl  ">Year 1</h3>
                             <p className="text-emerald-50 text-xs md:text-sm mt-0.5 md:mt-1">Foundation Nursing</p>
                         </div>
                         <div className="p-4 md:p-5 space-y-2 md:space-y-3">
@@ -216,10 +216,10 @@ const KRCHNCurriculum = () => {
                     <div className="md:border-0 bg-white md:rounded-2xl md:shadow-lg md:hover:shadow-2xl md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-bottom-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
                         <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-5 md:p-6 text-white">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
-                                <span className="text-4xl md:text-5xl font-black opacity-30">02</span>
+                                <span className="text-4xl md:text-5xl   opacity-30">02</span>
                                 <Stethoscope className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
                             </div>
-                            <h3 className="text-xl md:text-2xl font-black">Year 2</h3>
+                            <h3 className="text-xl md:text-2xl  ">Year 2</h3>
                             <p className="text-blue-50 text-xs md:text-sm mt-0.5 md:mt-1">Clinical Nursing</p>
                         </div>
                         <div className="p-4 md:p-5 space-y-2 md:space-y-3">
@@ -251,10 +251,10 @@ const KRCHNCurriculum = () => {
                     <div className="md:border-0 bg-white md:rounded-2xl md:shadow-lg md:hover:shadow-2xl md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-right-8" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-5 md:p-6 text-white">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
-                                <span className="text-4xl md:text-5xl font-black opacity-30">03</span>
+                                <span className="text-4xl md:text-5xl   opacity-30">03</span>
                                 <Brain className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
                             </div>
-                            <h3 className="text-xl md:text-2xl font-black">Year 3</h3>
+                            <h3 className="text-xl md:text-2xl  ">Year 3</h3>
                             <p className="text-purple-50 text-xs md:text-sm mt-0.5 md:mt-1">Advanced & Clinical Practice</p>
                         </div>
                         <div className="p-4 md:p-5 space-y-2 md:space-y-3">
@@ -285,7 +285,7 @@ const KRCHNCurriculum = () => {
 
                 {/* What's Included */}
                 <div className="md:bg-white md:rounded-2xl p-5 md:p-8 md:shadow-lg md:border md:border-slate-100 animate-in fade-in slide-in-from-bottom-8 mx-3 md:mx-0" style={{ animationDelay: '800ms', animationFillMode: 'both' }}>
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 mb-4 md:mb-6 text-center">
+                    <h3 className="text-lg md:text-xl   text-slate-900 mb-4 md:mb-6 text-center">
                         Everything Included in the Curriculum
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

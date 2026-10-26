@@ -136,7 +136,7 @@ const NursingMeritCupSection = () => {
                 {/* Header */}
                 <div className="text-center mb-10 md:mb-16 px-4 md:px-0">
 
-                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl   tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Medrae National Nursing{" "}
                         <span className="text-blue-600 italic">Merit Cup</span>
                     </h2>
@@ -151,7 +151,7 @@ const NursingMeritCupSection = () => {
                 {/* What Is It   plain explanation card (no gradient) */}
                 <div className="bg-white rounded-2xl p-6 md:p-10 mb-10 md:mb-12 mx-3 md:mx-0 shadow-sm border border-slate-100">
                     <div className="max-w-3xl mx-auto text-center">
-                        <h3 className="text-lg md:text-2xl font-black text-slate-900 mb-3 md:mb-4">
+                        <h3 className="text-lg md:text-2xl   text-slate-900 mb-3 md:mb-4">
                             An Academic Competition, Not a Game of Chance
                         </h3>
                         <p className="text-sm md:text-base text-slate-600 leading-relaxed mb-4">
@@ -227,7 +227,7 @@ const NursingMeritCupSection = () => {
                 {/* Who Can Join Section */}
                 <div className="bg-white md:rounded-2xl p-5 md:p-8 md:shadow-sm md:border md:border-slate-100 mx-3 md:mx-0">
                     <div className="text-center mb-6 md:mb-8">
-                        <h3 className="text-lg md:text-2xl font-black text-slate-900 mb-2">
+                        <h3 className="text-lg md:text-2xl   text-slate-900 mb-2">
                             Who Can Join
                         </h3>
                         <p className="text-xs md:text-sm text-slate-600 max-w-2xl mx-auto">
@@ -270,7 +270,7 @@ const NursingMeritCupSection = () => {
                             <div className="bg-rose-50 rounded-xl p-2.5 md:p-3">
                                 <HeartPulse className="w-5 h-5 md:w-6 md:h-6 text-rose-600" />
                             </div>
-                            <h3 className="text-base md:text-lg font-black text-slate-900">
+                            <h3 className="text-base md:text-lg   text-slate-900">
                                 Student Wellness
                             </h3>
                         </div>
@@ -287,7 +287,7 @@ const NursingMeritCupSection = () => {
                             <div className="bg-blue-50 rounded-xl p-2.5 md:p-3">
                                 <Building2 className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                             </div>
-                            <h3 className="text-base md:text-lg font-black text-slate-900">
+                            <h3 className="text-base md:text-lg   text-slate-900">
                                 Beyond the Exam
                             </h3>
                         </div>
@@ -305,7 +305,7 @@ const NursingMeritCupSection = () => {
                     <div className="bg-white md:rounded-2xl p-6 md:p-10 shadow-sm border border-slate-100">
                         <div className="max-w-2xl mx-auto text-center">
 
-                            <h3 className="text-xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4">
+                            <h3 className="text-xl md:text-3xl   text-slate-900 mb-3 md:mb-4">
                                 Ready to Be Part of the Merit Cup?
                             </h3>
                             <p className="text-sm md:text-base text-slate-600 leading-relaxed mb-5 md:mb-6">

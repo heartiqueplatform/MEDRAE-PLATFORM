@@ -146,7 +146,7 @@ const ExamReady = () => {
                                             <Badge className="bg-amber-500 text-white border-none">Draft Mode</Badge>
                                         )}
                                     </div>
-                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                                    <h2 className="text-2xl   text-slate-900 dark:text-white tracking-tight leading-none">
                                         {exam.title}
                                     </h2>
                                 </div>
@@ -224,7 +224,7 @@ const ExamReady = () => {
                                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-4 duration-300">
                                         <div className="space-y-4">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-black uppercase text-slate-400">Description</label>
+                                                <label className="text-[10px]   uppercase text-slate-400">Description</label>
                                                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                                                     {exam.description || "No description provided for this session."}
                                                 </p>
@@ -239,21 +239,21 @@ const ExamReady = () => {
                                         </div>
 
                                         <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
-                                            <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2">
+                                            <h4 className="text-[10px]   uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2">
                                                 <PlayCircle className="w-3.5 h-3.5" /> Exam Lifecycle
                                             </h4>
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-xs font-bold text-slate-500">Scheduled Launch</span>
-                                                    <span className="text-xs font-black text-slate-700 dark:text-slate-200">{exam.scheduled_start || "Manual"}</span>
+                                                    <span className="text-xs   text-slate-700 dark:text-slate-200">{exam.scheduled_start || "Manual"}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-xs font-bold text-slate-500">Scheduled End</span>
-                                                    <span className="text-xs font-black text-slate-700 dark:text-slate-200">{exam.scheduled_end || "Manual"}</span>
+                                                    <span className="text-xs   text-slate-700 dark:text-slate-200">{exam.scheduled_end || "Manual"}</span>
                                                 </div>
                                                 <Separator className="opacity-50" />
                                                 <div className="space-y-2 pt-2">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase">Instructions Preview</span>
+                                                    <span className="text-[10px]   text-slate-400 uppercase">Instructions Preview</span>
                                                     <div className="space-y-1.5">
                                                         {exam.instructions?.length ? (
                                                             exam.instructions.map((i: any) => (
@@ -293,7 +293,7 @@ function StatChip({ icon, label, value, color = "slate" }: any) {
                 {React.cloneElement(icon, { size: 14 })}
             </div>
             <div>
-                <span className="block text-xs font-black text-slate-800 dark:text-slate-200 leading-none">{value}</span>
+                <span className="block text-xs   text-slate-800 dark:text-slate-200 leading-none">{value}</span>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">{label}</span>
             </div>
         </div>
@@ -309,7 +309,7 @@ function InfoItem({ icon, label, value }: any) {
         <div className="flex items-center gap-2">
             <div className="text-slate-400">{React.cloneElement(icon, { size: 14 })}</div>
             <div className="flex flex-col">
-                <span className="text-[9px] font-black text-slate-400 uppercase leading-none mb-1">{label}</span>
+                <span className="text-[9px]   text-slate-400 uppercase leading-none mb-1">{label}</span>
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-none">{value}</span>
             </div>
         </div>

@@ -439,7 +439,7 @@ const SuccessSection: React.FC<{
             <div className="mb-5 rounded-2xl p-4 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-900/50">
                 <div className="flex items-center gap-2 mb-3">
                     <Gift className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                    <p className="text-xs font-black uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                    <p className="text-xs   uppercase tracking-wider text-violet-700 dark:text-violet-300">
                         Share now · Earn twice
                     </p>
                 </div>

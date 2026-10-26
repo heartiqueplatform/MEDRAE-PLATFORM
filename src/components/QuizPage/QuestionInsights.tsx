@@ -152,7 +152,7 @@ export function QuestionInsights({
                                         <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
                                             {meta.percentLabel}
                                         </span>
-                                        <span className={`text-2xl font-black tabular-nums leading-none ${meta.text}`}>
+                                        <span className={`text-2xl   tabular-nums leading-none ${meta.text}`}>
                                             {meta.percent}%
                                         </span>
                                     </div>

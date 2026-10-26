@@ -144,7 +144,7 @@ export function SubscriptionInfoModal({
                                         </div>
                                     </div>
                                     {is1Month && (
-                                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider
+                                        <span className="text-[9px] md:text-[10px]   uppercase tracking-wider
                                             px-2 py-0.5 rounded-full bg-indigo-600 text-white flex-shrink-0">
                                             Selected
                                         </span>
@@ -157,7 +157,7 @@ export function SubscriptionInfoModal({
                                         <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                             Student
                                         </p>
-                                        <p className="text-xs md:text-sm font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+                                        <p className="text-xs md:text-sm   text-indigo-700 dark:text-indigo-300 tabular-nums">
                                             KSh {student1mo}
                                         </p>
                                     </div>
@@ -165,7 +165,7 @@ export function SubscriptionInfoModal({
                                         <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                             Tutor
                                         </p>
-                                        <p className="text-xs md:text-sm font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+                                        <p className="text-xs md:text-sm   text-indigo-700 dark:text-indigo-300 tabular-nums">
                                             KSh {tutor1mo}
                                         </p>
                                     </div>
@@ -173,7 +173,7 @@ export function SubscriptionInfoModal({
                                         <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                             Staff
                                         </p>
-                                        <p className="text-xs md:text-sm font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+                                        <p className="text-xs md:text-sm   text-indigo-700 dark:text-indigo-300 tabular-nums">
                                             KSh {staff1mo}
                                         </p>
                                     </div>
@@ -204,7 +204,7 @@ export function SubscriptionInfoModal({
                                 ? "bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 ring-0"
                                 : "bg-slate-50 dark:bg-slate-900/40"
                                 }`}>
-                                <span className="absolute -top-2 right-3 text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                                <span className="absolute -top-2 right-3 text-[9px] md:text-[10px]   uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white">
                                     Best value
                                 </span>
                                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -222,7 +222,7 @@ export function SubscriptionInfoModal({
                                         </div>
                                     </div>
                                     {!is1Month && (
-                                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider
+                                        <span className="text-[9px] md:text-[10px]   uppercase tracking-wider
                                             px-2 py-0.5 rounded-full bg-indigo-600 text-white flex-shrink-0">
                                             Selected
                                         </span>
@@ -235,7 +235,7 @@ export function SubscriptionInfoModal({
                                         <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                             Student
                                         </p>
-                                        <p className="text-xs md:text-sm font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+                                        <p className="text-xs md:text-sm   text-indigo-700 dark:text-indigo-300 tabular-nums">
                                             KSh {student2mo}
                                         </p>
                                     </div>
@@ -243,7 +243,7 @@ export function SubscriptionInfoModal({
                                         <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                             Tutor
                                         </p>
-                                        <p className="text-xs md:text-sm font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+                                        <p className="text-xs md:text-sm   text-indigo-700 dark:text-indigo-300 tabular-nums">
                                             KSh {tutor2mo}
                                         </p>
                                     </div>
@@ -251,7 +251,7 @@ export function SubscriptionInfoModal({
                                         <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                             Staff
                                         </p>
-                                        <p className="text-xs md:text-sm font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+                                        <p className="text-xs md:text-sm   text-indigo-700 dark:text-indigo-300 tabular-nums">
                                             KSh {staff2mo}
                                         </p>
                                     </div>
@@ -310,7 +310,7 @@ export function SubscriptionInfoModal({
                                         <TrendingDown className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                     </div>
                                     <p className="text-[11px] md:text-xs text-slate-700 dark:text-slate-300">
-                                        From <span className="font-black text-emerald-700 dark:text-emerald-400 tabular-nums">KSh {groupStudent1mo}</span> per member
+                                        From <span className="  text-emerald-700 dark:text-emerald-400 tabular-nums">KSh {groupStudent1mo}</span> per member
                                     </p>
                                     <p className="text-[10px] text-muted-foreground mt-0.5">
                                         Save <span className="font-bold text-emerald-600 dark:text-emerald-400">KSh {student1mo - groupStudent1mo}</span> vs individual
@@ -325,7 +325,7 @@ export function SubscriptionInfoModal({
                                         <TrendingDown className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                     </div>
                                     <p className="text-[11px] md:text-xs text-slate-700 dark:text-slate-300">
-                                        From <span className="font-black text-emerald-700 dark:text-emerald-400 tabular-nums">KSh {groupStudent2mo}</span> per member
+                                        From <span className="  text-emerald-700 dark:text-emerald-400 tabular-nums">KSh {groupStudent2mo}</span> per member
                                     </p>
                                     <p className="text-[10px] text-muted-foreground mt-0.5">
                                         Save <span className="font-bold text-emerald-600 dark:text-emerald-400">KSh {student2mo - groupStudent2mo}</span> vs individual

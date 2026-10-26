@@ -33,7 +33,7 @@ export function MedraeSocialFooter({
                 } ${className}`}
         >
             {/* Brand + Tagline */}
-            <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
+            <p className="text-[7px]   tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
                 Medrae Nursing All rights reserved
             </p>
 

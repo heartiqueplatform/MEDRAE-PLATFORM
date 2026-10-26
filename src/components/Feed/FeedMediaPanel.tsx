@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,14 +22,16 @@ type FeedImage = {
     title?: string;
     description?: string;
     added_by?: string;
+    post_group_id?: string | null;
+    post_group_order?: number | null;
     profiles?: {
         name?: string;
         avatar_url?: string;
     };
 };
-
 interface Props {
     index: number;
+    groupKey: string;
     feedImages: FeedImage[];
     loadedImages: Record<string, boolean>;
     setLoadedImages: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -43,7 +45,7 @@ interface Props {
     uploadFiles: File[];
     setUploadFiles: React.Dispatch<React.SetStateAction<File[]>>;
     uploading: boolean;
-    handleImageUpload: () => void;
+    handleImageUpload: (isRelated: boolean) => void;
     imageTitle: string;
     setImageTitle: React.Dispatch<React.SetStateAction<string>>;
     imageDescription: string;
@@ -184,19 +186,24 @@ async function fetchComments(supabase: any, imageId: string): Promise<any[]> {
 }
 
 /**
- * Mark image as "seen" so it never appears in this user's feed again.
- * Fire-and-forget — failure doesn't affect UX. Idempotent via upsert.
+ * Mark an image AND every image in its carousel group as seen
+ * for this user. Uses mark_feed_group_seen RPC.
+ *
+ * Fire-and-forget — failure doesn't affect UX. Idempotent via RPC's
+ * ON CONFLICT DO NOTHING.
  */
 function markImageSeen(supabase: any, userId: string, imageId: string) {
     supabase
-        .from("seen_images")
-        .upsert(
-            { user_id: userId, image_id: imageId },
-            { onConflict: "user_id,image_id", ignoreDuplicates: true }
-        )
+        .rpc("mark_feed_group_seen", {
+            p_user_id: userId,
+            p_image_id: imageId,
+        })
         .then(({ error }: any) => {
-            if (error && error.code !== "23505") {
-                console.warn("[MediaPanel] mark seen failed:", error.message);
+            if (error) {
+                console.warn(
+                    "[MediaPanel] mark_feed_group_seen failed:",
+                    error.message
+                );
             }
         });
 }
@@ -204,11 +211,18 @@ function markImageSeen(supabase: any, userId: string, imageId: string) {
 // ============================================================
 // COMPONENT
 // ============================================================
+// ============================================================
+// COMPONENT
+// ============================================================
+
+const MAX_FILES = 10;
 
 export default function FeedMediaPanel({
     index,
+    groupKey,
     feedImages,
     loadedImages,
+
     setLoadedImages,
     session,
     supabase,
@@ -242,19 +256,52 @@ export default function FeedMediaPanel({
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isCommentsLoaded, setIsCommentsLoaded] = useState(false);
-
+    const [isRelated, setIsRelated] = useState(false);
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+    // Touch tracking for swipe gestures
+    const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
+    const touchDeltaX = useRef<number>(0);
+    const [swipeOffset, setSwipeOffset] = useState<number>(0);
     const isMounted = useRef(true);
 
     // ── Pick the image for this slot ─────────────────────────
     // Simple round-robin over whatever the parent gave us.
-    let img: FeedImage | null = null;
-    const showImage = index % 2 === 0;
-    if (showImage && feedImages.length > 0) {
-        const imageCounter = Math.floor(index / 2);
-        const imageIndex = imageCounter % feedImages.length;
-        img = feedImages[imageIndex];
-    }
+    // ── Group images into "posts" ────────────────────────────
+    // Images WITH post_group_id group together into one carousel post.
+    // Images WITHOUT post_group_id become their own single-image posts.
+    // ── Find the group matching THIS panel's groupKey ────────
+    const group = useMemo<FeedImage[] | null>(() => {
+        if (!groupKey) return null;
+        const imgs = feedImages.filter((im) => {
+            const key = im.post_group_id || `single_${im.id}`;
+            return key === groupKey;
+        });
+        if (imgs.length === 0) return null;
+        return imgs.sort(
+            (a, b) =>
+                (a.post_group_order ?? 0) - (b.post_group_order ?? 0)
+        );
+    }, [feedImages, groupKey]);
 
+    const img: FeedImage | null = group
+        ? group[currentSlide] || group[0]
+        : null;
+    const totalSlides = group?.length || 0;
+    // ── Fetch stats for the currently-displayed image ────────
+    // ── Reset slide when the post slot changes ───────────────
+    // ── Reset slide ONLY when the assigned post changes ──────
+    // (not when feedImages array identity changes — that happens
+    //  on every parent render and would snap the slide back to 0)
+    // Reset slide ONLY when this panel moves to a different group.
+    // groupKey is stable per panel, so this only fires when the
+    // panel is remounted for a different post — never during a swipe.
+    useEffect(() => {
+        setCurrentSlide(0);
+    }, [groupKey]);
+
+    // ── Fetch stats for the currently-displayed image ────────
     // ── Fetch stats for the currently-displayed image ────────
     useEffect(() => {
         if (!img?.id || !user?.id) {
@@ -264,18 +311,21 @@ export default function FeedMediaPanel({
         isMounted.current = true;
 
         const load = async () => {
-            setIsLoadingData(true);
-            try {
-                const cached = statsCache.get(
-                    getStatsCacheKey(user.id, img!.id)
-                );
-                if (cached) {
-                    setLikesCount(cached.likes);
-                    setCommentsCount(cached.comments);
-                    setHasLiked(cached.hasLiked);
-                    setIsLoadingData(false);
-                }
+            // If we already have cached stats for this image, use them
+            // immediately and DON'T show the skeleton. Otherwise, show
+            // the skeleton only until the fetch completes.
+            const cached = statsCache.get(getStatsCacheKey(user.id, img!.id));
+            if (cached) {
+                setLikesCount(cached.likes);
+                setCommentsCount(cached.comments);
+                setHasLiked(cached.hasLiked);
+                setIsLoadingData(false);
+            } else {
+                // First time seeing this slide → show skeleton
+                setIsLoadingData(true);
+            }
 
+            try {
                 const map = await fetchStatsBatch(supabase, user.id, [img!.id]);
                 const stats = map.get(img!.id);
                 if (stats && isMounted.current) {
@@ -293,7 +343,6 @@ export default function FeedMediaPanel({
             isMounted.current = false;
         };
     }, [img?.id, user?.id, supabase]);
-
     // ── Upload progress animation ─────────────────────────────
     useEffect(() => {
         if (uploading) {
@@ -312,7 +361,31 @@ export default function FeedMediaPanel({
             setUploadProgress(0);
         }
     }, [uploading]);
+    // Prefetch stats for ALL slides in the group on first mount,
+    // so swiping between slides is instant with no skeleton flashes.
+    useEffect(() => {
+        if (!group || group.length <= 1 || !user?.id) return;
 
+        const ids = group.map((g) => g.id);
+        const uncached = ids.filter(
+            (id) => !statsCache.get(getStatsCacheKey(user.id, id))
+        );
+        if (uncached.length === 0) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                await fetchStatsBatch(supabase, user.id, uncached);
+            } catch {
+                /* ignore */
+            }
+            if (cancelled) return;
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [group, user?.id, supabase]);
     // ── Reset upload form when closed ─────────────────────────
     useEffect(() => {
         if (!showUpload) {
@@ -388,7 +461,11 @@ export default function FeedMediaPanel({
         }
     };
 
-    // ── Full-screen tap — mark seen ──────────────────────────
+    // ── Full-screen tap — just open the viewer ───────────────
+    // DO NOT mark as seen here. The user is only looking at the image
+    // that's already on the feed. Marking it now causes the post to
+    // disappear from the feed the moment they tap — which is wrong.
+    // It gets marked as seen later, when they actually like or comment.
     const handleImageClick = async () => {
         if (!img?.image_url) return;
         openViewer({
@@ -397,9 +474,48 @@ export default function FeedMediaPanel({
             title: img.title || "Image",
             description: img.description || "",
         });
-        const userId = session?.user?.id;
-        if (!userId) return;
-        markImageSeen(supabase, userId, img.id);
+    };
+
+    // ── Swipe gestures for carousel ─────────────────────────
+    const SWIPE_THRESHOLD = 60; // px to trigger slide change
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (totalSlides <= 1) return;
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+        touchDeltaX.current = 0;
+        setSwipeOffset(0);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (touchStartX.current === null || totalSlides <= 1) return;
+        const dx = e.touches[0].clientX - touchStartX.current;
+        const dy = e.touches[0].clientY - (touchStartY.current ?? 0);
+        // If user is scrolling vertically more than horizontally → don't swipe
+        if (Math.abs(dy) > Math.abs(dx) * 1.5) return;
+        touchDeltaX.current = dx;
+        // Cap at 80px so it doesn't fly off
+        const capped = Math.max(-80, Math.min(80, dx));
+        setSwipeOffset(capped);
+    };
+
+    const handleTouchEnd = () => {
+        if (touchStartX.current === null || totalSlides <= 1) {
+            setSwipeOffset(0);
+            return;
+        }
+        const dx = touchDeltaX.current;
+        if (dx <= -SWIPE_THRESHOLD && currentSlide < totalSlides - 1) {
+            // Swiped left → next
+            setCurrentSlide((s) => Math.min(totalSlides - 1, s + 1));
+        } else if (dx >= SWIPE_THRESHOLD && currentSlide > 0) {
+            // Swiped right → previous
+            setCurrentSlide((s) => Math.max(0, s - 1));
+        }
+        touchStartX.current = null;
+        touchStartY.current = null;
+        touchDeltaX.current = 0;
+        setSwipeOffset(0);
     };
 
     // ── Comment actions ──────────────────────────────────────
@@ -447,7 +563,9 @@ export default function FeedMediaPanel({
             return;
         }
         if (handleImageUpload && typeof handleImageUpload === "function") {
-            handleImageUpload();
+            // 1 image can't be a carousel — force false
+            const related = uploadFiles.length > 1 ? isRelated : false;
+            handleImageUpload(related);
         }
     };
 
@@ -477,20 +595,53 @@ export default function FeedMediaPanel({
     };
 
     // ── Loading skeleton ─────────────────────────────────────
+    // ── Loading skeleton — mirrors the real card's layout ────
+    // Same max width, same header height, same aspect-ratio image box,
+    // same footer. When the real card loads, NOTHING shifts.
     if (isLoadingData && img) {
         return (
-            <div className="w-full max-w-2xl mx-auto mb-2">
-                <Card className="overflow-hidden bg-white dark:bg-muted/95 border-0 shadow-sm rounded-xl">
-                    <div className="p-4">
-                        <div className="animate-pulse">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                                <div className="flex-1">
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
-                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
-                                </div>
+            <div className="w-full max-w-full mx-auto space-y-2 mb-2">
+                <Card className="overflow-hidden bg-white dark:bg-muted/95 border-0 shadow-sm rounded-xl animate-pulse">
+                    {/* Header — mirrors "avatar + name + shared a resource" */}
+                    <div className="flex items-center justify-between p-3 px-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+                            <div className="flex flex-col gap-1.5">
+                                <div className="h-3.5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                                <div className="h-2.5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                             </div>
-                            <div className="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700" />
+                    </div>
+
+                    {/* Image stage — same bg, same aspect ratio, same maxHeight */}
+                    {/* Image stage — same bg, same aspect ratio, same maxHeight */}
+                    <div
+                        className="relative w-full bg-gray-50 dark:bg-black flex items-center justify-center overflow-hidden"
+                        style={{
+                            aspectRatio:
+                                aspectRatios[img.id] !== undefined
+                                    ? String(aspectRatios[img.id])
+                                    : "1 / 1",
+                            maxHeight: "600px",
+                        }}
+                    >
+                        <div className="w-full h-full bg-gray-200/60 dark:bg-gray-800/40" />
+                    </div>
+
+                    {/* Footer — mirrors "N Likes · N Comments" */}
+                    <div className="p-4 pt-3">
+                        <div className="flex items-center justify-between pb-3 border-b dark:border-gray-800">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700" />
+                                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+                            </div>
+                            <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                        </div>
+                        <div className="flex gap-1 pt-1">
+                            <div className="flex-1 h-10 bg-gray-100 dark:bg-gray-800/60 rounded-lg" />
+                            <div className="flex-1 h-10 bg-gray-100 dark:bg-gray-800/60 rounded-lg" />
+                            <div className="flex-1 h-10 bg-gray-100 dark:bg-gray-800/60 rounded-lg" />
                         </div>
                     </div>
                 </Card>
@@ -613,7 +764,8 @@ export default function FeedMediaPanel({
                                                     Tap to select images
                                                 </span>
                                                 <span className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                    You can select multiple images
+                                                    Up to {MAX_FILES} images ·{" "}
+                                                    {uploadFiles.length}/{MAX_FILES} selected
                                                 </span>
                                             </div>
                                         )}
@@ -622,13 +774,47 @@ export default function FeedMediaPanel({
                                             multiple
                                             className="hidden"
                                             accept="image/*"
-                                            onChange={(e) =>
-                                                setUploadFiles(
-                                                    Array.from(e.target.files || [])
-                                                )
-                                            }
+                                            onChange={(e) => {
+                                                const picked = Array.from(
+                                                    e.target.files || []
+                                                );
+                                                const remaining =
+                                                    MAX_FILES - uploadFiles.length;
+                                                const limited = picked.slice(
+                                                    0,
+                                                    remaining
+                                                );
+                                                if (picked.length > limited.length) {
+                                                    alert(
+                                                        `You can upload up to ${MAX_FILES} images total.`
+                                                    );
+                                                }
+                                                setUploadFiles((prev) =>
+                                                    [...prev, ...limited].slice(
+                                                        0,
+                                                        MAX_FILES
+                                                    )
+                                                );
+                                                e.target.value = "";
+                                            }}
                                         />
                                     </label>
+                                    {uploadFiles.length > 1 && (
+                                        <label className="flex items-center gap-2 cursor-pointer select-none px-1 pt-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={isRelated}
+                                                onChange={(e) =>
+                                                    setIsRelated(e.target.checked)
+                                                }
+                                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                These images are related (show as
+                                                one carousel post)
+                                            </span>
+                                        </label>
+                                    )}
                                     {uploading && uploadProgress > 0 && (
                                         <div className="mt-3">
                                             <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
@@ -668,7 +854,7 @@ export default function FeedMediaPanel({
 
             {/* Main Content - Images Only */}
             {img ? (
-                <motion.div key={`image-${img.id}`} className="w-full">
+                <motion.div className="w-full">
                     <Card className="overflow-hidden bg-white dark:bg-muted/95 border-0 shadow-sm rounded-xl">
                         <div className="flex items-center justify-between p-3 px-4">
                             <div className="flex items-center gap-3">
@@ -698,13 +884,70 @@ export default function FeedMediaPanel({
                                 </h3>
                             </div>
                         )}
-                        <div className="relative group bg-gray-100 dark:bg-gray-900 min-h-[300px] flex items-center justify-center overflow-hidden">
+                        {/*
+                          Image stage — layout is IDENTICAL for every slide:
+                          • aspect-ratio locked per image (measured on load)
+                          • black background so letterbox looks intentional
+                          • previous slide stays visible underneath while the
+                            next one fades in → NO layout jump on tap
+                        */}
+                        <div
+                            className="relative w-full bg-gray-50 dark:bg-black flex items-center justify-center overflow-hidden touch-pan-y"
+                            style={{
+                                aspectRatio:
+                                    aspectRatios[img.id] !== undefined
+                                        ? String(aspectRatios[img.id])
+                                        : "1 / 1",
+                                maxHeight: "600px",
+                            }}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                        >
+                            {/* Previous slide (only during crossfade) */}
+                            {group &&
+                                totalSlides > 1 &&
+                                group
+                                    .filter((_, i) => i !== currentSlide)
+                                    .map((g) => {
+                                        const isPrev =
+                                            g.id !== img.id &&
+                                            loadedImages[g.id] &&
+                                            Math.abs(
+                                                (group || []).indexOf(g) -
+                                                currentSlide
+                                            ) === 1;
+                                        if (!isPrev) return null;
+                                        return (
+                                            <img
+                                                key={`prev-${g.id}`}
+                                                src={
+                                                    g.image_url.includes(
+                                                        "cloudinary"
+                                                    )
+                                                        ? g.image_url.replace(
+                                                            "/upload/",
+                                                            "/upload/w_800,f_auto,q_auto/"
+                                                        )
+                                                        : g.image_url
+                                                }
+                                                alt=""
+                                                aria-hidden
+                                                className="absolute inset-0 w-full h-full object-contain"
+                                            />
+                                        );
+                                    })}
+
+                            {/* Loading spinner only if we have no cached previous */}
                             {!loadedImages[img.id] && (
-                                <div className="absolute inset-0 flex items-center justify-center scale-50">
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <GlobalLoader />
                                 </div>
                             )}
+
+                            {/* The actual current slide */}
                             <img
+                                key={img.id}
                                 src={
                                     img.image_url.includes("cloudinary")
                                         ? img.image_url.replace(
@@ -713,27 +956,130 @@ export default function FeedMediaPanel({
                                         )
                                         : img.image_url
                                 }
-                                onLoad={() =>
+                                onLoad={(e) => {
+                                    const el = e.currentTarget;
+                                    if (
+                                        el.naturalWidth &&
+                                        el.naturalHeight &&
+                                        !aspectRatios[img.id]
+                                    ) {
+                                        setAspectRatios((prev) => ({
+                                            ...prev,
+                                            [img.id]:
+                                                el.naturalWidth /
+                                                el.naturalHeight,
+                                        }));
+                                    }
                                     setLoadedImages((prev) => ({
                                         ...prev,
-                                        [img!.id]: true,
-                                    }))
-                                }
-                                onClick={handleImageClick}
-                                className={`w-full h-auto max-h-[600px] object-contain cursor-pointer transition-all duration-700 ${loadedImages[img.id]
+                                        [img.id]: true,
+                                    }));
+                                }}
+                                onClick={(e) => {
+                                    // Ignore tap if it was actually a swipe
+                                    if (Math.abs(touchDeltaX.current) > 10)
+                                        return;
+                                    handleImageClick();
+                                }}
+                                style={{
+                                    transform: `translateX(${swipeOffset}px)`,
+                                    transition:
+                                        touchStartX.current === null
+                                            ? "transform 220ms ease-out"
+                                            : "none",
+                                }}
+                                className={`relative z-10 w-full h-full object-contain cursor-pointer transition-opacity duration-300 ${loadedImages[img.id]
                                     ? "opacity-100"
                                     : "opacity-0"
                                     }`}
                                 alt={img.title || "Feed image"}
-                                loading="lazy"
+                                draggable={false}
                             />
+
+                            {/* ── Carousel UI ── */}
+                            {totalSlides > 1 && (
+                                <>
+                                    {currentSlide > 0 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setCurrentSlide((s) =>
+                                                    Math.max(0, s - 1)
+                                                );
+                                            }}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center opacity-100 shadow-lg transition-colors"
+                                            aria-label="Previous image"
+                                        >
+                                            <svg
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <polyline points="15 18 9 12 15 6" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    {currentSlide < totalSlides - 1 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setCurrentSlide((s) =>
+                                                    Math.min(
+                                                        totalSlides - 1,
+                                                        s + 1
+                                                    )
+                                                );
+                                            }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center opacity-100 shadow-lg transition-colors"
+                                            aria-label="Next image"
+                                        >
+                                            <svg
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <polyline points="9 18 15 12 9 6" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    {/* Dots */}
+                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 pointer-events-none">
+                                        {group!.map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className={`h-1.5 rounded-full transition-all ${i === currentSlide
+                                                    ? "bg-white w-4"
+                                                    : "bg-white/50 w-1.5"
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {/* Counter */}
+                                    <div className="absolute top-3 left-3 z-20 bg-black/50 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {currentSlide + 1}/{totalSlides}
+                                    </div>
+                                </>
+                            )}
+
                             {img.added_by === user?.id && (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteImage(img!);
                                     }}
-                                    className="absolute top-3 right-3 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                                    className="absolute top-3 right-3 z-20 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all"
                                 >
                                     <Trash2 size={16} />
                                 </button>

@@ -374,7 +374,7 @@ export function Login() {
             <h1 className="text-5xl font-bold leading-tight">
               Welcome Back to <br />
               <span>
-                <span className="text-red-500 font-black drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                <span className="text-red-500   drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
                   MedRae
                 </span>
                 <span className="text-white font-bold"> Nursing</span>
@@ -399,7 +399,7 @@ export function Login() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-slate-800 dark:text-white text-2xl md:text-3xl font-black tracking-tight">
+            <h1 className="text-slate-800 dark:text-white text-2xl md:text-3xl   tracking-tight">
               Welcome Back
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">

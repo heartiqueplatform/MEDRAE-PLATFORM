@@ -285,7 +285,7 @@ const StudentResultsPage = () => {
                                 Final Score
                             </p>
                             <div className="flex items-baseline gap-1.5 md:gap-2 justify-center md:justify-start">
-                                <span className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
+                                <span className="text-3xl md:text-4xl   text-slate-900 dark:text-white">
                                     {result.score}
                                 </span>
                                 <span className="text-base md:text-lg text-slate-400 dark:text-slate-500 font-bold">
@@ -295,7 +295,7 @@ const StudentResultsPage = () => {
                         </div>
 
                         <div className="text-center">
-                            <p className={`text-3xl md:text-4xl font-black ${Number(percent) >= 50 ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'}`}>
+                            <p className={`text-3xl md:text-4xl   ${Number(percent) >= 50 ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'}`}>
                                 {percent}%
                             </p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">

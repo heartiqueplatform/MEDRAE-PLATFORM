@@ -104,7 +104,7 @@ export default function AdminPodcastTest() {
         <div className="max-w-xl mx-auto p-6 space-y-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 space-y-4">
                 <div>
-                    <h1 className="text-lg font-black tracking-tight">Podcast Importer — Test</h1>
+                    <h1 className="text-lg   tracking-tight">Podcast Importer — Test</h1>
                     <p className="text-xs text-slate-500 mt-1">
                         Admin only. Paste an Apple Podcasts URL or numeric ID.
                     </p>

@@ -240,7 +240,7 @@ export function GlobalDuelManager() {
                                         </span>
                                         Duel Request
                                     </div>
-                                    <h1 className="text-2xl font-black leading-tight italic">
+                                    <h1 className="text-2xl   leading-tight italic">
                                         Battle Ready! ⚔️
                                     </h1>
                                 </div>
@@ -266,7 +266,7 @@ export function GlobalDuelManager() {
                                         <Swords size={30} className="text-white animate-bounce" />
                                     </div>
 
-                                    <h3 className="text-foreground font-black text-xl uppercase tracking-tighter italic leading-none">
+                                    <h3 className="text-foreground   text-xl uppercase tracking-tighter italic leading-none">
                                         Duel Request!
                                     </h3>
 
@@ -275,7 +275,7 @@ export function GlobalDuelManager() {
                                             {incomingDuel.sender?.name || "A peer"}
                                         </span>{" "}
                                         just sent you an{" "}
-                                        <span className="text-blue-500 font-black">N.D.</span>
+                                        <span className="text-blue-500  ">N.D.</span>
                                     </p>
 
                                     <div className="mt-5 flex flex-col sm:flex-row gap-2.5 w-full">
@@ -351,7 +351,7 @@ export function GlobalDuelManager() {
                                 ))}
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-background" />
                                 <div className="absolute bottom-4 left-5 right-5 text-white">
-                                    <h1 className="text-2xl font-black leading-tight italic">
+                                    <h1 className="text-2xl   leading-tight italic">
                                         Rise to the Challenge
                                     </h1>
                                 </div>
@@ -378,12 +378,12 @@ export function GlobalDuelManager() {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <h2 className="text-xl font-black text-foreground tracking-tight italic">
+                                        <h2 className="text-xl   text-foreground tracking-tight italic">
                                             Prove Them Wrong.
                                         </h2>
                                         <p className="text-[13px] text-muted-foreground leading-snug">
                                             Don't just study solo. Send an{" "}
-                                            <span className="font-black text-indigo-500 underline underline-offset-4 uppercase">
+                                            <span className="  text-indigo-500 underline underline-offset-4 uppercase">
                                                 Clinical Challenge
                                             </span>{" "}
                                             to a peer and beat their clinical score!
@@ -395,7 +395,7 @@ export function GlobalDuelManager() {
                                             VS
                                         </div>
                                         <div className="text-left">
-                                            <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-tighter">
+                                            <p className="text-[10px]   text-indigo-600 dark:text-indigo-400 tracking-tighter">
                                                 Community Battle
                                             </p>
                                             <p className="text-xs font-bold text-foreground">
@@ -406,7 +406,7 @@ export function GlobalDuelManager() {
 
                                     <Button
                                         onClick={() => { setShowPromo(false); navigate("/challenge"); }}
-                                        className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-base group active:scale-95 transition-all"
+                                        className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white   rounded-2xl text-base group active:scale-95 transition-all"
                                     >
                                         Challenge a Friend
                                         <Send size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />

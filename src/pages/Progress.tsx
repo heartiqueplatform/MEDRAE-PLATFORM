@@ -135,7 +135,7 @@ function TriageBanner({
             <span className={`text-[9px] md:text-[10px] font-bold tracking-widest uppercase ${solidText}`}>
               Code
             </span>
-            <span className={`text-lg md:text-2xl font-black leading-none ${solidText} mt-0.5`}>
+            <span className={`text-lg md:text-2xl   leading-none ${solidText} mt-0.5`}>
               {triage.code}
             </span>
           </div>
@@ -144,7 +144,7 @@ function TriageBanner({
         {/* Middle: Label + description + metric pills */}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 mb-1">
-            <h2 className={`text-lg md:text-xl font-black tracking-tight ${solidText}`}>
+            <h2 className={`text-lg md:text-xl   tracking-tight ${solidText}`}>
               {triage.label}
             </h2>
             <span className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase text-slate-400">
@@ -468,7 +468,7 @@ export function StudyProgress() {
                   <span className={`w-2.5 h-2.5 rounded-full mt-1 ${(triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400"}`} />
                 </div>
                 <div className="relative">
-                  <p className={`text-xl md:text-2xl lg:text-3xl font-black leading-none ${triage.textColor} tracking-tight`}>
+                  <p className={`text-xl md:text-2xl lg:text-3xl   leading-none ${triage.textColor} tracking-tight`}>
                     {triage.code}
                   </p>
                   <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">
@@ -487,7 +487,7 @@ export function StudyProgress() {
                   <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
                 </div>
                 <div className="relative">
-                  <p className="text-xl md:text-2xl lg:text-3xl font-black leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
+                  <p className="text-xl md:text-2xl lg:text-3xl   leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
                     {Math.round(overallStats.totalProgress)}<span className="text-sm font-bold text-slate-400 dark:text-slate-500">%</span>
                   </p>
                   <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
@@ -506,7 +506,7 @@ export function StudyProgress() {
                   <Clock className="w-3.5 h-3.5 text-violet-500" />
                 </div>
                 <div className="relative">
-                  <p className="text-xl md:text-2xl lg:text-3xl font-black leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
+                  <p className="text-xl md:text-2xl lg:text-3xl   leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
                     {overallStats.totalHours.toFixed(1)}<span className="text-sm font-bold text-slate-400 dark:text-slate-500">h</span>
                   </p>
                   <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
@@ -525,7 +525,7 @@ export function StudyProgress() {
                   <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                 </div>
                 <div className="relative">
-                  <p className="text-xl md:text-2xl lg:text-3xl font-black leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
+                  <p className="text-xl md:text-2xl lg:text-3xl   leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
                     {overallStats.totalStars}
                   </p>
                   <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
@@ -684,7 +684,7 @@ export function StudyProgress() {
                           {/* Left: triage dot + rating */}
                           <div className="shrink-0 pt-0.5">
                             <div className="relative w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center">
-                              <span className="text-sm font-black text-slate-700 dark:text-slate-300 leading-none">
+                              <span className="text-sm   text-slate-700 dark:text-slate-300 leading-none">
                                 {subject.rating}
                               </span>
                               <span className={`absolute top-0 right-0 w-3 h-3 rounded-full ${dotColor} ring-2 ring-white dark:ring-slate-950`} />

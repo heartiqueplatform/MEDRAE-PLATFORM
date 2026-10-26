@@ -1177,7 +1177,7 @@ export const DailyTriviaCard = () => {
                                             <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
                                         </div>
                                     </div>
-                                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight uppercase drop-shadow-md">
+                                    <h2 className="text-2xl sm:text-3xl   tracking-tight uppercase drop-shadow-md">
                                         Congratulations!
                                     </h2>
                                     <p className="text-blue-50 font-medium opacity-95 text-base sm:text-lg mt-1 drop-shadow-sm">
@@ -1193,7 +1193,7 @@ export const DailyTriviaCard = () => {
                                             <Target className="w-5 h-5 text-blue-500" />
                                         </div>
                                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wider">Score</p>
-                                        <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+                                        <p className="text-xl sm:text-2xl   text-gray-900 dark:text-white">
                                             {savedScore.correct_answers}/{savedScore.total_questions}
                                         </p>
                                         <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 font-bold mt-1 uppercase tracking-tighter">Streak +1 🔥</p>
@@ -1203,7 +1203,7 @@ export const DailyTriviaCard = () => {
                                             <Timer className="w-5 h-5 text-indigo-500" />
                                         </div>
                                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wider">Time</p>
-                                        <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+                                        <p className="text-xl sm:text-2xl   text-gray-900 dark:text-white">
                                             {timeUsedToday !== null ? `${timeUsedToday}s` : "0s"}
                                         </p>
                                         <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">Total Effort</p>
@@ -1280,7 +1280,7 @@ export const DailyTriviaCard = () => {
 
                                         <button
                                             onClick={() => navigate("/Medrae-quizzes")}
-                                            className="w-full py-3 sm:py-4 bg-white dark:bg-muted/50 text-slate-900 dark:text-white font-black rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-lg text-sm sm:text-base"
+                                            className="w-full py-3 sm:py-4 bg-white dark:bg-muted/50 text-slate-900 dark:text-white   rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-lg text-sm sm:text-base"
                                         >
                                             EXPLORE MEDRAE QUIZZES
                                             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />

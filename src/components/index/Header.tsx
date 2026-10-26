@@ -213,8 +213,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                                 className="h-6 w-6 lg:h-8 lg:w-8 rounded-lg shadow-md group-hover:scale-110 transition-transform"
                             />
                             <div>
-                                <span className="text-base lg:text-lg font-black text-red-600">MEDRAE</span>
-                                <span className="text-base lg:text-lg font-black text-slate-800 ml-1">NURSING</span>
+                                <span className="text-base lg:text-lg   text-red-600">MEDRAE</span>
+                                <span className="text-base lg:text-lg   text-slate-800 ml-1">NURSING</span>
                             </div>
                         </div>
 
@@ -387,7 +387,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                                 alt="Medrae Logo"
                                 className="h-9 w-9 rounded-xl"
                             />
-                            <span className="text-base font-black">
+                            <span className="text-base  ">
                                 <span className="text-red-600">MEDRAE</span>
                                 <span className="text-slate-800 ml-1">NURSING</span>
                             </span>

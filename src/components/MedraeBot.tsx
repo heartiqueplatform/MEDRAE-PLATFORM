@@ -425,7 +425,7 @@ const MedraeBot = () => {
             <div className="relative p-5 text-white">
                 {/* Eyebrow */}
                 <div className="flex items-center gap-2 mb-3">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl">
+                    <span className="inline-flex items-center gap-1 text-[10px]   uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl">
                         <Flame size={11} /> Limited reward
                     </span>
                 </div>
@@ -487,13 +487,13 @@ const MedraeBot = () => {
                 <div className="relative p-5 text-white">
                     {/* Eyebrow */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl">
+                        <span className="inline-flex items-center gap-1 text-[10px]   uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl">
                             <Flame size={11} /> Limited reward
                         </span>
                     </div>
 
                     {/* Headline */}
-                    <h3 className="text-2xl font-black leading-tight mb-1">
+                    <h3 className="text-2xl   leading-tight mb-1">
                         Get <span className="text-yellow-300">FREE Premium</span>
                         <br />for every friend you invite
                     </h3>
@@ -501,13 +501,13 @@ const MedraeBot = () => {
                     {/* Reward math */}
                     <div className="mt-4 grid grid-cols-2 gap-2">
                         <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center">
-                            <p className="text-3xl font-black text-yellow-300 leading-none">+2</p>
+                            <p className="text-3xl   text-yellow-300 leading-none">+2</p>
                             <p className="text-[10px] font-bold uppercase tracking-wide mt-1 opacity-90">
                                 Days for you
                             </p>
                         </div>
                         <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center">
-                            <p className="text-3xl font-black text-emerald-300 leading-none">+1</p>
+                            <p className="text-3xl   text-emerald-300 leading-none">+1</p>
                             <p className="text-[10px] font-bold uppercase tracking-wide mt-1 opacity-90">
                                 Day for them
                             </p>
@@ -533,7 +533,7 @@ const MedraeBot = () => {
                     {/* ── PRIMARY CTA: WhatsApp ── */}
                     <button
                         onClick={handleShareWhatsApp}
-                        className="mt-5 w-full py-3.5 rounded-xl bg-white text-violet-700 font-black text-base flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+                        className="mt-5 w-full py-3.5 rounded-xl bg-white text-violet-700   text-base flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
                     >
                         <Share2 size={18} />
                         Share on WhatsApp

@@ -547,7 +547,7 @@ export default function InstallPrompt() {
                                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-[#6e7681]">
                                                     Quick Access Code
                                                 </p>
-                                                <p className="mt-0.5 text-base font-black tracking-[0.15em] text-emerald-600 dark:text-[#3fb950] font-mono">
+                                                <p className="mt-0.5 text-base   tracking-[0.15em] text-emerald-600 dark:text-[#3fb950] font-mono">
                                                     {SHORT_CODE}
                                                 </p>
                                                 <p className="mt-1 text-[10px] text-slate-400 dark:text-[#6e7681]">

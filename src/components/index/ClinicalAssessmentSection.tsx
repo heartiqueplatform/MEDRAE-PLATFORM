@@ -202,7 +202,7 @@ const ClinicalAssessmentSection = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-10 md:mb-16 px-4 md:px-0">
-                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl   tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Clinical{" "}
                         <span className="text-blue-600 italic">Assessment</span>{" "}
                         Practice
@@ -223,7 +223,7 @@ const ClinicalAssessmentSection = () => {
                             style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}
                         >
                             <stat.icon className={`w-5 h-5 md:w-8 md:h-8 mx-auto mb-1.5 md:mb-3 ${stat.color}`} />
-                            <p className={`text-xl md:text-3xl font-black ${stat.color} tabular-nums`}>
+                            <p className={`text-xl md:text-3xl   ${stat.color} tabular-nums`}>
                                 {stat.value.toLocaleString()}{stat.suffix}
                             </p>
                             <p className="text-[10px] md:text-sm font-semibold text-slate-600 mt-0.5 md:mt-1">{stat.label}</p>
@@ -237,11 +237,11 @@ const ClinicalAssessmentSection = () => {
                         <div className="text-white space-y-3 md:space-y-4">
                             <div className="flex items-center gap-2">
                                 <Brain className="w-5 h-5 md:w-6 md:h-6 text-blue-200" />
-                                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-200">
+                                <span className="text-[10px] md:text-xs   uppercase tracking-widest text-blue-200">
                                     AI-Powered Clinical Practice
                                 </span>
                             </div>
-                            <h3 className="text-2xl md:text-4xl font-black leading-tight">
+                            <h3 className="text-2xl md:text-4xl   leading-tight">
                                 Start Your Clinical <br />
                                 <span className="text-blue-200">Assessment Journey</span>
                             </h3>
@@ -268,7 +268,7 @@ const ClinicalAssessmentSection = () => {
                                     </div>
                                     <div>
                                         <p className="text-xs font-medium text-blue-200">Assessment Ready</p>
-                                        <p className="text-2xl font-black">{assessmentsCount}+</p>
+                                        <p className="text-2xl  ">{assessmentsCount}+</p>
                                         <p className="text-xs text-blue-200">Practice Scenarios</p>
                                     </div>
                                 </div>
@@ -299,7 +299,7 @@ const ClinicalAssessmentSection = () => {
                             <h4 className="font-bold text-slate-900 mb-1.5 md:mb-2 text-sm md:text-base">{feature.title}</h4>
                             <p className="text-[11px] md:text-sm text-slate-600 leading-relaxed">{feature.description}</p>
                             {feature.highlight && (
-                                <div className="mt-3 inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-wider">
+                                <div className="mt-3 inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-[8px] md:text-[9px]   uppercase tracking-wider">
                                     <Sparkles className="w-3 h-3" />
                                     AI Powered
                                 </div>
@@ -310,7 +310,7 @@ const ClinicalAssessmentSection = () => {
 
                 {/* Assessment Types Section */}
                 <div className="bg-white md:rounded-2xl p-5 md:p-8 mx-3 md:mx-0">
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 mb-4 md:mb-6 text-center">
+                    <h3 className="text-lg md:text-xl   text-slate-900 mb-4 md:mb-6 text-center">
                         What You'll Practice
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

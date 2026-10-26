@@ -376,7 +376,7 @@ export default function ListingDetail() {
                                         />
                                     </div>
                                     {listing.is_featured && (
-                                        <div className="absolute top-3 md:top-4 left-3 md:left-4 bg-yellow-400 text-black text-[8px] md:text-[10px] font-black px-2 md:px-3 py-0.5 md:py-1 rounded-lg uppercase z-10">
+                                        <div className="absolute top-3 md:top-4 left-3 md:left-4 bg-yellow-400 text-black text-[8px] md:text-[10px]   px-2 md:px-3 py-0.5 md:py-1 rounded-lg uppercase z-10">
                                             Featured
                                         </div>
                                     )}
@@ -420,7 +420,7 @@ export default function ListingDetail() {
                                     <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
                                         {listing.category}
                                     </span>
-                                    <h1 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white mt-0.5 md:mt-1 leading-tight">
+                                    <h1 className="text-xl md:text-3xl   text-gray-900 dark:text-white mt-0.5 md:mt-1 leading-tight">
                                         {listing.title}
                                     </h1>
                                 </div>
@@ -430,7 +430,7 @@ export default function ListingDetail() {
                             </div>
 
                             <div className="flex items-baseline gap-1.5 md:gap-2 mb-3 md:mb-4">
-                                <span className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white">
+                                <span className="text-2xl md:text-4xl   text-gray-900 dark:text-white">
                                     {listing.currency} {Number(listing.price).toLocaleString()}
                                 </span>
                                 {listing.negotiable && (

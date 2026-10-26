@@ -95,7 +95,7 @@ export function TriagePopup({ triage, onClose }: TriagePopupProps) {
                 <div className="flex flex-col items-center text-center">
                     {/* Colored CODE chip — replaces the round emoji circle */}
                     <div
-                        className={`flex items-center justify-center rounded-full font-black tracking-wider
+                        className={`flex items-center justify-center rounded-full   tracking-wider
                             ${triage.bgColor} ${triage.textColor}
                             w-20 h-20 md:w-28 md:h-28
                             text-[10px] md:text-xs

@@ -445,7 +445,7 @@ export default function ExamInstructions() {
                             <CardContent className="px-4 md:px-5 pb-5 space-y-4 md:space-y-5 text-sm">
                                 {/* DESCRIPTION */}
                                 <div className="bg-slate-100/70 dark:bg-slate-900/50 p-3 md:p-4 rounded-xl">
-                                    <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                                    <h4 className="text-[10px] md:text-[11px]   uppercase tracking-widest text-slate-400 mb-2">
                                         Exam Description
                                     </h4>
                                     <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
@@ -530,7 +530,7 @@ export default function ExamInstructions() {
                                             <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-0.5">
                                                 Max Tab Switches
                                             </p>
-                                            <p className="text-lg font-black text-slate-900 dark:text-white">
+                                            <p className="text-lg   text-slate-900 dark:text-white">
                                                 {examInfo.max_tab_switch}
                                             </p>
                                         </div>
@@ -538,7 +538,7 @@ export default function ExamInstructions() {
                                             <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-0.5">
                                                 Strict Mode
                                             </p>
-                                            <p className="text-lg font-black text-slate-900 dark:text-white">
+                                            <p className="text-lg   text-slate-900 dark:text-white">
                                                 {examInfo.strict_mode ? "ON" : "OFF"}
                                             </p>
                                         </div>

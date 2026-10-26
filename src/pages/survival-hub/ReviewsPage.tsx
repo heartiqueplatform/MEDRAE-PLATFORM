@@ -138,7 +138,7 @@ const ReviewsPage = () => {
                 {/* 3. REVIEWS LIST */}
                 <div className="space-y-3 md:space-y-4">
                     <div className="px-1 py-2 md:py-0">
-                        <h3 className="text-[9px] md:text-xs font-black uppercase text-slate-400 tracking-widest">
+                        <h3 className="text-[9px] md:text-xs   uppercase text-slate-400 tracking-widest">
                             Recent Feedback {!loading && `(${reviews.length})`}
                         </h3>
                     </div>
