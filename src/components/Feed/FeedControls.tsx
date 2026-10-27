@@ -171,10 +171,10 @@ export default function FeedControls({
             "
         >
             <div className="mx-auto w-full">
-                <div className="flex flex-col gap-2.5 px-3 py-3 sm:px-4 sm:py-4">
+                <div className="flex flex-col gap-1.5 px-3 py-2 sm:px-4 sm:py-3">
 
-                    {/* ── ROW 1: message · tier · buttons ── */}
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                    {/* ── ROW 1: message · tier · buttons (single row) ── */}
+                    <div className="flex flex-nowrap items-center gap-x-1.5 gap-y-0">
                         <p className="min-w-0 shrink truncate text-[13px] font-semibold leading-tight text-gray-900 dark:text-gray-100">
                             {message}
                         </p>
@@ -185,12 +185,12 @@ export default function FeedControls({
                             {tierStyle.label}
                         </span>
 
-                        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                        <div className="ml-auto flex shrink-0 items-center gap-1">
                             <Button
                                 size="sm"
                                 disabled={busy !== null}
                                 onClick={handleResetImages}
-                                className="h-7 cursor-pointer rounded-md border-0 bg-blue-500 px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-blue-600 active:scale-[0.98] disabled:opacity-60"
+                                className="h-6 cursor-pointer rounded-md border-0 bg-blue-500 px-1.5 text-[10px] font-semibold text-white shadow-none hover:bg-blue-600 active:scale-[0.98] disabled:opacity-60"
                             >
                                 {busy === "images" ? "Resetting…" : "Reset Images"}
                             </Button>
@@ -199,7 +199,7 @@ export default function FeedControls({
                                 size="sm"
                                 disabled={busy !== null}
                                 onClick={handleResetQuestions}
-                                className="h-7 cursor-pointer rounded-md border-0 bg-red-500 px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-red-600 active:scale-[0.98] disabled:opacity-60"
+                                className="h-6 cursor-pointer rounded-md border-0 bg-red-500 px-1.5 text-[10px] font-semibold text-white shadow-none hover:bg-red-600 active:scale-[0.98] disabled:opacity-60"
                             >
                                 {busy === "questions" ? "Resetting…" : "Reset Questions"}
                             </Button>
@@ -215,7 +215,7 @@ export default function FeedControls({
                             />
                         </div>
 
-                        {/* Head dot + % label (no shadow, no ring) */}
+                        {/* Head dot + % label */}
                         <div
                             className="pointer-events-none absolute top-0 -translate-x-1/2 transition-[left] duration-700 ease-out"
                             style={{ left: `${clampedProgress}%` }}
@@ -229,9 +229,8 @@ export default function FeedControls({
                         </div>
                     </div>
 
-                    {/* ── ROW 3: counter (left) + milestone ticks (same row) ── */}
+                    {/* ── ROW 3: counter + milestone ticks ── */}
                     <div className="relative mt-1 h-4 w-full text-[10.5px] tabular-nums">
-                        {/* Counter pinned hard-left, in normal flow so it never gets overlapped */}
                         <div className="absolute inset-y-0 left-0 z-10 flex items-center gap-1 bg-white dark:bg-muted/100 pr-2 text-gray-500 dark:text-gray-400">
                             <span className="font-semibold text-gray-700 dark:text-gray-200">
                                 {questionCount.toLocaleString()}
@@ -239,7 +238,6 @@ export default function FeedControls({
                             <span>tried</span>
                         </div>
 
-                        {/* Milestone ticks — laid out on the same row, aligned to the bar's log positions */}
                         <div className="absolute inset-y-0 left-0 right-0">
                             {MILESTONES.map((m, idx) => {
                                 const reached = questionCount >= m.value;
