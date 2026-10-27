@@ -451,6 +451,7 @@ export function Footer() {
 
     const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [drawerReady, setDrawerReady] = useState(false);
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     const scrollContainerRef = useRef<Element | null>(null);
@@ -555,13 +556,26 @@ export function Footer() {
         smartNav(e, url);
         superFastTap("light");
     }, [smartNav]);
-
     const handleMenuPress = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsDrawerOpen(true);
         superFastTap("success");
-    }, []);
+
+        // First tap after cold load — chunk may still be downloading.
+        // Warm it, then open as soon as it's ready (usually instant).
+        if (!drawerReady) {
+            import("@/components/MobileDrawer")
+                .then(() => setDrawerReady(true))
+                .finally(() => {
+                    requestAnimationFrame(() => setIsDrawerOpen(true));
+                });
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            setIsDrawerOpen(true);
+        });
+    }, [drawerReady]);
 
     // ✅ Podcasts — opens the MusicPlayer fullscreen overlay.
     //    Uses the global opener published by MusicPlayer. No route change,
@@ -590,7 +604,9 @@ export function Footer() {
             // smartNav's own preloadRoute call the instant a tap lands,
             // so we don't double-fetch here (that double-fetch is what
             // makes taps feel laggy on flaky mobile networks).
-            import("@/components/MobileDrawer").catch(() => { });
+            import("@/components/MobileDrawer")
+                .then(() => setDrawerReady(true))
+                .catch(() => { });
             prefetchDone.current = true;
         };
 
@@ -769,7 +785,9 @@ export function Footer() {
             </div>
 
             <Suspense fallback={null}>
-                <MobileDrawer userRole={role} isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
+                {isDrawerOpen && (
+                    <MobileDrawer userRole={role} isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
+                )}
             </Suspense>
 
             <div className="md:hidden pointer-events-none" style={{ height: `${footerHeight + 8}px` }} />
