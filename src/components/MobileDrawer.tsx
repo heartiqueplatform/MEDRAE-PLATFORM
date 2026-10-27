@@ -280,7 +280,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     const isOnline = useOnlineStatus();
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-
+    const ignoreTapsUntil = useRef(0);
     const isMounted = useRef(true);
     const profile = useProfileData();
     const { role: contextRole } = useUserRole();
@@ -318,9 +318,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             return { current: 0, best: 0 };
         }
     );
-    useEffect(() => {
-        setDrawerContext(isOpen);
-    }, [isOpen, setDrawerContext]);
+
     // ✅ Fetch streak summary when the drawer opens
     useEffect(() => {
         if (!isOpen || !user?.id) return;
@@ -433,9 +431,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         };
     }, []);
 
-
     useEffect(() => {
         if (isOpen) {
+            ignoreTapsUntil.current = Date.now() + 400;   // ← ADD THIS
             const original = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
             return () => { document.body.style.overflow = original; };
@@ -530,8 +528,8 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, [user?.id]);
     const smartNav = useSmartNavigate();
     const handleNavigate = useCallback((url: string) => {
+        if (Date.now() < ignoreTapsUntil.current) return;   // ← ADD THIS LINE
         // ✅ Special case: Podcasts opens the MusicPlayer fullscreen overlay.
-        //    No route change → no progress bar / no navigate.
         if (url === "__open_music_player__") {
             tapFeedback("success");
             setIsOpen(false);
@@ -817,9 +815,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 {isOpen && (
                     <>
                         {/* Backdrop */}
-                        {/* Backdrop */}
                         <div
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => {
+                                if (Date.now() < ignoreTapsUntil.current) return;
+                                setIsOpen(false);
+                            }}
                             className="fixed inset-0 z-[9999] bg-black/60 md:hidden"
                         />
                         {/* FULL-SCREEN PAGE — respects light/dark */}
@@ -886,7 +886,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                     </span>
                                 </h2>
                                 <button
-                                    onClick={() => { tapFeedback(); setIsOpen(false); }}
+                                    onClick={() => {
+                                        if (Date.now() < ignoreTapsUntil.current) return;
+                                        tapFeedback();
+                                        setIsOpen(false);
+                                    }}
                                     aria-label="Close menu"
                                     className="p-2.5 rounded-full bg-slate-100 dark:bg-[#21262d] text-slate-600 dark:text-[#c9d1d9]
                                                active:scale-90 transition-transform"
