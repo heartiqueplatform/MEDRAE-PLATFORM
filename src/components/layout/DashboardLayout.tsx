@@ -118,8 +118,7 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
               <div className="flex-1 pt-4 px-0 md:px-4 lg:px-6">
                 <TabStack />
               </div>
-              <Footer mistakeCount={0} />
-              <div className="h-20 md:hidden shrink-0" />
+              <div className="h-[68px] md:hidden shrink-0" />
             </div>
           </main>
 

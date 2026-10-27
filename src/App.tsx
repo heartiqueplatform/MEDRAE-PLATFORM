@@ -696,6 +696,11 @@ const AppContent = () => {
                         <Route path="*" element={<NotFound />} />
                       </Routes>
 
+                      {/* ✅ ONE footer instance, mounted at the App
+                          level. Never remounts on route change, so
+                          `isDrawerOpen` survives navigation. */}
+                      {user && <Footer />}
+
                       {/* 🆕 SMART PWA INSTALL PROMPT — browser users only */}
                       <InstallPrompt />
                       <BottomBarWrapper />
