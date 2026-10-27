@@ -713,23 +713,7 @@ export const MusicPlayer = () => {
                 preload="metadata"
             />
 
-            {/* ✅ Pre-warm the episodes list off-screen — only while the modal
-                is open. When closed, we don't pay the cost of rendering it. */}
-            {isOpen && (
-                <div
-                    aria-hidden="true"
-                    style={{
-                        position: "fixed",
-                        width: 0,
-                        height: 0,
-                        overflow: "hidden",
-                        visibility: "hidden",
-                        pointerEvents: "none",
-                    }}
-                >
-                    {listEl}
-                </div>
-            )}
+
 
             {showSideTab && (
                 <motion.div
@@ -1073,19 +1057,7 @@ export const MusicPlayer = () => {
                                             </div>
                                         </motion.div>
                                     )}
-                                    {/* ✅ Pre-render the episodes screen (only while the
-                                        player screen is active) so the first tap into
-                                        episodes is instant. Hidden otherwise. */}
-                                    {screen === "player" && (
-                                        <div
-                                            key="m-episodes-preload"
-                                            aria-hidden="true"
-                                            className="absolute inset-0 opacity-0 pointer-events-none"
-                                            style={{ visibility: "hidden" }}
-                                        >
-                                            {listEl}
-                                        </div>
-                                    )}
+
 
                                     {screen === "admin" && isAdmin && (
                                         <motion.div
