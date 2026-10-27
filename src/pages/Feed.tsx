@@ -986,7 +986,7 @@ export default function Feed() {
 
       {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
       {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
-      <div className="sticky top-0 z-40 w-full px-3 sm:px-4">
+      <div className="sticky top-0 z-40 w-full max-w-4xl mx-auto px-2 sm:px-2">
         <FeedControls
           questionCount={questionCount}
           session={session}

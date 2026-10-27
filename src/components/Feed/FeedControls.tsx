@@ -163,12 +163,12 @@ export default function FeedControls({
     return (
         <div
             className="
-                w-full
-                rounded-2xl sm:rounded-xl
-                bg-white dark:bg-muted/100
-                border-0
-                overflow-visible
-            "
+        w-full
+        rounded-b-2xl sm:rounded-b-xl
+        bg-white dark:bg-muted/100
+        border-0
+        overflow-visible
+    "
         >
             <div className="mx-auto w-full">
                 <div className="flex flex-col gap-1.5 px-3 py-2 sm:px-4 sm:py-3">
@@ -207,8 +207,8 @@ export default function FeedControls({
                     </div>
 
                     {/* ── ROW 2: progress bar with % head-dot ── */}
-                    <div className="relative mt-1 h-5">
-                        <div className="absolute inset-x-0 top-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+                    <div className="relative -mt-2 h-4">
+                        <div className="absolute inset-x-0 top-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
                             <div
                                 className="h-full rounded-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 transition-[width] duration-700 ease-out"
                                 style={{ width: `${clampedProgress}%` }}
@@ -217,7 +217,7 @@ export default function FeedControls({
 
                         {/* Head dot + % label */}
                         <div
-                            className="pointer-events-none absolute top-0 -translate-x-1/2 transition-[left] duration-700 ease-out"
+                            className="pointer-events-none absolute -top-0.5 -translate-x-1/2 transition-[left] duration-700 ease-out"
                             style={{ left: `${clampedProgress}%` }}
                         >
                             <div className="flex flex-col items-center">
@@ -230,7 +230,7 @@ export default function FeedControls({
                     </div>
 
                     {/* ── ROW 3: counter + milestone ticks ── */}
-                    <div className="relative mt-1 h-4 w-full text-[10.5px] tabular-nums">
+                    <div className="relative -mt-2 h-4 w-full text-[10.5px] tabular-nums">
                         <div className="absolute inset-y-0 left-0 z-10 flex items-center gap-1 bg-white dark:bg-muted/100 pr-2 text-gray-500 dark:text-gray-400">
                             <span className="font-semibold text-gray-700 dark:text-gray-200">
                                 {questionCount.toLocaleString()}
