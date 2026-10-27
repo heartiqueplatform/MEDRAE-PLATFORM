@@ -313,7 +313,41 @@ const BottomBarWrapper = () => {
   if (!showBottomBar) return null;
   return <BottomBar unreadCount={0} unreadAnnouncements={0} />;
 };
+// Routes where the fixed bottom Footer should NOT appear.
+// These are full-screen pages that own the whole viewport.
+const FOOTER_HIDDEN_PREFIXES = [
+  "/medtube",
+  "/quiz",
+  "/Medrae-quizzes",
+  "/subscription",
+  "/grouppay",
+  "/settings",
+  "/feedback",
+  "/help",
+  "/profile",
+  "/notifications",
+  "/announcements",
+  "/resources",
+  "/assessment-notes",
+  "/exam",
+  "/simulation",
+  "/quiz-simulation",
+  "/tutor/exams",
+  "/cpd",
+  "/live-classes",
+  "/nursing/quiz",
+  "/challenge",
+  "/streak/restore",
+];
 
+const FooterGate = ({ user }: { user: any }) => {
+  const location = useLocation();
+  if (!user) return null;
+  if (FOOTER_HIDDEN_PREFIXES.some((p) => location.pathname.startsWith(p))) {
+    return null;
+  }
+  return <Footer />;
+};
 const AppContent = () => {
   const { user } = useAuth();
   const [forceLogout, setForceLogout] = useState(false);
@@ -696,15 +730,14 @@ const AppContent = () => {
                         <Route path="*" element={<NotFound />} />
                       </Routes>
 
-                      {/* ✅ ONE footer instance, mounted at the App
-                          level. Never remounts on route change, so
-                          `isDrawerOpen` survives navigation. */}
-                      {user && <Footer />}
+                      {/* ✅ Footer — hidden on full-screen pages (overlays,
+                          medtube, quiz, settings, etc.). Only shows on
+                          dashboard-style routes. */}
+                      <FooterGate user={user} />
 
                       {/* 🆕 SMART PWA INSTALL PROMPT — browser users only */}
                       <InstallPrompt />
                       <BottomBarWrapper />
-
                     </AIWrapper>
                   </UserRoleProvider>
                 </MusicPlayerProvider>
