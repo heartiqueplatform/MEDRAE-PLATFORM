@@ -369,7 +369,15 @@ export const MusicPlayer = () => {
         () => setRepeatMode((p) => (p === "off" ? "all" : p === "all" ? "one" : "off")),
         [setRepeatMode]
     );
-    const handleTogglePlay = useCallback(() => togglePlay(), [togglePlay]);
+    const handleTogglePlay = useCallback(() => {
+        // If the track is already loaded enough to play, don't show a spinner
+        const audio = audioRef.current;
+        if (audio && audio.readyState >= 2) {
+            togglePlay();
+            return;
+        }
+        togglePlay();
+    }, [togglePlay, audioRef]);
     const handleVolume = useCallback((v: number) => setVolume(v), [setVolume]);
     const handleBrowse = useCallback(() => setScreen("episodes"), []);
     const handleOpenAdmin = useCallback(() => setScreen("admin"), []);
@@ -640,6 +648,12 @@ export const MusicPlayer = () => {
             currentInteraction={
                 currentTrack?.id ? getInteraction("episode", currentTrack.id) : undefined
             }
+            // 👇 new — for the inline "up next" list
+            visibleTracks={visibleTracks}
+            currentTrackSrc={currentTrackSrc}
+            onSelectTrack={handleSelectTrack}
+            onToggleReaction={toggleReaction}
+            getInteraction={getInteraction}
         />
     ), [
         artworkSrc, isPlaying, currentTrack, progress, currentTime, totalDuration,
@@ -647,6 +661,8 @@ export const MusicPlayer = () => {
         handleProgressClick, handleTogglePlay, handlePrev, handleNext,
         handleCycleRepeat, handleToggleMute, handleVolume, handleUpload, handleBrowse,
         getInteraction,
+        // 👇 new
+        visibleTracks, currentTrackSrc, handleSelectTrack, toggleReaction,
     ]);
 
     const listEl = useMemo(() => (
@@ -696,21 +712,24 @@ export const MusicPlayer = () => {
                 crossOrigin="anonymous"
                 preload="metadata"
             />
-            {/* ✅ Pre-warm the episodes list off-screen — keeps the heaviest
-                subtree mounted from app boot, so tapping Studify → Browse is instant. */}
-            <div
-                aria-hidden="true"
-                style={{
-                    position: "fixed",
-                    width: 0,
-                    height: 0,
-                    overflow: "hidden",
-                    visibility: "hidden",
-                    pointerEvents: "none",
-                }}
-            >
-                {listEl}
-            </div>
+
+            {/* ✅ Pre-warm the episodes list off-screen — only while the modal
+                is open. When closed, we don't pay the cost of rendering it. */}
+            {isOpen && (
+                <div
+                    aria-hidden="true"
+                    style={{
+                        position: "fixed",
+                        width: 0,
+                        height: 0,
+                        overflow: "hidden",
+                        visibility: "hidden",
+                        pointerEvents: "none",
+                    }}
+                >
+                    {listEl}
+                </div>
+            )}
 
             {showSideTab && (
                 <motion.div
@@ -1009,9 +1028,8 @@ export const MusicPlayer = () => {
                             </div>
 
                             {/* MOBILE — one screen at a time, mode="wait" */}
-                            {/* MOBILE — one screen at a time, mode="wait" */}
                             <div className="md:hidden flex-1 min-h-0 relative">
-                                <AnimatePresence mode="wait" initial={false}>
+                                <AnimatePresence initial={false}>
                                     {screen === "player" && (
                                         <motion.div
                                             key="m-player"
@@ -1022,7 +1040,7 @@ export const MusicPlayer = () => {
                                             className="absolute inset-0 overflow-y-auto custom-scrollbar p-4 bg-gh-l-canvas dark:bg-gh-canvas"
                                             style={{ willChange: 'opacity' }}
                                         >
-                                            <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-4">
+                                            <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-3 sm:p-4">
                                                 {playerEl}
                                             </div>
                                         </motion.div>
@@ -1055,11 +1073,10 @@ export const MusicPlayer = () => {
                                             </div>
                                         </motion.div>
                                     )}
-                                    {/* ✅ Pre-render the episodes screen ALWAYS (not just while on player).
-                                        Keeps the tree mounted across player↔episodes transitions so the
-                                        first render of EpisodesContent is not on the critical tap path.
-                                        Hidden when not active — no paint, no interaction. */}
-                                    {screen !== "episodes" && (
+                                    {/* ✅ Pre-render the episodes screen (only while the
+                                        player screen is active) so the first tap into
+                                        episodes is instant. Hidden otherwise. */}
+                                    {screen === "player" && (
                                         <div
                                             key="m-episodes-preload"
                                             aria-hidden="true"
@@ -1077,7 +1094,7 @@ export const MusicPlayer = () => {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.12, ease: "easeOut" }}
-                                            className="absolute inset-0 overflow-y-auto custom-scrollbar p-4 bg-gh-l-canvas dark:bg-gh-canvas"
+                                            className="absolute inset-0 overflow-y-auto custom-scrollbar px-3 py-4 sm:p-4 bg-gh-l-canvas dark:bg-gh-canvas"
                                             style={{ willChange: 'opacity' }}
                                         >
                                             <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card p-4">
@@ -1183,10 +1200,11 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
         onProgressClick, onTogglePlay, onPrev, onNext,
         onCycleRepeat, onToggleMute, onVolume, onUpload, onBrowse, episodeCount,
         totalEpisodesLabel, currentInteraction,
+        // 👇 new
+        visibleTracks, currentTrackSrc, onSelectTrack, onToggleReaction, getInteraction,
     } = props;
 
-    const showSkeleton = loading && !currentTrack;
-
+    const showSkeleton = !currentTrack || (loading && !currentTrack?.duration && !currentTrack?.name);
     /* ── Volume popover state ── */
     const [volOpen, setVolOpen] = useState(false);
     const volWrapRef = useRef<HTMLDivElement>(null);
@@ -1311,7 +1329,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                     )}
                 </div>
                 {/* Controls */}
-                <div className="w-full mt-5 flex items-center justify-between">
+                <div className="w-full mt-5 flex items-center justify-between gap-2 min-w-0">
                     <button
                         onClick={onCycleRepeat}
                         className={`p-2.5 rounded-full transition-colors ${repeatActive
@@ -1321,18 +1339,18 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                         <Repeat size={18} />
                     </button>
 
-                    <div className="flex items-center gap-4 md:gap-5">
+                    <div className="flex items-center gap-2 sm:gap-4 md:gap-5 shrink-0">
                         <button
                             onClick={onPrev}
-                            className="p-3 rounded-full text-slate-700 dark:text-gh-text hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors"
+                            className="p-2 sm:p-3 rounded-full text-slate-700 dark:text-gh-text hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors"
                         >
-                            <SkipBack fill="currentColor" size={26} />
+                            <SkipBack fill="currentColor" size={22} className="sm:w-[26px] sm:h-[26px]" />
                         </button>
                         <button
                             onClick={onTogglePlay}
                             aria-label={isPlaying ? "Pause" : "Play"}
-                            className="relative active:scale-95 transition-transform"
-                            style={{ height: 128, width: 128 }}
+                            className="relative active:scale-95 transition-transform
+                                       w-[88px] h-[88px] sm:w-[112px] sm:h-[112px] md:w-[128px] md:h-[128px]"
                         >
                             {(() => {
                                 const safeProgress = Math.max(0, Math.min(1, Number(progress) || 0));
@@ -1367,12 +1385,12 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                             })()}
 
                             {/* Solid center disc */}
-                            <span className="absolute inset-[14px] rounded-full bg-gradient-to-br from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-black/40">
+                            <span className="absolute inset-[11%] rounded-full bg-gradient-to-br from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-black/40">
                                 {isPlaying ? (
                                     /* Pause icon */
                                     <svg
                                         width="30" height="30" viewBox="0 0 24 24"
-                                        className="text-slate-900 dark:text-white"
+                                        className="text-slate-900 dark:text-white ml-1"
                                         fill="currentColor"
                                     >
                                         <rect x="7" y="5" width="3.5" height="14" rx="1.5" />
@@ -1392,9 +1410,9 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                         </button>
                         <button
                             onClick={onNext}
-                            className="p-3 rounded-full text-slate-700 dark:text-gh-text hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors"
+                            className="p-2 sm:p-3 rounded-full text-slate-700 dark:text-gh-text hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors"
                         >
-                            <SkipForward fill="currentColor" size={26} />
+                            <SkipForward fill="currentColor" size={22} className="sm:w-[26px] sm:h-[26px]" />
                         </button>
                     </div>
 
@@ -1479,18 +1497,61 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                 </div>
 
                 {onBrowse && (
-                    <button
-                        onClick={onBrowse}
-                        className="md:hidden w-full mt-5 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-gh-hover hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-between text-slate-800 dark:text-gh-text"
-                    >
-                        <span className="flex items-center gap-2 text-sm font-bold">
-                            <ListMusic size={16} className="text-blue-600" />
-                            Browse all episodes
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-gh-muted bg-white dark:bg-gh-canvas px-2 py-0.5 rounded-full">
-                            {totalEpisodesLabel}
-                        </span>
-                    </button>
+                    <div className="mt-5">
+                        <button
+                            onClick={onBrowse}
+                            className="md:hidden w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-gh-hover hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-between text-slate-800 dark:text-gh-text"
+                        >
+                            <span className="flex items-center gap-2 text-sm font-bold">
+                                <ListMusic size={16} className="text-blue-600" />
+                                Browse all episodes
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-gh-muted bg-white dark:bg-gh-canvas px-2 py-0.5 rounded-full">
+                                {totalEpisodesLabel}
+                            </span>
+                        </button>
+
+                        {/* Inline "Up Next" list — mobile only, since desktop
+                            already renders the full episode list in the right column. */}
+                        {Array.isArray(visibleTracks) && visibleTracks.length > 0 && (
+                            <div className="md:hidden mt-4">
+                                <div className="flex items-center justify-between mb-2 px-1">
+                                    <h3 className="text-[11px] uppercase tracking-widest font-bold text-slate-500 dark:text-gh-muted">
+                                        Up Next
+                                    </h3>
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-gh-muted">
+                                        {visibleTracks.length} episode{visibleTracks.length === 1 ? "" : "s"}
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5 max-h-[45vh] overflow-y-auto custom-scrollbar pr-1">
+                                    {visibleTracks.slice(0, 50).map((t: any, i: number) => {
+                                        const isThisActive = currentTrackSrc === t.src;
+                                        return (
+                                            <EpisodeRow
+                                                key={t.id || i}
+                                                track={t}
+                                                index={i}
+                                                isActive={isThisActive}
+                                                isPlaying={isPlaying && isThisActive}
+                                                progress={isThisActive ? progress : 0}
+                                                downloaded={!!t.downloaded}
+                                                onSelect={() => onSelectTrack?.(t)}
+                                                isAdmin={false}
+                                                onHide={() => { }}
+                                                interaction={t.id ? getInteraction?.("episode", t.id) : undefined}
+                                                onToggleReaction={
+                                                    t.id && onToggleReaction
+                                                        ? (kind: "like" | "love" | "save") =>
+                                                            onToggleReaction("episode", t.id, kind)
+                                                        : undefined
+                                                }
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

@@ -57,8 +57,9 @@ type Player = {
     is_online: boolean;
     is_pinned: boolean;
     pinned_at?: number;
+    institution?: string | null;
+    is_same_school?: boolean;
 };
-
 type Props = {
     userId: string;
     initialHistory?: Duel[];
@@ -75,8 +76,8 @@ type ChallengeState =
 /*  Cache — 60s TTL                                                    */
 /* ------------------------------------------------------------------ */
 
-const HISTORY_KEY = "quick_duel_history_v2";
-const PLAYERS_KEY = "quick_duel_players_v2";
+const HISTORY_KEY = "quick_duel_history_v3";
+const PLAYERS_KEY = "quick_duel_players_v3";
 const CACHE_TTL = 60 * 1000;
 const POLL_INTERVAL = 60 * 1000;
 
@@ -92,7 +93,20 @@ function readCache<T>(key: string): T | null {
         return null;
     }
 }
+const SCHOOL_SLUG_KEY = "school_wars_current_institution_v1";
 
+function readSchoolSlug(): string | null {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem(SCHOOL_SLUG_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.slug) return null;
+        return parsed.slug as string;
+    } catch {
+        return null;
+    }
+}
 function writeCache<T>(key: string, data: T) {
     try {
         localStorage.setItem(key, JSON.stringify({ d: data, t: Date.now() }));
@@ -176,7 +190,16 @@ function QuickDuelStripBase({
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [sharing, setSharing] = useState(false);
     const [challenge, setChallenge] = useState<ChallengeState>({ status: "idle" });
-
+    const [schoolSlug, setSchoolSlug] = useState<string | null>(() => {
+        try {
+            const raw = localStorage.getItem("school_wars_current_institution_v1");
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed?.slug ?? null;
+        } catch {
+            return null;
+        }
+    });
     /* -------------------------------------------------------------- */
     /*  Referral state (lazy, once)                                    */
     /* -------------------------------------------------------------- */
@@ -342,32 +365,104 @@ function QuickDuelStripBase({
                 setPlayers(instantPlayers);
                 setLoading(false);
             }
-
             try {
-                const [duelsRes, playersRes] = await Promise.all([
-                    supabase
-                        .from("challenges")
-                        .select(
-                            `id, from_user_id, to_user_id, score_to_beat, opponent_score,
-               winner_id, completed_at,
-               from_user:from_user_id(user_id, name, avatar_url),
-               to_user:to_user_id(user_id, name, avatar_url)`
-                        )
-                        .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
-                        .eq("status", "completed")
-                        .order("completed_at", { ascending: false })
-                        .limit(5),
+                /* ---------- 1. resolve my school slug (self-heal from DB) ---------- */
+                /* ---------- 1. resolve my school slug (DB is the source of truth) ---------- */
+                let mySchoolSlug = readSchoolSlug();
 
-                    supabase
+                /* ---------- 2. fire all queries in parallel ---------- */
+                // ALWAYS fetch from DB — localStorage can be stale (e.g. Settings page
+                // updates profiles.institution but not the school_wars key).
+                const mePromise = supabase
+                    .from("profiles")
+                    .select("institution")
+                    .eq("user_id", userId)
+                    .single();
+
+
+                const duelsPromise = supabase
+                    .from("challenges")
+                    .select(
+                        `id, from_user_id, to_user_id, score_to_beat, opponent_score,
+                         winner_id, completed_at,
+                         from_user:from_user_id(user_id, name, avatar_url),
+                         to_user:to_user_id(user_id, name, avatar_url)`
+                    )
+                    .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
+                    .eq("status", "completed")
+                    .order("completed_at", { ascending: false })
+                    .limit(5);
+
+                const schoolPromise = mySchoolSlug
+                    ? supabase
                         .from("profiles")
-                        .select("user_id, name, username, avatar_url, is_online")
+                        .select("user_id, name, username, avatar_url, is_online, institution")
+                        .eq("institution", mySchoolSlug)
                         .neq("user_id", userId)
-                        .order("name", { ascending: true })
-                        .limit(50),
+                        .limit(50)
+                    : Promise.resolve({ data: [], error: null } as any);
+
+                let globalQuery = supabase
+                    .from("profiles")
+                    .select("user_id, name, username, avatar_url, is_online, institution")
+                    .neq("user_id", userId);
+
+                if (mySchoolSlug) {
+                    globalQuery = globalQuery.neq("institution", mySchoolSlug);
+                }
+
+                const globalPromise = globalQuery.limit(50);
+                const [duelsRes, schoolRes, globalRes, meRes] = await Promise.all([
+                    duelsPromise,
+                    schoolPromise,
+                    globalPromise,
+                    mePromise,
                 ]);
 
                 if (!isMountedRef.current) return;
 
+                /* ---------- 3. DB is the source of truth — overwrite stale localStorage ---------- */
+                const dbInstitution =
+                    meRes?.data?.institution && meRes.data.institution !== "other"
+                        ? meRes.data.institution
+                        : null;
+
+                let schoolRows: any[] = schoolRes?.data ?? [];
+
+                if (dbInstitution !== mySchoolSlug) {
+                    // localStorage was stale (or missing) — use the DB value
+                    mySchoolSlug = dbInstitution;
+
+                    if (mySchoolSlug) {
+                        try {
+                            localStorage.setItem(
+                                SCHOOL_SLUG_KEY,
+                                JSON.stringify({ slug: mySchoolSlug, ts: Date.now() })
+                            );
+                        } catch { /* ignore */ }
+                        setSchoolSlug(mySchoolSlug);
+                    } else {
+                        try {
+                            localStorage.removeItem(SCHOOL_SLUG_KEY);
+                        } catch { /* ignore */ }
+                        setSchoolSlug(null);
+                    }
+
+                    // Re-fetch the school bucket with the CORRECT slug
+                    if (mySchoolSlug) {
+                        const { data: refetched } = await supabase
+                            .from("profiles")
+                            .select("user_id, name, username, avatar_url, is_online, institution")
+                            .eq("institution", mySchoolSlug)
+                            .neq("user_id", userId)
+                            .limit(50);
+                        schoolRows = refetched ?? [];
+                    } else {
+                        schoolRows = [];
+                    }
+                }
+
+                /* ---------- 4. map duels ---------- */
                 const duels: Duel[] = (duelsRes.data ?? []).map((c: any) => {
                     const iAmFrom = c.from_user_id === userId;
                     const my = iAmFrom ? c.score_to_beat : c.opponent_score;
@@ -385,6 +480,7 @@ function QuickDuelStripBase({
                     };
                 });
 
+                /* ---------- 5. preserve pins ---------- */
                 const prevPlayers = players.length ? players : cachedPlayers ?? [];
                 const pinMap = new Map<string, { is_pinned: boolean; pinned_at?: number }>();
                 prevPlayers.forEach((p) => {
@@ -393,7 +489,7 @@ function QuickDuelStripBase({
                     }
                 });
 
-                const mergedPlayers: Player[] = (playersRes.data ?? []).map((p: any) => {
+                const toPlayer = (p: any, sameSchool: boolean): Player => {
                     const pin = pinMap.get(p.user_id);
                     return {
                         user_id: p.user_id,
@@ -403,17 +499,27 @@ function QuickDuelStripBase({
                         is_online: !!p.is_online,
                         is_pinned: !!pin?.is_pinned,
                         pinned_at: pin?.pinned_at,
+                        institution: p.institution ?? null,
+                        is_same_school: sameSchool,
                     };
-                });
+                };
 
-                // Only overwrite cache when the network actually returned rows.
-                // A transient empty response must NOT wipe the user's cache, or
-                // they'll get a skeleton on next visit.
+                /* ---------- 6. merge school + global ---------- */
+                const schoolPlayers = schoolRows.map((p: any) => toPlayer(p, true));
+                const schoolIds = new Set(schoolPlayers.map((p) => p.user_id));
+
+                const globalPlayers = (globalRes?.data ?? [])
+                    .filter((p: any) => !schoolIds.has(p.user_id))
+                    .map((p: any) => toPlayer(p, false));
+
+                const mergedPlayers = [...schoolPlayers, ...globalPlayers];
+
+                /* ---------- 7. write ---------- */
                 if (duelsRes.data) {
                     setHistory(duels);
                     writeCache(HISTORY_KEY, duels);
                 }
-                if (playersRes.data) {
+                if (globalRes?.data || schoolRows.length > 0) {
                     setPlayers(mergedPlayers);
                     writeCache(PLAYERS_KEY, mergedPlayers);
                 }
@@ -474,7 +580,26 @@ function QuickDuelStripBase({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchData]);
-
+    /* -------------------------------------------------------------- */
+    /*  React to school change (from SchoolWarsCard / other tab)      */
+    /* -------------------------------------------------------------- */
+    useEffect(() => {
+        const onSchoolChanged = () => {
+            if (!isMountedRef.current) return;
+            setSchoolSlug(readSchoolSlug());
+            fetchedRef.current = false;
+            fetchData(true);
+        };
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === SCHOOL_SLUG_KEY) onSchoolChanged();
+        };
+        window.addEventListener("storage", onStorage);
+        window.addEventListener("profileUpdated", onSchoolChanged as EventListener);
+        return () => {
+            window.removeEventListener("storage", onStorage);
+            window.removeEventListener("profileUpdated", onSchoolChanged as EventListener);
+        };
+    }, [fetchData]);
     /* -------------------------------------------------------------- */
     /*  Pin toggle                                                     */
     /* -------------------------------------------------------------- */
@@ -505,6 +630,8 @@ function QuickDuelStripBase({
             if (a.is_pinned && b.is_pinned) {
                 return (b.pinned_at ?? 0) - (a.pinned_at ?? 0);
             }
+            if (a.is_same_school && !b.is_same_school) return -1;
+            if (!a.is_same_school && b.is_same_school) return 1;
             if (a.is_online && !b.is_online) return -1;
             if (!a.is_online && b.is_online) return 1;
             return a.name.localeCompare(b.name);
@@ -589,12 +716,6 @@ function QuickDuelStripBase({
         [players, sendChallenge, navigate]
     );
 
-    const handleRefresh = useCallback(() => {
-        if (refreshing) return;
-        if (navigator.vibrate) navigator.vibrate(20);
-        setRefreshing(true);
-        fetchData(true);
-    }, [refreshing, fetchData]);
 
     const lastDuel = history[0];
 
@@ -677,7 +798,13 @@ function QuickDuelStripBase({
                                     </p>
                                     <p className="text-[11px] font-medium text-slate-400 truncate w-full mt-0.5">
                                         @{p.username}
+
                                     </p>
+                                    {p.is_same_school && (
+                                        <span className="inline-flex items-center gap-0.5 mt-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                            Same campus
+                                        </span>
+                                    )}
                                 </button>
 
                                 <button

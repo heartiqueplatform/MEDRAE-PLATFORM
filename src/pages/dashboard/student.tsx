@@ -60,6 +60,7 @@ import ShortMedical from "@/components/ShortMedical";
 import ShortPractice from "@/components/ShortPractice";
 import { SchoolWarsCard } from "@/components/school-wars/SchoolWarsCard";
 import { DeferredMount } from "@/components/DeferredMount";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 
 
@@ -1123,105 +1124,102 @@ export default function StudentDashboard() {
             <span className="hidden md:inline text-sm font-semibold">Best</span>
           </motion.button>
         </div>
-        {/* ✅ DIALOG - OPENS INSTANTLY WITH SKELETON */}
-        <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
-          <DialogContent className="max-w-md p-0 overflow-hidden rounded-xl border-0 bg-white dark:bg-muted/100">
-            <div className="relative">
-              <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/10 to-transparent dark:from-blue-500/5 pointer-events-none" />
-              <div className="relative p-6">
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
-                    <Newspaper className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <DialogTitle className="text-xl   tracking-tight text-slate-900 dark:text-white">
-                    Quizzes Bank Insights
-                  </DialogTitle>
+
+        {/* ✅ LEADERBOARD SHEET — bottom-up, drag-to-dismiss */}
+        <BottomSheet open={overlayOpen} onClose={() => setOverlayOpen(false)}>
+          <div className="px-5 pt-2 pb-8">
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
+                <Newspaper className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                Quizzes Bank Insights
+              </h2>
+            </div>
+
+            <div className="space-y-5">
+              <p className="text-sm text-center text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                "Practice makes permanent. Engage with the community Quizzes Bank(Q.B) to climb the ranks."
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
+                  <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider">Your Feed Attempts</span>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
                 </div>
-                <div className="space-y-6">
-                  <DialogDescription className="text-sm text-center text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                    "Practice makes permanent. Engage with the community Quizzes Bank(Q.B) to climb the ranks."
-                  </DialogDescription>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
-                      <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
-                      <span className="text-[10px] font-bold text-slate-500   tracking-wider">Your Feed Attempts</span>
-                      <p className="text-2xl   text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
-                    </div>
-
-                    {/* ✅ Shows SKELETON while loading, DATA when ready */}
-                    <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col items-center text-center">
-                      <Trophy className="w-4 h-4 text-amber-500 mb-2" />
-                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400   tracking-wider">Current Leader</span>
-
-                      {loadingTopStudents ? (
-                        <div className="mt-2 flex flex-col items-center animate-pulse">
-                          <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
-                          <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
-                        </div>
-                      ) : topStudents.length > 0 ? (
-                        <div className="mt-2 flex flex-col items-center">
-                          <img
-                            src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                            className="h-10 w-10 rounded-full border-2 border-white dark:border-slate-800 shadow-none object-cover"
-                            alt="Leader"
-                            loading="lazy"
-                          />
-                          <p className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate max-w-[80px]">
-                            {topStudents[0].name.split(' ')[0]}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="mt-2 flex flex-col items-center">
-                          <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
-                          <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col items-center text-center">
+                  <Trophy className="w-4 h-4 text-amber-500 mb-2" />
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider">Current Leader</span>
 
                   {loadingTopStudents ? (
-                    <div className="flex items-center justify-center">
-                      <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+                    <div className="mt-2 flex flex-col items-center animate-pulse">
+                      <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                      <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
                     </div>
                   ) : topStudents.length > 0 ? (
-                    <div className="flex items-center justify-center">
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-none">
-                        <Crown className="w-3.5 h-3.5 fill-current" />
-                        <span className="text-xs font-bold tracking-tight">Top Performer This Week</span>
-                      </div>
+                    <div className="mt-2 flex flex-col items-center">
+                      <img
+                        src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                        className="h-10 w-10 rounded-full border-2 border-white dark:border-slate-800 object-cover"
+                        alt="Leader"
+                        loading="lazy"
+                      />
+                      <p className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate max-w-[80px]">
+                        {topStudents[0].name.split(' ')[0]}
+                      </p>
                     </div>
-                  ) : null}
-                  {leaderboardUpdatedAt && (
-                    <p className="text-center text-[10px] text-slate-400 font-bold   tracking-widest">
-                      Updated {formatDistanceToNow(leaderboardUpdatedAt)} ago
-                    </p>
+                  ) : (
+                    <div className="mt-2 flex flex-col items-center">
+                      <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                      <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
+                    </div>
                   )}
-
-                  <div className="pt-2">
-                    <Button
-                      className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      onClick={() => {
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        navigate("/Medrae-quizzes");
-                        setOverlayOpen(false);
-                      }}
-                    >
-                      Start Quizzing
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                    <p className="text-center text-[10px] text-slate-400 font-bold   tracking-widest mt-4">
-                      Complete Units to Climb the Leaderboard
-                    </p>
-                    <p className="text-center text-[10px] text-slate-400 font-bold   tracking-widest mt-4">
-                      Medrae Community Hub
-                    </p>
-                  </div>
                 </div>
               </div>
+
+              {loadingTopStudents ? (
+                <div className="flex items-center justify-center">
+                  <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+                </div>
+              ) : topStudents.length > 0 ? (
+                <div className="flex items-center justify-center">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full">
+                    <Crown className="w-3.5 h-3.5 fill-current" />
+                    <span className="text-xs font-bold tracking-tight">Top Performer This Week</span>
+                  </div>
+                </div>
+              ) : null}
+
+              {leaderboardUpdatedAt && (
+                <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest">
+                  Updated {formatDistanceToNow(leaderboardUpdatedAt)} ago
+                </p>
+              )}
+
+              <div className="pt-1">
+                <Button
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  onClick={() => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    navigate("/Medrae-quizzes");
+                    setOverlayOpen(false);
+                  }}
+                >
+                  Start Quizzing
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest mt-4">
+                  Complete Units to Climb the Leaderboard
+                </p>
+                <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest mt-2">
+                  Medrae Community Hub
+                </p>
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </BottomSheet>
 
 
 

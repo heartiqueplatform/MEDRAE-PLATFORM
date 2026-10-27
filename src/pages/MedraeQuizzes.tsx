@@ -769,8 +769,8 @@ export function MedraeQuizzes() {
                   <div className="h-12 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
                   <div className="h-8 w-32 bg-gray-200 dark:bg-gray-800 rounded-full animate-pulse" />
                 </div>
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map(j => (
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                  {[1, 2, 3, 4].map(j => (
                     <div
                       key={j}
                       className="rounded-xl overflow-hidden bg-white dark:bg-muted/70 shadow-sm animate-pulse"
@@ -836,7 +836,7 @@ export function MedraeQuizzes() {
                       </div>
 
                       {/* GRID */}
-                      <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
+                      <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
                         {filteredUnits.map((unit, index) => {
                           const questionCount = getQuestionCount(unit.code);
                           const isUnitFree = freeUnits.includes((unit.code ?? "").trim()) || unit.is_free;
@@ -1486,11 +1486,8 @@ export function MedraeQuizzes() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 px-4 md:px-0">
-            <div className="flex items-center gap-4">
-              <TermsButton />
-            </div>
+          <div className="pt-2 px-4 md:px-0 flex justify-center">
+            <TermsButton className="w-full" />
           </div>   {/* inner space-y-2 wrapper */}
         </div>     {/* scrolling content */}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 import {
-    ThumbsUp, Bookmark, Eye, Heart, BookmarkIcon, ImageIcon,
+    ThumbsUp, Bookmark, Eye, ImageIcon,
     Brain, Flag, Hash, Activity, X, AlertCircle, Sparkles,
     Stethoscope, Pill, Baby, HeartPulse, Leaf, ShieldCheck, Calculator
 } from "lucide-react";
@@ -169,71 +169,97 @@ function fireCounterRpc(rpcName: string, cardId: string): void {
 // ============================================================
 // SUBCOMPONENTS
 // ============================================================
-const FlashcardActions = memo(function FlashcardActions({
-    saved, liked, reported, isMobile, theme,
+const FlashcardFooter = memo(function FlashcardFooter({
+    views, likes, saves, saved, liked, reported, isMobile, theme,
     onSave, onLike, onReport,
 }: {
-    saved: boolean; liked: boolean; reported: boolean; isMobile: boolean;
+    views: number;
+    likes: number;
+    saves: number;
+    saved: boolean;
+    liked: boolean;
+    reported: boolean;
+    isMobile: boolean;
     theme: CardTheme;
-    onSave: () => void; onLike: () => void; onReport: () => void;
+    onSave: () => void;
+    onLike: () => void;
+    onReport: () => void;
 }) {
-    const base =
-        "w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-90 " +
-        "border border-white/30 shadow-md backdrop-blur-sm " +
+    // Each action is a compact pill: icon + count, like MicroCaseCard.
+    // Two visual states:
+    //   - INACTIVE: translucent dark pill, white icon + white count
+    //   - ACTIVE:   solid theme-colored pill (or amber/rose for save/report)
+    const pillBase =
+        "flex items-center justify-center gap-1 sm:gap-1.5 " +
+        "h-9 sm:h-10 px-2 sm:px-3 rounded-full " +
+        "text-[11px] sm:text-xs font-bold whitespace-nowrap " +
+        "transition-all active:scale-95 " +
+        "border border-white/25 shadow-sm backdrop-blur-sm " +
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
-    const idleBg = "rgba(0,0,0,0.35)";
-    return (
-        <div className="flex items-center gap-2">
-            <button
-                onClick={onSave}
-                className={base}
-                style={{ background: saved ? "#f59e0b" : idleBg, color: "#fff" }}
-                aria-label="Save"
-            >
-                <Bookmark size={isMobile ? 18 : 20} fill={saved ? "currentColor" : "none"} />
-            </button>
-            <button
-                onClick={onLike}
-                className={base}
-                style={{ background: liked ? theme.primary : idleBg, color: "#fff" }}
-                aria-label="Like"
-            >
-                <ThumbsUp size={isMobile ? 18 : 20} fill={liked ? "currentColor" : "none"} />
-            </button>
-            <button
-                onClick={onReport}
-                className={base}
-                style={{ background: reported ? "#e11d48" : idleBg, color: "#fff" }}
-                aria-label="Report"
-            >
-                <Flag size={isMobile ? 18 : 20} fill={reported ? "currentColor" : "none"} />
-            </button>
-        </div>
-    );
-});
+    const idleBg = "rgba(0,0,0,0.38)";
+    const iconSize = isMobile ? 14 : 16;
 
-const FlashcardStats = memo(function FlashcardStats({
-    views, likes, saves,
-}: {
-    views: number; likes: number; saves: number;
-}) {
-    const pill =
-        "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white font-bold " +
-        "border border-white/25 shadow-sm backdrop-blur-sm";
-    const pillStyle = { background: "rgba(0,0,0,0.38)" };
     return (
-        <div className="flex items-center gap-2">
-            <div className={pill} style={pillStyle}>
-                <Eye className="w-3.5 h-3.5" />
-                <span className="text-xs tabular-nums">{views}</span>
+        <div className="flex items-center justify-between gap-1.5 sm:gap-3 w-full">
+            {/* Left group — Like · Save · Report, each with its count */}
+            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+                <button
+                    onClick={onLike}
+                    className={pillBase}
+                    style={{
+                        background: liked ? theme.primary : idleBg,
+                        color: "#fff",
+                    }}
+                    aria-label="Like"
+                >
+                    <ThumbsUp
+                        size={iconSize}
+                        fill={liked ? "currentColor" : "none"}
+                    />
+                    <span className="tabular-nums">{likes}</span>
+                </button>
+
+                <button
+                    onClick={onSave}
+                    className={pillBase}
+                    style={{
+                        background: saved ? "#f59e0b" : idleBg,
+                        color: "#fff",
+                    }}
+                    aria-label="Save"
+                >
+                    <Bookmark
+                        size={iconSize}
+                        fill={saved ? "currentColor" : "none"}
+                    />
+                    <span className="tabular-nums">{saves}</span>
+                </button>
+
+                <button
+                    onClick={onReport}
+                    className={pillBase}
+                    style={{
+                        background: reported ? "#e11d48" : idleBg,
+                        color: "#fff",
+                    }}
+                    aria-label="Report"
+                >
+                    <Flag
+                        size={iconSize}
+                        fill={reported ? "currentColor" : "none"}
+                    />
+                </button>
             </div>
-            <div className={pill} style={pillStyle}>
-                <Heart className="w-3.5 h-3.5" />
-                <span className="text-xs tabular-nums">{likes}</span>
-            </div>
-            <div className={pill} style={pillStyle}>
-                <BookmarkIcon className="w-3.5 h-3.5" />
-                <span className="text-xs tabular-nums">{saves}</span>
+
+            {/* Right side — view count only */}
+            <div
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-9 sm:h-10 rounded-full flex-shrink-0 border border-white/25 shadow-sm backdrop-blur-sm"
+                style={{ background: idleBg, color: "#fff" }}
+            >
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="text-[11px] sm:text-xs font-bold tabular-nums">
+                    {views}
+                </span>
             </div>
         </div>
     );
@@ -672,20 +698,27 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                 )}
 
                 {/* Footer with dark scrim */}
-                <footer className="py-4 mt-1 relative z-10"
+                <footer className="py-3 mt-1 relative z-10"
                     style={{
                         background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 100%)",
                     }}>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
-                        <FlashcardActions
-                            saved={saved} liked={liked} reported={reported}
-                            isMobile={isMobile} theme={theme}
-                            onSave={handleSave} onLike={handleLike}
-                            onReport={() => reported ? fetchAndViewReportReason() : setShowReportDialog(true)}
-                        />
-                        <FlashcardStats
-                            views={card.views_count} likes={card.likes_count}
+                    <div className="px-4">
+                        <FlashcardFooter
+                            views={card.views_count}
+                            likes={card.likes_count}
                             saves={card.saves_count}
+                            saved={saved}
+                            liked={liked}
+                            reported={reported}
+                            isMobile={isMobile}
+                            theme={theme}
+                            onSave={handleSave}
+                            onLike={handleLike}
+                            onReport={() =>
+                                reported
+                                    ? fetchAndViewReportReason()
+                                    : setShowReportDialog(true)
+                            }
                         />
                     </div>
                 </footer>

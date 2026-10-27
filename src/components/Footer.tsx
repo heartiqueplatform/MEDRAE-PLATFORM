@@ -586,12 +586,11 @@ export function Footer() {
         if (prefetchDone.current) return;
 
         const prefetch = () => {
+            // Only warm the drawer itself. Route chunks are warmed by
+            // smartNav's own preloadRoute call the instant a tap lands,
+            // so we don't double-fetch here (that double-fetch is what
+            // makes taps feel laggy on flaky mobile networks).
             import("@/components/MobileDrawer").catch(() => { });
-            // Warm the chunks that the footer can navigate to
-            import("@/navigation/routePreload").then(({ preloadRoute }) => {
-                ["/Medrae-quizzes", "/feed", "/my-mistakes", "/dashboard/student", "/dashboard/tutor", "/dashboard/staff"]
-                    .forEach(preloadRoute);
-            });
             prefetchDone.current = true;
         };
 
@@ -599,7 +598,6 @@ export function Footer() {
         const t = setTimeout(prefetch, 200);
         return () => clearTimeout(t);
     }, []);
-
     useEffect(() => {
         const updateSafeArea = () => {
             requestAnimationFrame(() => {

@@ -49,7 +49,7 @@ export function GroupPaySubscriptionCard({
         return (
             <Card
                 onClick={handleClick}
-                className={`group cursor-pointer rounded-2xl border border-border/60 bg-card hover:bg-muted/40 transition-colors shadow-none ${className}`}
+                className={`group cursor-pointer rounded-2xl border-border/60 bg-card hover:bg-muted/40 transition-colors shadow-none ${className}`}
             >
                 <CardContent className="p-4">
                     <div className="flex items-center gap-4">
@@ -91,12 +91,12 @@ export function GroupPaySubscriptionCard({
     }
 
     // ═══════════════════════════════════════════════════════════
-    // FULL — one accent, one CTA, no noise
+    // FULL — one card shell, no inner borders, no shadows
     // ═══════════════════════════════════════════════════════════
     return (
         <Card
             onClick={handleClick}
-            className={`group cursor-pointer rounded-3xl border border-border/60 bg-card shadow-none overflow-hidden ${className}`}
+            className={`group cursor-pointer rounded-3xl border-border/60 bg-card shadow-none overflow-hidden ${className}`}
         >
             <CardContent className="p-6 md:p-7 space-y-6">
                 {/* ── Header ─────────────────────────────────────── */}
@@ -124,8 +124,8 @@ export function GroupPaySubscriptionCard({
                     </div>
                 </div>
 
-                {/* ── Price block ────────────────────────────────── */}
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-5 space-y-4">
+                {/* ── Price block — no border, matches subscription's muted/30 ── */}
+                <div className="rounded-2xl bg-muted/30 p-5 space-y-4">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                         <div>
                             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
@@ -155,8 +155,8 @@ export function GroupPaySubscriptionCard({
                         </div>
                     </div>
 
-                    {/* Mini benefit row */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 pt-3 border-t border-border/50">
+                    {/* Mini benefit row — no top border, spacing carries the divider */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 pt-1">
                         {[
                             { icon: TrendingDown, label: "Lower per-member cost" },
                             { icon: Users, label: "Study with your group" },
@@ -199,8 +199,8 @@ export function GroupPaySubscriptionCard({
                     </ol>
                 </div>
 
-                {/* ── Savings strip ──────────────────────────────── */}
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+                {/* ── Savings strip — no border, bg-only (matches badge style) ── */}
+                <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-500/[0.08] px-4 py-3">
                     <div className="flex items-center gap-2 min-w-0">
                         <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
                         <span className="text-xs md:text-sm font-medium truncate">

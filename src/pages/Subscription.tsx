@@ -658,17 +658,18 @@ export function Subscription() {
     paidRole === "staff" ? "Staff" : paidRole === "tutor" ? "Tutor" : "Student";
   const tiers = [
     {
-      key: "free",
-      name: "Free",
-      priceLabel: "KSh 0",
-      sub: "Always available",
-      blurb: "Start learning. No card needed.",
-      features: freeFeatures,
-      excluded: freeNotIncluded,
-      ctaLabel: "Continue free",
-      featured: false,
-      accent: false,
-      theme: "neutral" as const,
+      key: "2-months" as DurationKey,
+      name: "2 Months",
+      priceLabel: `KSh ${twoMonthPrice.toLocaleString()}`,
+      sub: "Billed once",
+      blurb: `Full ${roleLabel} access for two months.`,
+      features: twoMonthFeatures,
+      excluded: [],
+      ctaLabel: `Pay KSh ${twoMonthPrice.toLocaleString()}`,
+      featured: true,
+      accent: true,
+      theme: "amber" as const,
+      saveBadge: savings > 0 ? `Save KSh ${savings.toLocaleString()}` : null,
     },
     {
       key: "1-month" as DurationKey,
@@ -684,21 +685,19 @@ export function Subscription() {
       theme: "sky" as const,
     },
     {
-      key: "2-months" as DurationKey,
-      name: "2 Months",
-      priceLabel: `KSh ${twoMonthPrice.toLocaleString()}`,
-      sub: "Billed once",
-      blurb: `Full ${roleLabel} access for two months.`,
-      features: twoMonthFeatures,
-      excluded: [],
-      ctaLabel: `Pay KSh ${twoMonthPrice.toLocaleString()}`,
-      featured: true,
-      accent: true,
-      theme: "amber" as const,
-      saveBadge: savings > 0 ? `Save KSh ${savings.toLocaleString()}` : null,
+      key: "free",
+      name: "Free",
+      priceLabel: "KSh 0",
+      sub: "Always available",
+      blurb: "Start learning. No card needed.",
+      features: freeFeatures,
+      excluded: freeNotIncluded,
+      ctaLabel: "Continue free",
+      featured: false,
+      accent: false,
+      theme: "neutral" as const,
     },
   ];
-
   const onSelectTier = (key: "free" | DurationKey) => {
     if (key === "free") return;
     handleMpesapayment(paidRole, PRICE_TABLE[paidRole][key === "1-month" ? "ONE_MONTH" : "TWO_MONTHS"], key);
@@ -943,7 +942,7 @@ export function Subscription() {
 
               {/* Shared checkout strip */}
               {!hasActivePlan && (
-                <div className="mt-6 rounded-2xl border border-border/60 bg-muted/30 p-4 md:p-5 space-y-4">
+                <div className="mt-6 rounded-2xl border border-0 bg-muted/30 p-4 md:p-5 space-y-4">
                   <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center justify-between">
@@ -1051,7 +1050,7 @@ export function Subscription() {
             {!activeSub && !hasActivePlan && paidRole === "student" && <GroupPaySubscriptionCard />}
             {/* ─── Payment history ──────────────────────────────── */}
             <section>
-              <Card className="rounded-3xl border-border/60">
+              <Card className="rounded-3xl border-0">
                 <CardHeader className="px-6 pt-6 pb-3">
                   <div className="flex items-center justify-between">
                     <div>

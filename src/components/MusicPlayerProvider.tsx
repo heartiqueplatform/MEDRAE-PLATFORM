@@ -56,7 +56,7 @@ interface MusicPlayerContextProps {
     refreshEpisodes: (opts?: { silent?: boolean }) => Promise<void>;
     fetchShowEpisodes: (showId: string) => Promise<Track[]>;
     searchEpisodesRemote: (query: string) => Promise<Track[]>;
-
+    prefetchAudio: (src: string, priority?: number) => void;
     // ✅ history API
     history: HistoryEntry[];
     clearHistory: () => void;
@@ -227,7 +227,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     //    version on the next tick, then Supabase refreshes in the background.
     const snapshot = typeof window !== "undefined" ? readSnapshot() : null;
     const [tracks, setTracks] = useState<Track[]>(() => sortTracks(snapshot ?? []));
-    const [loading, setLoading] = useState(snapshot === null);
+    const [loading, setLoading] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolumeState] = useState(1);
@@ -245,6 +245,11 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const lastRefreshRef = useRef<number>(0);
     const currentSrcRef = useRef<string | undefined>(undefined);
+    // 👇 new — track which URLs we've already prefetched this session
+    const prefetchedSrcsRef = useRef<Set<string>>(new Set());
+    const prefetchQueueRef = useRef<{ src: string; priority: number }[]>([]);
+    const prefetchRunningRef = useRef(false);
+
 
     // ✅ Persist a synchronous snapshot every time tracks change.
     //    Cheap (only 60 items), sync, quota-safe.
@@ -342,7 +347,82 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         });
         return () => sub.subscription.unsubscribe();
     }, [refreshEpisodes]);
+    // ── Real audio prefetch — warms the browser cache for the first
+    //    few KB of an episode so play() starts almost instantly.
+    //    Priority: current episode next, then the next 3 in the list.
+    //    Concurrency capped at 2 so we don't hog bandwidth.
+    const prefetchAudio = useCallback((src: string, priority = 0) => {
+        if (!src) return;
+        if (prefetchedSrcsRef.current.has(src)) return;
+        if (currentSrcRef.current === src) return;
 
+        prefetchQueueRef.current.push({ src, priority });
+        prefetchQueueRef.current.sort((a, b) => a.priority - b.priority);
+
+        if (prefetchRunningRef.current) return;
+        prefetchRunningRef.current = true;
+
+        const run = async () => {
+            while (prefetchQueueRef.current.length > 0) {
+                const { src } = prefetchQueueRef.current.shift()!;
+                if (prefetchedSrcsRef.current.has(src)) continue;
+                prefetchedSrcsRef.current.add(src);
+
+                // AbortController + setTimeout instead of AbortSignal.timeout
+                // because AbortSignal.timeout is not available in older Safari.
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                try {
+                    // Range request for the first ~256KB — enough to start
+                    // playback immediately when the user taps. The browser
+                    // caches the response keyed by URL, so play() hits cache.
+                    const res = await fetch(src, {
+                        method: "GET",
+                        headers: { Range: "bytes=0-262143" },
+                        cache: "force-cache",
+                        signal: controller.signal,
+                    });
+                    // If the server ignored the Range header, it responds
+                    // 200 with the FULL body. Cancel immediately so we don't
+                    // burn 40MB per episode on metered connections.
+                    if (res.status === 200) {
+                        try { await res.body?.cancel(); } catch { /* ignore */ }
+                    } else {
+                        // 206 — the range worked. Read the small body so the
+                        // browser caches it.
+                        try { await res.arrayBuffer(); } catch { /* ignore */ }
+                    }
+                } catch {
+                    /* network error / timeout — ignore */
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+
+                // Small gap between prefetches so we don't starve the audio stream
+                await new Promise((r) => setTimeout(r, 120));
+            }
+            prefetchRunningRef.current = false;
+        };
+
+        run();
+    }, []);
+
+    // ── When the current track changes, prefetch the next 3 in the list ──
+    useEffect(() => {
+        const current = tracks[currentIndex];
+        if (!current?.src) return;
+
+        // Highest priority: mark current as already-fetched so we never
+        // re-prefetch it (the audio element owns it)
+        prefetchedSrcsRef.current.add(current.src);
+
+        // Next 3 (or however many exist)
+        // Prefetch the next 5 (or however many exist)
+        for (let i = 1; i <= 5; i++) {
+            const next = tracks[currentIndex + i];
+            if (next?.src) prefetchAudio(next.src, i);
+        }
+    }, [tracks, currentIndex, prefetchAudio]);
     // ── 3. On-demand fetch for a specific show (unlimited) ──
     const fetchShowEpisodes = useCallback(
         async (showId: string): Promise<Track[]> => {
@@ -639,6 +719,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 clearHistory,
                 removeFromHistory,
                 searchEpisodesRemote,
+                prefetchAudio,   // 👇 new
             }}
         >
             {children}

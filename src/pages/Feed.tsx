@@ -985,7 +985,8 @@ export default function Feed() {
     <>
 
       {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
-      <div className="sticky top-0 z-40 w-full">
+      {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
+      <div className="sticky top-0 z-40 w-full px-3 sm:px-4">
         <FeedControls
           questionCount={questionCount}
           session={session}
@@ -1059,9 +1060,8 @@ export default function Feed() {
       >
         <div
           ref={scrollContainerRef}
-          className="p-0 max-w-4xl mx-auto space-y-4 hide-scrollbar"
+          className="max-w-4xl mx-auto space-y-3 hide-scrollbar px-2 sm:px-2 pt-2"
         >
-
 
           <AnimatePresence>
             {feedbackMessage && (
@@ -1140,7 +1140,7 @@ export default function Feed() {
               <motion.div
                 key={q.id}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="relative w-full max-w-screen-lg mx-auto mb-5 px-2 sm:px-3"
+                className="relative w-full max-w-full mx-auto mb-5"
               >
                 <Card className="relative bg-white dark:bg-muted/90 border border-gray-200/80 dark:border-gray-800/60 shadow-sm hover:shadow-md rounded-2xl overflow-hidden transition-all duration-200">
                   <CardContent className="flex flex-col gap-2 p-2 w-full">

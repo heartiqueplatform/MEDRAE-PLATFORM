@@ -51,6 +51,48 @@ const readCacheAny = <T,>(key: string): T | null => {
         return null;
     }
 };
+// ── Reactions cache ──────────────────────────────────────
+// Written after every fetch AND after every optimistic toggle,
+// so the UI is instantly correct on next mount, even offline.
+const REACTIONS_CACHE_KEY = (date: string) => `trivia_reactions_${date}`;
+
+const readReactionsCache = (date: string): {
+    counts: Record<string, { like: number; fire: number; clap: number }>;
+    mine: Record<string, string[]>;
+} | null => {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem(REACTIONS_CACHE_KEY(date));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (
+            parsed &&
+            typeof parsed.counts === "object" &&
+            typeof parsed.mine === "object"
+        ) {
+            return { counts: parsed.counts, mine: parsed.mine };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+};
+
+const writeReactionsCache = (
+    date: string,
+    counts: Record<string, { like: number; fire: number; clap: number }>,
+    mine: Record<string, string[]>
+) => {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.setItem(
+            REACTIONS_CACHE_KEY(date),
+            JSON.stringify({ counts, mine, timestamp: Date.now() })
+        );
+    } catch {
+        /* quota exceeded — non-fatal */
+    }
+};
 // ============================================================
 // SVG ICONS — outline when inactive, filled when active
 // ============================================================
@@ -432,8 +474,14 @@ export const DailyTriviaCard = () => {
     const [topStudents, setTopStudents] = useState<TopStudent[]>(() =>
         readCacheAny<TopStudent[]>(`trivia_top_${today}`) ?? []
     );
-    const [reactions, setReactions] = useState<Record<string, { like: number; fire: number; clap: number }>>({});
-    const [myReactions, setMyReactions] = useState<Record<string, string[]>>({});
+    // Seed from cache synchronously so the very first paint already
+    // shows the user's liked/fired/clapped state — even offline.
+    const [reactions, setReactions] = useState<Record<string, { like: number; fire: number; clap: number }>>(
+        () => readReactionsCache(today)?.counts ?? {}
+    );
+    const [myReactions, setMyReactions] = useState<Record<string, string[]>>(
+        () => readReactionsCache(today)?.mine ?? {}
+    );
     const [attemptedToday, setAttemptedToday] = useState(false);
     const [timeUsedToday, setTimeUsedToday] = useState<number | null>(null);
     const [savedScore, setSavedScore] = useState<{ correct_answers: number; total_questions: number } | null>(null);
@@ -717,8 +765,11 @@ export const DailyTriviaCard = () => {
 
             setReactions(counts);
             setMyReactions(mine);
+            writeReactionsCache(today, counts, mine);
         } catch (err) {
             console.error("❌ Reactions fetch failed (non-critical):", err);
+            // Offline / network failure — the cache-seeded state from
+            // the initial mount is already correct. Nothing to do.
         }
     }, [today, selfUserId]);
 
@@ -922,25 +973,38 @@ export const DailyTriviaCard = () => {
         const alreadyReacted = myReactions[targetUserId]?.includes(reaction) || false;
 
         // Optimistic update
+        // Optimistic update — and persist immediately so the next
+        // mount (even offline) reflects this state.
+        let nextMine: Record<string, string[]> = {};
+        let nextCounts: Record<string, { like: number; fire: number; clap: number }> = {};
+
         setMyReactions((prev) => {
             const current = prev[targetUserId] || [];
-            if (alreadyReacted) {
-                return { ...prev, [targetUserId]: current.filter(r => r !== reaction) };
-            }
-            return { ...prev, [targetUserId]: [...new Set([...current, reaction])] };
+            const next = alreadyReacted
+                ? { ...prev, [targetUserId]: current.filter(r => r !== reaction) }
+                : { ...prev, [targetUserId]: [...new Set([...current, reaction])] };
+            nextMine = next;
+            return next;
         });
 
         setReactions((prev) => {
             const current = prev[targetUserId] || { like: 0, fire: 0, clap: 0 };
             const delta = alreadyReacted ? -1 : 1;
-            return {
+            const next = {
                 ...prev,
                 [targetUserId]: {
                     ...current,
                     [reaction]: Math.max((current[reaction] || 0) + delta, 0)
                 }
             };
+            nextCounts = next;
+            return next;
         });
+
+        // Write the cache synchronously — before the network call.
+        // If the network fails, the cache is still correct (matches
+        // what the user sees on screen).
+        writeReactionsCache(today, nextCounts, nextMine);
 
         try {
             if (alreadyReacted) {
@@ -971,25 +1035,35 @@ export const DailyTriviaCard = () => {
             }
         } catch (error) {
             console.error("Reaction failed:", error);
-            // Roll back optimistic update
+
+            // Roll back optimistic update — AND the cache, so the
+            // next mount doesn't show a phantom reaction.
+            let rolledMine: Record<string, string[]> = {};
+            let rolledCounts: Record<string, { like: number; fire: number; clap: number }> = {};
+
             setMyReactions((prev) => {
                 const current = prev[targetUserId] || [];
-                if (alreadyReacted) {
-                    return { ...prev, [targetUserId]: [...current, reaction] };
-                }
-                return { ...prev, [targetUserId]: current.filter(r => r !== reaction) };
+                const next = alreadyReacted
+                    ? { ...prev, [targetUserId]: [...current, reaction] }
+                    : { ...prev, [targetUserId]: current.filter(r => r !== reaction) };
+                rolledMine = next;
+                return next;
             });
             setReactions((prev) => {
                 const current = prev[targetUserId] || { like: 0, fire: 0, clap: 0 };
                 const delta = alreadyReacted ? 1 : -1;
-                return {
+                const next = {
                     ...prev,
                     [targetUserId]: {
                         ...current,
                         [reaction]: Math.max((current[reaction] || 0) + delta, 0)
                     }
                 };
+                rolledCounts = next;
+                return next;
             });
+
+            writeReactionsCache(today, rolledCounts, rolledMine);
         }
     }, [selfUserId, today, myReactions]);
 

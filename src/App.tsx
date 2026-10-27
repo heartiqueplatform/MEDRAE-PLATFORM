@@ -289,7 +289,8 @@ const BottomBarWrapper = () => {
       "/notifications",
       "/announcements",
       "/resources",
-      "/assessment-notes",   // 👈 one entry, all three routes
+      "/assessment-notes",
+      // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
     return (
@@ -601,6 +602,7 @@ const AppContent = () => {
                           <Route path="/feed" element={null} />
 
 
+
                           <Route path="/streak/restore" element={<StreakRestore />} />
 
                           <Route path="/guide" element={<Guide />} />
@@ -678,6 +680,7 @@ const AppContent = () => {
                         <Route path="/resources" element={<PrivateRoute><Resources /></PrivateRoute>} />
                         <Route path="/announcements" element={<PrivateRoute><Announcements /></PrivateRoute>} />
                         <Route path="/assessment-notes" element={<PrivateRoute><AssessmentNotes /></PrivateRoute>} />
+
                         {/* 🆕 GroupPay — full-screen, no sidebar */}
                         <Route path="/grouppay" element={<PrivateRoute><GroupPayHome /></PrivateRoute>} />
                         <Route path="/grouppay/create" element={<PrivateRoute><CreateGroupPage /></PrivateRoute>} />
@@ -692,13 +695,7 @@ const AppContent = () => {
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>
-                      <FloatingStreakCandle />
-                      <ProfileIncompleteChecker />
 
-                      {/* 🆕 MEDRAE BOT — lazy, only loads on first eligible open */}
-                      <Suspense fallback={null}>
-                        <MedraeBot />
-                      </Suspense>
                       {/* 🆕 SMART PWA INSTALL PROMPT — browser users only */}
                       <InstallPrompt />
                       <BottomBarWrapper />

@@ -104,7 +104,7 @@ const InfoRow = ({
 
 // Skeleton Components
 const ProfileSkeleton = () => (
-  <div className="space-y-2 px-2 py-2 border-0 md:max-w-full mx-auto w-full pb-20 md:pb-6">
+  <div className="mx-auto w-full max-w-3xl px-2 sm:px-2 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
     <Tabs defaultValue="overview" className="space-y-2">
       <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
         <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
@@ -113,57 +113,65 @@ const ProfileSkeleton = () => (
       </TabsList>
 
       <TabsContent value="overview" className="space-y-2">
-        {/* Profile Card Skeleton */}
-        <Card className="border-0 shadow-none rounded-xl">
-          <CardContent className="p-2 md:p-4">
-            <div className="flex items-center gap-2 mb-2 md:mb-4">
-              <Skeleton className="h-5 w-5 md:h-6 md:w-6 rounded-xl" />
-              <Skeleton className="h-6 w-32 md:h-8 md:w-40 rounded-xl" />
+        {/* Profile Card Skeleton — mirrors real profile card */}
+        {/* Profile Card Skeleton — mirrors the new centered layout */}
+        <Card className="border-0 shadow-none rounded-2xl overflow-hidden bg-card">
+          <Skeleton className="h-32 md:h-44 w-full rounded-none" />
+          <div className="relative flex justify-center">
+            <div className="absolute -top-12 md:-top-14">
+              <Skeleton className="h-24 w-24 md:h-28 md:w-28 rounded-full" />
             </div>
-            <div className="flex flex-col md:flex-row items-start gap-2 md:gap-4">
-              <div className="relative flex-shrink-0">
-                <Skeleton className="h-20 w-20 md:h-24 md:w-24 rounded-xl" />
+          </div>
+          <CardContent className="px-4 md:px-6 pt-16 md:pt-20 pb-4 md:pb-6">
+            <div className="flex flex-col items-center text-center gap-2">
+              <Skeleton className="h-7 w-40 md:h-8 md:w-48 rounded-lg" />
+              <Skeleton className="h-4 w-24 rounded-lg" />
+              <div className="flex gap-2 mt-1">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
               </div>
-              <div className="flex-1 space-y-2 w-full">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <div className="space-y-2">
-                    <Skeleton className="h-6 w-40 md:h-8 md:w-48 rounded-xl" />
-                    <Skeleton className="h-4 w-24 rounded-xl" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-5 w-16 rounded-xl" />
-                    <Skeleton className="h-5 w-12 rounded-xl" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-full max-w-md rounded-xl" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-40 rounded-xl" />
-                    <Skeleton className="h-4 w-32 rounded-xl" />
-                    <Skeleton className="h-4 w-36 rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-44 rounded-xl" />
-                    <Skeleton className="h-4 w-28 rounded-xl" />
-                  </div>
-                </div>
-                <Skeleton className="h-9 w-40 md:h-10 md:w-48 rounded-xl" />
+              <Skeleton className="h-4 w-full max-w-md mt-2 rounded-lg" />
+            </div>
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl mx-auto">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40 rounded-lg" />
+                <Skeleton className="h-4 w-32 rounded-lg" />
+                <Skeleton className="h-4 w-36 rounded-lg" />
               </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-44 rounded-lg" />
+                <Skeleton className="h-4 w-28 rounded-lg" />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-center">
+              <Skeleton className="h-9 md:h-10 w-40 md:w-48 rounded-xl" />
             </div>
           </CardContent>
         </Card>
 
-        {/* Academic Card Skeleton */}
+        {/* Academic Card Skeleton — mirrors real academic card */}
         <Card className="border-0 shadow-none rounded-xl">
           <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
             <Skeleton className="h-5 w-48 md:h-6 md:w-56 rounded-xl" />
           </CardHeader>
           <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div><Skeleton className="h-4 w-16 mb-1 rounded-xl" /><Skeleton className="h-4 w-32 rounded-xl" /></div>
-              <div><Skeleton className="h-4 w-20 mb-1 rounded-xl" /><Skeleton className="h-4 w-24 rounded-xl" /></div>
-              <div><Skeleton className="h-4 w-24 mb-1 rounded-xl" /><Skeleton className="h-4 w-36 rounded-xl" /></div>
-              <div><Skeleton className="h-4 w-20 mb-1 rounded-xl" /><Skeleton className="h-4 w-28 rounded-xl" /></div>
+              <div>
+                <Skeleton className="h-3 w-16 mb-1 rounded-xl" />
+                <Skeleton className="h-4 w-32 rounded-xl" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-20 mb-1 rounded-xl" />
+                <Skeleton className="h-4 w-24 rounded-xl" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-24 mb-1 rounded-xl" />
+                <Skeleton className="h-4 w-36 rounded-xl" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-20 mb-1 rounded-xl" />
+                <Skeleton className="h-4 w-28 rounded-xl" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -180,7 +188,40 @@ const ProfileSkeleton = () => (
 const initialCacheRaw =
   typeof window !== "undefined" ? safeGetCachedProfile() : null;
 const initialCache = isProfileReady(initialCacheRaw) ? initialCacheRaw : null;
+// ─────────────────────────────────────────────────────────────
+// Cover image resolver
+// Rotates deterministically through /public backgrounds so each
+// user gets a stable cover without any DB field.
+// Swap/extend the array as you add more images to /public.
+// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Cover image resolver
+// Currently a single shared background for everyone.
+// Add more paths to COVER_IMAGES later and the hash will
+// distribute users automatically — no other code changes.
+// ─────────────────────────────────────────────────────────────
+const COVER_IMAGES = [
+  "/background03.jpg",
+];
 
+const resolveCoverImage = (profile: any): string => {
+  // 1. If the profile has an uploaded cover, honour it.
+  if (profile?.cover_url) return profile.cover_url;
+
+  // 2. Deterministic pick from the seed (safe with one item).
+  const seed =
+    profile?.user_id ||
+    profile?.id ||
+    profile?.username ||
+    profile?.email ||
+    "default";
+
+  let hash = 0;
+  for (let i = 0; i < String(seed).length; i++) {
+    hash = (hash * 31 + String(seed).charCodeAt(i)) >>> 0;
+  }
+  return COVER_IMAGES[hash % COVER_IMAGES.length];
+};
 export function Profile() {
   const [profileState, setProfileState] = useState<any>(initialCache);
   const [activePlan, setActivePlan] = useState<string | null>(null);
@@ -791,7 +832,7 @@ export function Profile() {
         className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
             custom-scrollbar overscroll-contain"
       >
-        <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
+        <div className="mx-auto w-full max-w-3xl px-2 sm:px-2 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
           <Tabs defaultValue="overview" className="space-y-2">
 
             <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
@@ -802,88 +843,131 @@ export function Profile() {
 
             <TabsContent value="overview" className="space-y-2">
               {/* Profile Card */}
-              <Card className="border-0 shadow-none rounded-xl">
-                <CardContent className="p-2 md:p-4">
-                  <div className="flex items-center gap-2 mb-2 md:mb-4">
-                    <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                    <h1 className="text-xl md:text-2xl font-bold">My Profile</h1>
-                  </div>
-                  <div className="flex flex-col md:flex-row items-start gap-2 md:gap-4">
-                    <div className="relative flex-shrink-0">
-                      <Avatar className="h-20 w-20 md:h-24 md:w-24 rounded-xl">
-                        <AvatarImage src={profileState?.avatar_url || undefined} className="object-cover rounded-xl" loading="lazy" />
-                        <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl font-semibold rounded-xl">
+              {/* ── Profile Card — Facebook-style centered layout ── */}
+              <Card className="border-0 shadow-none rounded-2xl overflow-hidden bg-card">
+                {/* Cover photo */}
+                {/* Cover photo — shared /background03.jpg for all users */}
+                <div className="relative h-32 md:h-44 w-full overflow-hidden bg-muted">
+                  <img
+                    src={resolveCoverImage(profileState)}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      const el = e.currentTarget;
+                      el.style.display = "none";
+                      el.parentElement?.classList.add("cover-fallback");
+                    }}
+                  />
+                  {/* Dark scrim for legibility */}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/40" />
+                  {/* Soft fade into the card body */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
+                </div>
+                {/* Avatar — half-overlapping the cover, centered */}
+                <div className="relative flex justify-center">
+                  <div className="absolute -top-12 md:-top-14">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-card">
+                        <AvatarImage
+                          src={profileState?.avatar_url || undefined}
+                          className="object-cover rounded-full"
+                          loading="lazy"
+                        />
+                        <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-2xl md:text-3xl font-semibold rounded-full">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
-                      <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-xl shadow-none border-0" onClick={handleAvatarUpdate}>
-                        <Camera className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="flex-1 space-y-2 w-full">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                        <div>
-                          <h2 className="text-xl md:text-2xl font-bold">{displayName}</h2>
-                          {profileState?.username ? (
-                            <p className="text-muted-foreground text-sm">@{profileState.username}</p>
-                          ) : (
-                            <p className="text-muted-foreground/60 italic text-xs md:text-sm">
-                              No username yet
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {profileState?.role && (
-                            <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0 rounded-xl">
-                              {profileState.role}
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted rounded-xl">
-                            {activePlan || "Free"}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {profileState?.bio?.trim() ? (
-                        <p className="text-muted-foreground text-xs md:text-sm">{profileState.bio}</p>
-                      ) : (
-                        <p className="text-muted-foreground/60 italic text-xs md:text-sm">
-                          No bio yet — add one from Settings to personalize your profile.
-                        </p>
-                      )}
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div className="space-y-2">
-                          <InfoRow icon={Mail} value={profileState?.email} fallback="email" />
-                          <InfoRow icon={Phone} value={profileState?.phone} fallback="phone number" />
-                          <InfoRow icon={MapPin} value={profileState?.county} fallback="county" />
-                        </div>
-                        <div className="space-y-2">
-                          <InfoRow icon={School} value={profileState?.institution} fallback="institution" />
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
-                            {profileState?.joined_date ? (
-                              <span className="text-xs md:text-sm">
-                                Joined {new Date(profileState.joined_date).toLocaleDateString(undefined, {
-                                  year: "numeric", month: "short", day: "numeric",
-                                })}
-                              </span>
-                            ) : (
-                              <EmptyValue />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
-                        <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit My Profile
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="absolute bottom-0 left-0 h-8 w-8 md:h-9 md:w-9 rounded-full shadow-none border-0 bg-background hover:bg-muted"
+                        onClick={handleAvatarUpdate}
+                        aria-label="Change profile photo"
+                      >
+                        <Camera className="h-4 w-4 md:h-4.5 md:w-4.5" />
                       </Button>
                     </div>
                   </div>
+                </div>
+
+                <CardContent className="px-4 md:px-6 pt-16 md:pt-20 pb-4 md:pb-6">
+                  {/* Name + username — centered */}
+                  <div className="flex flex-col items-center text-center gap-1">
+                    <h2 className="text-xl md:text-2xl font-bold truncate max-w-full">
+                      {displayName}
+                    </h2>
+                    {profileState?.username ? (
+                      <p className="text-muted-foreground text-sm truncate max-w-full">
+                        @{profileState.username}
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground/60 italic text-xs md:text-sm">
+                        No username yet
+                      </p>
+                    )}
+
+                    {/* Badges — centered row */}
+                    <div className="flex gap-2 flex-wrap justify-center mt-2">
+                      {profileState?.role && (
+                        <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0 rounded-full px-2.5">
+                          {profileState.role}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted rounded-full px-2.5">
+                        {activePlan || "Free"}
+                      </Badge>
+                    </div>
+
+                    {/* Bio — centered, max width */}
+                    {profileState?.bio?.trim() ? (
+                      <p className="text-muted-foreground text-xs md:text-sm max-w-lg mt-2 leading-relaxed">
+                        {profileState.bio}
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground/60 italic text-xs md:text-sm mt-2">
+                        No bio yet — add one from Settings to personalize your profile.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Info grid — centered card body */}
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl mx-auto">
+                    <div className="space-y-2">
+                      <InfoRow icon={Mail} value={profileState?.email} fallback="email" />
+                      <InfoRow icon={Phone} value={profileState?.phone} fallback="phone number" />
+                      <InfoRow icon={MapPin} value={profileState?.county} fallback="county" />
+                    </div>
+                    <div className="space-y-2">
+                      <InfoRow icon={School} value={profileState?.institution} fallback="institution" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                        {profileState?.joined_date ? (
+                          <span className="text-xs md:text-sm">
+                            Joined {new Date(profileState.joined_date).toLocaleDateString(undefined, {
+                              year: "numeric", month: "short", day: "numeric",
+                            })}
+                          </span>
+                        ) : (
+                          <EmptyValue />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Edit button — centered */}
+                  <div className="mt-5 flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={handleProfileUpdate}
+                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                    >
+                      <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit My Profile
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-
               {/* Academic Card */}
               <Card className="border-0 shadow-none rounded-xl">
                 <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">

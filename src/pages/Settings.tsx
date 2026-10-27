@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
-  User, GraduationCap, Save, Trash2, AlertCircle, Search, X, ChevronLeft,
+  GraduationCap, Save, Trash2, AlertCircle, Search, X, ChevronLeft,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -28,8 +28,8 @@ import { institutions, counties } from "@/components/forms/institutions.data";
 import { useNavigate } from "react-router-dom";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
-// ─── Searchable Institution Picker (same UX as Register.tsx) ───
-// ─── Searchable Institution Picker — uses shadcn Select (matches County picker) ───
+
+// ─── Searchable Institution Picker ───
 function SearchableInstitutionPicker({
   value, onChange, hasError,
 }: {
@@ -62,16 +62,15 @@ function SearchableInstitutionPicker({
   return (
     <Select value={value || ""} onValueChange={onChange}>
       <SelectTrigger
-        className={`text-xs md:text-sm h-10 md:h-11 ${hasError ? "border-destructive" : ""}`}
+        className={`text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] ${hasError ? "text-destructive" : ""}`}
       >
         <SelectValue placeholder="Search or choose institution">
           {selected?.label ?? ""}
         </SelectValue>
       </SelectTrigger>
 
-      <SelectContent className="max-h-[340px] p-0">
-        {/* Sticky search input — flush to top edge, zero gap */}
-        <div className="sticky -top-2 z-10 bg-popover border-b border-border p-0">
+      <SelectContent className="max-h-[340px] p-0 border-0 shadow-none bg-popover">
+        <div className="sticky -top-2 z-10 bg-popover p-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -80,13 +79,13 @@ function SearchableInstitutionPicker({
               onKeyDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
               placeholder="Search e.g. 'KMTC Nakuru'"
-              className="w-full pl-9 pr-8 py-2.5 rounded-none bg-transparent border-0 text-xs md:text-sm outline-none focus:ring-0"
+              className="w-full pl-9 pr-8 py-2.5 rounded-none bg-transparent border-0 text-xs md:text-sm outline-none focus:ring-0 shadow-none"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-accent"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-accent border-0 shadow-none"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
@@ -94,7 +93,6 @@ function SearchableInstitutionPicker({
           </div>
         </div>
 
-        {/* Grouped results */}
         <div className="py-1">
           {grouped.length === 0 ? (
             <div className="p-6 text-center text-xs md:text-sm text-muted-foreground">
@@ -124,7 +122,7 @@ function SearchableInstitutionPicker({
   );
 }
 
-// ─── County Picker (searchable + grouped by region) ───
+// ─── County Picker ───
 function CountyPicker({
   value, onChange, hasError,
 }: {
@@ -132,15 +130,14 @@ function CountyPicker({
   onChange: (v: string) => void;
   hasError?: boolean;
 }) {
-  // Counties are 47 items — no search needed, but scroll is fine.
   return (
     <Select value={value || ""} onValueChange={onChange}>
       <SelectTrigger
-        className={`text-xs md:text-sm h-10 md:h-11 ${hasError ? "border-destructive" : ""}`}
+        className={`text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] ${hasError ? "text-destructive" : ""}`}
       >
         <SelectValue placeholder="Choose county" />
       </SelectTrigger>
-      <SelectContent className="max-h-[300px]">
+      <SelectContent className="max-h-[300px] border-0 shadow-none bg-popover">
         {counties.map((county) => (
           <SelectItem key={county.value} value={county.value}>
             {county.label}
@@ -151,71 +148,77 @@ function CountyPicker({
   );
 }
 
-// ─── Skeletons, FormFields, helpers (unchanged from your file) ───
+// ─── Skeleton ───
 function SettingsSkeleton() {
   return (
-    <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl space-y-3 md:space-y-4 animate-pulse">
-        <Card className="w-full overflow-hidden p-1 md:p-2 rounded-none md:rounded-xl border-0 shadow-none">
-          <div className="mt-1 md:mt-2">
-            <div className="space-y-1 md:space-y-2">
-              <div className="h-8 md:h-10 w-32 md:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="h-4 md:h-5 w-48 md:w-72 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="flex flex-col gap-2 md:gap-3">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-200 dark:bg-gray-700" />
-                  <div className="flex flex-col gap-0.5 md:gap-1">
-                    <div className="h-5 md:h-6 w-32 md:w-40 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-3 md:h-4 w-40 md:w-56 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-3 md:h-4 w-32 md:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                  </div>
-                </div>
-                <Separator className="bg-gray-200 dark:bg-gray-700" />
-                <div className="grid gap-1 md:gap-2 md:grid-cols-2">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="h-4 md:h-5 w-32 md:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                  ))}
+    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+      <header className="flex-shrink-0 w-full flex items-center gap-3 px-2 py-2.5 sm:py-3 z-30 safe-top">
+        <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-2.5 w-40 bg-muted rounded animate-pulse" />
+        </div>
+      </header>
+
+      <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden custom-scrollbar overscroll-contain">
+        <div className="mx-auto w-full max-w-3xl px-2 py-4 md:py-6 pb-24 safe-bottom space-y-3 md:space-y-4">
+          <Card className="w-full overflow-hidden p-3 md:p-4 rounded-2xl bg-card border-0 shadow-none">
+            <div className="space-y-2 md:space-y-3 animate-pulse">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-muted shrink-0" />
+                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                  <div className="h-5 md:h-6 w-32 max-w-full bg-muted rounded" />
+                  <div className="h-3 md:h-4 w-40 max-w-full bg-muted rounded" />
+                  <div className="h-3 md:h-4 w-32 max-w-full bg-muted rounded" />
                 </div>
               </div>
-            </div>
-          </div>
-        </Card>
-        <div className="space-y-1 md:space-y-2">
-          <div className="grid w-full grid-cols-2 h-10 md:h-11 gap-1">
-            <div className="h-10 md:h-11 bg-gray-200 dark:bg-gray-700 rounded-lg md:rounded-xl" />
-            <div className="h-10 md:h-11 bg-gray-200 dark:bg-gray-700 rounded-lg md:rounded-xl" />
-          </div>
-          <Card className="rounded-none md:rounded-xl border-0 shadow-none">
-            <CardHeader className="px-1 md:px-2 pt-1 md:pt-2">
-              <div className="h-6 md:h-7 w-48 md:w-64 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="h-4 md:h-5 w-64 md:w-96 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
-            </CardHeader>
-            <CardContent className="space-y-3 md:space-y-4 px-1 md:px-2 pb-1 md:pb-2">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-3">
-                <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-200 dark:bg-gray-700" />
-                <div className="flex flex-col gap-1 md:gap-2 w-full sm:w-auto">
-                  <div className="h-9 md:h-10 w-full sm:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-8 md:h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-3 md:h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
-                </div>
-              </div>
-              <Separator className="bg-gray-200 dark:bg-gray-700" />
-              <div className="space-y-2 md:space-y-3">
-                <div className="h-5 md:h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
-              </div>
-              <Separator className="bg-gray-200 dark:bg-gray-700" />
-              <div className="grid gap-2 md:gap-3 md:grid-cols-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="space-y-1 md:space-y-2">
-                    <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
-                  </div>
+              <Separator className="bg-muted" />
+              <div className="grid gap-1.5 md:gap-2 md:grid-cols-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-4 md:h-5 w-32 max-w-full bg-muted rounded" />
                 ))}
               </div>
-              <div className="h-10 md:h-11 w-full sm:w-32 bg-gray-200 dark:bg-gray-700 rounded" />
-            </CardContent>
+            </div>
+          </Card>
+
+          <div className="grid w-full grid-cols-2 h-10 md:h-11 gap-1">
+            <div className="h-10 md:h-11 bg-muted rounded-lg md:rounded-xl" />
+            <div className="h-10 md:h-11 bg-muted rounded-lg md:rounded-xl" />
+          </div>
+
+          <Card className="rounded-2xl border-0 shadow-none bg-card">
+            <div className="animate-pulse">
+              <CardHeader className="px-3 md:px-4 pt-3 md:pt-4">
+                <div className="h-6 md:h-7 w-48 max-w-full bg-muted rounded" />
+                <div className="h-4 md:h-5 w-64 max-w-full bg-muted rounded mt-1" />
+              </CardHeader>
+              <CardContent className="space-y-3 md:space-y-4 px-3 md:px-4 pb-3 md:pb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-3">
+                  <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-muted shrink-0" />
+                  <div className="flex flex-col gap-1.5 md:gap-2 w-full sm:w-auto">
+                    <div className="h-9 md:h-10 w-full sm:w-48 bg-muted rounded" />
+                    <div className="h-8 md:h-9 w-20 bg-muted rounded" />
+                    <div className="h-3 md:h-4 w-32 bg-muted rounded" />
+                  </div>
+                </div>
+                <Separator className="bg-muted" />
+                <div className="space-y-2 md:space-y-3">
+                  <div className="h-5 md:h-6 w-48 max-w-full bg-muted rounded" />
+                  <div className="h-10 md:h-11 w-full bg-muted rounded" />
+                  <div className="h-10 md:h-11 w-full bg-muted rounded" />
+                </div>
+                <Separator className="bg-muted" />
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="space-y-1.5 md:space-y-2">
+                      <div className="h-4 md:h-5 w-24 max-w-full bg-muted rounded" />
+                      <div className="h-10 md:h-11 w-full bg-muted rounded" />
+                    </div>
+                  ))}
+                </div>
+                <div className="h-10 md:h-11 w-full sm:w-32 bg-muted rounded" />
+              </CardContent>
+            </div>
           </Card>
         </div>
       </div>
@@ -223,6 +226,7 @@ function SettingsSkeleton() {
   );
 }
 
+// ─── Field components ───
 const FormField = ({
   label, id, value, onChange, onBlur, showError, required, type = "text", placeholder,
 }: any) => {
@@ -238,7 +242,7 @@ const FormField = ({
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        className={`text-xs md:text-sm h-10 md:h-11 ${showError ? "border-destructive focus-visible:ring-destructive" : ""}`}
+        className={`text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-ring/30 ${showError ? "ring-1 ring-destructive" : ""}`}
       />
       {showError && (
         <p className="text-[10px] md:text-xs text-destructive flex items-center gap-1">
@@ -258,10 +262,13 @@ const SelectField = ({
         {label} {required && <span className="text-destructive">*</span>}
       </Label>
       <Select value={value || ""} onValueChange={onValueChange}>
-        <SelectTrigger className={`text-xs md:text-sm h-10 md:h-11 ${showError ? "border-destructive focus-visible:ring-destructive" : ""}`} onBlur={onBlur}>
+        <SelectTrigger
+          className={`text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] ${showError ? "text-destructive" : ""}`}
+          onBlur={onBlur}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="border-0 shadow-none bg-popover">
           {options.map((opt: any) => (
             <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
           ))}
@@ -278,11 +285,11 @@ const SelectField = ({
 
 export function Settings() {
   const { refreshRole } = useUserRole();
-  const navigate = useNavigate();           // 👈 ADD
-  const home = useHomeRoute();              // 👈 ADD
-  const contentRef = useRef<HTMLDivElement | null>(null);  // 👈 ADD
+  const navigate = useNavigate();
+  const home = useHomeRoute();
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const handleBack = () => {                // 👈 ADD
+  const handleBack = () => {
     playSound("tap");
     if (navigator.vibrate) navigator.vibrate(20);
     navigate(home, { replace: true });
@@ -398,7 +405,6 @@ export function Settings() {
       return;
     }
 
-    // Validate institution is a known slug (not raw text)
     if (profile.institution && profile.institution !== "other") {
       const known = institutions.some((i) => i.value === profile.institution);
       if (!known) {
@@ -411,7 +417,6 @@ export function Settings() {
       }
     }
 
-    // Validate county is a known slug
     if (profile.county) {
       const knownCounty = counties.some((c) => c.value === profile.county);
       if (!knownCounty) {
@@ -491,82 +496,74 @@ export function Settings() {
   if (!profile) {
     return (
       <div className="min-h-screen w-full flex justify-center items-center bg-background p-4">
-        <Card className="text-center p-6 md:p-8 border-0 shadow-none">
+        <Card className="text-center p-6 md:p-8 border-0 shadow-none bg-card rounded-2xl">
           <AlertCircle className="h-10 w-10 md:h-12 md:w-12 text-destructive mx-auto mb-3 md:mb-4" />
           <CardTitle className="text-lg md:text-xl">Failed to Load Profile</CardTitle>
           <CardDescription className="text-xs md:text-sm">Could not load your profile data. Please try refreshing the page.</CardDescription>
-          <Button onClick={() => window.location.reload()} className="mt-3 md:mt-4 text-xs md:text-sm">Refresh</Button>
+          <Button onClick={() => window.location.reload()} className="mt-3 md:mt-4 text-xs md:text-sm border-0 shadow-none">Refresh</Button>
         </Card>
       </div>
     );
   }
+
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
-      {/* Sticky top bar with back arrow */}
-      <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
-          border-b border-gray-100 dark:border-gray-800
-          bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
-          z-30 safe-top">
+      {/* ── Sticky header ── */}
+      <header className="flex-shrink-0 w-full flex items-center gap-3 px-2 py-2.5 sm:py-3 z-30 safe-top">
         <button
           onClick={handleBack}
           aria-label="Go back"
-          className="flex items-center justify-center h-10 w-10 rounded-full
-              bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
-              active:scale-95 transition-all touch-manipulation"
+          className="flex items-center justify-center h-10 w-10 rounded-full bg-muted hover:bg-muted/80 active:scale-95 transition-all touch-manipulation border-0 shadow-none"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
             Settings
           </h1>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
             Manage your account and preferences
           </p>
         </div>
       </header>
 
-      {/* Internally-scrolling content */}
+      {/* ── Scrolling content ── */}
       <div
         ref={contentRef}
-        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-            custom-scrollbar overscroll-contain"
+        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden custom-scrollbar overscroll-contain"
       >
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom space-y-3 md:space-y-4">
-          <Card className="w-full overflow-hidden p-1 md:p-2 rounded-xl border border-slate-100 dark:border-gray-800 shadow-sm">
-            <div className="mt-1 md:mt-2">
-              <Tabs defaultValue="profile" className="space-y-1 md:space-y-2">
-                {/* h2 "Settings" removed — the sticky header already says it */}
-
-                <TabsContent value="profile">
-                  <div className="flex flex-col gap-2 md:gap-3">
-                    <div className="flex items-center gap-2 md:gap-3">
-                      <Avatar className="h-16 w-16 md:h-20 md:w-20">
-                        <AvatarImage src={avatarPreview || profile.avatar_url || "/placeholder.svg"} className="object-cover" />
-                        <AvatarFallback className="text-base md:text-lg">{profile.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col gap-0.5 md:gap-1">
-                        <p className="text-base md:text-lg font-semibold">{profile.name || "Not set"}</p>
-                        <p className="text-xs md:text-sm text-muted-foreground">{profile.email || "Not set"}</p>
-                        <p className="text-xs md:text-sm text-muted-foreground">Username: {profile.username || "Not set"}</p>
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="grid gap-1.5 md:gap-2 md:grid-cols-2">
-                      <p className="text-xs md:text-sm"><span className="font-medium">Name:</span> <span className="text-muted-foreground">{profile.name || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">Username:</span> <span className="text-muted-foreground">{profile.username || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">Email:</span> <span className="text-muted-foreground">{profile.email || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">Phone:</span> <span className="text-muted-foreground">{profile.phone || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">County:</span> <span className="text-muted-foreground">{counties.find(c => c.value === profile.county)?.label || profile.county || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">Institution:</span> <span className="text-muted-foreground">{institutions.find(i => i.value === profile.institution)?.label || profile.institution || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">Course:</span> <span className="text-muted-foreground">{profile.course || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm"><span className="font-medium">Block:</span> <span className="text-muted-foreground">{profile.block || "Not set"}</span></p>
-                      <p className="text-xs md:text-sm md:col-span-2"><span className="font-medium">Bio:</span> <span className="text-muted-foreground">{profile.bio || "Not set"}</span></p>
+        <div className="mx-auto w-full max-w-3xl px-2 py-4 md:py-6 pb-24 safe-bottom space-y-3 md:space-y-4">
+          {/* Profile summary card */}
+          <Card className="w-full overflow-hidden p-3 md:p-4 rounded-2xl border-0 shadow-none bg-card">
+            <Tabs defaultValue="profile" className="space-y-1 md:space-y-2">
+              <TabsContent value="profile">
+                <div className="flex flex-col gap-2 md:gap-3">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <Avatar className="h-16 w-16 md:h-20 md:w-20">
+                      <AvatarImage src={avatarPreview || profile.avatar_url || "/placeholder.svg"} className="object-cover" />
+                      <AvatarFallback className="text-base md:text-lg">{profile.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-0.5 md:gap-1 min-w-0">
+                      <p className="text-base md:text-lg font-semibold truncate">{profile.name || "Not set"}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground truncate">{profile.email || "Not set"}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground truncate">Username: {profile.username || "Not set"}</p>
                     </div>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+                  <Separator className="bg-border/60" />
+                  <div className="grid gap-1.5 md:gap-2 md:grid-cols-2">
+                    <p className="text-xs md:text-sm"><span className="font-medium">Name:</span> <span className="text-muted-foreground">{profile.name || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">Username:</span> <span className="text-muted-foreground">{profile.username || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">Email:</span> <span className="text-muted-foreground">{profile.email || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">Phone:</span> <span className="text-muted-foreground">{profile.phone || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">County:</span> <span className="text-muted-foreground">{counties.find(c => c.value === profile.county)?.label || profile.county || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">Institution:</span> <span className="text-muted-foreground">{institutions.find(i => i.value === profile.institution)?.label || profile.institution || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">Course:</span> <span className="text-muted-foreground">{profile.course || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm"><span className="font-medium">Block:</span> <span className="text-muted-foreground">{profile.block || "Not set"}</span></p>
+                    <p className="text-xs md:text-sm md:col-span-2"><span className="font-medium">Bio:</span> <span className="text-muted-foreground">{profile.bio || "Not set"}</span></p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </Card>
 
           <RoleSwitch
@@ -576,22 +573,23 @@ export function Settings() {
             onRoleChange={handleRoleChange}
           />
 
+          {/* Edit card */}
           <Tabs defaultValue="profile" className="space-y-1 md:space-y-2">
             {!isStudent && (
-              <TabsList className="grid w-full grid-cols-2 h-10 md:h-11 text-xs md:text-sm rounded-lg md:rounded-xl">
-                <TabsTrigger value="profile" className="rounded-lg md:rounded-xl">Profile</TabsTrigger>
-                <TabsTrigger value="professional" className="rounded-lg md:rounded-xl">Professional</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-10 md:h-11 text-xs md:text-sm rounded-lg md:rounded-xl border-0 shadow-none">
+                <TabsTrigger value="profile" className="rounded-lg md:rounded-xl border-0 shadow-none">Profile</TabsTrigger>
+                <TabsTrigger value="professional" className="rounded-lg md:rounded-xl border-0 shadow-none">Professional</TabsTrigger>
               </TabsList>
             )}
             <TabsContent value="profile">
-              <Card className="rounded-xl border border-slate-100 dark:border-gray-800 shadow-sm">
-                <CardHeader className="px-1 md:px-2 pt-1 md:pt-2">
+              <Card className="rounded-2xl border-0 shadow-none bg-card">
+                <CardHeader className="px-3 md:px-4 pt-3 md:pt-4">
                   <CardTitle className="text-lg md:text-xl">Edit Profile Information</CardTitle>
                   <CardDescription className="text-xs md:text-sm">
                     Update your personal and academic details. Fields marked with <span className="text-destructive">*</span> are required.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 px-1 md:px-2 pb-1 md:pb-2">
+                <CardContent className="space-y-3 md:space-y-4 px-3 md:px-4 pb-3 md:pb-4">
                   {/* Avatar Section */}
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-3">
                     <Avatar className="h-16 w-16 md:h-20 md:w-20">
@@ -599,15 +597,15 @@ export function Settings() {
                       <AvatarFallback className="text-base md:text-lg">{profile.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-1 md:gap-2">
-                      <Input type="file" accept="image/*" onChange={handleAvatarChange} className="text-xs md:text-sm h-9 md:h-10" />
+                      <Input type="file" accept="image/*" onChange={handleAvatarChange} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04]" />
                       <div className="flex gap-1 md:gap-2">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" className="text-[10px] md:text-xs h-8 md:h-9"><Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Remove</Button>
+                            <Button variant="destructive" size="sm" className="text-[10px] md:text-xs h-8 md:h-9 border-0 shadow-none"><Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Remove</Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="border-0 shadow-none">
                             <AlertDialogHeader><AlertDialogTitle>Remove your avatar?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleRemoveAvatar}>Remove</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogFooter><AlertDialogCancel className="border-0 shadow-none">Cancel</AlertDialogCancel><AlertDialogAction onClick={handleRemoveAvatar} className="border-0 shadow-none">Remove</AlertDialogAction></AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
@@ -615,7 +613,7 @@ export function Settings() {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="bg-border/60" />
 
                   {/* Security */}
                   <div className="space-y-2 md:space-y-3">
@@ -623,20 +621,20 @@ export function Settings() {
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="reset_question" className="text-xs md:text-sm">Security Question</Label>
                       <Select value={profile.reset_question || ""} onValueChange={(value) => handleChange("reset_question", value)}>
-                        <SelectTrigger className="w-full text-xs md:text-sm h-10 md:h-11"><SelectValue placeholder="Select a security question" /></SelectTrigger>
-                        <SelectContent>
+                        <SelectTrigger className="w-full text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04]"><SelectValue placeholder="Select a security question" /></SelectTrigger>
+                        <SelectContent className="border-0 shadow-none bg-popover">
                           {["What was your first pet's name?", "What is your mother's maiden name?", "What was the name of your first school?", "What is your favorite book?", "What city were you born in?", "What is your favorite color?", "What was your childhood nickname?", "What is the name of your favorite teacher?", "What is your favorite movie?", "What is the name of your best friend?"].map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="reset_answer" className="text-xs md:text-sm">Security Answer</Label>
-                      <Input id="reset_answer" value={profile.reset_answer || ""} onChange={(e) => handleChange("reset_answer", e.target.value)} placeholder="Your answer here" type="password" className="text-xs md:text-sm h-10 md:h-11" />
+                      <Input id="reset_answer" value={profile.reset_answer || ""} onChange={(e) => handleChange("reset_answer", e.target.value)} placeholder="Your answer here" type="password" className="text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-ring/30" />
                       <p className="text-[10px] md:text-xs text-muted-foreground">Used to verify identity if you forget your password.</p>
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="bg-border/60" />
 
                   {/* Personal Info */}
                   <div className="grid gap-2 md:gap-3 md:grid-cols-2">
@@ -646,21 +644,20 @@ export function Settings() {
                   <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="email" className="text-xs md:text-sm">Email</Label>
-                      <Input id="email" value={profile.email || ""} onChange={(e) => handleChange("email", e.target.value)} disabled className="bg-muted text-xs md:text-sm h-10 md:h-11" />
+                      <Input id="email" value={profile.email || ""} onChange={(e) => handleChange("email", e.target.value)} disabled className="text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/60 dark:bg-white/[0.02] text-muted-foreground" />
                       <p className="text-[10px] md:text-xs text-muted-foreground">Email cannot be changed here</p>
                     </div>
                     <FormField label="Phone Number" id="phone" value={profile.phone} onChange={(e: any) => handleChange("phone", e.target.value)} onBlur={() => handleBlur("phone")} showError={shouldShowError("phone")} required placeholder="Enter your phone number" />
                   </div>
 
                   {/* Academic Info */}
-                  <Separator />
+                  <Separator className="bg-border/60" />
                   <div className="space-y-2 md:space-y-3">
                     <h3 className="text-sm md:text-lg font-semibold flex items-center gap-1.5 md:gap-2">
                       <GraduationCap className="h-4 w-4 md:h-5 md:w-5" /> Academic Information
                     </h3>
 
                     <div className="grid gap-2 md:gap-3 md:grid-cols-2">
-                      {/* Institution — searchable dropdown */}
                       <div className="space-y-1.5 md:space-y-2">
                         <Label className={`text-xs md:text-sm ${shouldShowError("institution") ? "text-destructive" : ""}`}>
                           Institution <span className="text-destructive">*</span>
@@ -680,14 +677,12 @@ export function Settings() {
                         </p>
                       </div>
 
-                      {/* Course — free text (unchanged) */}
                       <FormField label="Course" id="course" value={profile.course} onChange={(e: any) => handleChange("course", e.target.value)} onBlur={() => handleBlur("course")} showError={shouldShowError("course")} required placeholder="Course name" />
                     </div>
 
                     <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                       <FormField label="Block" id="block" value={profile.block} onChange={(e: any) => handleChange("block", e.target.value)} onBlur={() => handleBlur("block")} showError={shouldShowError("block")} required placeholder="Your block/year" />
 
-                      {/* County — searchable dropdown */}
                       <div className="space-y-1.5 md:space-y-2">
                         <Label className={`text-xs md:text-sm ${shouldShowError("county") ? "text-destructive" : ""}`}>
                           County <span className="text-destructive">*</span>
@@ -707,13 +702,14 @@ export function Settings() {
 
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="bio" className="text-xs md:text-sm">Bio</Label>
-                      <Input id="bio" value={profile.bio || ""} onChange={(e) => handleChange("bio", e.target.value)} placeholder="Tell us about yourself" className="text-xs md:text-sm h-10 md:h-11" />
+                      <Input id="bio" value={profile.bio || ""} onChange={(e) => handleChange("bio", e.target.value)} placeholder="Tell us about yourself" className="text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-ring/30" />
                     </div>
                   </div>
+
                   {/* Professional + License — hidden for students */}
                   {!isStudent && (
                     <>
-                      <Separator />
+                      <Separator className="bg-border/60" />
                       <div className="space-y-2 md:space-y-3">
                         <h3 className="text-sm md:text-lg font-semibold">Professional Information</h3>
                         <div className="grid gap-2 md:gap-3 md:grid-cols-2">
@@ -723,35 +719,36 @@ export function Settings() {
                         <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                           <div className="space-y-1.5 md:space-y-2">
                             <Label htmlFor="years_experience" className="text-xs md:text-sm">Years of Experience</Label>
-                            <Input id="years_experience" type="number" value={profile.years_experience ?? ""} onChange={(e) => handleChange("years_experience", e.target.value === "" ? null : Number(e.target.value))} placeholder="Years of experience" className="text-xs md:text-sm h-10 md:h-11" />
+                            <Input id="years_experience" type="number" value={profile.years_experience ?? ""} onChange={(e) => handleChange("years_experience", e.target.value === "" ? null : Number(e.target.value))} placeholder="Years of experience" className="text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-ring/30" />
                           </div>
                           <FormField label="Workplace" id="workplace" value={profile.workplace} onChange={(e: any) => handleChange("workplace", e.target.value)} onBlur={() => handleBlur("workplace")} showError={shouldShowError("workplace")} required placeholder="Where do you work?" />
                         </div>
                         <SelectField label="Employment Type" id="employment_type" value={profile.employment_type} onValueChange={(value: string) => handleChange("employment_type", value)} onBlur={() => handleBlur("employment_type")} showError={shouldShowError("employment_type")} required options={[{ value: "full_time", label: "Full Time" }, { value: "part_time", label: "Part Time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }, { value: "volunteer", label: "Volunteer" }, { value: "student", label: "Student" }, { value: "unemployed", label: "Unemployed" }]} placeholder="Select employment type" />
                       </div>
 
-                      <Separator />
+                      <Separator className="bg-border/60" />
                       <div className="space-y-2 md:space-y-3">
                         <h3 className="text-sm md:text-lg font-semibold">License Information</h3>
                         <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                           <div className="space-y-1.5 md:space-y-2">
                             <Label htmlFor="license_issue_date" className="text-xs md:text-sm">License Issue Date</Label>
-                            <Input id="license_issue_date" type="date" value={profile.license_issue_date || ""} onChange={(e) => handleChange("license_issue_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11" />
+                            <Input id="license_issue_date" type="date" value={profile.license_issue_date || ""} onChange={(e) => handleChange("license_issue_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-ring/30" />
                           </div>
                           <div className="space-y-1.5 md:space-y-2">
                             <Label htmlFor="license_expiry_date" className="text-xs md:text-sm">License Expiry Date</Label>
-                            <Input id="license_expiry_date" type="date" value={profile.license_expiry_date || ""} onChange={(e) => handleChange("license_expiry_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11" />
+                            <Input id="license_expiry_date" type="date" value={profile.license_expiry_date || ""} onChange={(e) => handleChange("license_expiry_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11 border-0 shadow-none bg-muted/40 dark:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-ring/30" />
                           </div>
                         </div>
                         <SelectField label="License Status" id="license_status" value={profile.license_status} onValueChange={(value: string) => handleChange("license_status", value)} onBlur={() => handleBlur("license_status")} showError={shouldShowError("license_status")} required options={[{ value: "active", label: "Active" }, { value: "expired", label: "Expired" }, { value: "suspended", label: "Suspended" }, { value: "pending_renewal", label: "Pending Renewal" }]} placeholder="Select license status" />
                       </div>
                     </>
                   )}
-                  {/* Student fallback — explain why Professional info is not shown */}
+
+                  {/* Student info banner */}
                   {isStudent && (
                     <>
-                      <Separator />
-                      <div className="rounded-xl bg-blue-50/60 dark:bg-blue-950/20 p-3 md:p-4 space-y-1.5 md:space-y-2">
+                      <Separator className="bg-border/60" />
+                      <div className="rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 p-3 md:p-4 space-y-1.5 md:space-y-2 border-0 shadow-none">
                         <h3 className="text-sm md:text-base font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
                           <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                           Professional info isn't needed for students
@@ -768,10 +765,11 @@ export function Settings() {
                       </div>
                     </>
                   )}
-                  {/* Student-only: NCK / Exam number — kept because students DO have one */}
+
+                  {/* Student-only exam details */}
                   {isStudent && (
                     <>
-                      <Separator />
+                      <Separator className="bg-border/60" />
                       <div className="space-y-2 md:space-y-3">
                         <h3 className="text-sm md:text-lg font-semibold">Exam Details</h3>
                         <FormField label="NCK / Exam Number" id="nck_number_student" value={profile.nck_number} onChange={(e: any) => handleChange("nck_number", e.target.value)} onBlur={() => handleBlur("nck_number")} showError={shouldShowError("nck_number")} required placeholder="Your exam number" />
@@ -781,7 +779,8 @@ export function Settings() {
                       </div>
                     </>
                   )}
-                  <Button onClick={handleSaveProfile} className="flex items-center gap-1.5 md:gap-2 w-full sm:w-auto text-xs md:text-sm h-10 md:h-11" disabled={loading}>
+
+                  <Button onClick={handleSaveProfile} className="flex items-center gap-1.5 md:gap-2 w-full sm:w-auto text-xs md:text-sm h-10 md:h-11 border-0 shadow-none" disabled={loading}>
                     <Save className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     {loading ? "Saving..." : "Save Changes"}
                   </Button>

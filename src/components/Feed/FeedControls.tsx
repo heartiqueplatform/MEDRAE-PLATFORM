@@ -158,25 +158,29 @@ export default function FeedControls({
         }
     };
 
+    const clampedProgress = Math.max(progress, 0.5);
+
     return (
         <div
             className="
                 w-full
-                bg-white dark:bg-gray-950
-                border-b border-gray-200 dark:border-white/10
+                rounded-2xl sm:rounded-xl
+                bg-white dark:bg-muted/100
+                border-0
+                overflow-visible
             "
         >
-            <div className="mx-auto w-full max-w-3xl">
-                <div className="flex flex-col gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5">
+            <div className="mx-auto w-full">
+                <div className="flex flex-col gap-2.5 px-3 py-3 sm:px-4 sm:py-4">
 
-                    {/* ── ROW 1: message · tier pill · buttons ── */}
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                        <p className="min-w-0 shrink truncate text-[13.5px] font-semibold leading-tight text-gray-900 dark:text-gray-100">
+                    {/* ── ROW 1: message · tier · buttons ── */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                        <p className="min-w-0 shrink truncate text-[13px] font-semibold leading-tight text-gray-900 dark:text-gray-100">
                             {message}
                         </p>
 
                         <span
-                            className={`shrink-0 rounded-full px-1.5 py-[1px] text-[9.5px] font-semibold uppercase tracking-wide ${tierStyle.bg} ${tierStyle.text}`}
+                            className={`shrink-0 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide ${tierStyle.bg} ${tierStyle.text}`}
                         >
                             {tierStyle.label}
                         </span>
@@ -186,7 +190,7 @@ export default function FeedControls({
                                 size="sm"
                                 disabled={busy !== null}
                                 onClick={handleResetImages}
-                                className="h-7 cursor-pointer rounded-md border-0 bg-blue-500 px-3 text-[11px] font-semibold text-white shadow-none hover:bg-blue-600 active:scale-[0.98] disabled:opacity-60"
+                                className="h-7 cursor-pointer rounded-md border-0 bg-blue-500 px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-blue-600 active:scale-[0.98] disabled:opacity-60"
                             >
                                 {busy === "images" ? "Resetting…" : "Reset Images"}
                             </Button>
@@ -195,68 +199,79 @@ export default function FeedControls({
                                 size="sm"
                                 disabled={busy !== null}
                                 onClick={handleResetQuestions}
-                                className="h-7 cursor-pointer rounded-md border-0 bg-red-500 px-3 text-[11px] font-semibold text-white shadow-none hover:bg-red-600 active:scale-[0.98] disabled:opacity-60"
+                                className="h-7 cursor-pointer rounded-md border-0 bg-red-500 px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-red-600 active:scale-[0.98] disabled:opacity-60"
                             >
                                 {busy === "questions" ? "Resetting…" : "Reset Questions"}
                             </Button>
                         </div>
                     </div>
 
-                    {/* ── ROW 2: user data ── */}
-                    <div className="flex items-center justify-between gap-2 text-[10.5px] tabular-nums text-gray-500 dark:text-gray-400">
-                        <div className="flex min-w-0 items-center gap-1.5">
+                    {/* ── ROW 2: progress bar with % head-dot ── */}
+                    <div className="relative mt-1 h-5">
+                        <div className="absolute inset-x-0 top-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+                            <div
+                                className="h-full rounded-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 transition-[width] duration-700 ease-out"
+                                style={{ width: `${clampedProgress}%` }}
+                            />
+                        </div>
+
+                        {/* Head dot + % label (no shadow, no ring) */}
+                        <div
+                            className="pointer-events-none absolute top-0 -translate-x-1/2 transition-[left] duration-700 ease-out"
+                            style={{ left: `${clampedProgress}%` }}
+                        >
+                            <div className="flex flex-col items-center">
+                                <span className="whitespace-nowrap rounded-full bg-orange-500 px-1.5 py-[1px] text-[8.5px] font-bold leading-none text-white tabular-nums">
+                                    {remaining > 0 ? `${stepProgress}%` : "🏆"}
+                                </span>
+                                <div className="-mt-[1px] h-2 w-2 rounded-full border-2 border-white bg-orange-500 dark:border-gray-950" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── ROW 3: counter (left) + milestone ticks (same row) ── */}
+                    <div className="relative mt-1 h-4 w-full text-[10.5px] tabular-nums">
+                        {/* Counter pinned hard-left, in normal flow so it never gets overlapped */}
+                        <div className="absolute inset-y-0 left-0 z-10 flex items-center gap-1 bg-white dark:bg-muted/100 pr-2 text-gray-500 dark:text-gray-400">
                             <span className="font-semibold text-gray-700 dark:text-gray-200">
                                 {questionCount.toLocaleString()}
                             </span>
                             <span>tried</span>
-                            {remaining > 0 && (
-                                <>
-                                    <span className="text-gray-300 dark:text-gray-600">·</span>
-                                    <span className="font-semibold text-gray-700 dark:text-gray-200">
-                                        {remaining.toLocaleString()}
+                        </div>
+
+                        {/* Milestone ticks — laid out on the same row, aligned to the bar's log positions */}
+                        <div className="absolute inset-y-0 left-0 right-0">
+                            {MILESTONES.map((m, idx) => {
+                                const reached = questionCount >= m.value;
+                                const leftPct = logPositionPct(m.value);
+                                const isKey = KEY_MILESTONES.includes(m.value);
+                                const isFirst = idx === 0;
+                                const isLast = idx === MILESTONES.length - 1;
+
+                                const positionStyle = isFirst
+                                    ? { left: 0 }
+                                    : isLast
+                                        ? { right: 0 }
+                                        : { left: `${leftPct}%` };
+
+                                const transformClass = isFirst || isLast
+                                    ? "translate-x-0"
+                                    : "-translate-x-1/2";
+
+                                return (
+                                    <span
+                                        key={m.value}
+                                        className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[8.5px] tabular-nums transition-colors ${transformClass} ${reached
+                                            ? "font-semibold text-orange-500"
+                                            : "font-medium text-gray-400 dark:text-gray-600"
+                                            } ${!isKey ? "hidden sm:inline" : ""}`}
+                                        style={positionStyle}
+                                    >
+                                        {m.label}
                                     </span>
-                                    <span>to {next.label}</span>
-                                </>
-                            )}
+                                );
+                            })}
                         </div>
-                        <span className="shrink-0 font-medium text-orange-500">
-                            {remaining > 0 ? `${stepProgress}%` : "🏆 Done"}
-                        </span>
-                    </div>
-
-                    {/* ── ROW 3: progress bar + head dot ── */}
-                    <div className="relative mt-0.5">
-                        <div className="relative h-1 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
-                            <div
-                                className="h-full rounded-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 transition-[width] duration-700 ease-out"
-                                style={{ width: `${Math.max(progress, 0.5)}%` }}
-                            />
-                        </div>
-                        <div
-                            className="pointer-events-none absolute -top-[2px] h-2 w-2 -translate-x-1/2 rounded-full border-2 border-white bg-orange-500 shadow-[0_0_0_2px_rgba(249,115,22,0.25)] transition-[left] duration-700 ease-out dark:border-gray-950"
-                            style={{ left: `${Math.max(progress, 0.5)}%` }}
-                        />
-                    </div>
-
-                    {/* ── ROW 4: ticks ── */}
-                    <div className="relative mt-0.5 h-3">
-                        {MILESTONES.map((m) => {
-                            const reached = questionCount >= m.value;
-                            const leftPct = logPositionPct(m.value);
-                            const isKey = KEY_MILESTONES.includes(m.value);
-                            return (
-                                <span
-                                    key={m.value}
-                                    className={`absolute -translate-x-1/2 whitespace-nowrap text-[9px] tabular-nums transition-colors ${reached
-                                        ? "font-semibold text-orange-500"
-                                        : "font-medium text-gray-400 dark:text-gray-600"
-                                        } ${!isKey ? "hidden sm:inline" : ""}`}
-                                    style={{ left: `${leftPct}%` }}
-                                >
-                                    {m.label}
-                                </span>
-                            );
-                        })}
                     </div>
 
                 </div>

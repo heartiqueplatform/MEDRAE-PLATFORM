@@ -1,6 +1,6 @@
 // src/pages/grouppay/index.tsx
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
 import { useGroupPay } from '@/hooks/useGroupPay';
@@ -16,18 +16,48 @@ import {
     Plus,
     Search,
     Sparkles,
-    Wallet,
-    Rocket,
-    ShieldCheck,
-    TrendingDown,
     ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { playSound } from '@/lib/soundManager';
 import { useHomeRoute } from '@/hooks/useHomeRoute';
+
+// ─────────────────────────────────────────────────────────────
+// Hero slides
+// ─────────────────────────────────────────────────────────────
+const HERO_SLIDES = [
+    {
+        image:
+            'https://plus.unsplash.com/premium_photo-1661767467261-4a4bed92a507?q=80&w=1600&auto=format&fit=crop',
+        eyebrow: 'Study together',
+        title: 'Split the cost.\nUnlock premium together.',
+        subtitle:
+            'Form a study group, collect contributions via M-Pesa, and unlock premium access for everyone — for a fraction of the solo price.',
+    },
+    {
+        image:
+            'https://images.unsplash.com/photo-1774599661166-ae302f07dd37?w=1600&auto=format&fit=crop&q=70',
+        eyebrow: 'One payment',
+        title: 'One payment.\nEveryone in.',
+        subtitle:
+            'Secure, one-time contributions. No subscriptions, no surprises — just collective access done right.',
+    },
+    {
+        image:
+            'https://plus.unsplash.com/premium_photo-1661274033354-1847f286e957?w=1600&auto=format&fit=crop&q=70',
+        eyebrow: 'Cheaper per person',
+        title: 'The more join,\nthe less you pay.',
+        subtitle:
+            'Transparent per-seat pricing that shrinks as your group grows. Premium has never been this affordable.',
+    },
+];
+
+const AUTOPLAY_MS = 5200;
+
 export default function GroupPayHome() {
     const navigate = useNavigate();
-    const home = useHomeRoute();   // 👈 1) NEW
+    const home = useHomeRoute();
     const { user } = useAuth();
     const {
         groups,
@@ -39,11 +69,51 @@ export default function GroupPayHome() {
 
     const contentRef = useRef<HTMLDivElement | null>(null);
 
+    // ── Header glass intensity on scroll ─────────────────────
+    const [scrolled, setScrolled] = useState(false);
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+        const onScroll = () => setScrolled(el.scrollTop > 8);
+        onScroll();
+        el.addEventListener('scroll', onScroll, { passive: true });
+        return () => el.removeEventListener('scroll', onScroll);
+    }, []);
+
+    // ── Carousel state ───────────────────────────────────────
+    const [slide, setSlide] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const trackRef = useRef<HTMLDivElement | null>(null);
+
+    const goToSlide = useCallback((i: number) => {
+        const track = trackRef.current;
+        if (!track) return;
+        const idx = (i + HERO_SLIDES.length) % HERO_SLIDES.length;
+        track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+        setSlide(idx);
+    }, []);
+
+    // Autoplay
+    useEffect(() => {
+        if (paused) return;
+        const t = setInterval(() => goToSlide(slide + 1), AUTOPLAY_MS);
+        return () => clearInterval(t);
+    }, [slide, paused, goToSlide]);
+
+    // Sync index on manual swipe
+    const onTrackScroll = useCallback(() => {
+        const track = trackRef.current;
+        if (!track) return;
+        const idx = Math.round(track.scrollLeft / track.clientWidth);
+        if (idx !== slide) setSlide(idx);
+    }, [slide]);
+
+    // ── Back handler ─────────────────────────────────────────
     const handleBack = useCallback(() => {
         playSound('tap');
         if (navigator.vibrate) navigator.vibrate(20);
-        navigate(home, { replace: true });   // 👈 2) CHANGED — was "/dashboard"
-    }, [navigate, home]);   // 👈 3) add `home` to deps
+        navigate(home, { replace: true });
+    }, [navigate, home]);
 
     const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
@@ -58,6 +128,7 @@ export default function GroupPayHome() {
     };
 
     const handleCreateGroup = () => {
+        playSound('tap');
         navigate('/grouppay/create');
     };
 
@@ -76,121 +147,178 @@ export default function GroupPayHome() {
         return member?.role || null;
     };
 
-    // ============================================================
-    // Is the current user already inside any group?
-    // Used to decide whether to show the "go solo" nudge.
-    // ============================================================
     const userIsInAnyGroup = user
         ? groups.some((g: any) => isUserMember(g))
         : false;
 
-    // ============================================================
-    // SKELETON — rendered INSIDE the full-screen shell so the
-    // header + back arrow stay visible during loading.
-    // ============================================================
     const showSkeleton = loading && groups.length === 0;
 
     return (
         <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
-            {/* ── Sticky top bar with back arrow ─────────────────── */}
-            <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
-                border-b border-gray-100 dark:border-gray-800
-                bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
-                z-30 safe-top">
+            {/* ── Floating glass header (no border, no shadow) ──── */}
+            <header
+                className={`
+                    flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
+                    z-30 safe-top transition-all duration-300
+                    ${scrolled
+                        ? 'bg-background/80 backdrop-blur-xl'
+                        : 'bg-transparent'}
+                `}
+            >
                 <button
                     onClick={handleBack}
                     aria-label="Go back"
                     className="flex items-center justify-center h-10 w-10 rounded-full
-                        bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                        bg-white/70 dark:bg-white/10 backdrop-blur-md
+                        hover:bg-white dark:hover:bg-white/20
                         active:scale-95 transition-all touch-manipulation"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+                <h1 className="text-base sm:text-lg font-semibold tracking-tight
+                    text-gray-900 dark:text-white truncate">
                     GroupPay
                 </h1>
+                <div className="ml-auto">
+                    <button
+                        onClick={handleCreateGroup}
+                        aria-label="Create group"
+                        className="flex items-center justify-center h-10 w-10 rounded-full
+                            bg-gradient-to-br from-green-600 to-blue-600 text-white
+                            active:scale-95 transition-all touch-manipulation"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                </div>
             </header>
 
-            {/* ── Internally-scrolling content ───────────────────── */}
+            {/* ── Scrolling content ─────────────────────────────── */}
             <div
                 ref={contentRef}
                 className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-                    custom-scrollbar overscroll-contain"
+                    custom-scrollbar overscroll-contain
+                    [-webkit-overflow-scrolling:touch]"
             >
                 {showSkeleton ? (
-                    // ─── SKELETON ─────────────────────────────────────
-                    <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-6 pb-24 safe-bottom">
-                        {/* Hero skeleton */}
-                        <section className="text-center space-y-4 px-4 pt-10 md:pt-14 pb-6 md:pb-10">
-                            <Skeleton className="h-8 md:h-10 w-40 mx-auto rounded-full border-0" />
-                            <Skeleton className="h-10 md:h-14 w-3/4 mx-auto rounded-xl border-0" />
-                            <Skeleton className="h-5 md:h-6 w-full max-w-xl mx-auto rounded-xl border-0" />
-                            <div className="flex gap-3 justify-center pt-3">
-                                <Skeleton className="h-12 w-40 rounded-xl border-0" />
-                                <Skeleton className="h-12 w-40 rounded-xl border-0" />
-                            </div>
-                        </section>
+                    <SkeletonLayout />
+                ) : (
+                    <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-24 safe-bottom">
 
-                        {/* Group grid skeleton */}
-                        <section className="px-4 md:px-0 pb-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                                {[1, 2, 3, 4, 5, 6].map((i) => (
-                                    <Card
+                        {/* ═══════════════════════════════════════════ */}
+                        {/* HERO CAROUSEL                              */}
+                        {/* ═══════════════════════════════════════════ */}
+                        <section
+                            className="relative -mx-0 md:rounded-[28px] md:overflow-hidden"
+                            onMouseEnter={() => setPaused(true)}
+                            onMouseLeave={() => setPaused(false)}
+                            onTouchStart={() => setPaused(true)}
+                            onTouchEnd={() => setPaused(false)}
+                        >
+                            <div
+                                ref={trackRef}
+                                onScroll={onTrackScroll}
+                                className="flex overflow-x-auto snap-x snap-mandatory
+                                    scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]
+                                    [&::-webkit-scrollbar]:hidden"
+                            >
+                                {HERO_SLIDES.map((s, i) => (
+                                    <div
                                         key={i}
-                                        className="p-4 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-none"
+                                        className="relative min-w-full h-[68vh] md:h-[560px]
+                                            snap-center snap-always shrink-0 overflow-hidden"
                                     >
-                                        <Skeleton className="h-6 w-3/4 mb-3 rounded-lg border-0" />
-                                        <Skeleton className="h-4 w-1/2 mb-5 rounded-lg border-0" />
-                                        <Skeleton className="h-4 w-full mb-2 rounded-lg border-0" />
-                                        <Skeleton className="h-4 w-2/3 rounded-lg border-0" />
-                                    </Card>
+                                        {/* Background image */}
+                                        <div
+                                            className="absolute inset-0 bg-cover bg-center scale-105
+                                                transition-transform duration-[8000ms] ease-out"
+                                            style={{ backgroundImage: `url(${s.image})` }}
+                                        />
+                                        {/* Gradient overlays for legibility */}
+                                        <div className="absolute inset-0 bg-gradient-to-t
+                                            from-black/85 via-black/40 to-black/20" />
+                                        <div className="absolute inset-0 bg-gradient-to-br
+                                            from-green-900/30 via-transparent to-blue-900/30 mix-blend-multiply" />
+
+                                        {/* Slide content */}
+                                        <div className="relative z-10 h-full flex flex-col justify-end
+                                            px-6 pb-16 md:pb-20 pt-24 max-w-3xl">
+                                            <span className="inline-flex items-center gap-1.5 self-start
+                                                px-3 py-1.5 rounded-full mb-4
+                                                bg-white/15 backdrop-blur-md
+                                                text-[11px] md:text-xs font-semibold uppercase tracking-wider
+                                                text-white/95">
+                                                <Sparkles className="w-3.5 h-3.5" />
+                                                {s.eyebrow}
+                                            </span>
+                                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold
+                                                leading-[1.03] tracking-tight text-white
+                                                whitespace-pre-line">
+                                                {s.title}
+                                            </h1>
+                                            <p className="mt-4 text-sm md:text-lg text-white/85
+                                                max-w-xl leading-relaxed">
+                                                {s.subtitle}
+                                            </p>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
+
+                            {/* Dots */}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20
+                                flex items-center gap-2">
+                                {HERO_SLIDES.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => goToSlide(i)}
+                                        aria-label={`Slide ${i + 1}`}
+                                        className={`transition-all duration-300 rounded-full
+                                            ${i === slide
+                                                ? 'w-7 h-2 bg-white'
+                                                : 'w-2 h-2 bg-white/50 hover:bg-white/80'}`}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Arrows (desktop) */}
+                            <button
+                                onClick={() => goToSlide(slide - 1)}
+                                aria-label="Previous slide"
+                                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20
+                                    h-11 w-11 items-center justify-center rounded-full
+                                    bg-white/15 hover:bg-white/30 backdrop-blur-md
+                                    text-white transition-all active:scale-95"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => goToSlide(slide + 1)}
+                                aria-label="Next slide"
+                                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20
+                                    h-11 w-11 items-center justify-center rounded-full
+                                    bg-white/15 hover:bg-white/30 backdrop-blur-md
+                                    text-white transition-all active:scale-95"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
                         </section>
-                    </div>
-                ) : (
-                    // ─── REAL CONTENT ─────────────────────────────────
-                    <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-6 pb-24 safe-bottom">
 
-                        {/* ============================================ */}
-                        {/* HERO SECTION — edge-to-edge on mobile */}
-                        {/* ============================================ */}
-                        <section className="relative text-center space-y-6 px-4 pt-6 md:pt-12 pb-8 md:pb-14">
-
-                            {/* Soft gradient wash */}
-                            <div className="pointer-events-none absolute inset-0 -z-0
-                                bg-gradient-to-br from-green-50/60 via-transparent to-blue-50/60
-                                dark:from-green-950/10 dark:via-transparent dark:to-blue-950/10" />
-
-                            <div className="relative z-10 space-y-6 max-w-3xl mx-auto">
-
-                                {/* Headline */}
-                                <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight
-                                    bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600
-                                    bg-clip-text text-transparent">
-                                    Split the cost.
-                                    <br className="hidden md:block" />
-                                    Unlock premium together.
-                                </h1>
-
-                                {/* Subheadline */}
-                                <p className="text-sm md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                                    Form a study group, collect contributions via M-Pesa,
-                                    and unlock premium access for everyone — for a fraction of the solo price.
-                                </p>
-
-                                {/* CTA buttons */}
-                                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center pt-2">
+                        {/* ═══════════════════════════════════════════ */}
+                        {/* FLOATING CTA DOCK (no border, no shadow)   */}
+                        {/* ═══════════════════════════════════════════ */}
+                        <section className="relative z-10 -mt-8 px-4 md:px-0">
+                            <div className="mx-auto max-w-2xl rounded-2xl
+                                bg-background/80 backdrop-blur-xl p-3">
+                                <div className="flex flex-col sm:flex-row gap-2.5">
                                     <Button
                                         size="lg"
                                         onClick={handleCreateGroup}
-                                        className="gap-2 h-12 md:h-11 px-6 rounded-xl border-0
+                                        className="flex-1 gap-2 h-12 rounded-xl border-0
                                             bg-gradient-to-r from-green-600 to-blue-600
                                             hover:from-green-700 hover:to-blue-700
-                                            text-white font-bold
-                                            shadow-lg shadow-green-600/20
-                                            hover:shadow-xl hover:shadow-green-600/30
-                                            transition-all"
+                                            text-white font-semibold text-[15px]
+                                            active:scale-[0.98]
+                                            transition-all duration-200"
                                     >
                                         <Plus className="w-5 h-5" />
                                         Create Group
@@ -199,50 +327,47 @@ export default function GroupPayHome() {
                                         size="lg"
                                         variant="outline"
                                         onClick={handleBrowseGroups}
-                                        className="gap-2 h-12 md:h-11 px-6 rounded-xl border-0
-                                            bg-white dark:bg-slate-800
-                                            hover:bg-slate-50 dark:hover:bg-slate-700
-                                            text-slate-900 dark:text-white font-medium"
+                                        className="flex-1 gap-2 h-12 rounded-xl
+                                            border-0
+                                            bg-white/60 dark:bg-white/[0.04]
+                                            hover:bg-white dark:hover:bg-white/10
+                                            text-slate-900 dark:text-white font-medium
+                                            active:scale-[0.98] transition-all duration-200"
                                     >
                                         <Users className="w-5 h-5" />
                                         Browse Groups
                                     </Button>
                                 </div>
-
-                                {/* Trust row */}
-                                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-3
-                                    text-[11px] md:text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                        <TrendingDown className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                                        <span>Cheaper per person</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <ShieldCheck className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                                        <span>One-time payment</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Wallet className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                                        <span>M-Pesa powered</span>
-                                    </div>
-                                </div>
                             </div>
                         </section>
 
-                        {/* ============================================ */}
-                        {/* SOLO SUBSCRIPTION NUDGE                     */}
-                        {/* ============================================ */}
+                        {/* ═══════════════════════════════════════════ */}
+                        {/* SOLO NUDGE                                 */}
+                        {/* ═══════════════════════════════════════════ */}
                         {!userIsInAnyGroup && (
-                            <section className="px-4 md:px-0 pb-4 md:pb-6">
-                                <SoloSubscriptionCard
-                                    role={user?.role ?? null}
-                                />
+                            <section className="px-4 md:px-0 pt-6 pb-4 md:pb-6 reveal">
+                                <SoloSubscriptionCard role={user?.role ?? null} />
                             </section>
                         )}
 
-                        {/* ============================================ */}
-                        {/* SEARCH SECTION                              */}
-                        {/* ============================================ */}
-                        <section id="groups-section" className="px-4 md:px-0 pb-4 md:pb-6">
+                        {/* ═══════════════════════════════════════════ */}
+                        {/* SEARCH                                     */}
+                        {/* ═══════════════════════════════════════════ */}
+                        <section
+                            id="groups-section"
+                            className="px-4 md:px-0 pt-6 pb-4 md:pb-6 reveal"
+                        >
+                            <div className="flex items-end justify-between mb-3 px-1">
+                                <div>
+                                    <h2 className="text-[22px] md:text-2xl font-bold tracking-tight
+                                        text-slate-900 dark:text-white">
+                                        Find a group
+                                    </h2>
+                                    <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                                        Search by school, course, or group name
+                                    </p>
+                                </div>
+                            </div>
                             <SearchFilters
                                 search={filters.search}
                                 school={filters.school}
@@ -255,63 +380,36 @@ export default function GroupPayHome() {
                             />
                         </section>
 
-                        {/* ============================================ */}
-                        {/* GROUPS GRID                                 */}
-                        {/* ============================================ */}
-                        <section className="px-4 md:px-0 pb-8">
+                        {/* ═══════════════════════════════════════════ */}
+                        {/* GROUPS GRID                                */}
+                        {/* ═══════════════════════════════════════════ */}
+                        <section className="px-4 md:px-0 pb-8 reveal">
                             {groups.length === 0 ? (
-                                <Card className="border-0 rounded-2xl bg-white dark:bg-muted/30 shadow-none">
-                                    <CardContent className="flex flex-col items-center justify-center py-16 md:py-20 px-6">
-                                        <div className="w-16 h-16 rounded-full
-                                            bg-gradient-to-br from-green-100 to-blue-100
-                                            dark:from-green-950/40 dark:to-blue-950/40
-                                            flex items-center justify-center mb-5 border-0">
-                                            <Search className="w-7 h-7 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-2 text-center">
-                                            {filters.search || filters.school || filters.course
-                                                ? "No groups match your filters"
-                                                : "Be the first to start a group"}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed">
-                                            {filters.search || filters.school || filters.course
-                                                ? "Try adjusting your search or clear the filters to see every group."
-                                                : "Create a group with your classmates and split the cost of premium access. The more join, the cheaper it gets for everyone."}
-                                        </p>
-                                        {!filters.search && !filters.school && !filters.course && (
-                                            <Button
-                                                onClick={handleCreateGroup}
-                                                className="mt-6 gap-2 h-11 px-5 rounded-xl border-0
-                                                    bg-gradient-to-r from-green-600 to-blue-600
-                                                    hover:from-green-700 hover:to-blue-700
-                                                    text-white font-bold"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                Create the First Group
-                                            </Button>
-                                        )}
-                                    </CardContent>
-                                </Card>
+                                <EmptyState
+                                    hasFilters={!!(filters.search || filters.school || filters.course)}
+                                    onCreate={handleCreateGroup}
+                                />
                             ) : (
                                 <>
-                                    {/* Section header */}
-                                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                                    <div className="flex items-center justify-between mb-3 md:mb-4 px-1">
                                         <div className="flex items-center gap-2">
-                                            <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">
+                                            <h2 className="text-[22px] md:text-2xl font-bold tracking-tight
+                                                text-slate-900 dark:text-white">
                                                 Active Groups
                                             </h2>
                                             <Badge className="border-0 bg-slate-100 dark:bg-slate-800
-                                                text-slate-600 dark:text-slate-400
-                                                text-[10px] font-bold">
+                                                text-slate-600 dark:text-slate-300
+                                                text-[11px] font-semibold rounded-full px-2.5">
                                                 {groups.length}
                                             </Badge>
                                         </div>
                                         <button
                                             onClick={handleCreateGroup}
-                                            className="text-xs md:text-sm font-bold
+                                            className="text-xs md:text-sm font-semibold
                                                 text-green-600 dark:text-green-400
                                                 hover:text-green-700 dark:hover:text-green-300
-                                                transition-colors flex items-center gap-1"
+                                                transition-colors flex items-center gap-1
+                                                active:scale-95"
                                         >
                                             <Plus className="w-3.5 h-3.5" />
                                             New Group
@@ -336,6 +434,115 @@ export default function GroupPayHome() {
                     </div>
                 )}
             </div>
+
+            {/* Local styles for reveal + no-scrollbar */}
+            <style>{`
+                .reveal {
+                    animation: revealUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+                }
+                @keyframes revealUp {
+                    from { opacity: 0; transform: translateY(14px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .reveal { animation: none; }
+                }
+                .scrollbar-none::-webkit-scrollbar { display: none; }
+                .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
+                .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+            `}</style>
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Empty state (no border, no shadow)
+   ───────────────────────────────────────────────────────────── */
+function EmptyState({
+    hasFilters,
+    onCreate,
+}: {
+    hasFilters: boolean;
+    onCreate: () => void;
+}) {
+    return (
+        <Card className="rounded-3xl bg-white dark:bg-muted/20 shadow-none border-0">
+            <CardContent className="flex flex-col items-center justify-center py-16 md:py-20 px-6">
+                <div className="w-16 h-16 rounded-2xl
+                    bg-gradient-to-br from-green-100 to-blue-100
+                    dark:from-green-950/40 dark:to-blue-950/40
+                    flex items-center justify-center mb-5">
+                    <Search className="w-7 h-7 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-lg md:text-xl font-bold tracking-tight
+                    text-slate-900 dark:text-white mb-2 text-center text-balance">
+                    {hasFilters ? 'No groups match your filters' : 'Be the first to start a group'}
+                </h3>
+                <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed text-balance">
+                    {hasFilters
+                        ? 'Try adjusting your search or clear the filters to see every group.'
+                        : 'Create a group with your classmates and split the cost of premium access. The more join, the cheaper it gets for everyone.'}
+                </p>
+                {!hasFilters && (
+                    <Button
+                        onClick={onCreate}
+                        className="mt-6 gap-2 h-11 px-5 rounded-xl border-0
+                            bg-gradient-to-r from-green-600 to-blue-600
+                            hover:from-green-700 hover:to-blue-700
+                            text-white font-semibold
+                            active:scale-[0.98] transition-all"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create the First Group
+                    </Button>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Skeleton — mirrors the new layout (no borders/shadows)
+   ───────────────────────────────────────────────────────────── */
+function SkeletonLayout() {
+    return (
+        <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-24 safe-bottom">
+            {/* Carousel skeleton */}
+            <Skeleton className="h-[68vh] md:h-[560px] md:rounded-[28px] border-0" />
+
+            {/* CTA skeleton */}
+            <div className="relative z-10 -mt-8 px-4 md:px-0">
+                <div className="mx-auto max-w-2xl rounded-2xl p-3
+                    bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                        <Skeleton className="flex-1 h-12 rounded-xl border-0" />
+                        <Skeleton className="flex-1 h-12 rounded-xl border-0" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Search skeleton */}
+            <section className="px-4 md:px-0 pt-6 pb-4">
+                <Skeleton className="h-6 w-40 mb-3 rounded-lg border-0" />
+                <Skeleton className="h-12 w-full rounded-xl border-0" />
+            </section>
+
+            {/* Grid skeleton */}
+            <section className="px-4 md:px-0 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <Card
+                            key={i}
+                            className="p-4 rounded-2xl bg-white dark:bg-muted/30 shadow-none border-0"
+                        >
+                            <Skeleton className="h-6 w-3/4 mb-3 rounded-lg border-0" />
+                            <Skeleton className="h-4 w-1/2 mb-5 rounded-lg border-0" />
+                            <Skeleton className="h-4 w-full mb-2 rounded-lg border-0" />
+                            <Skeleton className="h-4 w-2/3 rounded-lg border-0" />
+                        </Card>
+                    ))}
+                </div>
+            </section>
         </div>
     );
 }

@@ -7,10 +7,11 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
+
 const HelpCenter = () => {
     const navigate = useNavigate();
-    const home = useHomeRoute();                    // 👈 ADD
-    const handleBack = useCallback(() => {          // 👈 ADD
+    const home = useHomeRoute();
+    const handleBack = useCallback(() => {
         playSound("tap");
         if (navigator.vibrate) navigator.vibrate(20);
         navigate(home, { replace: true });
@@ -444,7 +445,7 @@ const HelpCenter = () => {
     return (
         <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden font-sans">
 
-            {/* ── Sticky top bar with back arrow ─────────────────── */}
+            {/* ── Sticky top bar ─────────────────────────────────── */}
             <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
                 border-b border-gray-100 dark:border-gray-800
                 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
@@ -468,33 +469,31 @@ const HelpCenter = () => {
                 </div>
             </header>
 
-            {/* ── Internally-scrolling content ───────────────────── */}
+            {/* ── Scrolling content ─────────────────────────────── */}
             <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
                 custom-scrollbar overscroll-contain">
 
-                {/* Sticky Search Bar */}
-                <div className="sticky top-0 z-[100] bg-background/95 dark:bg-background/90 backdrop-blur-lg p-4 md:p-5 border-b border-gray-100 dark:border-gray-800">
-                    <div className="max-w-full mx-auto px-0 md:px-2 lg:px-6">
+                {/* Sticky search bar */}
+                <div className="sticky top-0 z-[100] bg-background/95 dark:bg-background/90 backdrop-blur-lg p-3 md:p-5 border-b border-gray-100 dark:border-gray-800">
+                    <div className="max-w-full mx-auto">
                         <div className="relative">
-                            <div className="relative">
-                                <Search size={20} className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                                <input
-                                    ref={searchInputRef}
-                                    type="text"
-                                    placeholder="Search for answers..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onFocus={() => setIsSearchFocused(true)}
-                                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                                    className="w-full pl-11 md:pl-12 pr-11 py-3 md:py-4 bg-white dark:bg-[#161b22] border-0 rounded-xl text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700 shadow-sm transition-all"
-                                    autoComplete="off"
-                                />
-                                {searchQuery && (
-                                    <button onClick={() => setSearchQuery('')} className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">
-                                        <X size={18} />
-                                    </button>
-                                )}
-                            </div>
+                            <Search size={20} className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                            <input
+                                ref={searchInputRef}
+                                type="text"
+                                placeholder="Search for answers..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                                className="w-full pl-11 md:pl-12 pr-11 py-3 md:py-4 bg-white dark:bg-[#161b22] border-0 rounded-xl text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700 shadow-sm transition-all"
+                                autoComplete="off"
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">
+                                    <X size={18} />
+                                </button>
+                            )}
 
                             {/* Search Results Dropdown */}
                             {searchResults && searchResults.length > 0 && isSearchFocused && (
@@ -539,63 +538,60 @@ const HelpCenter = () => {
                     </div>
                 </div>
 
-                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6">
-                    {/* Help Center Header */}
-                    <div className="px-2 md:px-0">
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
-                            {/* Back + label row */}
-                            <div className="flex items-center gap-2 mb-3">
-                                <button
-                                    onClick={() => navigate(-1)}
-                                    className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center -ml-1 transition-colors"
-                                >
-                                    <ArrowLeft size={18} />
-                                </button>
-                                <ShieldCheck size={16} className="text-emerald-500 dark:text-emerald-400" />
-                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                    Help Center
-                                </span>
-                                <span className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-[#21262d] px-3 py-1 rounded-full">
-                                    24/7
-                                </span>
+                {/* ── MAIN CONTENT — 16px mobile inset ───────────── */}
+                <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-3 md:space-y-4">
+
+                    {/* Help Center intro card */}
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 md:p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center -ml-1 transition-colors"
+                            >
+                                <ArrowLeft size={18} />
+                            </button>
+                            <ShieldCheck size={16} className="text-emerald-500 dark:text-emerald-400" />
+                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                Help Center
+                            </span>
+                            <span className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-[#21262d] px-3 py-1 rounded-full">
+                                24/7
+                            </span>
+                        </div>
+
+                        <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">
+                            How can we help you today?
+                        </h3>
+                        <p className="text-base text-gray-600 dark:text-gray-400 mt-1.5 leading-relaxed">
+                            Search common questions or browse by topic below. Every answer is written by our team, kept short, and updated weekly.
+                        </p>
+
+                        <div className="grid grid-cols-3 gap-2 mt-4">
+                            <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
+                                <p className="text-base font-bold text-gray-800 dark:text-gray-200">2.3K+</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Students</p>
                             </div>
-
-                            {/* Heading */}
-                            <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">
-                                How can we help you today?
-                            </h3>
-                            <p className="text-base text-gray-600 dark:text-gray-400 mt-1.5 leading-relaxed">
-                                Search common questions or browse by topic below. Every answer is written by our team, kept short, and updated weekly.
-                            </p>
-
-                            {/* Quiet stats row */}
-                            <div className="grid grid-cols-3 gap-3 mt-4">
-                                <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
-                                    <p className="text-base font-bold text-gray-800 dark:text-gray-200">2.3K+</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Students</p>
-                                </div>
-                                <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
-                                    <p className="text-base font-bold text-gray-800 dark:text-gray-200">98.7%</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pass rate</p>
-                                </div>
-                                <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
-                                    <p className="text-base font-bold text-gray-800 dark:text-gray-200">Weekly</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Updates</p>
-                                </div>
+                            <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
+                                <p className="text-base font-bold text-gray-800 dark:text-gray-200">98.7%</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pass rate</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
+                                <p className="text-base font-bold text-gray-800 dark:text-gray-200">Weekly</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Updates</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Quick Help Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2 md:px-0">
-                        <div className="bg-white dark:bg-gray-900 p-5 text-center rounded-2xl shadow-sm">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white dark:bg-[#161b22] p-4 text-center rounded-2xl shadow-sm">
                             <div className="w-12 h-12 bg-gray-100 dark:bg-[#21262d] rounded-xl flex items-center justify-center mx-auto mb-3">
                                 <Clock size={24} className="text-gray-500 dark:text-gray-400" />
                             </div>
                             <p className="text-base font-bold text-gray-700 dark:text-gray-300">Quick Start Guide</p>
                             <p className="text-sm text-gray-500">5 min to mastery</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-900 p-5 text-center rounded-2xl shadow-sm">
+                        <div className="bg-white dark:bg-[#161b22] p-4 text-center rounded-2xl shadow-sm">
                             <div className="w-12 h-12 bg-gray-100 dark:bg-[#21262d] rounded-xl flex items-center justify-center mx-auto mb-3">
                                 <BarChart size={24} className="text-gray-500 dark:text-gray-400" />
                             </div>
@@ -604,79 +600,77 @@ const HelpCenter = () => {
                         </div>
                     </div>
 
-                    {/* KRCHN Curriculum Section */}
-                    <div className="px-2 md:px-0">
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
-                            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-[#21262d] px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                <BookOpen className="h-3.5 w-3.5" />
-                                Complete KRCHN Curriculum
-                            </div>
+                    {/* KRCHN Curriculum */}
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 md:p-5 shadow-sm">
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-[#21262d] px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            <BookOpen className="h-3.5 w-3.5" />
+                            Complete KRCHN Curriculum
+                        </div>
 
-                            <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">
-                                Study the Full NCK Syllabus — Organized
-                            </h3>
-                            <p className="text-base text-gray-600 dark:text-gray-400 mt-1.5 leading-relaxed">
-                                Medrae has built the most complete digital version of the Kenya Registered Community Health Nursing (KRCHN) curriculum. Every topic mapped, every question aligned.
+                        <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">
+                            Study the Full NCK Syllabus — Organized
+                        </h3>
+                        <p className="text-base text-gray-600 dark:text-gray-400 mt-1.5 leading-relaxed">
+                            Medrae has built the most complete digital version of the Kenya Registered Community Health Nursing (KRCHN) curriculum. Every topic mapped, every question aligned.
+                        </p>
+
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {[
+                                { icon: GraduationCap, value: "3", label: "Academic Years" },
+                                { icon: BookOpen, value: "80", label: "Modules" },
+                                { icon: Target, value: "776+", label: "Topics" },
+                                { icon: Brain, value: "15,400+", label: "NCK Questions" },
+                            ].map((stat, i) => (
+                                <div key={i} className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
+                                    <stat.icon className="w-5 h-5 mx-auto mb-1.5 text-gray-500 dark:text-gray-400" />
+                                    <p className="text-base font-bold text-gray-800 dark:text-gray-200">{stat.value}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{stat.label}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-3 grid gap-2">
+                            {[
+                                { year: "Year 1", desc: "Foundations — Communication, Anatomy, Fundamentals of Nursing, Microbiology, Psychology, Maternal & Newborn Health, Community Health, Pharmacology I, and clinical practicums." },
+                                { year: "Year 2", desc: "Clinical Nursing — Pharmacology II, Medical-Surgical, Pediatric & IMCI, Mental Health, Orthopedic, Endocrine, ENT, Ophthalmic, Perioperative, Palliative Care, Gynaecology, Research." },
+                                { year: "Year 3", desc: "Advanced Practice — Teaching Methodology, Neurology, Dermatology, Gerontology, Epidemiology, Communicable Diseases, Health Systems Management, and intensive clinical practicums." },
+                            ].map((y, i) => (
+                                <div key={i} className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3">
+                                    <p className="text-base font-bold text-gray-800 dark:text-gray-200">{y.year}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{y.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-4 text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                Navigate Year → Semester → Module → Unit → Topic → Questions
                             </p>
-
-                            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {[
-                                    { icon: GraduationCap, value: "3", label: "Academic Years" },
-                                    { icon: BookOpen, value: "80", label: "Modules" },
-                                    { icon: Target, value: "776+", label: "Topics" },
-                                    { icon: Brain, value: "15,400+", label: "NCK Questions" },
-                                ].map((stat, i) => (
-                                    <div key={i} className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3 text-center">
-                                        <stat.icon className="w-5 h-5 mx-auto mb-1.5 text-gray-500 dark:text-gray-400" />
-                                        <p className="text-base font-bold text-gray-800 dark:text-gray-200">{stat.value}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{stat.label}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-4 grid gap-3">
-                                {[
-                                    { year: "Year 1", desc: "Foundations — Communication, Anatomy, Fundamentals of Nursing, Microbiology, Psychology, Maternal & Newborn Health, Community Health, Pharmacology I, and clinical practicums." },
-                                    { year: "Year 2", desc: "Clinical Nursing — Pharmacology II, Medical-Surgical, Pediatric & IMCI, Mental Health, Orthopedic, Endocrine, ENT, Ophthalmic, Perioperative, Palliative Care, Gynaecology, Research." },
-                                    { year: "Year 3", desc: "Advanced Practice — Teaching Methodology, Neurology, Dermatology, Gerontology, Epidemiology, Communicable Diseases, Health Systems Management, and intensive clinical practicums." },
-                                ].map((y, i) => (
-                                    <div key={i} className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3">
-                                        <p className="text-base font-bold text-gray-800 dark:text-gray-200">{y.year}</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{y.desc}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-4 text-center">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                                    Navigate Year → Semester → Module → Unit → Topic → Questions
-                                </p>
-                                <button
-                                    onClick={() => navigate("/nursing")}
-                                    className="inline-flex items-center gap-2 rounded-full bg-gray-800 hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
-                                >
-                                    <BookOpen className="h-4 w-4" />
-                                    Explore Curriculum
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => navigate("/nursing")}
+                                className="inline-flex items-center gap-2 rounded-full bg-gray-800 hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
+                            >
+                                <BookOpen className="h-4 w-4" />
+                                Explore Curriculum
+                            </button>
                         </div>
                     </div>
 
                     {/* FAQ Sections */}
                     {faqCategories.map((category, idx) => {
                         return (
-                            <div key={idx} className="space-y-3 px-2 md:px-0 w-full" data-category={idx}>
-                                <div className="flex items-center gap-2">
+                            <div key={idx} className="space-y-2" data-category={idx}>
+                                <div className="flex items-center gap-2 px-1">
                                     {category.icon}
                                     <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">{category.title}</h3>
-                                    <span className="ml-auto text-sm text-gray-400 bg-gray-100 dark:bg-[#21262d] px-3 py-1 rounded-full">{category.questions.length} qs</span>
+                                    <span className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-[#21262d] px-2.5 py-1 rounded-full">{category.questions.length}</span>
                                 </div>
                                 <Accordion type="single" collapsible className="w-full space-y-2">
                                     {category.questions.map((faq, fIdx) => (
                                         <AccordionItem
                                             key={fIdx}
                                             value={`item-${idx}-${fIdx}`}
-                                            className="bg-white dark:bg-[#161b22] rounded-2xl px-2 shadow-sm transition-all hover:shadow-md border-0"
+                                            className="bg-white dark:bg-[#161b22] rounded-2xl px-4 shadow-sm transition-all hover:shadow-md border-0"
                                             data-category={idx}
                                             data-question={fIdx}
                                         >
@@ -697,30 +691,28 @@ const HelpCenter = () => {
                     })}
 
                     {/* Emergency Contact Banner */}
-                    <div className="px-2 md:px-0">
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
-                            <div className="flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-base text-gray-800 dark:text-gray-200">Urgent technical help?</h4>
-                                    <p className="text-base text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">Having trouble with payments, login, or quiz loading? Contact us now.</p>
-                                    <div className="flex gap-3 mt-4 flex-wrap">
-                                        <a href="https://wa.me/254704473503" target="_blank" className="text-sm bg-gray-800 hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 text-white px-2 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><MessageCircle size={14} />WhatsApp</a>
-                                        <a href="tel:0717517371" className="text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><Phone size={14} />0717 517 371</a>
-                                    </div>
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 md:p-5 shadow-sm">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <h4 className="font-bold text-base text-gray-800 dark:text-gray-200">Urgent technical help?</h4>
+                                <p className="text-base text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">Having trouble with payments, login, or quiz loading? Contact us now.</p>
+                                <div className="flex gap-2 mt-4 flex-wrap">
+                                    <a href="https://wa.me/254704473503" target="_blank" className="text-sm bg-gray-800 hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 text-white px-3 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><MessageCircle size={14} />WhatsApp</a>
+                                    <a href="tel:0717517371" className="text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><Phone size={14} />0717 517 371</a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Contact Section */}
-                    <section className="space-y-4 pt-4 px-2 md:px-0">
+                    <section className="space-y-3 pt-2">
                         <div className="text-center space-y-1">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Still have questions?</h3>
                             <p className="text-base text-gray-500 dark:text-gray-400">Our team is here to help you succeed</p>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <a href="https://wa.me/254704473503" target="_blank" className="flex flex-col items-center text-center gap-3 p-5 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                            <a href="https://wa.me/254704473503" target="_blank" className="flex flex-col items-center text-center gap-3 p-4 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md">
                                 <div className="bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 p-3 rounded-xl group-hover:scale-110 transition-transform">
                                     <MessageCircle size={22} />
                                 </div>
@@ -729,7 +721,7 @@ const HelpCenter = () => {
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Instant chat support</p>
                                 </div>
                             </a>
-                            <a href="tel:0717517371" className="flex flex-col items-center text-center gap-3 p-5 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md">
+                            <a href="tel:0717517371" className="flex flex-col items-center text-center gap-3 p-4 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md">
                                 <div className="bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 p-3 rounded-xl group-hover:scale-110 transition-transform">
                                     <Phone size={22} />
                                 </div>
@@ -738,7 +730,7 @@ const HelpCenter = () => {
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">0717 517 371</p>
                                 </div>
                             </a>
-                            <a href="tel:0704473503" className="flex flex-col items-center text-center gap-3 p-5 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md">
+                            <a href="tel:0704473503" className="flex flex-col items-center text-center gap-3 p-4 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md">
                                 <div className="bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 p-3 rounded-xl group-hover:scale-110 transition-transform">
                                     <Phone size={22} />
                                 </div>
@@ -747,7 +739,7 @@ const HelpCenter = () => {
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">0704 473 503</p>
                                 </div>
                             </a>
-                            <a href="mailto:medraenursing@gmail.com" className="flex flex-col items-center text-center gap-3 p-5 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md min-w-0">
+                            <a href="mailto:medraenursing@gmail.com" className="flex flex-col items-center text-center gap-3 p-4 bg-white dark:bg-[#161b22] rounded-2xl transition-all shadow-sm group hover:shadow-md min-w-0">
                                 <div className="bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 p-3 rounded-xl group-hover:scale-110 transition-transform shrink-0">
                                     <Mail size={22} />
                                 </div>
@@ -760,7 +752,7 @@ const HelpCenter = () => {
                     </section>
 
                     {/* Footer */}
-                    <div className="text-center space-y-4 pt-10 mx-4 md:mx-0">
+                    <div className="text-center space-y-3 pt-6 pb-4">
                         <div className="flex items-center justify-center gap-2">
                             <Award size={16} className="text-emerald-600 dark:text-emerald-400" />
                             <p className="text-xs uppercase tracking-[2px] font-bold text-gray-500 dark:text-gray-400">Medrae Nursing Platform</p>

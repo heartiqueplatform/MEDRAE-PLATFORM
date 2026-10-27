@@ -42,14 +42,26 @@ interface CachedUser {
     is_online: boolean;
     is_pinned?: boolean;
     pinned_at?: number;
+    institution?: string | null;
+    is_same_school?: boolean;
 }
-
 // Cache keys - persistent across sessions
 const PLAYERS_CACHE_KEY = "challenge_players_cache_v5";
 const CHALLENGES_CACHE_KEY = "challenge_history_cache_v5";
-const CACHE_VERSION = "5.1";
+const CACHE_VERSION = "5.2";
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days cache
-
+// Read the current user's campus slug (written by SchoolWarsCard)
+const readSchoolSlug = (): string | null => {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem("school_wars_current_institution_v1");
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.slug ?? null;
+    } catch {
+        return null;
+    }
+};
 // Memory cache for faster access
 let playersMemoryCache: CachedUser[] | null = null;
 let challengesMemoryCache: any[] | null = null;
@@ -301,6 +313,11 @@ function ChallengeTabs({
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
                                                         @{p.username || "nurse"}
                                                     </p>
+                                                    {p.is_same_school && (
+                                                        <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                                            Same campus
+                                                        </span>
+                                                    )}
                                                 </button>
                                             </div>
 
@@ -926,46 +943,81 @@ export default function ChallengePage() {
     }, [user]);
 
     // ✅ OPTIMIZED: Fetch players with persistent caching (no auto-refresh)
+    // ✅ OPTIMIZED: Fetch players with persistent caching + campus tagging
     const fetchPlayers = useCallback(async () => {
         if (!user) return;
 
         try {
+            /* ---------- 1. resolve my campus slug (self-heal from DB) ---------- */
+            let mySchoolSlug = readSchoolSlug();
+
+            if (!mySchoolSlug) {
+                const { data: me } = await supabase
+                    .from("profiles")
+                    .select("institution")
+                    .eq("user_id", user.id)
+                    .single();
+
+                if (me?.institution && me.institution !== "other") {
+                    mySchoolSlug = me.institution;
+                    try {
+                        localStorage.setItem(
+                            "school_wars_current_institution_v1",
+                            JSON.stringify({ slug: mySchoolSlug, ts: Date.now() })
+                        );
+                    } catch { /* ignore */ }
+                }
+            }
+
+            /* ---------- 2. fetch all players with institution ---------- */
             const { data, error } = await supabase
                 .from("profiles")
-                .select("user_id, name, username, avatar_url, is_online")
+                .select("user_id, name, username, avatar_url, is_online, institution")
                 .neq("user_id", user.id)
                 .order("name", { ascending: true })
                 .limit(200);
 
             if (error || !data) return;
 
+            /* ---------- 3. preserve pins ---------- */
             const existingCache = loadCache(PLAYERS_CACHE_KEY);
             const pinMap = new Map();
             if (existingCache) {
-                existingCache.forEach((user: any) => {
-                    if (user.is_pinned) pinMap.set(user.user_id, { is_pinned: true, pinned_at: user.pinned_at });
+                existingCache.forEach((u: any) => {
+                    if (u.is_pinned) {
+                        pinMap.set(u.user_id, {
+                            is_pinned: true,
+                            pinned_at: u.pinned_at,
+                        });
+                    }
                 });
             }
 
-            const mergedData = data.map(player => ({
+            /* ---------- 4. tag each player ---------- */
+            const mergedData = data.map((player: any) => ({
                 ...player,
                 is_pinned: pinMap.has(player.user_id),
-                pinned_at: pinMap.get(player.user_id)?.pinned_at
+                pinned_at: pinMap.get(player.user_id)?.pinned_at,
+                is_same_school:
+                    !!mySchoolSlug && player.institution === mySchoolSlug,
             }));
 
-            const cacheData = mergedData.map(p => ({
+            /* ---------- 5. cache ---------- */
+            const cacheData = mergedData.map((p: any) => ({
                 user_id: p.user_id,
                 name: p.name,
                 username: p.username,
                 avatar_url: p.avatar_url,
                 is_online: p.is_online,
+                institution: p.institution,
                 is_pinned: p.is_pinned,
-                pinned_at: p.pinned_at
+                pinned_at: p.pinned_at,
+                is_same_school: p.is_same_school,
             }));
 
             saveCache(PLAYERS_CACHE_KEY, cacheData);
             setPlayers(mergedData);
-            setPinnedUsers(mergedData.filter(p => p.is_pinned));
+            setPinnedUsers(mergedData.filter((p: any) => p.is_pinned));
         } catch (err) {
             console.error("Error fetching players:", err);
         }
@@ -1246,17 +1298,23 @@ export default function ChallengePage() {
                 return name.includes(term) || username.includes(term);
             });
         }
-        if (onlyOnline) filtered = filtered.filter(p => p.is_online);
+        if (onlyOnline) filtered = filtered.filter((p) => p.is_online);
         return filtered.sort((a, b) => {
             // 1) pinned first
             if (a.is_pinned && !b.is_pinned) return -1;
             if (!a.is_pinned && b.is_pinned) return 1;
-            // 2) followed next (only matters between two non-pinned)
+
+            // 2) same campus next
+            if (a.is_same_school && !b.is_same_school) return -1;
+            if (!a.is_same_school && b.is_same_school) return 1;
+
+            // 3) followed next
             const aFollow = isFollowing(a.user_id);
             const bFollow = isFollowing(b.user_id);
             if (aFollow && !bFollow) return -1;
             if (!aFollow && bFollow) return 1;
-            // 3) name
+
+            // 4) name
             return (a.name || "").localeCompare(b.name || "");
         });
     }, [players, search, onlyOnline, isFollowing]);

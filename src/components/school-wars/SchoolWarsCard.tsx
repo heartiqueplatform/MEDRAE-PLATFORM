@@ -625,7 +625,7 @@ export function SchoolWarsCard({
                 className="relative px-4 py-4 overflow-hidden
                            bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50
                            dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-orange-950/30
-                           border-y border-amber-200/60 dark:border-amber-800/40"
+                            border-0"
             >
                 <div className="relative flex items-center gap-3">
                     {/* Champion trophy chip instead of #1 */}

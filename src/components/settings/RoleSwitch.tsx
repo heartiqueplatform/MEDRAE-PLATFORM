@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
-// IMPORT THE ROLE CONTEXT
 import { useUserRole } from "@/context/UserRoleContext";
 
 interface RoleSwitchProps {
@@ -44,7 +43,6 @@ interface RoleSwitchProps {
 
 export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProps) {
     const navigate = useNavigate();
-    // ADD THIS LINE - Get the refreshRole function from context
     const { refreshRole } = useUserRole();
 
     const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +82,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
         },
     ];
 
-    // Fetch role change history
     const fetchRoleHistory = async () => {
         try {
             let userIdToUse = userId;
@@ -152,23 +149,18 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
         }
     };
 
-    // ✅ UPDATED: Clear app data with proper role preservation
     const clearAllAppData = (newRole: string) => {
         try {
-            // Store the new role before clearing
             const roleKey = userId ? `userRole_${userId}` : "last_known_role";
 
-            // Clear everything
             localStorage.clear();
             sessionStorage.clear();
 
-            // Restore the new role
             if (userId) {
                 localStorage.setItem(`userRole_${userId}`, newRole);
             }
             localStorage.setItem("last_known_role", newRole);
 
-            // Clear cookies
             document.cookie.split(";").forEach(cookie => {
                 document.cookie = cookie
                     .replace(/^ +/, "")
@@ -183,7 +175,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
         }
     };
 
-    // ✅ UPDATED: Main role change handler with context integration
     const handleRoleChange = async () => {
         if (!selectedRole) return;
 
@@ -199,7 +190,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                 userIdToUse = user.id;
             }
 
-            // ✅ STEP 1: Update role in database
             const { error: updateError } = await supabase
                 .from("profiles")
                 .update({ role: selectedRole })
@@ -210,7 +200,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                 throw new Error(`Failed to update role: ${updateError.message}`);
             }
 
-            // ✅ STEP 2: Verify the update was successful
             const { data: verifyData, error: verifyError } = await supabase
                 .from("profiles")
                 .select("role")
@@ -228,27 +217,21 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
 
             console.log(`✅ Role verified: ${verifyData.role}`);
 
-            // ✅ STEP 3: Log the role change history
             await logRoleChange(userIdToUse, oldRole, selectedRole);
 
-            // ✅ STEP 4: Show success toast
             toast({
                 title: "Role Updated Successfully",
                 description: `Your role has been changed to ${selectedRole}. Refreshing...`,
             });
 
-            // ✅ STEP 5: Clear app data with the new role
             clearAllAppData(selectedRole);
 
-            // ✅ STEP 6: Update the role context
             await refreshRole();
 
-            // ✅ STEP 7: Dispatch role change events
             window.dispatchEvent(new CustomEvent('roleChanged', {
                 detail: { role: selectedRole, userId: userIdToUse }
             }));
 
-            // ✅ STEP 8: Get updated profile and dispatch profile update
             const { data: updatedProfile } = await supabase
                 .from('profiles')
                 .select('*')
@@ -260,12 +243,10 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                 window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
             }
 
-            // ✅ STEP 9: Call callback if provided
             if (onRoleChange) {
                 onRoleChange();
             }
 
-            // ✅ STEP 10: Force page reload to ensure all components update
             setTimeout(() => {
                 window.location.reload();
             }, 500);
@@ -286,8 +267,8 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
 
     return (
         <>
-            <Card className="border-0 mt-2 shadow-none bg-white dark:bg-[#161b22] rounded-2xl">
-                <CardHeader className="px-0">
+            <Card className="border-0 shadow-none bg-card rounded-2xl">
+                <CardHeader className="px-3 md:px-4 pt-3 md:pt-4">
                     <CardTitle className="flex items-center gap-2 text-lg text-foreground">
                         <Shield className="w-5 h-5 text-yellow-500" />
                         Change User Role
@@ -299,9 +280,9 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                         </span>
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="px-0">
+                <CardContent className="px-3 md:px-4 pb-3 md:pb-4">
                     {currentRole && (
-                        <div className="mb-4 p-3 bg-gray-50 dark:bg-[#21262d] rounded-xl border-0">
+                        <div className="mb-4 p-3 bg-muted/40 rounded-xl border-0 shadow-none">
                             <p className="text-sm text-foreground">
                                 <span className="font-medium text-muted-foreground">Current Role:</span>{" "}
                                 <span className="capitalize font-semibold text-primary">
@@ -321,23 +302,22 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                                     key={role.id}
                                     variant="ghost"
                                     className={`
-        h-auto py-4 px-4 flex flex-col items-center gap-2 rounded-2xl
-        transition-all duration-200
-        border-0 shadow-none
-        ${isActive
+                                        h-auto py-4 px-3 flex flex-col items-center gap-2 rounded-2xl
+                                        transition-all duration-200 border-0 shadow-none
+                                        ${isActive
                                             ? 'bg-gray-800 dark:bg-[#21262d] text-white hover:bg-gray-800 dark:hover:bg-[#21262d]'
-                                            : 'bg-gray-50 dark:bg-[#21262d] hover:bg-gray-100 dark:hover:bg-[#30363d] text-gray-800 dark:text-gray-200'
+                                            : 'bg-muted/40 hover:bg-muted/70 text-foreground'
                                         }
-        ${role.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-    `}
+                                        ${role.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                    `}
                                     onClick={() => !role.disabled && handleRoleClick(role.id)}
                                     disabled={isLoading || role.disabled || isActive}
                                 >
-                                    <Icon className={`w-6 h-6 md:w-8 md:h-8 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
-                                    <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                                    <Icon className={`w-6 h-6 md:w-8 md:h-8 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />
+                                    <span className={`font-semibold ${isActive ? 'text-white' : 'text-foreground'}`}>
                                         {role.label}
                                     </span>
-                                    <span className={`text-[10px] text-center leading-tight ${isActive ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}`}>
+                                    <span className={`text-[10px] text-center leading-tight ${isActive ? 'text-white/80' : 'text-muted-foreground'}`}>
                                         {role.description}
                                     </span>
                                     {isActive && (
@@ -355,7 +335,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                         })}
                     </div>
 
-                    <div className="mt-4 p-3 bg-red-50/50 dark:bg-red-900/10 border-0 rounded-lg">
+                    <div className="mt-4 p-3 bg-red-50/50 dark:bg-red-900/10 rounded-2xl border-0 shadow-none">
                         <div className="flex items-start gap-2">
                             <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                             <div className="text-xs text-red-700 dark:text-red-400">
@@ -376,7 +356,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowHistory(!showHistory)}
-                            className="text-xs text-muted-foreground hover:text-foreground gap-2 border-0"
+                            className="text-xs text-muted-foreground hover:text-foreground gap-2 border-0 shadow-none px-0"
                         >
                             <History className="w-4 h-4" />
                             {showHistory ? "Hide" : "Show"} Role Change History
@@ -390,7 +370,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                                     roleHistory.map((entry) => (
                                         <div
                                             key={entry.id}
-                                            className="flex items-center justify-between p-2 bg-muted/30 dark:bg-muted/10 rounded-lg border-0"
+                                            className="flex flex-wrap items-center justify-between gap-2 p-2 bg-muted/40 rounded-lg border-0 shadow-none"
                                         >
                                             <div className="flex items-center gap-2 text-xs">
                                                 <span className="capitalize text-foreground font-medium">
@@ -415,7 +395,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
 
             {/* Confirmation Dialog */}
             <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-                <AlertDialogContent className="border-0 dark:border-0">
+                <AlertDialogContent className="border-0 shadow-none rounded-2xl">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2 text-foreground">
                             <AlertTriangle className="w-5 h-5 text-red-500" />
@@ -433,7 +413,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                                 </span>
                                 .
                             </p>
-                            <div className="p-3 bg-red-50/50 dark:bg-red-900/20 border-0 rounded-lg">
+                            <div className="p-3 bg-red-50/50 dark:bg-red-900/20 rounded-xl border-0 shadow-none">
                                 <p className="text-sm font-bold text-red-700 dark:text-red-400">
                                     🗑️ This will:
                                 </p>
@@ -450,11 +430,11 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isLoading} className="border-0">Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isLoading} className="border-0 shadow-none">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleRoleChange}
                             disabled={isLoading}
-                            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 border-0"
+                            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 border-0 shadow-none"
                         >
                             {isLoading ? (
                                 <>

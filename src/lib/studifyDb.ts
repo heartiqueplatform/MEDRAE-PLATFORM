@@ -36,6 +36,12 @@ export class StudifyDB extends Dexie {
             episodes: "id, showId, publishedAt, cachedAt",
             shows: "id, appleId, title",
         });
+
+        // v2 adds a compound index for fast per-show queries
+        this.version(2).stores({
+            episodes: "id, showId, [showId+publishedAt], publishedAt, cachedAt",
+            shows: "id, appleId, title",
+        });
     }
 }
 
@@ -63,11 +69,13 @@ function compareShows(a: DbShow, b: DbShow): number {
 
 // ── Helpers ──
 export async function getEpisodesForShow(showId: string): Promise<DbEpisode[]> {
+    // Uses the [showId+publishedAt] compound index — returns rows
+    // already grouped by showId and ordered by publishedAt DESC.
     const rows = await studifyDb.episodes
-        .where("showId")
-        .equals(showId)
+        .where("[showId+publishedAt]")
+        .between([showId, Dexie.minKey], [showId, Dexie.maxKey])
+        .reverse()
         .toArray();
-    rows.sort(compareEpisodes);
     return rows;
 }
 
@@ -116,11 +124,12 @@ export async function searchEpisodesLocal(query: string, limit = 40): Promise<Db
     const q = query.trim().toLowerCase();
     if (q.length < 2) return [];
 
-    // Dexie has no full-text search on primary index — use filter().
-    // For <10k rows this is fast enough (~5ms).
+    // Fetch ALL matches, then sort by publishedAt DESC and take the top N.
+    // We deliberately don't use .limit() here because .limit() would cut
+    // based on Dexie's index order (by id), not by publishedAt — which
+    // would return non-recent matches for the top of the list.
     const all = await studifyDb.episodes
         .filter((e) => e.title?.toLowerCase().includes(q))
-        .limit(limit * 3)
         .toArray();
 
     all.sort(compareEpisodes);
