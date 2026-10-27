@@ -1122,7 +1122,7 @@ Please provide a detailed discussion and guidance.`;
 
       {/* ─── Body: one scroll container ─── */}
       <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-        <div className="w-full px-3 md:px-5 lg:px-6 py-3 md:py-5">
+        <div className="w-full px-2 md:px-2 lg:px-6 py-3 md:py-5">
           <div className="flex flex-col items-center">
             <div
               ref={questionTopRef}
@@ -1192,7 +1192,7 @@ Please provide a detailed discussion and guidance.`;
                       {/* ─── LEFT: question card ─── */}
                       <div
                         className={cn(
-                          "flex flex-col px-4 py-3 md:py-4 transition-all duration-300",
+                          "flex flex-col px-2 py-3 md:py-4 transition-all duration-300",
                           "shadow-sm rounded-xl",
 
                           understood[q.id]

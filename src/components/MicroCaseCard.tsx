@@ -523,8 +523,8 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
             <Card className="mt-4 relative overflow-hidden transition-all duration-300 border-0 bg-white dark:bg-gray-900/50 rounded-xl shadow-xl shadow-teal-500/5 group">
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 z-20" />
                 <div className="relative z-10">
-                    <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
-                        <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-4">
+                    <div className="px-2 pt-3 pb-2">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-2 mb-3">
                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <div className="p-2.5 bg-teal-500 text-white rounded-xl shadow-lg shadow-teal-500/20 flex-shrink-0">
                                     <Stethoscope className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -560,8 +560,8 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         </div>
                     </div>
 
-                    <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-                        <div className="p-4 sm:p-5 bg-white/50 dark:bg-gray-800/30 rounded-2xl">
+                    <CardContent className="px-2 pb-3 space-y-3">
+                        <div className="p-2.5 bg-white/50 dark:bg-gray-800/30 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
                                 <Eye className="w-4 h-4" />
                                 <span className="text-[10px]   uppercase tracking-widest">
@@ -573,7 +573,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                             </p>
                         </div>
 
-                        <div className="p-4 sm:p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl">
+                        <div className="p-2.5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
                                 <HelpCircle className="w-4 h-4" />
                                 <span className="text-[10px]   uppercase tracking-widest">
@@ -585,7 +585,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                             </p>
                         </div>
 
-                        <div className="p-4 sm:p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl">
+                        <div className="p-2.5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="w-4 h-4" />
                                 <span className="text-[10px]   uppercase tracking-widest">
@@ -598,7 +598,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         </div>
 
                         {card.explanation && (
-                            <div className="p-4 sm:p-5 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl">
+                            <div className="p-2.5 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl">
                                 <div className="flex items-center gap-2 mb-2 text-amber-600 dark:text-amber-500">
                                     <Lightbulb className="w-4 h-4" />
                                     <span className="text-[10px]   uppercase tracking-widest">
