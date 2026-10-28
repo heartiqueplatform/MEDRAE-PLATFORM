@@ -85,7 +85,12 @@ export const MusicPlayer = () => {
         };
         return () => { window.__studifyOpen = undefined; };
     }, []);
-
+    // ✅ Broadcast open/close so the footer can hide while the player is up.
+    useEffect(() => {
+        window.dispatchEvent(
+            new CustomEvent("music-player-visibility", { detail: { open: isOpen } })
+        );
+    }, [isOpen]);
     const [currentTime, setCurrentTime] = useState(0);
     const [totalTime, setTotalTime] = useState(0);
     const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
@@ -1496,7 +1501,7 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                                     </span>
                                 </div>
                                 <div className="space-y-1.5 max-h-[45vh] overflow-y-auto custom-scrollbar pr-1">
-                                    {visibleTracks.slice(0, 50).map((t: any, i: number) => {
+                                    {visibleTracks.slice(0, 5).map((t: any, i: number) => {
                                         const isThisActive = currentTrackSrc === t.src;
                                         return (
                                             <EpisodeRow

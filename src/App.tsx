@@ -342,7 +342,20 @@ const FOOTER_HIDDEN_PREFIXES = [
 
 const FooterGate = ({ user }: { user: any }) => {
   const location = useLocation();
+  const [playerOpen, setPlayerOpen] = useState(false);
+
+  useEffect(() => {
+    const onPlayerVisibility = (e: Event) => {
+      const detail = (e as CustomEvent<{ open: boolean }>).detail;
+      setPlayerOpen(!!detail?.open);
+    };
+    window.addEventListener("music-player-visibility", onPlayerVisibility);
+    return () =>
+      window.removeEventListener("music-player-visibility", onPlayerVisibility);
+  }, []);
+
   if (!user) return null;
+  if (playerOpen) return null;                         // ← NEW
   if (FOOTER_HIDDEN_PREFIXES.some((p) => location.pathname.startsWith(p))) {
     return null;
   }
