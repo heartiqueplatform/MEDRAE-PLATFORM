@@ -184,7 +184,9 @@ function QuickDuelStripBase({
         seedHistory.length === 0 && seedPlayers.length === 0
     );
     const [refreshing, setRefreshing] = useState(false);
-
+    const [isOffline, setIsOffline] = useState(
+        typeof navigator !== "undefined" ? navigator.onLine === false : false
+    );
     const fetchedRef = useRef(false);
     const isMountedRef = useRef(true);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -548,6 +550,20 @@ function QuickDuelStripBase({
             return null;
         }
     }
+    useEffect(() => {
+        const goOnline = () => {
+            setIsOffline(false);
+            fetchedRef.current = false;
+            fetchData(true);
+        };
+        const goOffline = () => setIsOffline(true);
+        window.addEventListener("online", goOnline);
+        window.addEventListener("offline", goOffline);
+        return () => {
+            window.removeEventListener("online", goOnline);
+            window.removeEventListener("offline", goOffline);
+        };
+    }, [fetchData]);
     /* -------------------------------------------------------------- */
     /*  Lifecycle                                                      */
     /* -------------------------------------------------------------- */
@@ -845,21 +861,48 @@ function QuickDuelStripBase({
                             </div>
                         ))}
                     </div>
-                ) : (
-                    !loading && (
-                        <div className="flex flex-col items-center justify-center py-6 text-center">
+                ) : !loading ? (
+                    isOffline ? (
+                        /* ── Offline ── */
+                        <div className="flex flex-col items-center justify-center py-6 text-center px-2">
+                            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-2">
+                                <AlertCircle className="w-5 h-5 text-amber-600" strokeWidth={2.5} />
+                            </div>
+                            <p className="text-[12px] font-bold text-slate-700 dark:text-slate-200">
+                                You're offline
+                            </p>
+                            <p className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-snug max-w-[260px]">
+                                Check your internet connection. Classmates will load automatically when you're back online.
+                            </p>
+                        </div>
+                    ) : (
+                        /* ── Online but the fetch failed or returned empty ── */
+                        <div className="flex flex-col items-center justify-center py-6 text-center px-2">
                             <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
                                 <Swords className="w-5 h-5 text-blue-600" strokeWidth={2.5} />
                             </div>
-                            <p className="text-[12px] font-bold text-slate-600 dark:text-slate-300">
-                                No players available
+                            <p className="text-[12px] font-bold text-slate-700 dark:text-slate-200">
+                                Couldn't load classmates
                             </p>
-                            <p className="text-[10px] font-medium text-slate-400 mt-0.5">
-                                Tap refresh to load the directory
+                            <p className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-snug max-w-[260px]">
+                                This is usually a temporary glitch. Tap below to try again — your classmates are still there.
                             </p>
+                            <button
+                                onClick={() => {
+                                    if (navigator.vibrate) navigator.vibrate(10);
+                                    setRefreshing(true);
+                                    fetchedRef.current = false;
+                                    fetchData(true);
+                                }}
+                                disabled={refreshing}
+                                className="mt-3 h-8 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold tracking-wide active:scale-95 transition-transform disabled:opacity-60 disabled:pointer-events-none"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                {refreshing ? "Retrying…" : "Retry"}
+                            </button>
                         </div>
                     )
-                )}
+                ) : null}
 
                 {/* ---------- Last battle card (own bordered container) ---------- */}
                 {lastDuel && (
