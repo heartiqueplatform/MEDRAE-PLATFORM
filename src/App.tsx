@@ -75,6 +75,9 @@ import { Announcements } from "./pages/Announcements";
 import { Feedback } from "./pages/Feedback";
 import { Settings } from "./pages/Settings";
 import { Subscription } from "./pages/Subscription";
+import LastMinuteHome from "./pages/last-minute/LastMinuteHome";
+import LastMinuteGate from "./pages/last-minute/LastMinuteGate";
+import LastMinuteReader from "./pages/last-minute/LastMinuteReader";
 import { Notifications } from "./pages/Notifications";
 import { AdminNotificationPanel } from "@/components/AdminNotificationPanel";
 import { Profile } from "./pages/Profile";
@@ -290,6 +293,7 @@ const BottomBarWrapper = () => {
       "/announcements",
       "/resources",
       "/assessment-notes",
+      "/last-minute",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -338,6 +342,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/nursing/quiz",
   "/challenge",
   "/streak/restore",
+  "/last-minute",
 ];
 
 const FooterGate = ({ user }: { user: any }) => {
@@ -727,7 +732,9 @@ const AppContent = () => {
                         <Route path="/resources" element={<PrivateRoute><Resources /></PrivateRoute>} />
                         <Route path="/announcements" element={<PrivateRoute><Announcements /></PrivateRoute>} />
                         <Route path="/assessment-notes" element={<PrivateRoute><AssessmentNotes /></PrivateRoute>} />
-
+                        <Route path="/last-minute" element={<PrivateRoute><LastMinuteHome /></PrivateRoute>} />
+                        <Route path="/last-minute/:slug" element={<PrivateRoute><LastMinuteGate /></PrivateRoute>} />
+                        <Route path="/last-minute/:slug/read" element={<PrivateRoute><LastMinuteReader /></PrivateRoute>} />
                         {/* 🆕 GroupPay — full-screen, no sidebar */}
                         <Route path="/grouppay" element={<PrivateRoute><GroupPayHome /></PrivateRoute>} />
                         <Route path="/grouppay/create" element={<PrivateRoute><CreateGroupPage /></PrivateRoute>} />

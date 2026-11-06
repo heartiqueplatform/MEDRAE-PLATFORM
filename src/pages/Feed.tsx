@@ -983,8 +983,6 @@ export default function Feed() {
   }, []);
   return (
     <>
-
-      {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
       {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
       <div className="sticky top-0 z-40 w-full max-w-4xl mx-auto px-2 sm:px-2">
         <FeedControls
@@ -1328,7 +1326,8 @@ export default function Feed() {
 
 
             // ⬇️ NEW: insert a media panel every 3rd question
-            if (index % 3 === 2 && feedImages.length > 0) {
+            // ⬇️ Insert a media panel after EVERY question
+            if (feedImages.length > 0) {
               const groups = new Map<string, any[]>();
               for (const im of feedImages) {
                 const key = im.post_group_id || `single_${im.id}`;
@@ -1338,8 +1337,8 @@ export default function Feed() {
               const posts = Array.from(groups.entries()).map(
                 ([groupId]) => ({ groupId })
               );
-              const slotIdx = Math.floor(index / 3);
-              const post = posts[slotIdx % posts.length];
+              // One image post per question, cycling through all available posts
+              const post = posts[index % posts.length];
 
               cards.push(
                 <FeedMediaPanel

@@ -40,6 +40,7 @@ import {
     Sparkles,
     Headphones,
     ShoppingBag,
+    Zap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useProfileData } from "@/hooks/useProfileData";
@@ -574,6 +575,13 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         if (!isStudent) return [];
         return [
             { title: "Prep Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
+            {
+                title: "Last Minute",
+                url: "/last-minute",
+                icon: Zap,
+                iconTone: "alert" as IconTone,   // amber tone — matches the urgency
+                badge: "New",
+            },
             { title: "NCK Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
             { title: "Proctorium (Dijiproctor styl) ", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice" as IconTone },
         ];

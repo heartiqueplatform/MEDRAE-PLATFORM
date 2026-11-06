@@ -13,7 +13,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser, useSessionContext } from "@supabase/auth-helpers-react";
 
-import { Footer } from "@/components/Footer";
+
 
 import { useUserRole } from "@/context/UserRoleContext";
 // ✅ Import shared profile cache

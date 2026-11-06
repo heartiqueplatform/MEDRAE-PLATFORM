@@ -12,6 +12,7 @@ import {
   Upload,
   Headphones,
   Flame,
+  Zap,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -611,6 +612,13 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         icon: QuizzesHeartIcon,
         iconTone: "practice" as IconTone,
         badge: formatNumber(totalQuestions)
+      },
+      {
+        title: "Last Minute",
+        url: "/last-minute",
+        icon: Zap,
+        iconTone: "alert" as IconTone,   // amber tone — matches the urgency
+        badge: "New",
       },
       {
         title: "NCK Progress",

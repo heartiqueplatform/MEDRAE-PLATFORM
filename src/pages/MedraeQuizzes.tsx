@@ -31,6 +31,7 @@ import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { useQuizEngagement } from "@/hooks/useQuizEngagement";
 import { Star, Bookmark, Share2, Flame, Users } from "lucide-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
@@ -834,7 +835,12 @@ export function MedraeQuizzes() {
                           </span>
                         </div>
                       </div>
-
+                      <div className="px-4 md:px-0 pt-2">
+                        <LastMinuteCard
+                          title="Cramming? Skip the subscription."
+                          blurb="One payment, one paper, readable instantly. From KSh 49."
+                        />
+                      </div>
                       {/* GRID */}
                       <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
                         {filteredUnits.map((unit, index) => {

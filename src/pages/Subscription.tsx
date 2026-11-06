@@ -20,6 +20,7 @@ import { SubscriptionInfoModal } from "@/components/subscription/SubscriptionInf
 import { GroupPaySubscriptionCard } from "@/components/grouppay/GroupPaySubscriptionCard";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
 // ─────────────────────────────────────────────────────────────
 // Pricing
 // ─────────────────────────────────────────────────────────────
@@ -864,7 +865,7 @@ export function Subscription() {
                 </div>
               </div>
             )}
-
+            <LastMinuteCard variant="chip" />
             {activeSub && activeSub.role_at_payment && activeSub.role_at_payment !== userRole && (
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
