@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    BookOpen, Lock, Unlock, Coins, ChevronLeft, ChevronRight,
+    BookOpen, Lock, Unlock, Coins, ChevronLeft,
     Search, AlertCircle, Clock, Flame, Sparkles, Bookmark, Share2,
     Star, Play, Eye, X,
 } from "lucide-react";
@@ -50,6 +50,19 @@ type State = {
 
 const BOARDS = ["All", "NCK", "KRCHN", "KRN"] as const;
 type BoardFilter = (typeof BOARDS)[number];
+
+// Avatar + ring config — mirrors MedraeQuizzes CATEGORY_STORIES
+const BOARD_STORIES: {
+    id: BoardFilter;
+    label: string;
+    avatar: string;
+    ring: string;
+}[] = [
+        { id: "All", label: "All", avatar: "/pwaa-512x512.png", ring: "ring-gray-500" },
+        { id: "NCK", label: "NCK", avatar: "/pwaa-512x512.png", ring: "ring-purple-500" },
+        { id: "KRCHN", label: "KRCHN", avatar: "/pwaa-512x512.png", ring: "ring-blue-500" },
+        { id: "KRN", label: "KRN", avatar: "/pwaa-512x512.png", ring: "ring-amber-500" },
+    ];
 
 const fmt = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -160,6 +173,8 @@ export default function LastMinuteHome() {
     // ─────────────────────────────────────────────────────────────
     // Actions
     // ─────────────────────────────────────────────────────────────
+    const searchOrFilterActive = !!query || board !== "All";
+
     const handleBack = () => {
         playSound("tap");
         if (navigator.vibrate) navigator.vibrate(20);
@@ -171,7 +186,6 @@ export default function LastMinuteHome() {
         }
         navigate(home, { replace: true });
     };
-    const searchOrFilterActive = !!query || board !== "All";
 
     const toggleBookmark = async (paper: Paper) => {
         const cur = state[paper.id]?.is_bookmarked ?? false;
@@ -194,14 +208,14 @@ export default function LastMinuteHome() {
 
     const rate = async (paper: Paper, n: number) => {
         const cur = state[paper.id]?.my_rating ?? 0;
-        if (cur === n) return;
+        if (n !== 0 && cur === n) return;
         setState((prev) => ({
             ...prev,
             [paper.id]: {
                 ...(prev[paper.id] ?? {
                     paper_id: paper.id, is_entitled: false, expires_at: null, is_bookmarked: false,
                 }),
-                my_rating: n,
+                my_rating: n === 0 ? null : n,
             },
         }));
         setBubbleKey(`rt:${paper.id}:${n}`);
@@ -243,7 +257,7 @@ export default function LastMinuteHome() {
     // ─────────────────────────────────────────────────────────────
     return (
         <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
-            {/* ═════ HEADER — same shape as MedraeQuizzes ═════ */}
+            {/* ═════ HEADER ═════ */}
             <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
         border-b border-gray-100 dark:border-gray-800
         bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
@@ -275,9 +289,8 @@ export default function LastMinuteHome() {
             >
                 <div className="w-full max-w-full space-y-2 pb-24 safe-bottom">
 
-                    {/* ── HERO — short and punchy ── */}
+                    {/* ── HERO ── */}
                     <section className="px-4 sm:px-0 pt-4 pb-3">
-
                         <h2 className="text-[24px] sm:text-[28px] font-black leading-[1.1] tracking-tight">
                             The paper you need.
                             {cheapest !== null && (
@@ -307,28 +320,59 @@ export default function LastMinuteHome() {
                         )}
                     </section>
 
-                    {/* ── FILTERS ── */}
-                    <section className="px-4 sm:px-0 space-y-2">
-                        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
-                            {BOARDS.map((b) => {
-                                const active = board === b;
+                    {/* ── FILTERS — avatar-form story tabs + search ── */}
+                    <section className="px-4 sm:px-0 space-y-3">
+                        {/* STORY TABS — same look as MedraeQuizzes */}
+                        <div className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 pb-1 pt-1
+                            -mx-0 px-0 sm:flex-wrap sm:justify-center sm:overflow-visible">
+                            {BOARD_STORIES.map((b) => {
+                                const isActive = board === b.id;
                                 return (
                                     <button
-                                        key={b}
-                                        onClick={() => { playSound("tap"); setBoard(b); }}
-                                        className={cn(
-                                            "shrink-0 h-7 text-[11px] font-black tracking-wider uppercase transition-colors border-b-2",
-                                            active
-                                                ? "text-foreground border-foreground"
-                                                : "text-muted-foreground hover:text-foreground border-transparent"
-                                        )}
+                                        key={b.id}
+                                        onClick={() => {
+                                            playSound("tap");
+                                            if (navigator.vibrate) navigator.vibrate(15);
+                                            setBoard(b.id);
+                                        }}
+                                        className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px] md:w-[76px]
+                                            focus:outline-none group"
+                                        aria-pressed={isActive}
                                     >
-                                        {b}
+                                        <div
+                                            className={`relative rounded-full p-[2.5px] transition-all duration-200
+                                                ${isActive
+                                                    ? `bg-foreground ring-2 ring-offset-2 ring-offset-background ${b.ring}`
+                                                    : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
+                                                }`}
+                                        >
+                                            <div className="rounded-full p-[2px] bg-background">
+                                                <img
+                                                    src={b.avatar}
+                                                    alt={b.label}
+                                                    className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover"
+                                                />
+                                            </div>
+                                            {isActive && (
+                                                <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${b.ring.replace('ring-', 'bg-')}`} />
+                                            )}
+                                        </div>
+
+                                        <span
+                                            className={`text-[10px] md:text-[11px] font-semibold leading-tight text-center truncate w-full
+                                                ${isActive
+                                                    ? 'text-foreground'
+                                                    : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
+                                                }`}
+                                        >
+                                            {b.label}
+                                        </span>
                                     </button>
                                 );
                             })}
                         </div>
 
+                        {/* SEARCH */}
                         <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                             <input
@@ -351,7 +395,7 @@ export default function LastMinuteHome() {
                         </div>
                     </section>
 
-                    {/* ── CARDS — same rhythm as MedraeQuizzes ── */}
+                    {/* ── CARDS ── */}
                     <section className="mt-3 px-2 sm:px-0">
                         {loading ? (
                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -432,14 +476,12 @@ export default function LastMinuteHome() {
                                                     </div>
                                                 )}
 
-                                                {/* Urgency — top left */}
                                                 {p.urgency_label && (
                                                     <div className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
                                                         <Flame className="w-3 h-3" /> {p.urgency_label}
                                                     </div>
                                                 )}
 
-                                                {/* Access state — top right */}
                                                 <div className="absolute top-3 right-3">
                                                     {entitled ? (
                                                         <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
@@ -507,7 +549,6 @@ export default function LastMinuteHome() {
                                                         )}
                                                     </div>
 
-                                                    {/* CTA */}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openPaper(p); }}
                                                         className={cn(
@@ -527,7 +568,6 @@ export default function LastMinuteHome() {
 
                                                 {/* ACTION ROW — stars on their own row, then bookmark + share together */}
                                                 <div className="pt-3 mt-1 border-t border-gray-100 dark:border-gray-800">
-                                                    {/* RATING ROW — full width, stars centered */}
                                                     <div className="flex flex-col items-center gap-1 mb-3">
                                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center">
                                                             {myRating > 0
@@ -564,7 +604,6 @@ export default function LastMinuteHome() {
                                                         </div>
                                                     </div>
 
-                                                    {/* ACTIONS ROW — bookmark left, share right */}
                                                     <div className="flex items-center justify-between gap-2">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); toggleBookmark(p); }}
@@ -599,7 +638,6 @@ export default function LastMinuteHome() {
                         )}
                     </section>
 
-                    {/* Closing note */}
                     {!loading && papers.length > 0 && (
                         <p className="mt-6 px-4 sm:px-0 text-[11px] text-muted-foreground text-center leading-relaxed">
                             Every paper locks automatically when its window ends. No auto-renewal.

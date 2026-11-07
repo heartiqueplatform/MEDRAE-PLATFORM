@@ -33,6 +33,7 @@ import { Star, Bookmark, Share2, Flame, Users } from "lucide-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
 import { FloatingCategoryButton } from "@/components/MedraeQuizzes/FloatingCategoryButton";
+import { EmptyState } from "@/components/MedraeQuizzes/EmptyState";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
@@ -1244,20 +1245,17 @@ export function MedraeQuizzes() {
                     </div>
                   );
                 })}
-
                 {papers.every(paper => !shouldShowPaper(paper)) && (
-                  <div className="text-center py-12 px-4">
-                    <p className="text-gray-500 dark:text-gray-400">No units match your search or category selection.</p>
-                    <button
-                      onClick={() => {
-                        setSearchTerm("");
-                        setActiveCategory("all");
-                      }}
-                      className="mt-2 text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                  </div>
+                  <EmptyState
+                    variant={searchTerm ? "search" : "filter"}
+                    query={searchTerm}
+                    onReset={() => {
+                      playSound("tap");
+                      setSearchTerm("");
+                      setActiveCategory("all");
+                      contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
                 )}
               </>
             )}
