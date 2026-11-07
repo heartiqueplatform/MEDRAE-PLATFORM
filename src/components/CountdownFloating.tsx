@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Plus, X, RefreshCw, Calendar, Clock, BookOpen, ChevronLeft } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
@@ -702,13 +703,18 @@ export default function CountdownCards() {
     }) => {
         const status = getExamStatus(exam.id, exam.exam_date);
 
-        return (
+        // Render outside the dashboard/component tree so parent transforms,
+        // overflow rules, and stacking contexts cannot clip the full-screen overlay.
+        if (typeof document === "undefined") return null;
+
+        return createPortal(
             <div
-                className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-[99999] flex h-[100dvh] min-h-[100svh] w-screen items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-3 backdrop-blur-sm sm:p-4"
                 onClick={onClose}
+                role="presentation"
             >
                 <div
-                    className="relative w-full max-w-[95vw] sm:max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-none overflow-hidden mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto"
+                    className="relative my-auto w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-none dark:bg-gray-900"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className={`px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 ${highlightNext ? "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10" : ""}`}>
@@ -835,7 +841,8 @@ export default function CountdownCards() {
                         </div>
                     )}
                 </div>
-            </div>
+            </div>,
+            document.body
         );
     }, [getExamStatus, formatDate]);
 

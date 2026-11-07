@@ -14,7 +14,7 @@ import {
   Heart, Play, BookOpen, Shuffle, Compass, ChevronRight, ChevronLeft,
   ClipboardCheck, CheckCircle2, Trophy, Zap, Lock, Sparkles,
   Search, RefreshCw, HelpCircle, GraduationCap, Stethoscope,
-  FileText, Globe, Info, BookMarked, Layers, Tag, Type, X
+  FileText, Globe, Info, BookMarked, Layers, Tag, Type, X, TicketPercent,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUnitQuestionCount } from "@/hooks/useUnitQuestionCount";
@@ -618,6 +618,35 @@ export function MedraeQuizzes() {
                 <div className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 pb-2 pt-1
                   -mx-0 px-4 md:mx-0 md:px-0
                   sm:flex-wrap sm:justify-center sm:overflow-visible">
+                  {/* ✅ Affordable Papers — NAVIGATION chip (not a filter) */}
+                  <button
+                    onClick={() => {
+                      playSound("tap");
+                      if (navigator.vibrate) navigator.vibrate(20);
+                      navigate("/last-minute");
+                    }}
+                    className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px] md:w-[76px]
+    focus:outline-none group"
+                  >
+                    <div className="relative rounded-full p-[2.5px] transition-all duration-200
+    bg-gradient-to-br from-amber-400 to-orange-600
+    group-hover:from-amber-500 group-hover:to-orange-700">
+                      <div className="rounded-full p-[2px] bg-background">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full
+        bg-gradient-to-br from-amber-400 to-orange-600
+        flex items-center justify-center">
+                          <TicketPercent className="w-7 h-7 md:w-8 md:h-8 text-white" strokeWidth={2.25} />
+                        </div>
+                      </div>
+                      {/* Small "NEW" dot badge */}
+                      <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full
+      bg-emerald-500 border-2 border-background" />
+                    </div>
+                    <span className="text-[10px] md:text-[11px] font-semibold leading-tight text-center truncate w-full
+    text-amber-700 dark:text-amber-400 group-hover:text-amber-800 dark:group-hover:text-amber-300">
+                      Buy Papers
+                    </span>
+                  </button>
                   {CATEGORY_STORIES.map((cat) => {
                     const isActive = activeCategory === cat.id;
                     return (
@@ -837,13 +866,15 @@ export function MedraeQuizzes() {
                         </div>
                       </div>
 
-                      <LastMinuteCard
-                        variant="quiz"
-                        title="Skip the subscription. Buy what you need."
-                        blurb="One payment, one paper, readable instantly. From KSh 49."
-                      />
                       {/* GRID */}
                       <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
+                        {/* ✅ Last Minute card — lives in the grid, same size as quiz cards */}
+                        <LastMinuteCard
+                          variant="quiz"
+                          title="Skip the subscription. Buy what you need."
+                          blurb="One payment, one paper, readable instantly. From KSh 49."
+                        />
+
                         {filteredUnits.map((unit, index) => {
                           const questionCount = getQuestionCount(unit.code);
                           const isUnitFree = freeUnits.includes((unit.code ?? "").trim()) || unit.is_free;
@@ -1113,40 +1144,16 @@ export function MedraeQuizzes() {
                                       </Button>
                                     )}
                                   </div>
-                                  {/* ✅ ACTION ROW — inside CardContent, bigger tap targets */}
+                                  {/* ✅ ACTION ROW — stars on their own row, then bookmark + share together */}
                                   <div className="pt-3 mt-1 border-t border-gray-100 dark:border-gray-800">
-                                    {/* Tiny hint so users know they can rate */}
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2 text-center">
-                                      {myState?.rating
-                                        ? `You rated this ${myState.rating} ${myState.rating === 1 ? "star" : "stars"} · tap again to clear`
-                                        : "Tap a star to rate this quiz"}
-                                    </p>
-
-                                    <div className="flex items-center justify-between gap-2">
-                                      {/* Bookmark — 44px minimum for phones */}
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (!unit.id) return;
-                                          setBubbleKey(`bm:${unit.code}`);
-                                          const nextBookmarked = !(withLocal(unit.id).bookmarked);
-                                          patchMirror(unit.id, { bookmarked: nextBookmarked });
-                                          toggleBookmark(unit.id);
-                                          if (navigator.vibrate) navigator.vibrate(30);
-                                        }}
-                                        className={`relative flex items-center justify-center h-11 w-11 rounded-xl transition-colors touch-manipulation active:scale-95 ${myState?.bookmarked
-                                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
-                                          : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                          }`}
-                                        title={myState?.bookmarked ? "Bookmarked — tap to remove" : "Save for later"}
-                                      >
-                                        {bubbleKey === `bm:${unit.code}` && <BubblePop color="#10B981" emoji="🔖" />}
-                                        <Bookmark size={22} fill={myState?.bookmarked ? "currentColor" : "none"} className="relative z-10" />
-                                      </button>
-
-                                      {/* Stars — bigger, more spacing */}
-                                      {/* Stars — compact visual, full tap target */}
-                                      <div className="flex items-center">
+                                    {/* RATING ROW — full width, stars centered */}
+                                    <div className="flex flex-col items-center gap-1 mb-3">
+                                      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center">
+                                        {myState?.rating
+                                          ? `You rated this ${myState.rating} ${myState.rating === 1 ? "star" : "stars"} · tap again to clear`
+                                          : "Tap a star to rate this quiz"}
+                                      </p>
+                                      <div className="flex items-center justify-center gap-0.5">
                                         {[1, 2, 3, 4, 5].map((n) => {
                                           const filled = (myState?.rating ?? 0) >= n;
                                           return (
@@ -1164,12 +1171,12 @@ export function MedraeQuizzes() {
                                                 rateQuiz(unit.id, nextRating);
                                                 if (navigator.vibrate) navigator.vibrate(20);
                                               }}
-                                              className="relative flex items-center justify-center h-11 w-5 rounded-md transition-transform hover:scale-110 active:scale-95 touch-manipulation"
+                                              className="relative flex items-center justify-center h-9 w-9 rounded-md transition-transform hover:scale-110 active:scale-95 touch-manipulation"
                                               aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
                                             >
                                               {bubbleKey === `rt:${unit.code}:${n}` && <BubblePop color="#F59E0B" emoji="⭐" />}
                                               <Star
-                                                size={15}
+                                                size={20}
                                                 fill={filled ? "currentColor" : "none"}
                                                 strokeWidth={1.75}
                                                 className={`relative z-10 transition-colors ${filled ? "text-amber-500" : "text-gray-300 dark:text-gray-600"
@@ -1179,8 +1186,33 @@ export function MedraeQuizzes() {
                                           );
                                         })}
                                       </div>
+                                    </div>
 
-                                      {/* Share — 44px minimum for phones */}
+                                    {/* ACTIONS ROW — bookmark left, share right */}
+                                    <div className="flex items-center justify-between gap-2">
+                                      {/* Bookmark */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!unit.id) return;
+                                          setBubbleKey(`bm:${unit.code}`);
+                                          const nextBookmarked = !(withLocal(unit.id).bookmarked);
+                                          patchMirror(unit.id, { bookmarked: nextBookmarked });
+                                          toggleBookmark(unit.id);
+                                          if (navigator.vibrate) navigator.vibrate(30);
+                                        }}
+                                        className={`relative flex items-center justify-center h-10 w-10 rounded-xl transition-colors touch-manipulation active:scale-95 ${myState?.bookmarked
+                                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
+                                          : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                          }`}
+                                        title={myState?.bookmarked ? "Bookmarked — tap to remove" : "Save for later"}
+                                        aria-label={myState?.bookmarked ? "Remove bookmark" : "Bookmark this quiz"}
+                                      >
+                                        {bubbleKey === `bm:${unit.code}` && <BubblePop color="#10B981" emoji="🔖" />}
+                                        <Bookmark size={20} fill={myState?.bookmarked ? "currentColor" : "none"} className="relative z-10" />
+                                      </button>
+
+                                      {/* Share */}
                                       <button
                                         onClick={async (e) => {
                                           e.stopPropagation();
@@ -1194,10 +1226,11 @@ export function MedraeQuizzes() {
                                             if (unit.id) reportShare(unit.id);
                                           } catch { /* user cancelled */ }
                                         }}
-                                        className="relative flex items-center justify-center h-11 w-11 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors touch-manipulation active:scale-95"
+                                        className="relative flex items-center justify-center h-10 w-10 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors touch-manipulation active:scale-95"
                                         title="Share this unit"
+                                        aria-label="Share this quiz"
                                       >
-                                        <Share2 size={22} />
+                                        <Share2 size={20} />
                                       </button>
                                     </div>
                                   </div>

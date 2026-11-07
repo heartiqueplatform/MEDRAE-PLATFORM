@@ -275,33 +275,24 @@ export default function LastMinuteHome() {
             >
                 <div className="w-full max-w-full space-y-2 pb-24 safe-bottom">
 
-                    {/* ── HERO — trust strip + marketing copy ── */}
-                    <section className="px-4 sm:px-0 pt-4 pb-2">
-                        <div className="inline-flex items-center gap-1 mb-2">
-                            <Flame className="h-3 w-3 text-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-primary">
-                                The night-before library · no subscription
-                            </span>
-                        </div>
-                        <h2 className="text-[26px] sm:text-3xl font-black leading-[1.08] tracking-tight">
-                            The paper you actually need.
-                            <br />
-                            <span className="text-muted-foreground">For the price of a snack.</span>
-                        </h2>
-                        <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground leading-relaxed max-w-lg">
-                            Subscription is for the patient student.{" "}
-                            <strong className="text-foreground">Last Minute is for right now</strong>{" "}
-                            — one payment, one paper, instantly readable inside the app.
+                    {/* ── HERO — short and punchy ── */}
+                    <section className="px-4 sm:px-0 pt-4 pb-3">
+
+                        <h2 className="text-[24px] sm:text-[28px] font-black leading-[1.1] tracking-tight">
+                            The paper you need.
                             {cheapest !== null && (
-                                <> From <strong className="text-foreground">KSh {cheapest.toLocaleString()}</strong>.</>
+                                <span className="text-muted-foreground"> From KSh {cheapest.toLocaleString()}.</span>
                             )}
+                        </h2>
+                        <p className="mt-1 text-[13px] text-muted-foreground leading-snug">
+                            One payment. One paper. Read it inside the app.
                         </p>
 
                         {!loading && papers.length > 0 && (
-                            <div className="mt-3 flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                            <div className="mt-2.5 flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                                 <span className="inline-flex items-center gap-1">
                                     <BookOpen className="h-3 w-3" />
-                                    {papers.length} live
+                                    {papers.length} papers
                                 </span>
                                 {entitledCount > 0 && (
                                     <>
@@ -312,11 +303,6 @@ export default function LastMinuteHome() {
                                         </span>
                                     </>
                                 )}
-                                <span className="h-1 w-1 rounded-full bg-border" />
-                                <span className="inline-flex items-center gap-1">
-                                    <Lock className="h-3 w-3" />
-                                    In-app only
-                                </span>
                             </div>
                         )}
                     </section>
@@ -539,42 +525,32 @@ export default function LastMinuteHome() {
                                                     </button>
                                                 </div>
 
-                                                {/* ACTION ROW — bookmark, stars, share */}
+                                                {/* ACTION ROW — stars on their own row, then bookmark + share together */}
                                                 <div className="pt-3 mt-1 border-t border-gray-100 dark:border-gray-800">
-                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2 text-center">
-                                                        {myRating > 0
-                                                            ? `You rated this ${myRating} star${myRating === 1 ? "" : "s"}`
-                                                            : "Tap a star to rate"}
-                                                    </p>
-
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); toggleBookmark(p); }}
-                                                            className={cn(
-                                                                "relative flex items-center justify-center h-11 w-11 rounded-xl transition-colors touch-manipulation active:scale-95",
-                                                                bookmarked
-                                                                    ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
-                                                                    : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                                            )}
-                                                            title={bookmarked ? "Bookmarked" : "Save for later"}
-                                                        >
-                                                            {bubbleKey === `bm:${p.id}` && <BubblePop color="#10B981" emoji="🔖" />}
-                                                            <Bookmark size={22} fill={bookmarked ? "currentColor" : "none"} className="relative z-10" />
-                                                        </button>
-
-                                                        <div className="flex items-center">
+                                                    {/* RATING ROW — full width, stars centered */}
+                                                    <div className="flex flex-col items-center gap-1 mb-3">
+                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center">
+                                                            {myRating > 0
+                                                                ? `You rated this ${myRating} star${myRating === 1 ? "" : "s"} · tap again to clear`
+                                                                : "Tap a star to rate"}
+                                                        </p>
+                                                        <div className="flex items-center justify-center gap-0.5">
                                                             {[1, 2, 3, 4, 5].map((n) => {
                                                                 const filled = myRating >= n;
                                                                 return (
                                                                     <button
                                                                         key={n}
-                                                                        onClick={(e) => { e.stopPropagation(); rate(p, n); }}
-                                                                        className="relative flex items-center justify-center h-11 w-5 rounded-md transition-transform hover:scale-110 active:scale-95 touch-manipulation"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const nextRating = myRating === n ? 0 : n;
+                                                                            rate(p, nextRating);
+                                                                        }}
+                                                                        className="relative flex items-center justify-center h-9 w-9 rounded-md transition-transform hover:scale-110 active:scale-95 touch-manipulation"
                                                                         aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
                                                                     >
                                                                         {bubbleKey === `rt:${p.id}:${n}` && <BubblePop color="#F59E0B" emoji="⭐" />}
                                                                         <Star
-                                                                            size={15}
+                                                                            size={20}
                                                                             fill={filled ? "currentColor" : "none"}
                                                                             strokeWidth={1.75}
                                                                             className={cn(
@@ -586,13 +562,32 @@ export default function LastMinuteHome() {
                                                                 );
                                                             })}
                                                         </div>
+                                                    </div>
+
+                                                    {/* ACTIONS ROW — bookmark left, share right */}
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); toggleBookmark(p); }}
+                                                            className={cn(
+                                                                "relative flex items-center justify-center h-10 w-10 rounded-xl transition-colors touch-manipulation active:scale-95",
+                                                                bookmarked
+                                                                    ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
+                                                                    : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                                            )}
+                                                            title={bookmarked ? "Bookmarked" : "Save for later"}
+                                                            aria-label={bookmarked ? "Remove bookmark" : "Bookmark this paper"}
+                                                        >
+                                                            {bubbleKey === `bm:${p.id}` && <BubblePop color="#10B981" emoji="🔖" />}
+                                                            <Bookmark size={20} fill={bookmarked ? "currentColor" : "none"} className="relative z-10" />
+                                                        </button>
 
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); share(p); }}
-                                                            className="relative flex items-center justify-center h-11 w-11 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors touch-manipulation active:scale-95"
+                                                            className="relative flex items-center justify-center h-10 w-10 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors touch-manipulation active:scale-95"
                                                             title="Share"
+                                                            aria-label="Share this paper"
                                                         >
-                                                            <Share2 size={22} />
+                                                            <Share2 size={20} />
                                                         </button>
                                                     </div>
                                                 </div>

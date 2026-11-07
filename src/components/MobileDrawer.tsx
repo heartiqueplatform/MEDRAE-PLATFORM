@@ -61,6 +61,7 @@ import {
 import { useUserRole } from "@/context/UserRoleContext";
 import { getProfileCache, setProfileCache, clearProfileCache } from "@/lib/profileCache";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
+
 interface MobileDrawerProps {
     userRole?: "student" | "tutor" | "staff";
     isOpen: boolean;
@@ -71,11 +72,13 @@ interface DrawerItem {
     title: string;
     url: string;
     icon: any;
+    badge?: string | number;
 }
 type IconTone =
     | "neutral" | "ai" | "learning" | "progress" | "practice" | "alert"
     | "communication" | "media" | "finance" | "system" | "people" | "content"
     | "premium";
+
 const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
     neutral: {
         box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30",
@@ -138,7 +141,24 @@ const PAGE_VARIANTS = {
 };
 
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
-const STREAK_SUMMARY_KEY = "sidebar_cache_streak_summary"; const preloadUserProfile = () => {
+const STREAK_SUMMARY_KEY = "sidebar_cache_streak_summary";
+const MISTAKE_COUNT_KEY = "sidebar_cache_mistake_count";
+const EPISODES_COUNT_KEY = "sidebar_cache_episodes_count";
+const ANNOUNCEMENTS_KEY = "sidebar_cache_announcements";
+
+/* ---------------- Cache readers (instant paint) ---------------- */
+const readNumberCache = (key: string): number => {
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (typeof parsed?.data === 'number') return parsed.data;
+        }
+    } catch { }
+    return 0;
+};
+
+const preloadUserProfile = () => {
     try {
         const sharedCache = getProfileCache();
         if (sharedCache && sharedCache.name && sharedCache.name !== "Unknown User") {
@@ -171,7 +191,6 @@ const STREAK_SUMMARY_KEY = "sidebar_cache_streak_summary"; const preloadUserProf
     }
 };
 
-// ✅ Now supports staff in the preload path so cold render doesn't flash student
 const preloadUserRole = (): "student" | "tutor" | "staff" | null => {
     try {
         const sharedCache = getProfileCache();
@@ -192,7 +211,7 @@ const preloadUserRole = (): "student" | "tutor" | "staff" | null => {
     } catch { return null; }
 };
 
-/* ---------------- Row Item ---------------- */
+/* ---------------- Row Item — now badge-aware ---------------- */
 const DrawerRow = memo(({
     item,
     tone,
@@ -203,6 +222,8 @@ const DrawerRow = memo(({
     onPress: () => void;
 }) => {
     const styles = ICON_TONE_STYLES[tone];
+    const hasBadge = item.badge !== undefined && item.badge !== null && item.badge !== "";
+
     return (
         <button
             onClick={onPress}
@@ -219,6 +240,16 @@ const DrawerRow = memo(({
             <span className="flex-1 text-[13.5px] font-semibold text-slate-700 dark:text-[#c9d1d9] truncate">
                 {item.title}
             </span>
+            {hasBadge && (
+                <Badge
+                    variant="secondary"
+                    className="ml-1 h-[20px] px-1.5 text-[10px] font-bold rounded-full
+                               bg-blue-500/15 text-blue-600 dark:text-[#58a6ff]
+                               flex-shrink-0 border-0"
+                >
+                    {item.badge}
+                </Badge>
+            )}
             <ChevronRight className="h-4 w-4 text-slate-300 dark:text-[#6e7681] flex-shrink-0" />
         </button>
     );
@@ -269,8 +300,6 @@ const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     </svg>
 );
 
-
-
 /* ============================================================
    MAIN
    ============================================================ */
@@ -288,7 +317,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
     const userRole = (contextRole || propUserRole || preloadUserRole() || 'student') as 'student' | 'tutor' | 'staff';
 
-    // ✅ Single source of truth for role-gating
     const isStudent = userRole === 'student';
     const isTutor = userRole === 'tutor';
     const isStaff = userRole === 'staff';
@@ -300,13 +328,17 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     const session = useSession();
     const user = session?.user || null;
 
-    // Seed from the shared cache so offline premium users see "My Plan"
-    // on the very first render — no flash of "Upgrade".
     const [activePlan, setActivePlan] = useState<string | null>(() => {
         if (getCachedPremium(user?.id)) return "premium";
         return null;
     });
-    // ✅ Streak summary — drives the "Restore Streak" row visibility
+
+    /* ---- Badge counts — all seeded from the SAME cache AppSidebar writes ---- */
+    const [mistakeCount, setMistakeCount] = useState<number>(() => readNumberCache(MISTAKE_COUNT_KEY));
+    const [totalEpisodes, setTotalEpisodes] = useState<number>(() => readNumberCache(EPISODES_COUNT_KEY));
+    const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(() => readNumberCache(ANNOUNCEMENTS_KEY));
+
+    /* ---- Streak summary — seeded for instant paint ---- */
     const [streakSummary, setStreakSummary] = useState<{ current: number; best: number }>(
         () => {
             try {
@@ -320,38 +352,66 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
     );
 
-    // ✅ Fetch streak summary when the drawer opens
+    /* ---- Fetch/refresh badges when drawer opens ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
+
+        // Seed from cache immediately
+        setMistakeCount(readNumberCache(MISTAKE_COUNT_KEY));
+        setTotalEpisodes(readNumberCache(EPISODES_COUNT_KEY));
+        setUnreadAnnouncements(readNumberCache(ANNOUNCEMENTS_KEY));
+
+        // If offline, stop — cache already painted
+        if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+
         let cancelled = false;
 
         (async () => {
             try {
-                const { data, error } = await supabase
-                    .from("user_streak_summary")
-                    .select("current_streak, best_streak")
-                    .eq("user_id", user.id)
-                    .maybeSingle();
-                if (cancelled || error) return;
+                const [mistakesRes, episodesRes, streakRes] = await Promise.allSettled([
+                    isStudent
+                        ? supabase.from("user_mistakes").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false)
+                        : Promise.resolve({ count: 0 } as any),
+                    supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false),
+                    supabase.from("user_streak_summary").select("current_streak, best_streak").eq("user_id", user.id).maybeSingle(),
+                ]);
 
-                const summary = {
-                    current: data?.current_streak || 0,
-                    best: data?.best_streak || 0,
-                };
-                setStreakSummary(summary);
-                try {
-                    localStorage.setItem(
-                        STREAK_SUMMARY_KEY,
-                        JSON.stringify({ data: summary, timestamp: Date.now() })
-                    );
-                } catch { }
+                if (cancelled) return;
+
+                if (mistakesRes.status === 'fulfilled' && isStudent) {
+                    const count = (mistakesRes.value as any)?.count || 0;
+                    setMistakeCount(count);
+                    try {
+                        localStorage.setItem(MISTAKE_COUNT_KEY, JSON.stringify({ data: count, timestamp: Date.now() }));
+                    } catch { }
+                }
+
+                if (episodesRes.status === 'fulfilled') {
+                    const count = (episodesRes.value as any)?.count || 0;
+                    setTotalEpisodes(count);
+                    try {
+                        localStorage.setItem(EPISODES_COUNT_KEY, JSON.stringify({ data: count, timestamp: Date.now() }));
+                    } catch { }
+                }
+
+                if (streakRes.status === 'fulfilled') {
+                    const data = (streakRes.value as any)?.data;
+                    const summary = {
+                        current: data?.current_streak || 0,
+                        best: data?.best_streak || 0,
+                    };
+                    setStreakSummary(summary);
+                    try {
+                        localStorage.setItem(STREAK_SUMMARY_KEY, JSON.stringify({ data: summary, timestamp: Date.now() }));
+                    } catch { }
+                }
             } catch { /* silent */ }
         })();
 
         return () => { cancelled = true; };
-    }, [isOpen, user?.id]);
+    }, [isOpen, user?.id, isStudent]);
 
-    // ✅ Instant refresh when a restore happens anywhere in the app
+    /* ---- Streak updated event (from Restore page) ---- */
     useEffect(() => {
         const onStreakUpdated = () => {
             if (!user?.id) return;
@@ -372,6 +432,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         window.addEventListener("streak-updated", onStreakUpdated);
         return () => window.removeEventListener("streak-updated", onStreakUpdated);
     }, [user?.id]);
+
     /* ---- Subscription: cache-first, then background refresh ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
@@ -401,6 +462,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         return () => window.removeEventListener("online", onOnline);
     }, [isOpen, user?.id]);
 
+    /* ---- Theme sync ---- */
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         try {
             const stored = localStorage.getItem('medrae_dark_mode');
@@ -432,9 +494,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         };
     }, []);
 
+    /* ---- Lock body scroll when open ---- */
     useEffect(() => {
         if (isOpen) {
-            ignoreTapsUntil.current = Date.now() + 400;   // ← ADD THIS
+            ignoreTapsUntil.current = Date.now() + 400;
             const original = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
             return () => { document.body.style.overflow = original; };
@@ -451,19 +514,17 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         });
     }, []);
 
+    /* ---- Load profile (cache first) ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
 
-        // 1. Seed from cache synchronously — no await, no spinner, no wait
         const cached = preloadUserProfile();
         if (cached.name) setUserProfile(cached);
 
-        // 2. Skip network entirely if offline OR cache is still fresh
         const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
         const cacheTs = Number(localStorage.getItem("userProfile_ts") || 0);
         if (isOffline || Date.now() - cacheTs < CACHE_EXPIRY) return;
 
-        // 3. Only hit Supabase when cache is stale + online
         let cancelled = false;
         (async () => {
             try {
@@ -527,10 +588,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
         return finalUrl;
     }, [user?.id]);
+
     const smartNav = useSmartNavigate();
     const handleNavigate = useCallback((url: string) => {
-        if (Date.now() < ignoreTapsUntil.current) return;   // ← ADD THIS LINE
-        // ✅ Special case: Podcasts opens the MusicPlayer fullscreen overlay.
+        if (Date.now() < ignoreTapsUntil.current) return;
+
         if (url === "__open_music_player__") {
             tapFeedback("success");
             setIsOpen(false);
@@ -549,13 +611,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
         tapFeedback("light");
         setIsOpen(false);
-
-        // Navigate immediately. The drawer exit animation runs in parallel
-        // with the route swap — because the drawer is opaque and full-screen,
-        // the user never sees the page underneath. This removes the "hang"
-        // where the drawer appeared frozen mid-close on slow connections.
         smartNav(null, url);
     }, [smartNav, tapFeedback, setIsOpen]);
+
     const handleLogout = useCallback(async () => {
         setIsLoggingOut(true);
         tapFeedback();
@@ -579,7 +637,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 title: "Last Minute",
                 url: "/last-minute",
                 icon: Zap,
-                iconTone: "alert" as IconTone,   // amber tone — matches the urgency
+                iconTone: "alert" as IconTone,
                 badge: "New",
             },
             { title: "NCK Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
@@ -589,7 +647,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
     /* ---------------- SECTIONS ---------------- */
     const sections = useMemo(() => {
-        // ---------- MAIN ----------
         const mainItems: any[] = [
             { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
         ];
@@ -599,21 +656,26 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 { title: "Nursing Curriculum", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
                 { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
                 { title: "Clinical Challenge", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
-                { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone },
+                {
+                    title: "Mistakes",
+                    url: "/my-mistakes",
+                    icon: AlertCircle,
+                    iconTone: "alert" as IconTone,
+                    badge: mistakeCount > 0 ? mistakeCount : undefined,
+                },
             );
 
-            // 👇 NEW — only when the user has a broken streak
             if (streakSummary.best > streakSummary.current && streakSummary.current > 0) {
                 mainItems.push({
                     title: "Restore Streak",
                     url: "/streak/restore",
                     icon: Flame,
                     iconTone: "alert" as IconTone,
+                    badge: `${streakSummary.best - streakSummary.current}d`,
                 });
             }
         }
 
-        // Survival Hub stays for everyone
         mainItems.push(
             { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
         );
@@ -623,8 +685,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             { label: "NCK Exam Prep", items: nckExamPrepItems },
         ];
 
-        // ---------- TUTOR TOOLS ----------
-        // Tutor-only. Staff and students never see this block.
         if (userRole === "tutor") {
             sectionsArray.push({
                 label: "Tutor Tools",
@@ -636,20 +696,23 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             });
         }
 
-        // ---------- MEDIA / LISTEN ----------
-        // Every role gets an audio section. Students see "Media",
-        // tutors & staff see "Listen" (Podcasts first, then MedTube).
         if (isStudent) {
             sectionsArray.push({
                 label: "Media",
                 items: [
-                    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
+                    {
+                        title: "MedTube",
+                        url: "/medtube",
+                        icon: Play,
+                        iconTone: "media" as IconTone,
+                    },
                     {
                         title: "Podcasts",
                         url: "__open_music_player__",
                         icon: Headphones,
                         iconTone: "media" as IconTone,
                         action: "open_music_player" as const,
+                        badge: totalEpisodes > 0 ? totalEpisodes : undefined,
                     },
                 ],
             });
@@ -663,12 +726,13 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                         icon: Headphones,
                         iconTone: "media" as IconTone,
                         action: "open_music_player" as const,
+                        badge: totalEpisodes > 0 ? totalEpisodes : undefined,
                     },
                     { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
                 ],
             });
         }
-        // ─────────────── STAFF CPD ───────────────
+
         if (isStaff) {
             sectionsArray.push({
                 label: "CPD",
@@ -681,9 +745,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 ],
             });
         }
-        // ───────────────────────────────────────────
 
-        // ---------- LEARNING ----------
         const learningItems: any[] = [
             { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
             { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
@@ -707,12 +769,16 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
         sectionsArray.push({ label: "Learning", items: learningItems });
 
-        // ---------- OTHER ----------
         const otherItems: any[] = [
             { title: "NursMart", url: "/market", icon: ShoppingBag, iconTone: "finance" as IconTone },
-            { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone },
+            {
+                title: "Announcements",
+                url: "/announcements",
+                icon: Bell,
+                iconTone: "alert" as IconTone,
+                badge: unreadAnnouncements > 0 ? unreadAnnouncements : undefined,
+            },
         ];
-        // Help Center — students only (new one for tutors/staff coming soon)
         if (isStudent) {
             otherItems.push({
                 title: "Help Center",
@@ -740,9 +806,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
-    }, [userRole, isStudent, nckExamPrepItems, streakSummary.current, streakSummary.best]);
+    }, [userRole, isStudent, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements]);
 
-    /* ---------------- Horizontal identity strip items ---------------- */
+    /* ---------------- Horizontal identity strip ---------------- */
     const identityStrip = useMemo(() => {
         const base: any[] = [
             { title: "Home", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
@@ -756,7 +822,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 { title: "Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
             );
         }
-        // 👇 NEW — restore streak quick-access chip (students with a broken streak only)
         if (isStudent && streakSummary.best > streakSummary.current && streakSummary.current > 0) {
             base.push({
                 title: "Restore",
@@ -771,7 +836,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             { title: "Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
             { title: "Market", url: "/market", icon: ShoppingBag, iconTone: "finance" as IconTone },
         );
-        // Exams/Results chips — only for student & tutor, NOT staff
         if (userRole === "student") {
             base.push(
                 { title: "Exams", url: "/exam/candidate", icon: GraduationCap, iconTone: "learning" as IconTone },
@@ -783,7 +847,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 { title: "Results", url: "/tutor/exams/:paper_id/results", icon: BarChart3, iconTone: "progress" as IconTone },
             );
         }
-        // ─────────────── STAFF CPD QUICK-ACCESS ───────────────
         if (isStaff) {
             base.push(
                 { title: "CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
@@ -791,7 +854,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 { title: "Certs", url: "/cpd/certificates", icon: Crown, iconTone: "premium" as IconTone },
             );
         }
-        // ──────────────────────────────────────────────────────
 
         if (activePlan) {
             base.push({
@@ -830,7 +892,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             }}
                             className="fixed inset-0 z-[9999] bg-black/60 md:hidden"
                         />
-                        {/* FULL-SCREEN PAGE — respects light/dark */}
+                        {/* FULL-SCREEN PAGE */}
                         <motion.div
                             ref={drawerRef}
                             variants={PAGE_VARIANTS}
@@ -886,7 +948,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
                                     </svg>
                                 </div>
-                                <h2 className="flex-1 text-[15px]   tracking-tight">
+                                <h2 className="flex-1 text-[15px] tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
                                     <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-1 align-middle">
@@ -1052,22 +1114,21 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         </span>
                                     </button>
 
-                                    {/* FOOTER */}
-                                    <div className="mt-2 pt-6 pb-2 text-center select-none border-t border-slate-200 dark:border-[#21262d]">
-
-                                        <p className="text-[7px]   tracking-[0.2em] text-slate-400 dark:text-[#6e7681] opacity-80">
-                                            Medrae Nursing All rights reserved
+                                    {/* MINIMAL FOOTER */}
+                                    <div className="mt-2 pt-5 pb-2 text-center select-none">
+                                        <p className="text-[8px] tracking-[0.2em] text-slate-400 dark:text-[#6e7681] opacity-70 mb-3">
+                                            Version 2.0 Medrae Learning System
                                         </p>
 
-                                        <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
+                                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
                                             <a
                                                 href="https://medrae-nursing.vercel.app/"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 aria-label="MEDRAE Nursing Website"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full overflow-hidden
+                                                className="group flex h-7 w-7 items-center justify-center rounded-full overflow-hidden
                        bg-white dark:bg-[#161b22] ring-1 ring-slate-200 dark:ring-[#30363d]
-                       transition-transform hover:scale-110 active:scale-95"
+                       transition-transform active:scale-95"
                                             >
                                                 <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" className="h-full w-full" aria-hidden="true">
                                                     <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
@@ -1085,63 +1146,32 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                             </a>
 
                                             <a href="https://wa.me/254704473503" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 transition-transform hover:scale-110 active:scale-95">
-                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+                                                className="group flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 transition-transform active:scale-95">
+                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-white">
                                                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                                                 </svg>
                                             </a>
 
-                                            <a href="https://tiktok.com/@medraenursing" target="_blank" rel="noopener noreferrer" aria-label="TikTok"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-950 transition-transform hover:scale-110 active:scale-95">
-                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
-                                                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.66a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.09z" />
-                                                </svg>
-                                            </a>
-
                                             <a href="https://instagram.com/medraenursing" target="_blank" rel="noopener noreferrer" aria-label="Instagram"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-amber-400 transition-transform hover:scale-110 active:scale-95">
-                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+                                                className="group flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-amber-400 transition-transform active:scale-95">
+                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-white">
                                                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
                                                 </svg>
                                             </a>
 
-                                            <a href="https://x.com/medraenursing" target="_blank" rel="noopener noreferrer" aria-label="X"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-black transition-transform hover:scale-110 active:scale-95">
+                                            <a href="https://tiktok.com/@medraenursing" target="_blank" rel="noopener noreferrer" aria-label="TikTok"
+                                                className="group flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-950 transition-transform active:scale-95">
                                                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-white">
-                                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                                                </svg>
-                                            </a>
-
-                                            <a href="https://youtube.com/@medraenursing" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 transition-transform hover:scale-110 active:scale-95">
-                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
-                                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                                                </svg>
-                                            </a>
-
-                                            <a href="https://facebook.com/medraenursing" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-                                                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 transition-transform hover:scale-110 active:scale-95">
-                                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
-                                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.66a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.09z" />
                                                 </svg>
                                             </a>
                                         </div>
 
-                                        <a
-                                            href="https://instagram.com/medraenursing"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="mt-3 inline-block text-[10px] font-bold text-slate-500 dark:text-[#8b949e]
-                   hover:text-[#58a6ff] transition-colors tracking-wide"
-                                        >
-                                            @medraenursing
-                                        </a>
-
-                                        <div className="mt-2 flex items-center justify-center gap-3">
+                                        <div className="mt-3 flex items-center justify-center gap-3">
                                             <Link
                                                 to="/privacy"
                                                 onClick={() => setIsOpen(false)}
-                                                className="text-[8px] font-bold text-slate-500 dark:text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
+                                                className="text-[9px] font-bold text-slate-500 dark:text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
                                             >
                                                 Privacy
                                             </Link>
@@ -1149,16 +1179,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                             <Link
                                                 to="/terms"
                                                 onClick={() => setIsOpen(false)}
-                                                className="text-[8px] font-bold text-slate-500 dark:text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
+                                                className="text-[9px] font-bold text-slate-500 dark:text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
                                             >
                                                 Terms
                                             </Link>
-                                        </div>
-
-                                        <div className="mt-3 text-center">
-                                            <p className="text-[8px] font-bold text-slate-400 dark:text-[#484f58] tracking-widest">
-                                                Version 2.0 Medrae Learning System
-                                            </p>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -1199,7 +1223,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
         </>
     );
 }

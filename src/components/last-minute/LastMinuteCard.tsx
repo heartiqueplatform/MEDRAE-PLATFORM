@@ -349,14 +349,14 @@ export function LastMinuteCard({
                     }
                 }}
                 className={cn(
-                    "group relative w-full text-left overflow-hidden rounded-xl",
+                    "group relative w-full h-full flex flex-col text-left overflow-hidden rounded-xl",
                     "bg-white dark:bg-muted/70 shadow-sm",
                     "hover:shadow-xl transition-all duration-300",
                     "active:scale-[0.995] cursor-pointer p-0",
                     className
                 )}
             >
-                {/* Carousel */}
+                {/* ─── Carousel ─── */}
                 <HeroCarousel images={QUIZ_HERO_IMAGES} transition={transition} />
 
                 {/* Overlays */}
@@ -371,18 +371,24 @@ export function LastMinuteCard({
                     </div>
                 )}
 
-                {/* Body */}
-                <div className="p-4">
+                {/* ─── Body — vertical stack, CTA pinned bottom ─── */}
+                <div className="flex-1 flex flex-col p-4 sm:p-5">
+                    {/* Eyebrow */}
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
                         Pay once · No subscription
                     </p>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+
+                    {/* Title — allow full wrap on desktop */}
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">
                         {title}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">
+
+                    {/* Blurb — a bit taller room on desktop, still clamped so cards align */}
+                    <p className="mt-1.5 text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2 md:line-clamp-3">
                         {blurb}
                     </p>
 
+                    {/* Stat pills */}
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
                         {loaded ? (
                             <>
@@ -409,14 +415,20 @@ export function LastMinuteCard({
                         )}
                     </div>
 
+                    {/* Spacer — pushes the CTA to the bottom so every card in the row is aligned */}
+                    <div className="flex-1" />
+
+                    {/* CTA — always full width, pinned to bottom */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             navigate("/last-minute");
                         }}
-                        className="mt-3 w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2
+                        className="mt-4 w-full h-12 rounded-2xl font-bold
+                            transition-all flex items-center justify-center gap-2
                             bg-gradient-to-r from-amber-500 to-orange-600 text-white
-                            hover:from-amber-600 hover:to-orange-700 active:scale-95 shadow-md shadow-orange-500/20"
+                            hover:from-amber-600 hover:to-orange-700 active:scale-95
+                            shadow-md shadow-orange-500/20 whitespace-nowrap"
                     >
                         <Zap className="h-4 w-4 fill-current" />
                         Browse Papers

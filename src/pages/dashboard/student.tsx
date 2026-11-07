@@ -210,6 +210,23 @@ const getInitialCache = () => {
     const savedData = localStorage.getItem("dashboardData");
     if (savedData) {
       const parsed = JSON.parse(savedData);
+
+      // The dedicated leaderboard cache is the authoritative leaderboard snapshot.
+      // dashboardData may be older because other dashboard sections save it separately.
+      try {
+        const rawLeaderboard = localStorage.getItem("leaderboard_fast");
+        if (rawLeaderboard) {
+          const leaderboardCache = JSON.parse(rawLeaderboard);
+          const leaderboardData = Array.isArray(leaderboardCache)
+            ? leaderboardCache
+            : leaderboardCache?.data;
+
+          if (Array.isArray(leaderboardData)) {
+            parsed.topStudents = leaderboardData;
+          }
+        }
+      } catch (e) { }
+
       return parsed;
     }
   } catch (e) { }
@@ -277,8 +294,9 @@ const getInitialCache = () => {
 
   return result;
 };
-// ✅ Leaderboard cache helpers (TTL-aware)
-const LEADERBOARD_TTL = 60 * 1000; // 5 minutes
+// ✅ Leaderboard cache helpers
+// Cached rankings are displayed immediately, but are never treated as a reason
+// to skip the fresh Supabase request when the dashboard loads.
 const LEADERBOARD_KEY = "leaderboard_fast";
 
 const readLeaderboardCache = (): { data: any[]; ts: number } | null => {
@@ -289,7 +307,6 @@ const readLeaderboardCache = (): { data: any[]; ts: number } | null => {
     const data = Array.isArray(parsed) ? parsed : parsed?.data;
     const ts = Array.isArray(parsed) ? 0 : (parsed?.ts ?? 0);
     if (!Array.isArray(data)) return null;
-    if (Date.now() - ts > LEADERBOARD_TTL) return null; // stale
     return { data, ts };
   } catch {
     return null;
@@ -623,7 +640,7 @@ export default function StudentDashboard() {
       console.log("Simulation papers: Offline mode, keeping current list");
     }
   }, [user?.id]);
-  const fetchTopStudents = useCallback(async (forceRefresh = false) => {
+  const fetchTopStudents = useCallback(async () => {
     if (!user?.id) return;
 
     // 1. Paint cache instantly (even if stale — better than blank)
@@ -635,18 +652,14 @@ export default function StudentDashboard() {
       setLoadingTopStudents(true);
     }
 
-    // 2. If fresh cache exists and not forced, skip network
-    if (!forceRefresh && cached && cached.data.length > 0) {
-      setLoadingTopStudents(false);
-      return;
-    }
-
-    // 3. Revalidate in background
+    // 2. Always revalidate with Supabase. A cache entry is only for instant
+    // display; it must not prevent the dashboard from requesting current rankings.
     try {
       const { data, error } = await supabase.rpc("get_leaderboard_v2");
       if (error) throw error;
 
-      if (data && data.length > 0) {
+      // An empty array is also a valid response and must clear old rankings.
+      if (Array.isArray(data)) {
         setTopStudents(data);
         writeLeaderboardCache(data);
         setLeaderboardUpdatedAt(Date.now());
@@ -661,14 +674,16 @@ export default function StudentDashboard() {
           }
         } catch { }
 
-        // rank celebration
-        const myIndex = data.findIndex((s: any) => s.userid === user.id);
-        const myRank = myIndex !== -1 ? myIndex + 1 : null;
+        // rank celebration only applies when the returned leaderboard is non-empty.
+        if (data.length > 0) {
+          const myIndex = data.findIndex((s: any) => s.userid === user.id);
+          const myRank = myIndex !== -1 ? myIndex + 1 : null;
 
-        if (myRank && myRank <= 3 && myRank !== userRankPrevious.current) {
-          setNewRank(myRank);
-          setShowRankCelebration(true);
-          userRankPrevious.current = myRank;
+          if (myRank && myRank <= 3 && myRank !== userRankPrevious.current) {
+            setNewRank(myRank);
+            setShowRankCelebration(true);
+            userRankPrevious.current = myRank;
+          }
         }
       }
     } catch (err) {
@@ -686,7 +701,7 @@ export default function StudentDashboard() {
     setOverlayOpen(true); // open immediately
 
     // Always refresh when dialog opens (cheap: 1 RPC, ≤20 rows)
-    fetchTopStudents(true);
+    fetchTopStudents();
   }, [user?.id, fetchTopStudents]);
 
   // ===== LOAD DASHBOARD DATA =====
@@ -757,12 +772,12 @@ export default function StudentDashboard() {
 
     // background refresh every 60s, only when tab is visible
     const intervalId = setInterval(() => {
-      if (!document.hidden) fetchTopStudents(true);
+      if (!document.hidden) fetchTopStudents();
     }, 60 * 1000);
 
     // refresh when user returns to the tab
     const onFocus = () => {
-      if (!document.hidden) fetchTopStudents(true);
+      if (!document.hidden) fetchTopStudents();
     };
     window.addEventListener("focus", onFocus);
 
@@ -1037,7 +1052,12 @@ export default function StudentDashboard() {
           <FeedSeenTop10 />
         </DeferredMount>
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
-        <div className="fixed z-30 bottom-20 right-4 md:bottom-14 md:right-5">
+        <div
+          className="fixed z-30 right-4 md:bottom-14 md:right-5"
+          style={{
+            bottom: `calc(60px + env(safe-area-inset-bottom, 0px) + 32px)`,
+          }}
+        >
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -1101,7 +1121,7 @@ export default function StudentDashboard() {
                   {/* avatar fills the chip */}
                   <span className="w-full h-full rounded-full overflow-hidden block">
                     <img
-                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                      src={topStudents[0].avatar_url || "/background03.jpg"}
                       alt={topStudents[0].name}
                       className="w-full h-full object-cover"
                       loading="lazy"

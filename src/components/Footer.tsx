@@ -21,14 +21,16 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
 };
 
 /* ============================================================
-   ICONS — v3
-   • 26×26 viewBox padding preserved
-   • strokeWidth: 1.9 inactive / 2.1 active
-   • Active state → filled silhouette (no fillOpacity)
-   • Round caps & joins throughout
+   ICONS — v4
+   • Active = vivid BLUE stroke (never solid white fill)
+   • Stroke width 2.1 active / 1.9 inactive
+   • Internal detail lines use blue-tinted white (not pure white)
    ============================================================ */
 
 const SW = (active: boolean) => (active ? 2.1 : 1.9);
+
+// Internal "cutout" lines for active icons — blue-tinted, NOT pure white
+const ACTIVE_DETAIL = "rgba(147,197,253,0.85)"; // tailwind blue-300
 
 // ── HOME ────────────────────────────────────────────────────
 const IconHome = ({ active }: { active: boolean }) => (
@@ -40,11 +42,12 @@ const IconHome = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
     </svg>
 );
 
-// ── QUIZZES (heart → kept heart, cleaner geometry) ─────────
+// ── QUIZZES (heart) ────────────────────────────────────────
 const IconQuizzes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -54,6 +57,7 @@ const IconQuizzes = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
     </svg>
 );
@@ -71,6 +75,7 @@ const IconFeed = ({ active }: { active: boolean }) => (
             strokeWidth={SW(active)}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
         <path
             d="M19.25 8.5h1.5A2.25 2.25 0 0 1 23 10.75v10.5a2.25 2.25 0 0 1-2.25 2.25"
@@ -80,26 +85,16 @@ const IconFeed = ({ active }: { active: boolean }) => (
             strokeLinejoin="round"
             fill="none"
         />
-        {!active && (
-            <>
-                <path d="M7.5 9.25h8" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
-                <path d="M7.5 13h8" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
-                <path d="M7.5 16.75h5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
-            </>
-        )}
-        {active && (
-            <>
-                <path d="M7.5 9.25h8" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
-                <path d="M7.5 13h8" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
-                <path d="M7.5 16.75h5" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
-            </>
-        )}
+        {/* Detail lines — always visible, tinted when active */}
+        <path d="M7.5 9.25h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M7.5 13h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M7.5 16.75h5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
     </svg>
 );
-// ── MISTAKES (broken heart — cleaned) ─────────────────────
+
+// ── MISTAKES (kept for Menu badge / future use) ──────────
 const IconMistakes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Left half of heart */}
         <path
             d="M13 21.5S4.2 16.1 4.2 10.3a4.9 4.9 0 0 1 8.8-3.05"
             stroke="currentColor"
@@ -107,8 +102,8 @@ const IconMistakes = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
-        {/* Right half of heart — offset slightly to create the "break" */}
         <path
             d="M13 21.5s8.8-5.4 8.8-11.2a4.9 4.9 0 0 0-8.8-3.05"
             stroke="currentColor"
@@ -116,16 +111,15 @@ const IconMistakes = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
             transform="translate(1.2 0)"
         />
-        {/* The jagged break line down the middle */}
         <path
             d="m11.2 6.8 1.8 2.6-1.4 2.2 1.4 2.4-1.4 2.3 1.4 2.4"
-            stroke={active ? "white" : "currentColor"}
+            stroke={active ? ACTIVE_DETAIL : "currentColor"}
             strokeWidth={active ? 1.6 : 1.7}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity={active ? 0.7 : 1}
             transform="translate(0.7 0)"
         />
     </svg>
@@ -141,6 +135,7 @@ const IconCpd = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
         <path
             d="M8.75 14.75 8 22.25l5-2.75 5 2.75-.75-7.5"
@@ -149,6 +144,7 @@ const IconCpd = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
     </svg>
 );
@@ -162,12 +158,19 @@ const IconCatalog = ({ active }: { active: boolean }) => (
             strokeWidth={SW(active)}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
-        <path d="M8.5 3.25v19.5" stroke={active ? "white" : "currentColor"} strokeWidth={active ? 1.6 : SW(false)} strokeLinecap="round" opacity={active ? 0.55 : 1} />
+        <path d="M8.5 3.25v19.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.6 : SW(false)} strokeLinecap="round" />
         {!active && (
             <>
                 <path d="M12 9.5h5.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
                 <path d="M12 13h5.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
+            </>
+        )}
+        {active && (
+            <>
+                <path d="M12 9.5h5.5" stroke={ACTIVE_DETAIL} strokeWidth={1.6} strokeLinecap="round" />
+                <path d="M12 13h5.5" stroke={ACTIVE_DETAIL} strokeWidth={1.6} strokeLinecap="round" />
             </>
         )}
     </svg>
@@ -182,14 +185,13 @@ const IconProgress = ({ active }: { active: boolean }) => (
             strokeWidth={SW(active)}
             strokeLinecap="round"
         />
-        <rect x="6.5" y="13" width="3.5" height="7" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
-        <rect x="11.25" y="9" width="3.5" height="11" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
-        <rect x="16" y="5" width="3.5" height="15" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+        <rect x="6.5" y="13" width="3.5" height="7" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
+        <rect x="11.25" y="9" width="3.5" height="11" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
+        <rect x="16" y="5" width="3.5" height="15" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
     </svg>
 );
 
-// ── MENU (three lines, weightier) ──────────────────────────
-// ── MENU (three lines, weightier) ──────────────────────────
+// ── MENU (three lines) ─────────────────────────────────────
 const IconMenu = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4.5 7.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
@@ -218,6 +220,7 @@ const IconHeadphones = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
         <rect
             x="17.5"
@@ -228,6 +231,7 @@ const IconHeadphones = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
     </svg>
 );
@@ -242,6 +246,7 @@ const IconTutorExams = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
         <rect
             x="9"
@@ -252,13 +257,9 @@ const IconTutorExams = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
-        {!active && (
-            <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" strokeLinejoin="round" />
-        )}
-        {active && (
-            <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
-        )}
+        <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
@@ -272,6 +273,7 @@ const IconExamResults = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
         />
         <path
             d="M15 3.25v6h6"
@@ -280,35 +282,25 @@ const IconExamResults = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
         />
-        {!active && (
-            <>
-                <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M9.5 19.5h7" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
-            </>
-        )}
-        {active && (
-            <>
-                <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
-                <path d="M9.5 19.5h7" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
-            </>
-        )}
+        <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9.5 19.5h7" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
     </svg>
 );
 
-// ── ANALYTICS (bar chart with baseline) ────────────────────
+// ── ANALYTICS (bar chart) ─────────────────────────────────
 const IconAnalytics = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
-        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
-        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} />
+        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
+        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
+        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
     </svg>
 );
 
 /* ============================================================
-   NAV ITEM — v3
-   • No border on active tile
-   • Gradient fill + soft shadow only
-   • 44×44 tile, 26×26 icon
+   NAV ITEM — v4
+   • Active color = vivid blue in BOTH modes (never white)
+   • Label: active = blue-600 (light) / blue-400 (dark), bold
+   • Tile gradient kept subtle so icon stays readable
    ============================================================ */
 const NavItem = memo(({
     icon: Icon,
@@ -328,16 +320,18 @@ const NavItem = memo(({
     const [pressed, setPressed] = useState(false);
     const [pending, setPending] = useState(false);
 
-    // Light up the tile the instant the tap lands — even if the
-    // route change takes 400ms. Clears once the route has settled.
     const showActive = isActive || pending;
 
-    const labelColor = showActive
-        ? (isDark ? "text-white" : "text-blue-600")
-        : (isDark ? "text-gray-400" : "text-gray-500");
+    // ── Vivid active color, in BOTH modes (Instagram/WhatsApp style) ──
+    const activeColor = isDark ? "#60a5fa" : "#2563eb"; // blue-400 / blue-600
+    const inactiveColor = isDark ? "#9ca3af" : "#6b7280"; // gray-400 / gray-500
 
-    const iconColor = showActive
-        ? (isDark ? "text-white" : "text-blue-600")
+    const iconColorStyle = showActive
+        ? { color: activeColor }
+        : { color: inactiveColor };
+
+    const labelColor = showActive
+        ? (isDark ? "text-blue-400" : "text-blue-600")
         : (isDark ? "text-gray-400" : "text-gray-500");
 
     const handlePointerDown = (e: React.PointerEvent) => {
@@ -348,14 +342,10 @@ const NavItem = memo(({
     };
     const clear = () => setPressed(false);
 
-    // ── Active tile — clean gradient, NO border ──────────────
+    // Subtle active tile — lighter than before so the vivid icon pops
     const activeTileBg = isDark
-        ? "linear-gradient(160deg, rgba(59,130,246,0.26) 0%, rgba(37,99,235,0.14) 100%)"
-        : "linear-gradient(160deg, rgba(59,130,246,0.16) 0%, rgba(37,99,235,0.09) 100%)";
-
-    const activeTileShadow = isDark
-        ? "0 4px 14px rgba(59,130,246,0.22), inset 0 1px 0 rgba(255,255,255,0.06)"
-        : "0 4px 14px rgba(59,130,246,0.16), inset 0 1px 0 rgba(255,255,255,0.75)";
+        ? "linear-gradient(160deg, rgba(59,130,246,0.14) 0%, rgba(37,99,235,0.06) 100%)"
+        : "linear-gradient(160deg, rgba(59,130,246,0.12) 0%, rgba(37,99,235,0.05) 100%)";
 
     return (
         <button
@@ -372,41 +362,34 @@ const NavItem = memo(({
             }}
             aria-label={label}
         >
-            {/* ── Press ripple ── */}
+            {/* Press ripple */}
             <div
                 className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
                 style={{
                     background: isDark
-                        ? "radial-gradient(circle, rgba(96,165,250,0.42) 0%, rgba(59,130,246,0.14) 50%, transparent 78%)"
-                        : "radial-gradient(circle, rgba(59,130,246,0.30) 0%, rgba(59,130,246,0.10) 50%, transparent 78%)",
+                        ? "radial-gradient(circle, rgba(96,165,250,0.35) 0%, rgba(59,130,246,0.12) 50%, transparent 78%)"
+                        : "radial-gradient(circle, rgba(59,130,246,0.24) 0%, rgba(59,130,246,0.08) 50%, transparent 78%)",
                     opacity: pressed ? 1 : 0,
                     transition: "opacity 220ms ease-out",
                 }}
             />
 
-            {/* ── Active tile — borderless ── */}
+            {/* Active tile — very subtle, no shadow */}
             <div
                 className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
                 style={{
                     background: activeTileBg,
-                    boxShadow: isActive ? activeTileShadow : "none",
                     opacity: isActive ? 1 : 0,
                     transform: `translateX(-50%) scale(${isActive ? 1 : 0.82})`,
-                    transition: "opacity 260ms ease-out, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease-out",
+                    transition: "opacity 260ms ease-out, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)",
                 }}
             />
 
-            {/* ── Icon ── */}
+            {/* Icon */}
             <div className="relative flex items-center justify-center w-[26px] h-[26px] z-10">
                 <span
-                    className={`transition-colors duration-200 ${iconColor}`}
-                    style={{
-                        filter: isActive
-                            ? (isDark
-                                ? "drop-shadow(0 1px 3px rgba(59,130,246,0.35))"
-                                : "drop-shadow(0 1px 2px rgba(59,130,246,0.18))")
-                            : "none",
-                    }}
+                    className="transition-colors duration-200"
+                    style={iconColorStyle}
                 >
                     <Icon active={isActive} />
                 </span>
@@ -417,14 +400,13 @@ const NavItem = memo(({
                             text-[9.5px] font-bold flex items-center justify-center
                             bg-red-500 text-white rounded-full leading-none
                             ring-2 ring-background"
-                        style={{ boxShadow: "0 2px 6px rgba(239,68,68,0.35)" }}
                     >
                         {badge > 99 ? "99+" : badge}
                     </span>
                 )}
             </div>
 
-            {/* ── Label ── */}
+            {/* Label */}
             <span
                 className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-semibold" : "font-medium"
                     } ${labelColor}`}
@@ -457,15 +439,10 @@ export function Footer() {
     const scrollContainerRef = useRef<Element | null>(null);
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         try {
-            // 1. Trust the <html> class — set by the bootstrap in index.html
             if (document.documentElement.classList.contains('dark')) return 'dark';
             if (document.documentElement.classList.contains('light')) return 'light';
-
-            // 2. Fallback: canonical key
             const darkMode = localStorage.getItem('medrae_dark_mode');
             if (darkMode !== null) return darkMode === 'true' ? 'dark' : 'light';
-
-            // 3. Fallback: OS preference
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
             return 'light';
         } catch (e) {
@@ -505,15 +482,6 @@ export function Footer() {
     useEffect(() => { fetchMistakeCount(); }, [fetchMistakeCount]);
 
     useEffect(() => {
-        const syncTheme = () => {
-            try {
-                const darkMode = localStorage.getItem('medrae_dark_mode');
-                let newTheme: 'light' | 'dark';
-                if (darkMode !== null) newTheme = darkMode === 'true' ? 'dark' : 'light';
-                else newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                if (newTheme !== theme) setTheme(newTheme);
-            } catch { }
-        };
         const handleStorage = (e: StorageEvent) => {
             if (e.key === 'medrae_dark_mode') setTheme(e.newValue === 'true' ? 'dark' : 'light');
         };
@@ -536,7 +504,6 @@ export function Footer() {
         };
     }, [theme]);
 
-    // ✅ Watch <html> class changes — bulletproof sync with index.html bootstrap
     useEffect(() => {
         const html = document.documentElement;
         const observer = new MutationObserver(() => {
@@ -552,7 +519,6 @@ export function Footer() {
 
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {
         e.preventDefault();
-        // smartNav fires the top progress bar + prefetches the chunk + uses startTransition
         smartNav(e, url);
         superFastTap("light");
     }, [smartNav]);
@@ -561,8 +527,6 @@ export function Footer() {
         e.stopPropagation();
         superFastTap("success");
 
-        // First tap after cold load — chunk may still be downloading.
-        // Warm it, then open as soon as it's ready (usually instant).
         if (!drawerReady) {
             import("@/components/MobileDrawer")
                 .then(() => setDrawerReady(true))
@@ -577,9 +541,6 @@ export function Footer() {
         });
     }, [drawerReady]);
 
-    // ✅ Podcasts — opens the MusicPlayer fullscreen overlay.
-    //    Uses the global opener published by MusicPlayer. No route change,
-    //    so audio keeps playing and the tab bar stays where it is.
     const handleOpenPodcasts = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -600,20 +561,16 @@ export function Footer() {
         if (prefetchDone.current) return;
 
         const prefetch = () => {
-            // Only warm the drawer itself. Route chunks are warmed by
-            // smartNav's own preloadRoute call the instant a tap lands,
-            // so we don't double-fetch here (that double-fetch is what
-            // makes taps feel laggy on flaky mobile networks).
             import("@/components/MobileDrawer")
                 .then(() => setDrawerReady(true))
                 .catch(() => { });
             prefetchDone.current = true;
         };
 
-        // Fire 200ms after mount — after the first paint, no idle wait
         const t = setTimeout(prefetch, 200);
         return () => clearTimeout(t);
     }, []);
+
     useEffect(() => {
         const updateSafeArea = () => {
             requestAnimationFrame(() => {
@@ -643,7 +600,6 @@ export function Footer() {
 
         const attach = (next: Element | null) => {
             if (next === container) return;
-            // Detach old listeners
             if (detach) { detach(); detach = null; }
             container = next;
             scrollContainerRef.current = container;
@@ -675,11 +631,8 @@ export function Footer() {
             detach = () => container.removeEventListener('scroll', handleScroll);
         };
 
-        // Try immediately
         attach(findScrollContainer());
 
-        // If not yet in the DOM (first render after hydration), watch for it.
-        // One observer, no polling, no querySelector storm on nav.
         const observer = new MutationObserver(() => {
             const next = findScrollContainer();
             if (next) {
@@ -693,7 +646,7 @@ export function Footer() {
             if (detach) detach();
             if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
         };
-    }, []);   // ← EMPTY deps — runs ONCE
+    }, []);
 
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
 
@@ -725,47 +678,32 @@ export function Footer() {
                     backfaceVisibility: 'hidden',
                 }}
             >
-                {/* ✅ Home — always first (far left) */}
+                {/* ✅ 1. Home — always first */}
                 <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
 
+                {/* ✅ 2. Feed (student) | Tutor Exams (tutor) | CPD (staff) */}
                 {isStudent && (
-                    <>
-                        <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
-                        <NavItem icon={IconFeed} label="Feed" isActive={isActive("/feed")} onPress={(e) => handleNavigate(e, "/feed")} isDark={theme === 'dark'} />
-                    </>
+                    <NavItem icon={IconFeed} label="Feed" isActive={isActive("/feed")} onPress={(e) => handleNavigate(e, "/feed")} isDark={theme === 'dark'} />
                 )}
-
                 {isTutor && (
-                    <>
-                        <NavItem icon={IconTutorExams} label="Tutor Exams" isActive={isActive("/tutor/exams")} onPress={(e) => handleNavigate(e, "/tutor/exams")} isDark={theme === 'dark'} />
-                        <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
-                    </>
+                    <NavItem icon={IconTutorExams} label="Tutor Exams" isActive={isActive("/tutor/exams")} onPress={(e) => handleNavigate(e, "/tutor/exams")} isDark={theme === 'dark'} />
                 )}
-
-                {isTutor && (
-                    <NavItem icon={IconExamResults} label="Exam Results" isActive={isActive("/tutor/exams/:paper_id/results")} onPress={(e) => handleNavigate(e, "/tutor/exams/:paper_id/results")} isDark={theme === 'dark'} />
-                )}
-
-                {isStudent && (
-                    <NavItem
-                        icon={IconMistakes}
-                        label="Mistakes"
-                        isActive={isActive("/my-mistakes")}
-                        onPress={(e) => handleNavigate(e, "/my-mistakes")}
-                        isDark={theme === 'dark'}
-                        badge={mistakeCount > 0 ? mistakeCount : undefined}
-                    />
-                )}
-
                 {isStaff && (
-                    <>
-                        <NavItem icon={IconCpd} label="CPD" isActive={isActive("/cpd")} onPress={(e) => handleNavigate(e, "/cpd")} isDark={theme === 'dark'} />
-                        <NavItem icon={IconCatalog} label="Catalog" isActive={isActive("/cpd/catalog")} onPress={(e) => handleNavigate(e, "/cpd/catalog")} isDark={theme === 'dark'} />
-                        <NavItem icon={IconProgress} label="Progress" isActive={isActive("/cpd/progress")} onPress={(e) => handleNavigate(e, "/cpd/progress")} isDark={theme === 'dark'} />
-                    </>
+                    <NavItem icon={IconCpd} label="CPD" isActive={isActive("/cpd")} onPress={(e) => handleNavigate(e, "/cpd")} isDark={theme === 'dark'} />
                 )}
 
-                {/* ✅ Listen — visible for every role */}
+                {/* ✅ 3. MIDDLE HERO — Quizzes (student) | Analytics (tutor) | Catalog (staff) */}
+                {isStudent && (
+                    <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
+                )}
+                {isTutor && (
+                    <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
+                )}
+                {isStaff && (
+                    <NavItem icon={IconCatalog} label="Catalog" isActive={isActive("/cpd/catalog")} onPress={(e) => handleNavigate(e, "/cpd/catalog")} isDark={theme === 'dark'} />
+                )}
+
+                {/* ✅ 4. Listen — every role, opens overlay */}
                 <NavItem
                     icon={IconHeadphones}
                     label="Listen"
@@ -774,13 +712,14 @@ export function Footer() {
                     isDark={theme === 'dark'}
                 />
 
-                {/* ✅ Menu — one only */}
+                {/* ✅ 5. Menu — one only. Badge for mistakes (students) */}
                 <NavItem
                     icon={IconMenu}
                     label="Menu"
                     isActive={isDrawerOpen}
                     onPress={handleMenuPress}
                     isDark={theme === 'dark'}
+                    badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
                 />
             </div>
 
