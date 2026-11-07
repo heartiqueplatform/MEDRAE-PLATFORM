@@ -869,12 +869,14 @@ export function MedraeQuizzes() {
 
                       {/* GRID */}
                       <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
-                        {/* ✅ Last Minute card — lives in the grid, same size as quiz cards */}
-                        <LastMinuteCard
-                          variant="quiz"
-                          title="Skip the subscription. Buy what you need."
-                          blurb="One payment, one paper, readable instantly. From KSh 49."
-                        />
+                        {/* ✅ Last Minute card — ONLY on the first paper, so it appears once */}
+                        {paper.paperNumber === papers[0]?.paperNumber && (
+                          <LastMinuteCard
+                            variant="quiz"
+                            title="Skip the subscription. Buy what you need."
+                            blurb="One payment, one paper, readable instantly. From KSh 49."
+                          />
+                        )}
 
                         {filteredUnits.map((unit, index) => {
                           const questionCount = getQuestionCount(unit.code);
