@@ -32,6 +32,7 @@ import { useQuizEngagement } from "@/hooks/useQuizEngagement";
 import { Star, Bookmark, Share2, Flame, Users } from "lucide-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
+import { FloatingCategoryButton } from "@/components/MedraeQuizzes/FloatingCategoryButton";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
@@ -835,12 +836,12 @@ export function MedraeQuizzes() {
                           </span>
                         </div>
                       </div>
-                      <div className="px-4 md:px-0 pt-2">
-                        <LastMinuteCard
-                          title="Cramming? Skip the subscription."
-                          blurb="One payment, one paper, readable instantly. From KSh 49."
-                        />
-                      </div>
+
+                      <LastMinuteCard
+                        variant="quiz"
+                        title="Skip the subscription. Buy what you need."
+                        blurb="One payment, one paper, readable instantly. From KSh 49."
+                      />
                       {/* GRID */}
                       <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
                         {filteredUnits.map((unit, index) => {
@@ -1492,11 +1493,22 @@ export function MedraeQuizzes() {
               </motion.div>
             )}
           </AnimatePresence>
+
           <div className="pt-2 px-4 md:px-0 flex justify-center">
             <TermsButton className="w-full" />
           </div>   {/* inner space-y-2 wrapper */}
         </div>     {/* scrolling content */}
       </div>
+      {/* 👇 NEW — Floating category button */}
+
+      <FloatingCategoryButton
+        activeCategory={activeCategory}
+        onSelect={(cat) => {
+          setActiveCategory(cat);
+          contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
+
     </div>
   );
 }
