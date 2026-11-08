@@ -1,14 +1,13 @@
 // src/components/Algorithm.tsx
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     Brain,
     Target,
     BookOpen,
-    Sparkles,
     ChevronLeft,
     ChevronRight,
     CheckCircle2,
@@ -29,15 +28,19 @@ import type { UnitData, RankingItem } from "@/components/Algorithm/types";
 import {
     AreaChart,
     Area,
-    BarChart,
-    Bar,
-    Cell,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+
+// Lazy-load Lottie so it never blocks first paint
+// lottie-react v3: named import, no lazy needed (already tree-shakeable)
+import { Lottie } from "lottie-react";
+
+// Animation JSON — imported as a module so Vite bundles it efficiently
+import nurseAnimation from "@/assets/lottie/Nurse_Hospital.json";
 
 interface AlgorithmData {
     user_id: string;
@@ -70,6 +73,41 @@ function AlgorithmSkeleton() {
                     <div key={i} className="min-w-[78vw] sm:min-w-[280px] h-[140px] rounded-2xl bg-white dark:bg-slate-800/50 animate-pulse" />
                 ))}
             </div>
+        </div>
+    );
+}
+
+// --- Hero Lottie (isolated so it doesn't re-render the whole card) ---
+function HeroLottie() {
+    const [reducedMotion, setReducedMotion] = useState(false);
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        // Respect prefers-reduced-motion
+        const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+        setReducedMotion(mq.matches);
+        const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+        mq.addEventListener?.("change", onChange);
+        return () => mq.removeEventListener?.("change", onChange);
+    }, []);
+
+    useEffect(() => {
+        // Pause animation when tab hidden — saves CPU
+        const onVis = () => setVisible(!document.hidden);
+        document.addEventListener("visibilitychange", onVis);
+        return () => document.removeEventListener("visibilitychange", onVis);
+    }, []);
+
+    return (
+        <div className="pointer-events-none absolute top-2 right-2 w-[120px] h-[120px] md:w-[150px] md:h-[150px] opacity-90">
+            <Suspense fallback={null}>
+                <Lottie
+                    src={nurseAnimation}
+                    loop={!reducedMotion && visible}
+                    autoplay={!reducedMotion}
+                    style={{ width: "100%", height: "100%" }}
+                />
+            </Suspense>
         </div>
     );
 }
@@ -192,23 +230,96 @@ function MasteryDots({ score }: { score: number }) {
     );
 }
 
-// --- Custom Tooltip for Bar Chart ---
-function BarTooltip({ active, payload }: any) {
-    if (!active || !payload || !payload.length) return null;
-    const d = payload[0].payload;
+// --- Custom CSS Bar Chart (scrollable, huge bars, hover/tap tooltip) ---
+function HugeBarChart({
+    data,
+}: {
+    data: { name: string; fullName: string; score: number; attempts: number; fill: string }[];
+}) {
+    const [activeIdx, setActiveIdx] = useState<number | null>(null);
+    const active = activeIdx !== null ? data[activeIdx] : null;
+
     return (
-        <div className="rounded-lg bg-white dark:bg-[#161b22] px-3 py-2 ring-1 ring-gray-200 dark:ring-[#30363d]">
-            <p className="text-[11px] font-bold text-gray-900 dark:text-[#e6edf3] mb-0.5 max-w-[180px] truncate">
-                {d.fullName}
-            </p>
-            <div className="flex items-center gap-2">
-                <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: barColorFor(d.score) }}
-                />
-                <span className="text-xs font-bold tabular-nums text-gray-700 dark:text-[#8b949e]">
-                    {d.score}% avg · {d.attempts}×
-                </span>
+        <div className="relative">
+            {/* Floating tooltip card — appears above the active bar */}
+            {active && (
+                <div
+                    className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 z-30
+                        rounded-xl bg-white dark:bg-[#161b22] px-3 py-2
+                        ring-1 ring-gray-200 dark:ring-[#30363d] shadow-lg
+                        min-w-[140px] max-w-[200px]"
+                >
+                    <p className="text-[11px] font-bold text-gray-900 dark:text-[#e6edf3] truncate">
+                        {active.fullName}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: active.fill }}
+                        />
+                        <span className="text-[11px] font-bold tabular-nums text-gray-700 dark:text-[#8b949e]">
+                            {active.score}% avg · {active.attempts}×
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            <div
+                className="flex gap-3 items-end overflow-x-auto pt-14 pb-1 px-1
+                    [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+                    snap-x snap-mandatory"
+                style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch" }}
+            >
+                {data.map((d, i) => {
+                    const heightPct = Math.max(4, Math.min(100, d.score));
+                    const isActive = activeIdx === i;
+                    return (
+                        <button
+                            key={i}
+                            type="button"
+                            onMouseEnter={() => setActiveIdx(i)}
+                            onMouseLeave={() => setActiveIdx(null)}
+                            onTouchStart={() => setActiveIdx(i)}
+                            onClick={() => setActiveIdx(isActive ? null : i)}
+                            className="snap-start shrink-0 flex flex-col items-center gap-1.5 w-[58px] outline-none"
+                            aria-label={`${d.fullName}: ${d.score}%`}
+                        >
+                            {/* Score bubble */}
+                            <span
+                                className="text-[11px] font-bold tabular-nums leading-none transition-opacity"
+                                style={{
+                                    color: d.fill,
+                                    opacity: isActive ? 1 : 0.85,
+                                }}
+                            >
+                                {d.score}%
+                            </span>
+
+                            {/* The bar */}
+                            <div className="relative w-full h-[140px] flex items-end">
+                                <div
+                                    className={`w-full rounded-t-lg transition-all duration-300 ease-out
+                                        ${isActive ? "brightness-110 scale-y-[1.03]" : ""}`}
+                                    style={{
+                                        height: `${heightPct}%`,
+                                        backgroundColor: d.fill,
+                                        boxShadow: `0 -1px 0 0 rgba(255,255,255,0.15) inset`,
+                                    }}
+                                />
+                            </div>
+
+                            {/* Label */}
+                            <span
+                                className={`text-[9px] font-semibold truncate w-full text-center
+                                    ${isActive
+                                        ? "text-gray-900 dark:text-white"
+                                        : "text-gray-500 dark:text-gray-400"}`}
+                            >
+                                {d.name}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );
@@ -430,17 +541,56 @@ export default function Algorithm() {
         return s != null ? [0, s] : [];
     }, [data]);
 
-    // BAR chart data — chronological (natural order), NOT sorted by score
+    // Smart labels for the line chart X-axis
+    const lineChartData = useMemo(() => {
+        if (!data) return [];
+
+        if (Array.isArray(data.score_history) && data.score_history.length >= 2) {
+            const n = data.score_history.length;
+            return data.score_history.map((s, i) => {
+                const fromEnd = n - 1 - i;
+                const label =
+                    fromEnd === 0 ? "Now"
+                        : fromEnd === 1 ? "1 ago"
+                            : `${fromEnd} ago`;
+                return { name: label, score: Number(s.toFixed(1)) };
+            });
+        }
+
+        const u = data.unit_predictions || [];
+        if (u.length >= 2) {
+            const sorted = [...u]
+                .sort((a, b) => (a.attempts || 0) - (b.attempts || 0))
+                .map(x => Number(x.average_score) || 0);
+            return sorted.map((s, i) => {
+                const label =
+                    i === 0 ? "Start"
+                        : i === sorted.length - 1 ? "Now"
+                            : `Step ${i}`;
+                return { name: label, score: Number(s.toFixed(1)) };
+            });
+        }
+
+        const s = data.overall_prediction?.predicted_score;
+        if (s != null) {
+            return [
+                { name: "Start", score: 0 },
+                { name: "Now", score: Number(s.toFixed(1)) },
+            ];
+        }
+        return [];
+    }, [data]);
+
+    // BAR chart data
     const barData = useMemo(() => {
         const u = data?.unit_predictions || [];
         return u.map(x => ({
-            name: x.unit_name.length > 12
-                ? x.unit_name.slice(0, 12) + "…"
-                : x.unit_name,
+            name: x.unit_name.length > 8 ? x.unit_name.slice(0, 8) + "…" : x.unit_name,
             fullName: x.unit_name,
             score: Math.round(Number(x.average_score) || 0),
             attempts: x.attempts || 0,
             fill: barColorFor(Number(x.average_score) || 0),
+            tier: scoreTier(Number(x.average_score) || 0),
         }));
     }, [data]);
 
@@ -469,33 +619,38 @@ export default function Algorithm() {
             <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-muted/30">
                 <div className="px-4 md:px-6 pt-4 md:pt-6">
                     <div
-                        className={`relative overflow-hidden rounded-2xl p-5 md:p-7
-            ${isHighScore
+                        className={`relative overflow-hidden rounded-2xl p-4 md:p-6
+${isHighScore
                                 ? "bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600"
                                 : isMediumScore
                                     ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500"
                                     : "bg-gradient-to-br from-red-500 via-red-600 to-rose-700"}`}
                     >
+                        {/* Ambient blobs */}
                         <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-3xl pointer-events-none" />
                         <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-black/10 blur-3xl pointer-events-none" />
+
+                        {/* 🩺 NURSE LOTTIE — top-right corner */}
+                        <HeroLottie />
+
                         <div className="relative z-10 flex flex-col items-center text-center">
-                            <div className="flex items-center justify-center gap-2 mb-4 md:mb-5">
-                                <Brain className="w-4 h-4 text-white/70" />
-                                <span className="text-[10px] md:text-xs font-medium tracking-[0.18em] text-white/70 uppercase">
+                            <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+                                <Brain className="w-3.5 h-3.5 text-white/70" />
+                                <span className="text-[9px] md:text-[10px] font-medium tracking-[0.18em] text-white/70 uppercase">
                                     Exam Prediction Readiness
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-0.5 text-white drop-shadow-sm">
-                                <span className="text-5xl md:text-7xl font-semibold tracking-tight leading-none tabular-nums">
+                                <span className="text-4xl md:text-5xl font-semibold tracking-tight leading-none tabular-nums">
                                     {score.toFixed(1)}
                                 </span>
-                                <span className="text-2xl md:text-3xl font-normal">%</span>
+                                <span className="text-xl md:text-2xl font-normal">%</span>
                             </div>
-                            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-sm
-                                bg-white/20 backdrop-blur-sm text-white text-[11px] md:text-xs font-bold tracking-wide">
+                            <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm
+    bg-white/20 backdrop-blur-sm text-white text-[10px] md:text-[11px] font-bold tracking-wide">
                                 {readiness} readiness
                             </div>
-                            <p className="mt-3 text-xs md:text-sm font-medium text-white/85 max-w-xs leading-relaxed">
+                            <p className="mt-2 text-[11px] md:text-xs font-medium text-white/85 max-w-xs leading-relaxed">
                                 {isHighScore
                                     ? "Strong performance — keep it up"
                                     : isMediumScore
@@ -525,7 +680,6 @@ export default function Algorithm() {
                                         : "bg-red-400/20"}`}
                             />
 
-                            {/* Toggle — Bars first, Line second */}
                             <div className="relative z-10 flex items-center justify-between mb-1 px-1">
                                 <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                                     {chartMode === "bars" ? "Unit Performance" : "Score Trend"}
@@ -559,109 +713,73 @@ export default function Algorithm() {
                                 </div>
                             </div>
 
-                            <div className="relative z-10 w-full h-[200px]">
+                            <div className="relative z-10 w-full">
                                 {chartMode === "line" && scoreSeries.length >= 2 && (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart
-                                            data={scoreSeries.map((s, i) => ({
-                                                name: `#${i + 1}`,
-                                                score: Number(s.toFixed(1)),
-                                            }))}
-                                            margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
-                                        >
-                                            <defs>
-                                                <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor={theme.colors[1]} stopOpacity={0.35} />
-                                                    <stop offset="100%" stopColor={theme.colors[1]} stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid
-                                                strokeDasharray="3 3"
-                                                stroke="currentColor"
-                                                className="text-slate-200 dark:text-slate-700/60"
-                                                vertical={false}
-                                            />
-                                            <XAxis
-                                                dataKey="name"
-                                                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                                axisLine={{ stroke: "#e5e7eb" }}
-                                                tickLine={false}
-                                            />
-                                            <YAxis
-                                                domain={[0, 100]}
-                                                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                                axisLine={false}
-                                                tickLine={false}
-                                                width={40}
-                                            />
-                                            <Tooltip
-                                                contentStyle={{
-                                                    borderRadius: 8,
-                                                    border: "none",
-                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                                    fontSize: 12,
-                                                }}
-                                                formatter={(value: number) => [`${value}%`, "Score"]}
-                                            />
-                                            <Area
-                                                type="monotone"
-                                                dataKey="score"
-                                                stroke={theme.colors[1]}
-                                                strokeWidth={2.5}
-                                                fill="url(#scoreFill)"
-                                                dot={{ r: 3, fill: theme.colors[1] }}
-                                                activeDot={{ r: 6 }}
-                                            />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                                    <div className="w-full h-[200px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart
+                                                data={lineChartData}
+                                                margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
+                                            >
+                                                <defs>
+                                                    <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="0%" stopColor={theme.colors[1]} stopOpacity={0.35} />
+                                                        <stop offset="100%" stopColor={theme.colors[1]} stopOpacity={0} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid
+                                                    strokeDasharray="3 3"
+                                                    stroke="currentColor"
+                                                    className="text-slate-200 dark:text-slate-700/60"
+                                                    vertical={false}
+                                                />
+                                                <XAxis
+                                                    dataKey="name"
+                                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    interval="preserveStartEnd"
+                                                />
+                                                <YAxis
+                                                    domain={[0, 100]}
+                                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    width={40}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        borderRadius: 10,
+                                                        border: "none",
+                                                        boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+                                                        fontSize: 12,
+                                                        padding: "8px 10px",
+                                                        backgroundColor: "rgba(255,255,255,0.98)",
+                                                    }}
+                                                    labelStyle={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}
+                                                    formatter={(value: number) => [`${value}%`, "Score"]}
+                                                />
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="score"
+                                                    stroke={theme.colors[1]}
+                                                    strokeWidth={2.5}
+                                                    fill="url(#scoreFill)"
+                                                    dot={{ r: 3, fill: theme.colors[1] }}
+                                                    activeDot={{ r: 6 }}
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 )}
 
                                 {chartMode === "bars" && barData.length > 0 && (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart
-                                            data={barData}
-                                            margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
-                                        >
-                                            <CartesianGrid
-                                                strokeDasharray="3 3"
-                                                stroke="currentColor"
-                                                className="text-slate-200 dark:text-slate-700/60"
-                                                vertical={false}
-                                            />
-                                            <XAxis
-                                                dataKey="name"
-                                                tick={{ fontSize: 9, fill: "#9ca3af" }}
-                                                axisLine={{ stroke: "#e5e7eb" }}
-                                                tickLine={false}
-                                                interval={0}
-                                                angle={-35}
-                                                textAnchor="end"
-                                                height={50}
-                                            />
-                                            <YAxis
-                                                domain={[0, 100]}
-                                                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                                axisLine={false}
-                                                tickLine={false}
-                                                width={40}
-                                            />
-                                            <Tooltip
-                                                content={<BarTooltip />}
-                                                cursor={{ fill: "rgba(148,163,184,0.08)" }}
-                                            />
-                                            <Bar dataKey="score" radius={[8, 8, 0, 0]} maxBarSize={56}>
-                                                {barData.map((entry, i) => (
-                                                    <Cell key={i} fill={entry.fill} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                    <HugeBarChart data={barData} />
                                 )}
                             </div>
 
-                            {/* Legend for bars */}
                             {chartMode === "bars" && (
-                                <div className="relative z-10 flex items-center justify-center gap-3 mt-1 text-[9px] font-bold">
+                                <div className="relative z-10 flex items-center justify-center gap-3 mt-2 text-[9px] font-bold">
                                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                                         70%+
@@ -833,14 +951,14 @@ export default function Algorithm() {
                 )}
             </div>
 
-            {/* STRENGTHS & FOCUS — taps open overlay */}
+            {/* STRENGTHS & FOCUS */}
             <StrengthsFocusStrip
                 strongest={data.rankings?.strongest || []}
                 weakest={data.rankings?.weakest || []}
                 onViewAll={() => setOverlayOpen(true)}
             />
 
-            {/* STUDY PLAN — always fully expanded */}
+            {/* STUDY PLAN */}
             {data.recommendations?.length > 0 && (
                 <div className="p-3 rounded-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-md">
                     <div className="flex items-center gap-1.5 mb-1.5">

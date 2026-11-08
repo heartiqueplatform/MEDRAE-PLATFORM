@@ -1,129 +1,96 @@
 "use client";
+
+import { useEffect, useRef, useState, useCallback } from "react";
 import PullToRefresh from "react-simple-pull-to-refresh";
-import { TermsButton } from "@/components/ui/TermsButton";
-import { useWindowSize } from "react-use";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload, Star, Heart, MessageCircle, Reply, ThumbsUp, ThumbsDown } from "lucide-react";
-import FeedMediaPanel from "@/components/Feed/FeedMediaPanel";
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import CommentsModal from "@/components/Feed/CommentsModal";
-import FeedControls from "@/components/Feed/FeedControls";
-import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
-import { MicroCaseCard } from "@/components/MicroCaseCard";
-import { clearMediaPanelCaches } from "@/components/Feed/FeedMediaPanel";
-import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
+import { supabase } from "@/lib/supabaseClient";
+import { playSound } from "@/lib/soundManager";
 import confetti from "canvas-confetti";
-import { createPortal } from 'react-dom';
-import { GlobalLoader } from "@/components/GlobalLoader";
-import ShortMedical from "@/components/ShortMedical";
+import { createPortal } from "react-dom";
+import { X, Trash2, ChevronLeft } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import FeedTabs, { FeedTab } from "@/components/Feed/FeedTabs";
+import FeedQuestionsTab from "@/components/Feed/FeedQuestionsTab";
+import FeedImagesTab from "@/components/Feed/FeedImagesTab";
+import FeedCasesTab from "@/components/Feed/FeedCasesTab";
+import FeedMoreTab from "@/components/Feed/FeedMoreTab";
+import WardCaseFeed from "@/components/MicroCase/WardCaseFeed";
+import FeedFeedbackOverlay from "@/components/Feed/FeedFeedbackOverlay";
+import CommentsModal from "@/components/Feed/CommentsModal";
+import { TermsButton } from "@/components/ui/TermsButton";
+import { clearMediaPanelCaches } from "@/components/Feed/FeedMediaPanel";
 
-// Enhanced request deduplication cache with longer TTLs
-// Enhanced request deduplication cache with longer TTLs
-const pendingRequests = new Map();
-const requestCache = new Map();
+// ── Request caches ────────────────────────────────────────
+const pendingRequests = new Map<string, Promise<any>>();
+const requestCache = new Map<string, { data: any; at: number }>();
 
-// Exported so the Feed component can clear them on user change / unmount.
-// Without this, account A's cached questions leak to account B on the
-// same browser.
 export const clearFeedCaches = () => {
   requestCache.clear();
   pendingRequests.clear();
 };
 
-const fetchWithDedupe = async (key, fetcher, ttl = 300000) => { // 5 minutes
-  if (requestCache.has(key)) {
-    const { data, timestamp } = requestCache.get(key);
-    if (Date.now() - timestamp < ttl) {
+const fetchWithDedupe = async (
+  key: string,
+  fetcher: () => Promise<any>,
+  ttl = 300_000
+) => {
+  const cached = requestCache.get(key);
+  if (cached && Date.now() - cached.at < ttl) return cached.data;
+  if (pendingRequests.has(key)) return pendingRequests.get(key);
+  const p = fetcher()
+    .then((data) => {
+      requestCache.set(key, { data, at: Date.now() });
+      pendingRequests.delete(key);
       return data;
-    }
-    requestCache.delete(key);
-  }
-
-  if (pendingRequests.has(key)) {
-    return pendingRequests.get(key);
-  }
-
-  const promise = fetcher().then(data => {
-    requestCache.set(key, { data, timestamp: Date.now() });
-    pendingRequests.delete(key);
-    return data;
-  }).catch(err => {
-    pendingRequests.delete(key);
-    throw err;
-  });
-
-  pendingRequests.set(key, promise);
-  return promise;
-};
-
-const safeParse = (key, fallback) => {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-// Skeleton loader
-const SkeletonCard = () => (
-  <div className="animate-pulse border-0 rounded-xl p-4 bg-muted/20">
-    <div className="h-[260px] w-full flex flex-col justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-        <div className="w-32 h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
-      </div>
-      <div className="w-full h-[160px] bg-gray-300 dark:bg-gray-700 rounded mt-4"></div>
-      <div className="w-20 h-4 bg-gray-300 dark:bg-gray-700 rounded mt-4"></div>
-    </div>
-  </div>
-);
-
-const enrichQuestions = async (questions: any[]) => {
-  return questions.map(q => ({
-    ...q,
-    enriched: true,
-  }));
+    })
+    .catch((err) => {
+      pendingRequests.delete(key);
+      throw err;
+    });
+  pendingRequests.set(key, p);
+  return p;
 };
 
 export default function Feed() {
   const session = useSession();
   const userId = session?.user?.id;
+
+  const [user, setUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<FeedTab>("questions");
+
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [voteStats, setVoteStats] = useState<Record<string, any>>({});
+  const [questionCount, setQuestionCount] = useState(0);
+  const [userTokens, setUserTokens] = useState(0);
+  const navigate = useNavigate();
   const [correctStreak, setCorrectStreak] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(0);
-  const [voteStats, setVoteStats] = useState({});
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [answers, setAnswers] = useState({});
-  const [page, setPage] = useState(0);
-  const uploadControllers = useRef<AbortController[]>([]);
-  const savedQuestions = JSON.parse(localStorage.getItem("questions")) || [];
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [imageTitle, setImageTitle] = useState("");
-  const [imageDescription, setImageDescription] = useState("");
-  const [questions, setQuestions] = useState(savedQuestions);
-  const [loading, setLoading] = useState(savedQuestions.length === 0);
-  const tapAudio = typeof Audio !== "undefined" ? new Audio("/sounds/tap1.mp3") : null;
-  const { width, height } = useWindowSize();
-  const overlayRef = useRef<HTMLDivElement>(null);
 
-  const [activeQuestion, setActiveQuestion] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
-  const [replyTo, setReplyTo] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const loaderRef = useRef(null);
-  const [feedImages, setFeedImages] = useState([]);
-  const [seenImages, setSeenImages] = useState([]);
-  const [showUpload, setShowUpload] = useState(false);
+  const [feedImages, setFeedImages] = useState<any[]>([]);
   const [imagePage, setImagePage] = useState(0);
   const [hasMoreImages, setHasMoreImages] = useState(true);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [voteStatsCache, setVoteStatsCache] = useState({});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [imageTitle, setImageTitle] = useState("");
+  const [imageDescription, setImageDescription] = useState("");
+
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [activeImage, setActiveImage] = useState<any>(null);
+
+  const [comments, setComments] = useState<any[]>([]);
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [replyTo, setReplyTo] = useState<any>(null);
 
   const [isMuted, setIsMuted] = useState(() => {
     try {
@@ -137,9 +104,8 @@ export default function Feed() {
   useEffect(() => {
     localStorage.setItem("feed_isMuted", JSON.stringify(isMuted));
   }, [isMuted]);
-  // Clear the module-level caches whenever the logged-in user changes.
-  // Clear the module-level caches whenever the logged-in user changes.
-  // Prevents account A's cached questions from leaking to account B.
+
+  // Clear caches when user changes
   useEffect(() => {
     clearFeedCaches();
     clearMediaPanelCaches();
@@ -148,191 +114,19 @@ export default function Feed() {
       clearMediaPanelCaches();
     };
   }, [userId]);
-  const [imageIndex, setImageIndex] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [activeImage, setActiveImage] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
-  const openViewer = (img) => {
-    if (!img || !img.image_url) {
-      console.error("Cannot open viewer: No image or URL", img);
-      return;
-    }
-    console.log("Opening viewer with:", img.id, img.image_url);
-    setActiveImage(img);
-    setViewerOpen(true);
-  };
 
-  const closeViewer = () => {
-    setViewerOpen(false);
-    setTimeout(() => setActiveImage(null), 300);
-  };
-
-  const deleteComment = async (commentId: string) => {
-    const currentUserId = session?.user?.id || user?.id;
-    if (!currentUserId) return;
-
-    try {
-      const { error } = await supabase
-        .from('qfeed_comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', currentUserId);
-
-      if (error) throw error;
-
-      setComments(prevComments =>
-        prevComments.filter(c => c.id !== commentId && c.parent_id !== commentId)
-      );
-
-      setQuestions(prev => prev.map(q => {
-        if (q.id === activeQuestion) {
-          return { ...q, comments_count: Math.max(0, (q.comments_count || 1) - 1) };
-        }
-        return q;
-      }));
-
-      const cacheKey = `feed_comments_${currentUserId}`;
-      const saved = JSON.parse(localStorage.getItem(cacheKey) || "{}");
-      if (saved[activeQuestion]) {
-        saved[activeQuestion] = saved[activeQuestion].filter(
-          c => c.id !== commentId && c.parent_id !== commentId
-        );
-        localStorage.setItem(cacheKey, JSON.stringify(saved));
-      }
-
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      alert("Failed to delete comment");
-    }
-  };
-
-  const uploadToCloudinary = async (file) => {
-    const cloudName = "dpj5vprwf";
-    const uploadPreset = "js1gxxdv";
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", uploadPreset);
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: "POST", body: formData }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error.message);
-    }
-    const data = await response.json();
-    return data.secure_url;
-  };
-  const handleImageUpload = async () => {
-    if (!uploadFiles || uploadFiles.length === 0 || !user)
-      return alert("Select one or more images first.");
-    setUploading(true);
-    uploadControllers.current = [];
-    try {
-      // ── 1. Upload every file to Cloudinary first ──
-      const urls: string[] = [];
-      for (const file of uploadFiles) {
-        const cloudinaryUrl = await uploadToCloudinary(file);
-        urls.push(cloudinaryUrl);
-      }
-
-      // ── 2. Generate ONE group id for this whole post ──
-      //     Every pic in this upload shares it, so the feed
-      //     knows they belong to the same post (carousel).
-      const postGroupId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      // ── 3. Insert all pics in ONE batch ──
-      const rows = urls.map((url, i) => ({
-        image_url: url,
-        storage_path: "cloudinary",
-        added_by: user.id,
-        title: imageTitle || null,
-        description: imageDescription || null,
-        post_group_id: postGroupId,
-        post_group_order: i,
-      }));
-
-      const { error: insertError, data: insertedData } = await supabase
-        .from("qfeed_images")
-        .insert(rows)
-        .select();
-
-      if (insertError) throw insertError;
-
-      // ── 4. Prepend to feed ──
-      setFeedImages((prev) => [...(insertedData || []), ...prev]);
-      setUploadFiles([]);
-      setImageTitle("");
-      setImageDescription("");
-      alert("Images uploaded via Cloudinary! Bandwidth saved.");
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      alert(`Upload failed: ${err.message}`);
-    } finally {
-      setUploading(false);
-      uploadControllers.current = [];
-    }
-  };
-
-
-  const handleDeleteImage = async (img) => {
-    if (!confirm("Are you sure you want to delete this image?")) return;
-    if (!img.storage_path) return alert("Image path missing. Cannot delete.");
-    try {
-      const { data, error: storageError } = await supabase.storage
-        .from("qfeed-images")
-        .remove([img.storage_path]);
-      if (storageError) throw storageError;
-      const { error: dbError } = await supabase
-        .from("qfeed_images")
-        .delete()
-        .eq("id", img.id);
-      if (dbError) throw dbError;
-      setFeedImages(prev => prev.filter(i => i.id !== img.id));
-      alert("Image deleted successfully!");
-    } catch (error) {
-      console.error("Failed to delete image:", error);
-      alert("Failed to delete image. Check console.");
-    }
-  };
-
-  const vibrateTap = () => {
-    if (navigator.vibrate) navigator.vibrate(50);
-  };
-
-  const [user, setUser] = useState(null);
-  const [questionCount, setQuestionCount] = useState(0);
-
+  // Feedback overlay auto-dismiss
   useEffect(() => {
-    if (!user) return;
-    const loadCount = async () => {
-      try {
-        const cached = localStorage.getItem(`feed_count_${user.id}`);
-        if (cached) setQuestionCount(parseInt(cached));
-        const { count } = await supabase
-          .from("qfeed_seen")
-          .select("question_id", { count: "exact", head: true })
-          .eq("user_id", user.id);
-        if (count !== null) {
-          setQuestionCount(count);
-          localStorage.setItem(`feed_count_${user.id}`, count.toString());
-        }
-      } catch (err) {
-        console.error("❌ Failed loading question count:", err);
-      }
-    };
-    loadCount();
-  }, [user]);
+    if (!feedbackMessage) return;
+    const t = setTimeout(() => setFeedbackMessage(null), 3500);
+    return () => clearTimeout(t);
+  }, [feedbackMessage]);
 
+  // Streak-driven feedback
   useEffect(() => {
     if (correctStreak > 0 && correctStreak % 5 === 0) {
       setFeedbackMessage(
-        "🏆 Outstanding work! Reaching this streak shows excellent focus and consistency. Keep up the great momentum you’re making impressive progress."
+        "🏆 Outstanding work! Reaching this streak shows excellent focus and consistency. Keep up the great momentum you're making impressive progress."
       );
       playSound("trivia-finish");
     } else if (correctStreak > 0 && correctStreak % 3 === 0) {
@@ -348,80 +142,83 @@ export default function Feed() {
       playSound("alert-sound");
     }
   }, [correctStreak, wrongStreak]);
-
+  // ── Lock body scroll when fullscreen image viewer is open ──
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (uploading) {
-        e.preventDefault();
-        e.returnValue = "Uploads are in progress. Are you sure you want to leave?";
-        return e.returnValue;
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [uploading]);
-
-  useEffect(() => {
-    if (!feedbackMessage) return;
-    const timer = setTimeout(() => {
-      setFeedbackMessage(null);
-    }, 3500);
-    return () => clearTimeout(timer);
-  }, [feedbackMessage]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (overlayRef.current && !overlayRef.current.contains(event.target as Node)) {
-        setFeedbackMessage(null);
-      }
-    };
-    if (feedbackMessage) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
+    if (!viewerOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    // Prevent layout shift when scrollbar disappears
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
     };
-  }, [feedbackMessage]);
-
-  // ✅ OPTIMIZED: Load images with pagination and reduced batch size
-  // ✅ RPC-based image loading. The DB excludes anything the user has
-  // liked, commented on, or seen — so we always get fresh images.
+  }, [viewerOpen]);
+  // ── Load user + initial cached state ─────────────────────
   useEffect(() => {
-    const loadImages = async () => {
-      if (!userId || isLoadingImages) return;
-      setIsLoadingImages(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
+        if (cancelled) return;
+        setUser(data.user);
+        const uid = data.user.id;
 
+        // Load tokens from profiles (XP)
+        supabase
+          .from("profiles")
+          .select("tokens")
+          .eq("user_id", uid)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (!cancelled && profile?.tokens != null) {
+              setUserTokens(profile.tokens);
+            }
+          });
+
+        const savedAnswers = JSON.parse(localStorage.getItem(`feed_answers_${uid}`) || "{}");
+        setAnswers(savedAnswers);
+
+        const cachedCount = localStorage.getItem(`feed_count_${uid}`);
+        if (cachedCount) setQuestionCount(parseInt(cachedCount));
+
+        const fresh = await fetchQuestions(0, 8, uid);
+        if (!cancelled) {
+          setQuestions(fresh.filter((q: any) => !savedAnswers[q.id]));
+          setPage(0);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Load images when images tab opens ────────────────────
+  useEffect(() => {
+    if (activeTab !== "images" || !userId || isLoadingImages) return;
+    const loadImages = async () => {
+      setIsLoadingImages(true);
       try {
         const cacheKey = `unseen_images_page_${imagePage}_user_${userId}`;
-
         const images = await fetchWithDedupe(cacheKey, async () => {
-          // Hard timeout so a hung network can't stall the feed.
-          const rpcPromise = supabase.rpc("get_unseen_feed_images", {
+          const { data, error } = await supabase.rpc("get_unseen_feed_images", {
             p_user_id: userId,
             p_limit: 15,
             p_offset: imagePage * 15,
           });
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("images RPC timeout")), 8000)
-          );
-
-          let result: any;
-          try {
-            result = await Promise.race([rpcPromise, timeoutPromise]);
-          } catch (err) {
-            console.warn("[Feed] images RPC failed:", err);
-            return [];
-          }
-
-          const { data, error } = result;
-          if (error) {
-            console.error("[Feed] get_unseen_feed_images error:", error);
-            return [];
-          }
-
-          // Reshape to match what FeedMediaPanel expects.
+          if (error) return [];
           return (data ?? []).map((row: any) => ({
             id: row.id,
             image_url: row.image_url,
@@ -432,1085 +229,614 @@ export default function Feed() {
             created_at: row.created_at,
             post_group_id: row.post_group_id,
             post_group_order: row.post_group_order,
-            profiles: {
-              name: row.uploader_name,
-              avatar_url: row.uploader_avatar,
-            },
+            profiles: { name: row.uploader_name, avatar_url: row.uploader_avatar },
           }));
-        }, 60000); // 60s cache
+        }, 60_000);
 
         if (!images || images.length === 0) {
           setHasMoreImages(false);
           if (imagePage === 0) setFeedImages([]);
         } else {
-          setFeedImages((prev) =>
-            imagePage === 0 ? images : [...prev, ...images]
-          );
+          setFeedImages((prev) => (imagePage === 0 ? images : [...prev, ...images]));
           if (images.length < 15) setHasMoreImages(false);
         }
-      } catch (err) {
-        console.error("❌ Error loading images:", err);
       } finally {
         setIsLoadingImages(false);
       }
     };
-
     loadImages();
-  }, [userId, imagePage]);
+  }, [activeTab, userId, imagePage]);
 
-  // Load user & restore localStorage safely with preloading
-  // Load user & restore localStorage safely with preloading
-  useEffect(() => {
-    let cancelled = false;
+  // ── fetchQuestions ───────────────────────────────────────
+  const fetchQuestions = async (pageNum: number, limit: number, uid: string) => {
+    const key = `questions_${uid}_p${pageNum}_l${limit}`;
+    return fetchWithDedupe(key, async () => {
+      const { data, error } = await supabase.rpc("get_unseen_questions", {
+        p_user_id: uid,
+        p_limit: limit,
+        p_offset: pageNum * limit,
+      });
+      if (error || !data) return [];
 
-    const init = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        if (!data.user) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-        if (cancelled) return;
+      const shuffled = [...data].sort(() => Math.random() - 0.5);
+      const ids = shuffled.map((q: any) => q.id);
+      const quizIds = [...new Set(shuffled.map((q: any) => q.quiz_id))];
 
-        setUser(data.user);
-        const userId = data.user.id;
-        const storageKey = `feed_questions_${userId}`;
-        const answersKey = `feed_answers_${userId}`;
-        const savedAnswers = JSON.parse(localStorage.getItem(answersKey) || "{}");
-        setAnswers(savedAnswers);
+      const [{ data: likes }, { data: commentsData }, { data: quizzes }] = await Promise.all([
+        supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
+        supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
+        supabase.from("quizzes").select("id, title").in("id", quizIds),
+      ]);
 
-        const storedRaw = localStorage.getItem(storageKey);
-        let cachedQuestions: any[] = [];
-        if (storedRaw) {
-          const parsed = JSON.parse(storedRaw);
-          if (Date.now() - (parsed.lastSaved || 0) < 24 * 60 * 60 * 1000) {
-            cachedQuestions = (parsed.questions || []).filter(
-              (q) => q && q.id && !savedAnswers[q.id]
-            );
-          } else {
-            localStorage.removeItem(storageKey);
-          }
-        }
+      const likesMap = new Map<string, any[]>();
+      likes?.forEach((l) => {
+        if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
+        likesMap.get(l.question_id)!.push(l);
+      });
+      const commentsCountMap = new Map<string, number>();
+      commentsData?.forEach((c) => {
+        commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
+      });
+      const quizTitleMap = new Map<string, string>();
+      quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
 
-        if (cachedQuestions.length > 0) {
-          setQuestions(cachedQuestions);
-          setLoading(false);
-        }
-
-        const INITIAL_LIMIT = 8;
-        try {
-          const fresh = await fetchQuestions(0, INITIAL_LIMIT);
-          if (cancelled) return;
-
-          if (fresh && fresh.length > 0) {
-            // Belt-and-suspenders: never re-add a question we already answered.
-            const trulyFresh = fresh.filter((q) => !savedAnswers[q.id]);
-            setQuestions((prev) => {
-              const ids = new Set(prev.map((q) => q.id));
-              return [...prev, ...trulyFresh.filter((q) => !ids.has(q.id))];
-            });
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify({ questions: trulyFresh, lastSaved: Date.now() })
-            );
-          }
-        } catch (err) {
-          console.error("❌ Initial fetch failed:", err);
-        }
-      } finally {
-        // ALWAYS ends loading, no matter what happened above.
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // ✅ OPTIMIZED: fetchQuestions with better caching and smaller batch size
-  const fetchQuestions = async (pageNum = 0, limit = 8) => {
-    if (!userId) return [];
-
-    const cacheKey = `questions_${userId}_page_${pageNum}_limit_${limit}`;
-
-    return fetchWithDedupe(cacheKey, async () => {
-      try {
-        // 1. Ask the DB for unseen questions directly.
-        // 1. Ask the DB for unseen questions directly.
-        //    Pagination: pageNum * limit is the offset.
-        const offset = pageNum * limit;
-
-        // Wrap the RPC in a hard timeout so a hung connection can't leave
-        // the UI stuck on skeletons forever.
-        const rpcPromise = supabase.rpc("get_unseen_questions", {
-          p_user_id: userId,
-          p_limit: limit,
-          p_offset: offset,
-        });
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("RPC timeout after 8s")), 8000)
-        );
-
-        let rpcResult;
-        try {
-          rpcResult = await Promise.race([rpcPromise, timeoutPromise]);
-        } catch (err) {
-          console.error("RPC timed out or failed:", err);
-          return [];
-        }
-
-        const { data: questions, error: rpcError } = rpcResult;
-
-        if (rpcError) {
-          console.error("RPC error:", rpcError);
-          return [];
-        }
-
-        if (!questions || questions.length === 0) return [];
-
-        // 2. Shuffle client-side too (SQL random() is enough, but a second
-        //    pass breaks any residual ordering from the DB).
-        const shuffled = [...questions].sort(() => Math.random() - 0.5);
-
-        const ids = shuffled.map((q) => q.id);
-        const quizIds = [...new Set(shuffled.map((q) => q.quiz_id))];
-
-        // 3. Fetch likes, comments, quiz titles in parallel — same as before.
-        const [{ data: likes }, { data: commentsData }, { data: quizzes }] =
-          await Promise.all([
-            supabase
-              .from("qfeed_likes")
-              .select("question_id, user_id")
-              .in("question_id", ids),
-            supabase
-              .from("qfeed_comments")
-              .select("id, question_id")
-              .in("question_id", ids),
-            supabase.from("quizzes").select("id, title").in("id", quizIds),
-          ]);
-
-        const likesMap = new Map<string, any[]>();
-        likes?.forEach((l) => {
-          if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
-          likesMap.get(l.question_id)!.push(l);
-        });
-
-        const commentsCountMap = new Map<string, number>();
-        commentsData?.forEach((c) => {
-          commentsCountMap.set(
-            c.question_id,
-            (commentsCountMap.get(c.question_id) || 0) + 1
-          );
-        });
-
-        const quizTitleMap = new Map<string, string>();
-        quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
-
-        return shuffled.map((q) => ({
-          ...q,
-          qfeed_likes: likesMap.get(q.id) || [],
-          comments_count: commentsCountMap.get(q.id) || 0,
-          quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
-        }));
-      } catch (err) {
-        console.error("❌ Error fetching questions:", err);
-        return [];
-      }
-    }, 120000);
+      return shuffled.map((q: any) => ({
+        ...q,
+        qfeed_likes: likesMap.get(q.id) || [],
+        comments_count: commentsCountMap.get(q.id) || 0,
+        quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
+      }));
+    }, 120_000);
   };
 
-  // Load more with smaller batch size
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loading || !userId || !hasMore) return;
     setLoading(true);
-    const batchSize = 8; // ✅ Reduced from 10 to 8
-    const nextPage = page + 1;
-    const newData = await fetchQuestions(nextPage, batchSize);
-    if (newData && newData.length > 0) {
-      const existingIds = new Set(questions.map(q => q.id));
-      const filtered = newData.filter(q => !existingIds.has(q.id));
-      setQuestions(prev => [...prev, ...filtered]);
-      setPage(nextPage);
-      if (filtered.length < batchSize) setHasMore(false);
+    const next = page + 1;
+    const fresh = await fetchQuestions(next, 8, userId);
+    if (fresh.length > 0) {
+      const existing = new Set(questions.map((q) => q.id));
+      const filtered = fresh.filter((q) => !existing.has(q.id) && !answers[q.id]);
+      setQuestions((prev) => [...prev, ...filtered]);
+      setPage(next);
+      if (filtered.length < 8) setHasMore(false);
     } else {
       setHasMore(false);
     }
     setLoading(false);
-  };
+  }, [loading, userId, hasMore, page, questions, answers]);
 
-  const markSeen = async (id) => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("qfeed_seen")
-      .upsert(
-        { question_id: id, user_id: user.id },
-        { onConflict: "question_id,user_id" }
-      )
-      .select();
-    if (error) {
-      console.error("❌ markSeen error:", error);
-    }
-  };
-
-  const fireConfetti = () => {
-    confetti({
-      particleCount: 120,
-      spread: 70,
-      startVelocity: 60,
-      origin: { y: 0.7 },
-    });
-    setTimeout(() => {
-      confetti({
-        particleCount: 80,
-        spread: 100,
-        startVelocity: 50,
-        origin: { x: 0.3, y: 0.7 },
-      });
-      confetti({
-        particleCount: 80,
-        spread: 100,
-        startVelocity: 50,
-        origin: { x: 0.7, y: 0.7 },
-      });
-    }, 150);
-  };
-
-  // ✅ OPTIMIZED: Fetch vote stats with caching
-  const fetchVoteStats = async (questionId) => {
-    // Check cache first
-    if (voteStatsCache[questionId]) {
-      return voteStatsCache[questionId];
-    }
-
-    const { data, error } = await supabase
+  // ── Vote stats ───────────────────────────────────────────
+  const fetchVoteStats = async (qid: string) => {
+    if (voteStats[qid]) return voteStats[qid];
+    const { data } = await supabase
       .from("qfeed_seen")
       .select("selected_option")
-      .eq("question_id", questionId)
-      .limit(500); // ✅ Add limit to reduce egress
-
-    if (error) {
-      console.error("Error loading vote stats:", error);
-      return null;
-    }
-
-    const counts = { A: 0, B: 0, C: 0, D: 0 };
-    data.forEach((row) => {
-      if (counts[row.selected_option] !== undefined) {
-        counts[row.selected_option]++;
-      }
+      .eq("question_id", qid)
+      .limit(500);
+    const counts = { A: 0, B: 0, C: 0, D: 0 } as Record<string, number>;
+    data?.forEach((row: any) => {
+      if (counts[row.selected_option] !== undefined) counts[row.selected_option]++;
     });
-
-    // Cache the result
-    setVoteStatsCache(prev => ({ ...prev, [questionId]: counts }));
+    setVoteStats((prev) => ({ ...prev, [qid]: counts }));
     return counts;
   };
-  const handleAnswer = async (q, option) => {
-    if (!user?.id) return;            // ← guard: no user, no answer
-    if (answers[q.id]) return;
+
+  // ── Answer handler ───────────────────────────────────────
+  const handleAnswer = async (q: any, option: string) => {
+    if (!user?.id || answers[q.id]) return;
     const isCorrect = q.correct_answer === option;
-    if (!isMuted) {
-      playSound(isCorrect ? "tap-correct" : "tap-wrong", false);
-    }
-    if (navigator.vibrate) {
-      isCorrect ? navigator.vibrate(50) : navigator.vibrate([100, 50, 100]);
-    }
+
+    if (!isMuted) playSound(isCorrect ? "tap-correct" : "tap-wrong", false);
+    if (navigator.vibrate) navigator.vibrate(isCorrect ? 50 : [100, 50, 100]);
+
     setAnswers((prev) => {
       const next = { ...prev, [q.id]: option };
-      try {
-        localStorage.setItem(
-          `feed_answers_${user.id}`,
-          JSON.stringify(next)
-        );
-      } catch { /* quota */ }
+      localStorage.setItem(`feed_answers_${user.id}`, JSON.stringify(next));
       return next;
     });
+
     if (isCorrect) {
-      setCorrectStreak((prev) => prev + 1);
+      setCorrectStreak((p) => p + 1);
       setWrongStreak(0);
-      fireConfetti();
+      confetti({ particleCount: 120, spread: 70, startVelocity: 60, origin: { y: 0.7 } });
     } else {
-      setWrongStreak((prev) => prev + 1);
+      setWrongStreak((p) => p + 1);
       setCorrectStreak(0);
     }
-    // Fail loudly. If this upsert fails, the question WILL come back next
-    // session — we need to know about it instead of silently continuing.
-    const { error: seenError } = await supabase.from("qfeed_seen").upsert(
-      {
-        question_id: q.id,
-        user_id: user.id,
-        selected_option: option,
-      },
+
+    await supabase.from("qfeed_seen").upsert(
+      { question_id: q.id, user_id: user.id, selected_option: option },
       { onConflict: "user_id,question_id" }
     );
 
-    if (seenError) {
-      console.error("❌ qfeed_seen upsert FAILED:", seenError);
-      // Don't increment local count if the DB didn't record it.
-      return;
-    }
-
     setQuestionCount((prev) => {
-      const newCount = prev + 1;
-      localStorage.setItem(`feed_count_${user.id}`, newCount.toString());
-      return newCount;
+      const n = prev + 1;
+      localStorage.setItem(`feed_count_${user.id}`, String(n));
+      return n;
     });
+
+    // Refresh XP from DB — trigger may have awarded at 10th question boundary
+    supabase
+      .from("profiles")
+      .select("tokens")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data: profile }) => {
+        if (profile?.tokens != null) setUserTokens(profile.tokens);
+      });
+
     const counts = await fetchVoteStats(q.id);
-    if (counts) {
-      setVoteStats((prev) => ({ ...prev, [q.id]: counts }));
-    }
-    const storageKey = `feed_questions_${user.id}`;
-    const rawCache = localStorage.getItem(storageKey);
-    if (rawCache) {
-      try {
-        const parsedCache = JSON.parse(rawCache);
-        if (parsedCache.questions) {
-          parsedCache.questions = parsedCache.questions.filter(item => item.id !== q.id);
-          localStorage.setItem(storageKey, JSON.stringify(parsedCache));
-        }
-        else if (Array.isArray(parsedCache)) {
-          const filtered = parsedCache.filter(item => item.id !== q.id);
-          localStorage.setItem(storageKey, JSON.stringify(filtered));
-        }
-      } catch (err) {
-        console.error("Error updating local cache:", err);
-      }
-    }
+    if (counts) setVoteStats((prev) => ({ ...prev, [q.id]: counts }));
   };
 
-  const toggleLike = async (questionId, liked) => {
-    if (!user) return alert("Login first!");
+  // ── Like handler ─────────────────────────────────────────
+  // ── Like handler — INSTANT UI, silent DB write ────────────
+  const handleLike = async (questionId: string, liked: boolean) => {
+    if (!user?.id) return;
+
+    // 1. Instant haptic + sound (no waiting)
+    if (navigator.vibrate) navigator.vibrate(10);
+    if (!liked && !isMuted) playSound("tap-correct", false);
+
+    // 2. Optimistic UI update — happens in the SAME frame as the tap
+    setQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionId) return q;
+        const updated = liked
+          ? q.qfeed_likes.filter((l: any) => l.user_id !== user.id)
+          : [...q.qfeed_likes, { user_id: user.id }];
+        return { ...q, qfeed_likes: updated };
+      })
+    );
+
+    // 3. Fire DB write in the background — UI never waits for it
     try {
       if (liked) {
-        await supabase
+        const { error } = await supabase
           .from("qfeed_likes")
           .delete()
           .match({ question_id: questionId, user_id: user.id });
+        if (error) throw error;
       } else {
-        await supabase
+        const { error } = await supabase
           .from("qfeed_likes")
           .insert({ question_id: questionId, user_id: user.id });
+        if (error) throw error;
       }
+    } catch (err) {
+      // 4. Only on failure: revert the UI
+      console.warn("[Feed] like failed, reverting:", err);
       setQuestions((prev) =>
         prev.map((q) => {
-          if (q.id === questionId) {
-            const updatedLikes = liked
-              ? q.qfeed_likes.filter((l) => l.user_id !== user.id)
-              : [...q.qfeed_likes, { user_id: user.id }];
-            return { ...q, qfeed_likes: updatedLikes };
-          }
-          return q;
+          if (q.id !== questionId) return q;
+          const reverted = liked
+            ? [...q.qfeed_likes, { user_id: user.id }]
+            : q.qfeed_likes.filter((l: any) => l.user_id !== user.id);
+          return { ...q, qfeed_likes: reverted };
         })
       );
-    } catch (err) {
-      console.error(err);
     }
   };
 
-  const loadComments = async (questionId) => {
+  // ── Comments ─────────────────────────────────────────────
+  const loadComments = async (questionId: string) => {
     setActiveQuestion(questionId);
-    const savedComments = JSON.parse(
-      localStorage.getItem(`feed_comments_${user.id}`) || "{}"
-    );
-    if (savedComments[questionId]) {
-      setComments(savedComments[questionId]);
-      return;
-    }
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("qfeed_comments")
-      .select(
-        "id, comment_text, created_at, user_id, parent_id, profiles!user_id(name, avatar_url)"
-      )
+      .select("id, comment_text, created_at, user_id, parent_id, profiles!user_id(name, avatar_url)")
       .eq("question_id", questionId)
       .order("created_at", { ascending: true })
-      .limit(100); // ✅ Add limit to reduce egress
-
-    if (error) console.error(error);
+      .limit(100);
 
     const { data: commentLikes } = await supabase
       .from("qfeed_comment_likes")
       .select("comment_id, user_id")
       .in("comment_id", data?.map((c) => c.id) || []);
 
-    const commentsWithLikes = (data || []).map((c) => ({
-      ...c,
-      comment_likes: commentLikes?.filter((l) => l.comment_id === c.id) || [],
-    }));
-    setComments(commentsWithLikes);
-    savedComments[questionId] = commentsWithLikes;
-    localStorage.setItem(
-      `feed_comments_${user.id}`,
-      JSON.stringify(savedComments)
+    setComments(
+      (data || []).map((c: any) => ({
+        ...c,
+        comment_likes: commentLikes?.filter((l: any) => l.comment_id === c.id) || [],
+      }))
     );
   };
 
   const addComment = async () => {
-    if (!user || !newComment.trim()) return;
-    try {
-      const { data: inserted } = await supabase
-        .from("qfeed_comments")
-        .insert({
-          question_id: activeQuestion,
-          user_id: user.id,
-          parent_id: replyTo,
-          comment_text: newComment,
-        })
-        .select(`
-        id,
-        comment_text,
-        created_at,
-        user_id,
-        parent_id,
-        profiles:user_id(name, avatar_url)
-      `)
-        .single();
-      setNewComment("");
-      setReplyTo(null);
+    if (!user || !newComment.trim() || !activeQuestion) return;
+    const { data: inserted } = await supabase
+      .from("qfeed_comments")
+      .insert({
+        question_id: activeQuestion,
+        user_id: user.id,
+        parent_id: replyTo,
+        comment_text: newComment,
+      })
+      .select(`id, comment_text, created_at, user_id, parent_id, profiles:user_id(name, avatar_url)`)
+      .single();
+    if (inserted) {
+      setComments((prev) => [...prev, { ...inserted, comment_likes: [] }]);
       setQuestions((prev) =>
         prev.map((q) =>
-          q.id === activeQuestion
-            ? { ...q, comments_count: (q.comments_count || 0) + 1 }
-            : q
+          q.id === activeQuestion ? { ...q, comments_count: (q.comments_count || 0) + 1 } : q
         )
       );
-      setComments((prev) => {
-        const updated = [...prev, { ...inserted, comment_likes: [] }];
-        const savedComments = JSON.parse(
-          localStorage.getItem(`feed_comments_${user.id}`) || "{}"
-        );
-        savedComments[activeQuestion] = updated;
-        localStorage.setItem(
-          `feed_comments_${user.id}`,
-          JSON.stringify(savedComments)
-        );
-        return updated;
-      });
-    } catch (err) {
-      console.error("Error adding comment:", err);
+      setNewComment("");
+      setReplyTo(null);
     }
   };
 
-  const toggleCommentLike = async (commentId) => {
-    if (!user) return alert("Login first!");
-    const comment = comments.find((c) => c.id === commentId);
-    const liked = comment.comment_likes.some((l) => l.user_id === user.id);
-    try {
-      if (liked) {
-        await supabase
-          .from("qfeed_comment_likes")
-          .delete()
-          .match({ comment_id: commentId, user_id: user.id });
-      } else {
-        await supabase
-          .from("qfeed_comment_likes")
-          .insert({ comment_id: commentId, user_id: user.id });
-      }
-      setComments((prev) => {
-        const updated = prev.map((c) => {
-          if (c.id === commentId) {
-            const updatedLikes = liked
-              ? c.comment_likes.filter((l) => l.user_id !== user.id)
-              : [...c.comment_likes, { user_id: user.id }];
-            return { ...c, comment_likes: updatedLikes };
-          }
-          return c;
-        });
-        const savedComments = JSON.parse(
-          localStorage.getItem(`feed_comments_${user.id}`) || "{}"
-        );
-        savedComments[activeQuestion] = updated;
-        localStorage.setItem(
-          `feed_comments_${user.id}`,
-          JSON.stringify(savedComments)
-        );
-        return updated;
-      });
-    } catch (err) {
-      console.error(err);
+  const toggleCommentLike = async (commentId: string) => {
+    if (!user) return;
+    const c = comments.find((x) => x.id === commentId);
+    const liked = c?.comment_likes?.some((l: any) => l.user_id === user.id);
+    if (liked) {
+      await supabase.from("qfeed_comment_likes").delete().match({ comment_id: commentId, user_id: user.id });
+    } else {
+      await supabase.from("qfeed_comment_likes").insert({ comment_id: commentId, user_id: user.id });
     }
-  };
-
-  // Load more images when scrolling near bottom
-  useEffect(() => {
-    const handleScroll = () => {
-      const container = document.querySelector('[data-scroll-container]') as HTMLElement | null;
-      if (!container) return;
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      if (scrollHeight - scrollTop - clientHeight < 500 && hasMoreImages && !isLoadingImages) {
-        setImagePage(prev => prev + 1);
-      }
-    };
-
-    const container = document.querySelector('[data-scroll-container]');
-    if (!container) return;
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [hasMoreImages, isLoadingImages]);
-
-  // ── Auto-load questions when the sentinel scrolls into view ──
-  // This replaces the "Explore More" button. When the user reaches
-  // the bottom, we silently fetch the next page of questions. If
-  // there's nothing left, `hasMore` goes false and we stop.
-  useEffect(() => {
-    const node = loaderRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && hasMore && !loading) {
-          loadMore();
-        }
-      },
-      {
-        root: null, // viewport
-        rootMargin: "600px 0px", // trigger 600px before bottom
-        threshold: 0,
-      }
+    setComments((prev) =>
+      prev.map((x) => {
+        if (x.id !== commentId) return x;
+        const updated = liked
+          ? x.comment_likes.filter((l: any) => l.user_id !== user.id)
+          : [...x.comment_likes, { user_id: user.id }];
+        return { ...x, comment_likes: updated };
+      })
     );
+  };
 
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMore, loading]);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const deleteComment = async (commentId: string) => {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from("qfeed_comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("user_id", user.id);
+    if (error) return;
+    setComments((prev) => prev.filter((c) => c.id !== commentId && c.parent_id !== commentId));
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === activeQuestion
+          ? { ...q, comments_count: Math.max(0, (q.comments_count || 1) - 1) }
+          : q
+      )
+    );
+  };
+
+  // ── Image upload ─────────────────────────────────────────
+  const uploadToCloudinary = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "js1gxxdv");
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/dpj5vprwf/image/upload`,
+      { method: "POST", body: formData }
+    );
+    if (!res.ok) throw new Error("Cloudinary upload failed");
+    const data = await res.json();
+    return data.secure_url as string;
+  };
+
+  const handleImageUpload = async (isRelated: boolean = false) => {
+    if (!uploadFiles.length || !user) return;
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const f of uploadFiles) urls.push(await uploadToCloudinary(f));
+
+      const postGroupId = isRelated
+        ? (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random()}`
+        : null;
+
+      const rows = urls.map((url, i) => ({
+        image_url: url,
+        storage_path: "cloudinary",
+        added_by: user.id,
+        title: imageTitle || null,
+        description: imageDescription || null,
+        post_group_id: postGroupId,
+        post_group_order: i,
+      }));
+
+      const { data: inserted } = await supabase
+        .from("qfeed_images")
+        .insert(rows)
+        .select();
+
+      if (inserted) setFeedImages((prev) => [...inserted, ...prev]);
+      setUploadFiles([]);
+      setImageTitle("");
+      setImageDescription("");
+      setShowUpload(false);
+    } catch (err: any) {
+      alert(`Upload failed: ${err.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ── Image viewer ─────────────────────────────────────────
+  const openViewer = (img: any) => {
+    setActiveImage(img);
+    setViewerOpen(true);
+  };
+  const closeViewer = () => {
+    setViewerOpen(false);
+    setTimeout(() => setActiveImage(null), 300);
+  };
+  const handleDeleteImage = async (img: any) => {
+    if (!confirm("Delete this image?")) return;
+    await supabase.from("qfeed_images").delete().eq("id", img.id);
+    setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
+  };
+
+  // ── Pull to refresh ──────────────────────────────────────
+  const onRefresh = async () => {
+    clearFeedCaches();
+    clearMediaPanelCaches();
+    setPage(0);
+    setImagePage(0);
+    setHasMore(true);
+    setHasMoreImages(true);
+    if (userId) {
+      const fresh = await fetchQuestions(0, 8, userId);
+      setQuestions(fresh);
+      // Refresh tokens too
+      supabase
+        .from("profiles")
+        .select("tokens")
+        .eq("user_id", userId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.tokens != null) setUserTokens(data.tokens);
+        });
+    }
+    if (userId) {
+      const { data } = await supabase.rpc("get_unseen_feed_images", {
+        p_user_id: userId,
+        p_limit: 15,
+        p_offset: 0,
+      });
+      if (data) {
+        setFeedImages(
+          data.map((row: any) => ({
+            id: row.id,
+            image_url: row.image_url,
+            description: row.description,
+            title: row.title,
+            storage_path: "cloudinary",
+            added_by: row.added_by,
+            created_at: row.created_at,
+            post_group_id: row.post_group_id,
+            post_group_order: row.post_group_order,
+            profiles: { name: row.uploader_name, avatar_url: row.uploader_avatar },
+          }))
+        );
+      }
+    }
+  };
+
   return (
     <>
-      {/* ── STICKY HEADER (must be OUTSIDE PullToRefresh) ── */}
-      <div className="sticky top-0 z-40 w-full max-w-4xl mx-auto px-2 sm:px-2">
-        <FeedControls
-          questionCount={questionCount}
-          session={session}
-          supabase={supabase}
-          setFeedImages={setFeedImages}
-          setQuestions={setQuestions}
-          setAnswers={setAnswers}
-          setQuestionCount={setQuestionCount}
-          fetchQuestions={fetchQuestions}
-          user={user}
-          loading={loading}
-          setLoading={setLoading}
-          setPage={setPage}
-        />
+      {/* Sticky header — TABS ONLY (no FeedControls) */}
+      <div className="sticky top-0 z-40 w-full bg-white dark:bg-[#0d1117]">
+        <div className="w-full max-w-4xl mx-auto flex items-center">
+          {/* Back button — left of tabs */}
+          <button
+            onClick={() => navigate(-1)}
+            className="flex-shrink-0 pl-2 pr-1 py-2.5 text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-[#e6edf3] active:scale-95 transition"
+            aria-label="Go back"
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} />
+          </button>
+
+          {/* Tabs fill the rest */}
+          <div className="flex-1 min-w-0">
+            <FeedTabs
+              active={activeTab}
+              onChange={setActiveTab}
+              counts={{
+                questions: questionCount,
+                images: feedImages.length,
+                community: feedImages.length,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
-      <PullToRefresh
-        onRefresh={() => {
-          // Clear in-memory caches so we don't show stale / already-interacted items.
-          clearFeedCaches();
-          clearMediaPanelCaches();
-
-          // Reset pages.
-          setPage(0);
-          setImagePage(0);
-          setHasMore(true);
-          setHasMoreImages(true);
-
-          // Refetch questions.
-          const refetchQuestions = fetchQuestions(0, 8).then((fresh) => {
-            setQuestions(fresh);
-            if (user) {
-              localStorage.setItem(
-                `feed_questions_${user.id}`,
-                JSON.stringify(fresh)
-              );
-            }
-          });
-
-          // Refetch images (the effect will fire again since we bumped
-          // imagePage back to 0; this is belt-and-suspenders for the
-          // case where imagePage was already 0).
-          const refetchImages = (async () => {
-            if (!userId) return;
-            const { data, error } = await supabase.rpc(
-              "get_unseen_feed_images",
-              { p_user_id: userId, p_limit: 15, p_offset: 0 }
-            );
-            if (error) return;
-            const images = (data ?? []).map((row: any) => ({
-              id: row.id,
-              image_url: row.image_url,
-              description: row.description,
-              title: row.title,
-              storage_path: "cloudinary",
-              added_by: row.added_by,
-              created_at: row.created_at,
-              post_group_id: row.post_group_id,
-              post_group_order: row.post_group_order,
-              profiles: {
-                name: row.uploader_name,
-                avatar_url: row.uploader_avatar,
-              },
-            }));
-            setFeedImages(images);
-            if (images.length < 15) setHasMoreImages(false);
-          })();
-
-          return Promise.all([refetchQuestions, refetchImages]);
-        }}
-      >
+      <PullToRefresh onRefresh={onRefresh}>
         <div
-          ref={scrollContainerRef}
-          className="max-w-4xl mx-auto space-y-3 hide-scrollbar px-2 sm:px-2 pt-2"
+          data-scroll-container
+          className="w-full max-w-4xl mx-auto pt-0 custom-scrollbar"
+          style={{
+            minHeight: "60vh",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
         >
-
-          <AnimatePresence>
-            {feedbackMessage && (
-              <motion.div
-                className="fixed inset-0 z-[999] flex items-center justify-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div
-                  className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                  onClick={() => setFeedbackMessage(null)}
-                />
-                <motion.div
-                  initial={{ scale: 0.6, y: 40 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.7, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                  className="relative z-10 px-8 py-6 rounded-3xl
-          bg-white dark:bg-gray-900
-          shadow-2xl text-center max-w-sm w-[90%]"
-                >
-                  <div className="w-full flex justify-center items-center">
-                    {feedbackMessage.includes("🔥") && (
-                      <img
-                        src="https://em-content.zobj.net/source/animated-noto-color-emoji/356/fire_1f525.gif"
-                        alt="fire"
-                        style={{
-                          width: "120px",
-                          height: "120px"
-                        }}
-                      />
-                    )}
-                    {feedbackMessage.includes("🏆") && (
-                      <img
-                        src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3c6/512.gif"
-                        alt="trophy"
-                        style={{
-                          width: "120px",
-                          height: "120px"
-                        }}
-                      />
-                    )}
-                    {feedbackMessage.includes("💬") && (
-                      <img
-                        src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4a1/512.gif"
-                        alt="hint"
-                        style={{
-                          width: "120px",
-                          height: "120px"
-                        }}
-                      />
-                    )}
-                  </div>
-                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {feedbackMessage}
-                  </p>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {loading && questions.length === 0 && (
-            Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />) // ✅ Reduced from 3 to 2
-          )}
-          {questions.map((q, index) => {
-            const liked = q.qfeed_likes?.some((l) => l.user_id === user?.id);
-            const selected = answers[q.id];
-            const savedComments = JSON.parse(
-              localStorage.getItem(`feed_comments_${user?.id}`) || "{}"
-            );
-            const commentCount =
-              savedComments[q.id]?.length || q.comments_count || 0;
-            const cards = [];
-            cards.push(
-              <motion.div
-                key={q.id}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="relative w-full max-w-full mx-auto mb-5"
-              >
-                <Card className="relative bg-white dark:bg-muted/90 border border-gray-200/80 dark:border-gray-800/60 shadow-sm hover:shadow-md rounded-2xl overflow-hidden transition-all duration-200">
-                  <CardContent className="flex flex-col gap-2 p-2 w-full">
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm font-semibold text-blue-500 dark:text-blue-400 tracking-wide">
-                        {q.quiz_title}
-                      </p>
-                    </div>
-                    <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg leading-snug">
-                      {q.question_text}
-                    </p>
-                    <div className="flex justify-end w-full mb-0">
-                      <button
-                        type="button"
-                        onClick={() => setIsMuted((prev) => !prev)}
-                        className="flex items-center gap-2 text-sm px-3 py-1 rounded-md border-none
-               hover:bg-gray-200 dark:hover:bg-gray-700
-               transition"
-                      >
-                        {isMuted ? (
-                          <VolumeX className="w-5 h-5" />
-                        ) : (
-                          <Volume2 className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-2 mt-0 w-full">
-                      {["A", "B", "C", "D"].map((opt) => {
-                        const text = q[`option_${opt.toLowerCase()}`];
-                        if (!text) return null;
-                        const chosen = selected === opt;
-                        const correct = q.correct_answer === opt;
-                        const stats = voteStats[q.id] || { A: 0, B: 0, C: 0, D: 0 };
-                        const totalVotes =
-                          stats.A + stats.B + stats.C + stats.D;
-                        const percent =
-                          totalVotes > 0
-                            ? Math.round((stats[opt] / totalVotes) * 100)
-                            : 0;
-                        let circleColor = "bg-gray-400";
-                        if (selected) {
-                          if (correct && chosen) circleColor = "bg-green-500";
-                          else if (!correct && chosen) circleColor = "bg-red-500";
-                        }
-                        return (
-                          <button
-                            key={opt}
-                            onClick={() => {
-                              if (navigator.vibrate) navigator.vibrate(50);
-                              handleAnswer(q, opt);
-                              if (!isMuted) {
-                                playSound(correct ? "tap-correct" : "tap-wrong", false);
-                              }
-                              if (navigator.vibrate) {
-                                if (correct) {
-                                  navigator.vibrate(50);
-                                } else {
-                                  navigator.vibrate([100, 50, 100]);
-                                }
-                              }
-                            }}
-                            disabled={!!selected}
-                            className={`relative w-full flex items-start gap-3 px-3 py-2 text-left rounded-lg transition-all overflow-hidden ${chosen
-                              ? correct
-                                ? "bg-green-100 dark:bg-green-800/40"
-                                : "bg-red-100 dark:bg-red-800/40"
-                              : "hover:bg-gray-100 dark:hover:bg-gray-800/60"
-                              }`}
-                          >
-                            {selected && (
-                              <div
-                                className="absolute left-0 top-0 h-full bg-blue-500/30 dark:bg-blue-500/30 transition-all duration-500"
-                                style={{ width: `${percent}%` }}
-                              />
-                            )}
-                            <span
-                              className={`relative z-10 w-4 h-4 rounded-full mt-1 flex-shrink-0 ${circleColor}`}
-                            ></span>
-                            <div className="relative z-10 flex justify-between items-center w-full">
-                              <div className="flex gap-2 break-words items-center">
-                                <span className="font-semibold">{opt}.</span>
-                                <span className="break-words">{text}</span>
-                                {selected && totalVotes > 0 && (
-                                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {percent}% chose this
-                                  </span>
-                                )}
-                              </div>
-                              {chosen && correct && (
-                                <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>
-                              )}
-                              {chosen && !correct && (
-                                <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {selected && (
-                      <div className="mt-4 w-full border-t border-b border-blue-100 dark:border-gray-700 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800/50 dark:via-gray-800/30 dark:to-gray-800/50">
-                        <div className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 dark:from-emerald-600 dark:to-teal-600">
-                          <p className="text-white font-bold text-base sm:text-lg flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                            Correct Answer: {q.correct_answer}
-                          </p>
-                        </div>
-                        <div className="px-4 py-4 sm:px-5 sm:py-5">
-                          <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed">
-                            {q.explanation}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex gap-1 mt-4">
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-2 bg-transparent hover:bg-transparent"
-                        onClick={() => {
-                          toggleLike(q.id, liked);
-                          if (!liked) {
-                            playSound("tap-correct", false);
-                          }
-                        }}
-                      >
-                        <span className="transition-transform duration-200 hover:scale-110 flex items-center">
-                          <svg
-                            role="img"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ width: "24px", height: "24px" }}
-                          >
-                            <title>Heart</title>
-                            <path
-                              fill={liked ? "#FF0000" : "#CCCCCC"}
-                              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                            />
-                          </svg>
-                        </span>
-                        <span className="text-gray-700 dark:text-gray-300 font-semibold">{q.qfeed_likes?.length || 0}</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-2 bg-transparent hover:bg-transparent"
-                        onClick={() => loadComments(q.id)}
-                      >
-                        <span className="transition-transform duration-200 hover:scale-110 flex items-center">
-                          <svg
-                            role="img"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ width: "24px", height: "24px" }}
-                          >
-                            <title>LiveChat</title>
-                            <path
-                              fill="#FF5100"
-                              d="M23.849 14.91c-.24 2.94-2.73 5.22-5.7 5.19h-3.15l-6 3.9v-3.9l6-3.9h3.15c.93.03 1.71-.66 1.83-1.59.18-3 .18-6-.06-9-.06-.84-.75-1.47-1.56-1.53-2.04-.09-4.2-.18-6.36-.18s-4.32.06-6.36.21c-.84.06-1.5.69-1.56 1.53-.21 3-.24 6-.06 9 .09.93.9 1.59 1.83 1.56h3.15v3.9h-3.15a5.644 5.644 0 01-5.7-5.19c-.21-3.21-.18-6.39.06-9.6a5.57 5.57 0 015.19-5.1c2.1-.15 4.35-.21 6.6-.21s4.5.06 6.63.24a5.57 5.57 0 015.19 5.1c.21 3.18.24 6.39.03 9.57z"
-                            />
-                          </svg>
-                        </span>
-                        <span className="text-gray-700 dark:text-gray-300 font-semibold">{commentCount}</span>
-                      </Button>
-                    </div>
-                    {(index + 1) % 10 === 0 && (
-                      <ShareButtonsGroup
-                        user={user}
-                        q={{
-                          question_text: q.question_text,
-                          correct_answer: q.correct_answer,
-                        }}
-                      />
-                    )}
-                  </CardContent>
-
-                </Card>
-                <ShortMedical
-                  limit={5}
-                  title="Medical Conditions"
-                  subtitle="Hypertension, Heart Failure & more"
-                />
-                <MicroCaseCard />
-              </motion.div>
-
-            );
-
-
-            // ⬇️ NEW: insert a media panel every 3rd question
-            // ⬇️ Insert a media panel after EVERY question
-            if (feedImages.length > 0) {
-              const groups = new Map<string, any[]>();
-              for (const im of feedImages) {
-                const key = im.post_group_id || `single_${im.id}`;
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key)!.push(im);
-              }
-              const posts = Array.from(groups.entries()).map(
-                ([groupId]) => ({ groupId })
-              );
-              // One image post per question, cycling through all available posts
-              const post = posts[index % posts.length];
-
-              cards.push(
-                <FeedMediaPanel
-                  key={`media-inline-${index}-${post.groupId}`}
-                  index={index}
-                  groupKey={post.groupId}
-                  feedImages={feedImages}
-                  loadedImages={loadedImages}
-                  setLoadedImages={setLoadedImages}
-                  session={session}
-                  supabase={supabase}
-                  user={user}
-                  openViewer={openViewer}
-                  handleDeleteImage={handleDeleteImage}
-                  showUpload={showUpload}
-                  setShowUpload={setShowUpload}
-                  uploadFiles={uploadFiles}
-                  setUploadFiles={setUploadFiles}
-                  uploading={uploading}
-                  handleImageUpload={handleImageUpload}
-                  imageTitle={imageTitle}
-                  setImageTitle={setImageTitle}
-                  imageDescription={imageDescription}
-                  setImageDescription={setImageDescription}
-                />
-              );
-            }
-
-            return cards;
-          })}
-          {hasMore && (
-            <div
-              ref={loaderRef}
-              className="flex flex-col items-center justify-center py-8 w-full"
-            >
-              {loading ? (
-                <div className="flex flex-col items-center justify-center gap-2 h-16">
-                  <div className="flex items-center justify-center gap-1.5">
-                    {[0, 1, 2].map((i) => (
-                      <motion.span
-                        key={i}
-                        className="block w-1.5 h-1.5 rounded-full bg-blue-500/70 dark:bg-blue-400/70"
-                        animate={{
-                          scale: [1, 1.4, 1],
-                          opacity: [0.4, 1, 0.4],
-                        }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: i * 0.15,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 tracking-wide">
-                    Loading more…
-                  </p>
-                </div>
-              ) : (
-                // Invisible trigger — IntersectionObserver will hit this
-                // the moment it scrolls into view.
-                <div className="h-16 w-full" />
-              )}
-            </div>
-          )}
-          <TermsButton />
-          {createPortal(
-            <AnimatePresence>
-              {viewerOpen && activeImage && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="fixed inset-0 z-[99999] bg-black flex items-center justify-center"
-                  onClick={closeViewer}
-                >
-                  {/*
-                    The image fills the screen.
-                    • We use a plain <img>, NOT motion.img — a motion.img
-                      remounts and re-fades, causing the black flash.
-                    • We give it a `src` that is IDENTICAL to the one in
-                      the feed (w_800 / f_auto / q_auto), so the browser
-                      serves it straight from cache → no re-download.
-                    • We do NOT show a spinner while loadedImages[id] is
-                      false, because the browser already has the image.
-                      If for some reason it's missing, the image simply
-                      appears 50ms late — still far better than a loader
-                      on top of a black screen.
-                  */}
-                  <img
-                    key={activeImage.id}
-                    src={
-                      activeImage.image_url?.includes("cloudinary")
-                        ? activeImage.image_url.replace(
-                          "/upload/",
-                          "/upload/w_800,f_auto,q_auto/"
-                        )
-                        : activeImage.image_url
-                    }
-                    alt={activeImage.title || "Image"}
-                    onError={(e) => {
-                      console.error(
-                        "Failed to load image:",
-                        activeImage.image_url
-                      );
-                      e.currentTarget.src = "/fallback-image.jpg";
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="max-w-full max-h-full object-contain select-none"
-                    draggable={false}
-                  />
-
-                  {/* Description overlay */}
-                  {activeImage.description && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute bottom-6 left-0 right-0 text-gray-200 text-sm text-center max-w-xl mx-auto px-4 pointer-events-none"
-                    >
-                      {activeImage.description}
-                    </div>
-                  )}
-
-                  {/* Delete button — top-left */}
-                  {activeImage.added_by === user?.id && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteImage(activeImage);
-                        closeViewer();
-                      }}
-                      className="absolute top-5 left-5 text-white bg-black/50 hover:bg-red-600 p-3 rounded-full backdrop-blur-sm"
-                      aria-label="Delete image"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  )}
-
-                  {/* Close button — top-right */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeViewer();
-                    }}
-                    className="absolute top-5 right-5 text-white bg-black/50 hover:bg-black/80 p-3 rounded-full backdrop-blur-sm"
-                    aria-label="Close"
-                  >
-                    <X size={20} />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>,
-            document.body
+          {activeTab === "questions" && (
+            <FeedQuestionsTab
+              questions={questions}
+              loading={loading}
+              hasMore={hasMore}
+              answers={answers}
+              voteStats={voteStats}
+              user={user}
+              isMuted={isMuted}
+              setIsMuted={setIsMuted}
+              onAnswer={handleAnswer}
+              onLike={handleLike}
+              onOpenComments={loadComments}
+              onLoadMore={loadMore}
+              // ── media injection props ──
+              feedImages={feedImages}
+              loadedImages={loadedImages}
+              setLoadedImages={setLoadedImages}
+              session={session}
+              supabase={supabase}
+              openViewer={openViewer}
+              handleDeleteImage={handleDeleteImage}
+              showUpload={showUpload}
+              setShowUpload={setShowUpload}
+              uploadFiles={uploadFiles}
+              setUploadFiles={setUploadFiles}
+              uploading={uploading}
+              handleImageUpload={handleImageUpload}
+              imageTitle={imageTitle}
+              setImageTitle={setImageTitle}
+              imageDescription={imageDescription}
+              setImageDescription={setImageDescription}
+            />
           )}
 
-          <CommentsModal
-            activeQuestion={activeQuestion}
-            setActiveQuestion={setActiveQuestion}
-            questions={questions}
-            comments={comments}
-            user={user}
-            replyTo={replyTo}
-            setReplyTo={setReplyTo}
-            toggleCommentLike={toggleCommentLike}
-            newComment={newComment}
-            setNewComment={setNewComment}
-            addComment={addComment}
-            deleteComment={deleteComment}
-          />
+          {activeTab === "images" && (
+            <FeedImagesTab
+              feedImages={feedImages}
+              loadedImages={loadedImages}
+              setLoadedImages={setLoadedImages}
+              session={session}
+              supabase={supabase}
+              user={user}
+              openViewer={openViewer}
+              handleDeleteImage={handleDeleteImage}
+              showUpload={showUpload}
+              setShowUpload={setShowUpload}
+              uploadFiles={uploadFiles}
+              setUploadFiles={setUploadFiles}
+              uploading={uploading}
+              handleImageUpload={handleImageUpload}
+              imageTitle={imageTitle}
+              setImageTitle={setImageTitle}
+              imageDescription={imageDescription}
+              setImageDescription={setImageDescription}
+              hasMoreImages={hasMoreImages}
+              isLoadingImages={isLoadingImages}
+              onLoadMore={() => setImagePage((p) => p + 1)}
+            />
+          )}
+
+          {activeTab === "cases" && <FeedCasesTab />}
+          {activeTab === "community" && <WardCaseFeed user={user} />}
+
+          {activeTab === "more" && (
+            <FeedMoreTab
+              user={user}
+              session={session}
+              questionCount={questionCount}
+              userTokens={userTokens}
+              onResetQuestions={async () => {
+                if (!user?.id) return;
+                await supabase.from("qfeed_seen").delete().eq("user_id", user.id);
+                localStorage.removeItem(`feed_questions_${user.id}`);
+                localStorage.removeItem(`feed_answers_${user.id}`);
+                localStorage.removeItem(`feed_count_${user.id}`);
+                setQuestions([]);
+                setAnswers({});
+                setQuestionCount(0);
+              }}
+              onResetImages={async () => {
+                if (!user?.id) return;
+                await supabase.from("seen_images").delete().eq("user_id", user.id);
+                const { data } = await supabase
+                  .from("qfeed_images")
+                  .select("*")
+                  .order("created_at", { ascending: true });
+                setFeedImages(data || []);
+              }}
+              setFeedImages={setFeedImages}
+              setQuestions={setQuestions}
+              setAnswers={setAnswers}
+              setQuestionCount={setQuestionCount}
+            />
+          )}
+
+          <div className="py-6 flex justify-center">
+            <TermsButton />
+          </div>
         </div>
       </PullToRefresh>
+
+      {/* Feedback overlay — z-max, above footer */}
+      <FeedFeedbackOverlay
+        message={feedbackMessage}
+        onClose={() => setFeedbackMessage(null)}
+      />
+
+      {/* Image fullscreen viewer */}
+      {createPortal(
+        <AnimatePresence>
+          {viewerOpen && activeImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 z-[2147483647] bg-black flex items-center justify-center overflow-hidden touch-pan-y"
+              onClick={closeViewer}
+              style={{
+                // Hard guarantee — no scrollbar can appear inside the viewer
+                overflow: "hidden",
+                touchAction: "pan-y pinch-zoom",
+              }}
+            >
+              <img
+                key={activeImage.id}
+                src={
+                  activeImage.image_url?.includes("cloudinary")
+                    ? activeImage.image_url.replace("/upload/", "/upload/w_800,f_auto,q_auto/")
+                    : activeImage.image_url
+                }
+                alt={activeImage.title || "Image"}
+                onClick={(e) => e.stopPropagation()}
+                className="max-w-full max-h-full object-contain select-none"
+                draggable={false}
+              />
+              {activeImage.added_by === user?.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteImage(activeImage);
+                    closeViewer();
+                  }}
+                  className="absolute top-5 left-5 text-white bg-black/50 hover:bg-red-600 p-3 rounded-full"
+                  aria-label="Delete"
+                >
+                  <Trash2 size={20} />
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeViewer();
+                }}
+                className="absolute top-5 right-5 text-white bg-black/50 hover:bg-black/80 p-3 rounded-full"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Comments modal */}
+      <CommentsModal
+        activeQuestion={activeQuestion}
+        setActiveQuestion={setActiveQuestion}
+        questions={questions}
+        comments={comments}
+        user={user}
+        replyTo={replyTo}
+        setReplyTo={setReplyTo}
+        toggleCommentLike={toggleCommentLike}
+        newComment={newComment}
+        setNewComment={setNewComment}
+        addComment={addComment}
+        deleteComment={deleteComment}
+      />
     </>
   );
 }

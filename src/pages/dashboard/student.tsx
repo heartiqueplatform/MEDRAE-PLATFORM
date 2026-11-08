@@ -832,7 +832,9 @@ export default function StudentDashboard() {
         />
         <SchoolWarsCard currentUserInstitution={profileState?.institution} />
         <DailyTriviaCard />
-
+        <DeferredMount fallback={<div className="h-[320px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
+          <Algorithm />
+        </DeferredMount>
         {/* ---- BELOW THE FOLD: everything else deferred ---- */}
         <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
           <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />
@@ -850,9 +852,7 @@ export default function StudentDashboard() {
           <ShortPaper2 limit={5} />
         </DeferredMount>
 
-        <DeferredMount fallback={<div className="h-[320px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <Algorithm />
-        </DeferredMount>
+
 
         <DeferredMount fallback={<div className="h-[180px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
           <Referral />

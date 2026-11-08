@@ -890,7 +890,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                 if (Date.now() < ignoreTapsUntil.current) return;
                                 setIsOpen(false);
                             }}
-                            className="fixed inset-0 z-[9999] bg-black/60 md:hidden"
+                            className="fixed inset-0 z-[9999] bg-white/70 dark:bg-black/60 md:hidden"
                         />
                         {/* FULL-SCREEN PAGE */}
                         <motion.div

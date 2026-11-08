@@ -1,12 +1,13 @@
 // src/components/VerifiedBadge.tsx
 import { memo } from "react";
+import { BadgeCheck } from "lucide-react";
 
 type VerifiedBadgeProps = {
     /** Is the user currently a paid / premium subscriber */
     isPremium: boolean;
     /** Size variant */
     size?: "xs" | "sm" | "md" | "lg" | "xl";
-    /** Show text label next to the heart-badge */
+    /** Show text label next to the badge */
     showLabel?: boolean;
     /** Optional custom label override (e.g. "Pro", "Gold", "Verified Nurse") */
     label?: string;
@@ -23,12 +24,12 @@ const SIZE_MAP = {
 };
 
 /**
- * Premium "Nurse Verified" badge — pure, static, blue.
+ * Instagram / Facebook style "Verified" badge — powered by Lucide's BadgeCheck.
  *
  * Visual identity:
- *   - Solid blue heart (base shape)
- *   - White swoosh checkmark inside the heart
- *   - No animations, no shimmer, no halo
+ *   - Lucide BadgeCheck (scalloped circle + check)
+ *   - Filled with Meta blue (#0095F6) + white checkmark
+ *   - Scales cleanly at every size
  */
 export const VerifiedBadge = memo(function VerifiedBadge({
     isPremium,
@@ -41,43 +42,22 @@ export const VerifiedBadge = memo(function VerifiedBadge({
 
     const s = SIZE_MAP[size];
 
-    const HeartCheck = (
+    const VerifiedIcon = (
         <span className={`inline-flex items-center justify-center ${s.box}`}>
-            <svg
-                viewBox="0 0 32 32"
-                xmlns="http://www.w3.org/2000/svg"
+            <BadgeCheck
                 className="h-full w-full"
+                strokeWidth={2.4}
+                fill="#0095F6"
+                color="#FFFFFF"
                 aria-hidden="true"
-            >
-                {/* Solid blue heart */}
-                <path
-                    d="M16 28.5
-                       C15.5 28 6.5 21.5 4.2 16.8
-                       C2 12.2 4.3 7.8 8.4 6.8
-                       C11.4 6.1 14.1 7.6 16 9.8
-                       C17.9 7.6 20.6 6.1 23.6 6.8
-                       C27.7 7.8 30 12.2 27.8 16.8
-                       C25.5 21.5 16.5 28 16 28.5 Z"
-                    fill="#2563EB"
-                />
-
-                {/* White swoosh checkmark inside the heart */}
-                <path
-                    d="M9.8 16.2 L14 20.4 L22.4 11.6"
-                    fill="none"
-                    stroke="#FFFFFF"
-                    strokeWidth="2.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-            </svg>
+            />
         </span>
     );
 
     if (!showLabel) {
         return (
             <span title={title || "Verified premium nurse"} className="inline-flex shrink-0">
-                {HeartCheck}
+                {VerifiedIcon}
             </span>
         );
     }
@@ -90,7 +70,7 @@ export const VerifiedBadge = memo(function VerifiedBadge({
                         text-blue-900 dark:text-blue-200
                         font-bold tracking-tight shrink-0`}
         >
-            {HeartCheck}
+            {VerifiedIcon}
             <span className={`${s.text} uppercase`}>{label}</span>
         </span>
     );

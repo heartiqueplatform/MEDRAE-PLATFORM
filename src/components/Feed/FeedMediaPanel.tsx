@@ -15,7 +15,7 @@ import {
     CheckCircle,
 } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
-
+import CommentsModal from "@/components/Feed/CommentsModal";
 type FeedImage = {
     id: string;
     image_url: string;
@@ -72,8 +72,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 // ============================================================
 // MODULE-LEVEL CACHES
-// Cleared by clearMediaPanelCaches() on user change / feed refresh.
-// Never trust these across user boundaries.
 // ============================================================
 const statsCache = new Map<
     string,
@@ -82,10 +80,17 @@ const statsCache = new Map<
 const commentsCache = new Map<string, { data: any[]; at: number }>();
 const pendingRequests = new Map<string, Promise<any>>();
 
+// ── NEW: Cache the FIRST image's aspect ratio per group ────
+// This is what makes Instagram smooth: once we know the shape
+// of the first slide, EVERY slide in the group uses it. No
+// layout jump on swipe, ever.
+const groupAspectCache = new Map<string, number>();
+
 export function clearMediaPanelCaches() {
     statsCache.clear();
     commentsCache.clear();
     pendingRequests.clear();
+    groupAspectCache.clear();
 }
 
 function getStatsCacheKey(userId: string, imageId: string) {
@@ -185,13 +190,6 @@ async function fetchComments(supabase: any, imageId: string): Promise<any[]> {
     }
 }
 
-/**
- * Mark an image AND every image in its carousel group as seen
- * for this user. Uses mark_feed_group_seen RPC.
- *
- * Fire-and-forget — failure doesn't affect UX. Idempotent via RPC's
- * ON CONFLICT DO NOTHING.
- */
 function markImageSeen(supabase: any, userId: string, imageId: string) {
     supabase
         .rpc("mark_feed_group_seen", {
@@ -208,9 +206,6 @@ function markImageSeen(supabase: any, userId: string, imageId: string) {
         });
 }
 
-// ============================================================
-// COMPONENT
-// ============================================================
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -240,14 +235,11 @@ export default function FeedMediaPanel({
     imageDescription,
     setImageDescription,
 }: Props) {
-    // ── NOTE: We no longer track `seenIds` here. The parent Feed is
-    // expected to fetch only unseen images via the RPC
-    // `get_unseen_feed_images`. This panel trusts that contract.
     const [commentsCount, setCommentsCount] = useState(0);
     const [likesCount, setLikesCount] = useState(0);
     const [hasLiked, setHasLiked] = useState(false);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-
+    const [imageReplyTo, setImageReplyTo] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -258,7 +250,12 @@ export default function FeedMediaPanel({
     const [isCommentsLoaded, setIsCommentsLoaded] = useState(false);
     const [isRelated, setIsRelated] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+
+    // ── NEW: LOCKED aspect ratio for the whole group ──────────
+    // Once the first slide loads, we compute its aspect ratio ONCE.
+    // Every subsequent slide uses this SAME ratio — no layout jump.
+    const [lockedAspect, setLockedAspect] = useState<number | null>(null);
+
     // Touch tracking for swipe gestures
     const touchStartX = useRef<number | null>(null);
     const touchStartY = useRef<number | null>(null);
@@ -266,11 +263,6 @@ export default function FeedMediaPanel({
     const [swipeOffset, setSwipeOffset] = useState<number>(0);
     const isMounted = useRef(true);
 
-    // ── Pick the image for this slot ─────────────────────────
-    // Simple round-robin over whatever the parent gave us.
-    // ── Group images into "posts" ────────────────────────────
-    // Images WITH post_group_id group together into one carousel post.
-    // Images WITHOUT post_group_id become their own single-image posts.
     // ── Find the group matching THIS panel's groupKey ────────
     const group = useMemo<FeedImage[] | null>(() => {
         if (!groupKey) return null;
@@ -289,19 +281,56 @@ export default function FeedMediaPanel({
         ? group[currentSlide] || group[0]
         : null;
     const totalSlides = group?.length || 0;
-    // ── Fetch stats for the currently-displayed image ────────
+
+    // ── Restore locked aspect from cache when group changes ──
+    useEffect(() => {
+        if (!groupKey) {
+            setLockedAspect(null);
+            return;
+        }
+        const cached = groupAspectCache.get(groupKey);
+        setLockedAspect(cached ?? null);
+    }, [groupKey]);
+
     // ── Reset slide when the post slot changes ───────────────
-    // ── Reset slide ONLY when the assigned post changes ──────
-    // (not when feedImages array identity changes — that happens
-    //  on every parent render and would snap the slide back to 0)
-    // Reset slide ONLY when this panel moves to a different group.
-    // groupKey is stable per panel, so this only fires when the
-    // panel is remounted for a different post — never during a swipe.
     useEffect(() => {
         setCurrentSlide(0);
     }, [groupKey]);
 
-    // ── Fetch stats for the currently-displayed image ────────
+    // ── Preload ALL slide images in the group ─────────────────
+    // This is the Instagram trick: while the user is looking at
+    // slide 1, we quietly download slides 2, 3, 4 in the
+    // background. By the time they swipe, images are cached →
+    // instant switch, no loader, no fade.
+    useEffect(() => {
+        if (!group || group.length <= 1) return;
+
+        let cancelled = false;
+        const preloaders: HTMLImageElement[] = [];
+
+        group.forEach((g, i) => {
+            if (i === 0) return; // slide 0 is being displayed already
+            const im = new Image();
+            im.decoding = "async";
+            im.src = g.image_url.includes("cloudinary")
+                ? g.image_url.replace("/upload/", "/upload/w_800,f_auto,q_auto/")
+                : g.image_url;
+            im.onload = () => {
+                if (!cancelled && isMounted.current) {
+                    setLoadedImages((prev) => ({ ...prev, [g.id]: true }));
+                }
+            };
+            preloaders.push(im);
+        });
+
+        return () => {
+            cancelled = true;
+            preloaders.forEach((im) => {
+                im.onload = null;
+            });
+        };
+    }, [group, setLoadedImages]);
+
     // ── Fetch stats for the currently-displayed image ────────
     useEffect(() => {
         if (!img?.id || !user?.id) {
@@ -311,9 +340,6 @@ export default function FeedMediaPanel({
         isMounted.current = true;
 
         const load = async () => {
-            // If we already have cached stats for this image, use them
-            // immediately and DON'T show the skeleton. Otherwise, show
-            // the skeleton only until the fetch completes.
             const cached = statsCache.get(getStatsCacheKey(user.id, img!.id));
             if (cached) {
                 setLikesCount(cached.likes);
@@ -321,7 +347,6 @@ export default function FeedMediaPanel({
                 setHasLiked(cached.hasLiked);
                 setIsLoadingData(false);
             } else {
-                // First time seeing this slide → show skeleton
                 setIsLoadingData(true);
             }
 
@@ -343,6 +368,7 @@ export default function FeedMediaPanel({
             isMounted.current = false;
         };
     }, [img?.id, user?.id, supabase]);
+
     // ── Upload progress animation ─────────────────────────────
     useEffect(() => {
         if (uploading) {
@@ -361,8 +387,8 @@ export default function FeedMediaPanel({
             setUploadProgress(0);
         }
     }, [uploading]);
-    // Prefetch stats for ALL slides in the group on first mount,
-    // so swiping between slides is instant with no skeleton flashes.
+
+    // Prefetch stats for ALL slides in the group
     useEffect(() => {
         if (!group || group.length <= 1 || !user?.id) return;
 
@@ -386,6 +412,7 @@ export default function FeedMediaPanel({
             cancelled = true;
         };
     }, [group, user?.id, supabase]);
+
     // ── Reset upload form when closed ─────────────────────────
     useEffect(() => {
         if (!showUpload) {
@@ -416,13 +443,11 @@ export default function FeedMediaPanel({
         if (!user || !img) return;
         const currentlyLiked = hasLiked;
 
-        // Optimistic UI
         setHasLiked(!currentlyLiked);
         setLikesCount((prev) =>
             currentlyLiked ? Math.max(0, prev - 1) : prev + 1
         );
 
-        // Update cache so remounts reflect it
         const cacheKey = getStatsCacheKey(user.id, img.id);
         const existing = statsCache.get(cacheKey);
         if (existing) {
@@ -438,21 +463,18 @@ export default function FeedMediaPanel({
 
         try {
             if (currentlyLiked) {
-                // Unlike — do NOT touch seen_images. They already saw it.
                 await supabase
                     .from("qfeed_images_likes")
                     .delete()
                     .eq("image_id", img.id)
                     .eq("user_id", user.id);
             } else {
-                // Like — insert + mark as seen (never show again)
                 await supabase
                     .from("qfeed_images_likes")
                     .insert({ image_id: img.id, user_id: user.id });
                 markImageSeen(supabase, user.id, img.id);
             }
         } catch {
-            // Revert
             setHasLiked(currentlyLiked);
             setLikesCount((prev) =>
                 currentlyLiked ? prev + 1 : Math.max(0, prev - 1)
@@ -461,11 +483,6 @@ export default function FeedMediaPanel({
         }
     };
 
-    // ── Full-screen tap — just open the viewer ───────────────
-    // DO NOT mark as seen here. The user is only looking at the image
-    // that's already on the feed. Marking it now causes the post to
-    // disappear from the feed the moment they tap — which is wrong.
-    // It gets marked as seen later, when they actually like or comment.
     const handleImageClick = async () => {
         if (!img?.image_url) return;
         openViewer({
@@ -477,7 +494,7 @@ export default function FeedMediaPanel({
     };
 
     // ── Swipe gestures for carousel ─────────────────────────
-    const SWIPE_THRESHOLD = 60; // px to trigger slide change
+    const SWIPE_THRESHOLD = 60;
 
     const handleTouchStart = (e: React.TouchEvent) => {
         if (totalSlides <= 1) return;
@@ -491,10 +508,8 @@ export default function FeedMediaPanel({
         if (touchStartX.current === null || totalSlides <= 1) return;
         const dx = e.touches[0].clientX - touchStartX.current;
         const dy = e.touches[0].clientY - (touchStartY.current ?? 0);
-        // If user is scrolling vertically more than horizontally → don't swipe
         if (Math.abs(dy) > Math.abs(dx) * 1.5) return;
         touchDeltaX.current = dx;
-        // Cap at 80px so it doesn't fly off
         const capped = Math.max(-80, Math.min(80, dx));
         setSwipeOffset(capped);
     };
@@ -506,10 +521,8 @@ export default function FeedMediaPanel({
         }
         const dx = touchDeltaX.current;
         if (dx <= -SWIPE_THRESHOLD && currentSlide < totalSlides - 1) {
-            // Swiped left → next
             setCurrentSlide((s) => Math.min(totalSlides - 1, s + 1));
         } else if (dx >= SWIPE_THRESHOLD && currentSlide > 0) {
-            // Swiped right → previous
             setCurrentSlide((s) => Math.max(0, s - 1));
         }
         touchStartX.current = null;
@@ -520,16 +533,16 @@ export default function FeedMediaPanel({
 
     // ── Comment actions ──────────────────────────────────────
     const handleDeleteComment = async (commentId: string) => {
-        if (!confirm("Delete this comment?")) return;
+        // The CommentsModal already asks "Confirm?" inline — no browser confirm needed
         const { error } = await supabase
             .from("qfeed_images_comments")
             .delete()
             .eq("id", commentId)
             .eq("user_id", user.id);
-        if (!error && img?.id) {
+        if (error) throw error;
+        if (img?.id) {
             commentsCache.delete(`comments_${img.id}`);
-            setIsCommentsLoaded(false);
-            loadComments();
+            setComments((prev) => prev.filter((c) => c.id !== commentId && c.parent_id !== commentId));
             setCommentsCount((prev) => Math.max(0, prev - 1));
         }
     };
@@ -563,7 +576,6 @@ export default function FeedMediaPanel({
             return;
         }
         if (handleImageUpload && typeof handleImageUpload === "function") {
-            // 1 image can't be a carousel — force false
             const related = uploadFiles.length > 1 ? isRelated : false;
             handleImageUpload(related);
         }
@@ -571,38 +583,64 @@ export default function FeedMediaPanel({
 
     // ── POST COMMENT — also marks seen ───────────────────────
     const handlePostComment = async () => {
-        if (!img || !commentText.trim() || !user || isSubmittingComment)
-            return;
+        if (!img || !commentText.trim() || !user || isSubmittingComment) return;
         setIsSubmittingComment(true);
-        const { error } = await supabase
-            .from("qfeed_images_comments")
-            .insert({
-                image_id: img.id,
-                user_id: user.id,
-                content: commentText.trim(),
-            });
-        if (!error && img?.id) {
-            // The moment they comment, they've seen it. Never show again.
-            markImageSeen(supabase, user.id, img.id);
+        try {
+            const { data: inserted, error } = await supabase
+                .from("qfeed_images_comments")
+                .insert({ image_id: img.id, user_id: user.id, content: commentText.trim() })
+                .select("id, content, created_at, user_id, parent_id, profiles:user_id(name, avatar_url)")
+                .single();
 
-            setCommentText("");
-            commentsCache.delete(`comments_${img.id}`);
-            setIsCommentsLoaded(false);
-            loadComments();
-            setCommentsCount((prev) => prev + 1);
+            if (error) throw error;
+
+            if (inserted) {
+                setComments((prev) => [...prev, inserted]);
+                setCommentsCount((prev) => prev + 1);
+                setCommentText("");
+                markImageSeen(supabase, user.id, img.id);
+                commentsCache.delete(`comments_${img.id}`);
+            }
+        } catch (err) {
+            console.warn("[MediaPanel] post comment failed:", err);
+        } finally {
+            setIsSubmittingComment(false);
         }
-        setIsSubmittingComment(false);
+    };
+    // ── Compute the LOCKED aspect ratio ──────────────────────
+    // Priority:
+    //   1. If we already locked it (state) → use that.
+    //   2. If it's cached for this group → restore immediately.
+    //   3. Otherwise → null (fallback below while slide 1 loads)
+    const containerAspect = lockedAspect ?? groupAspectCache.get(groupKey ?? "");
+
+    // ── Called once the first slide finishes loading ─────────
+    const handleFirstSlideLoad = (
+        e: React.SyntheticEvent<HTMLImageElement>,
+        slideId: string
+    ) => {
+        const el = e.currentTarget;
+        setLoadedImages((prev) => ({ ...prev, [slideId]: true }));
+
+        // Only lock the aspect for the FIRST image (index 0) — this
+        // is the shape the whole carousel will use forever.
+        if (
+            currentSlide === 0 &&
+            !containerAspect &&
+            el.naturalWidth &&
+            el.naturalHeight
+        ) {
+            const ratio = el.naturalWidth / el.naturalHeight;
+            groupAspectCache.set(groupKey ?? "", ratio);
+            setLockedAspect(ratio);
+        }
     };
 
-    // ── Loading skeleton ─────────────────────────────────────
-    // ── Loading skeleton — mirrors the real card's layout ────
-    // Same max width, same header height, same aspect-ratio image box,
-    // same footer. When the real card loads, NOTHING shifts.
+    // ── LOADING SKELETON ─────────────────────────────────────
     if (isLoadingData && img) {
         return (
             <div className="w-full max-w-full mx-auto space-y-2 mb-2">
                 <Card className="overflow-hidden bg-white dark:bg-muted/95 border-0 shadow-sm rounded-xl animate-pulse">
-                    {/* Header — mirrors "avatar + name + shared a resource" */}
                     <div className="flex items-center justify-between p-3 px-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -614,14 +652,12 @@ export default function FeedMediaPanel({
                         <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700" />
                     </div>
 
-                    {/* Image stage — same bg, same aspect ratio, same maxHeight */}
-                    {/* Image stage — same bg, same aspect ratio, same maxHeight */}
                     <div
                         className="relative w-full bg-gray-50 dark:bg-black flex items-center justify-center overflow-hidden"
                         style={{
                             aspectRatio:
-                                aspectRatios[img.id] !== undefined
-                                    ? String(aspectRatios[img.id])
+                                containerAspect !== undefined && containerAspect !== null
+                                    ? String(containerAspect)
                                     : "1 / 1",
                             maxHeight: "600px",
                         }}
@@ -629,7 +665,6 @@ export default function FeedMediaPanel({
                         <div className="w-full h-full bg-gray-200/60 dark:bg-gray-800/40" />
                     </div>
 
-                    {/* Footer — mirrors "N Likes · N Comments" */}
                     <div className="p-4 pt-3">
                         <div className="flex items-center justify-between pb-3 border-b dark:border-gray-800">
                             <div className="flex items-center gap-1.5">
@@ -884,128 +919,129 @@ export default function FeedMediaPanel({
                                 </h3>
                             </div>
                         )}
-                        {/*
-                          Image stage — layout is IDENTICAL for every slide:
-                          • aspect-ratio locked per image (measured on load)
-                          • black background so letterbox looks intentional
-                          • previous slide stays visible underneath while the
-                            next one fades in → NO layout jump on tap
-                        */}
+
+                        {/* ================================================= */}
+                        {/* IMAGE STAGE — Instagram-style carousel            */}
+                        {/*                                                    */}
+                        {/* Key trick: the container's aspectRatio is LOCKED   */}
+                        {/* to slide 0's ratio and never changes. Every slide */}
+                        {/* uses object-contain inside the same box, so        */}
+                        {/* swiping = zero layout shift, zero resize.          */}
+                        {/* ================================================= */}
                         <div
-                            className="relative w-full bg-gray-50 dark:bg-black flex items-center justify-center overflow-hidden touch-pan-y"
+                            className="relative w-full bg-black flex items-center justify-center overflow-hidden touch-pan-y"
                             style={{
                                 aspectRatio:
-                                    aspectRatios[img.id] !== undefined
-                                        ? String(aspectRatios[img.id])
-                                        : "1 / 1",
+                                    containerAspect !== undefined && containerAspect !== null
+                                        ? String(containerAspect)
+                                        : "4 / 5", // sensible fallback while first image loads
                                 maxHeight: "600px",
                             }}
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
                         >
-                            {/* Previous slide (only during crossfade) */}
-                            {group &&
-                                totalSlides > 1 &&
-                                group
-                                    .filter((_, i) => i !== currentSlide)
-                                    .map((g) => {
-                                        const isPrev =
-                                            g.id !== img.id &&
-                                            loadedImages[g.id] &&
-                                            Math.abs(
-                                                (group || []).indexOf(g) -
-                                                currentSlide
-                                            ) === 1;
-                                        if (!isPrev) return null;
+                            {group && totalSlides > 1 ? (
+                                /* ── CAROUSEL MODE: sliding track ── */
+                                <div
+                                    className="absolute inset-0 flex"
+                                    style={{
+                                        width: `${totalSlides * 100}%`,
+                                        transform: `translateX(-${(currentSlide * 100) / totalSlides}%) translateX(${totalSlides > 1 ? swipeOffset * (1 / totalSlides) : 0
+                                            }px)`,
+                                        transition:
+                                            touchStartX.current === null
+                                                ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+                                                : "none",
+                                        willChange: "transform",
+                                    }}
+                                >
+                                    {group.map((g, i) => {
+                                        const src = g.image_url.includes("cloudinary")
+                                            ? g.image_url.replace(
+                                                "/upload/",
+                                                "/upload/w_800,f_auto,q_auto/"
+                                            )
+                                            : g.image_url;
                                         return (
-                                            <img
-                                                key={`prev-${g.id}`}
-                                                src={
-                                                    g.image_url.includes(
-                                                        "cloudinary"
-                                                    )
-                                                        ? g.image_url.replace(
-                                                            "/upload/",
-                                                            "/upload/w_800,f_auto,q_auto/"
+                                            <div
+                                                key={g.id}
+                                                className="relative flex items-center justify-center"
+                                                style={{
+                                                    width: `${100 / totalSlides}%`,
+                                                    flex: `0 0 ${100 / totalSlides}%`,
+                                                }}
+                                            >
+                                                <img
+                                                    src={src}
+                                                    alt={g.title || `Slide ${i + 1}`}
+                                                    draggable={false}
+                                                    loading={i === 0 ? "eager" : "lazy"}
+                                                    decoding="async"
+                                                    onLoad={(e) =>
+                                                        handleFirstSlideLoad(e, g.id)
+                                                    }
+                                                    onClick={(e) => {
+                                                        if (
+                                                            Math.abs(
+                                                                touchDeltaX.current
+                                                            ) > 10
                                                         )
-                                                        : g.image_url
-                                                }
-                                                alt=""
-                                                aria-hidden
-                                                className="absolute inset-0 w-full h-full object-contain"
-                                            />
+                                                            return;
+                                                        if (i === currentSlide) {
+                                                            handleImageClick();
+                                                        }
+                                                    }}
+                                                    className="max-w-full max-h-full object-contain cursor-pointer select-none"
+                                                />
+
+                                                {/* Per-slide loader — only shows if THIS slide's image hasn't loaded */}
+                                                {!loadedImages[g.id] && (
+                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                        <GlobalLoader />
+                                                    </div>
+                                                )}
+                                            </div>
                                         );
                                     })}
-
-                            {/* Loading spinner only if we have no cached previous */}
-                            {!loadedImages[img.id] && (
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <GlobalLoader />
+                                </div>
+                            ) : (
+                                /* ── SINGLE-IMAGE MODE ── */
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <img
+                                        src={
+                                            img.image_url.includes("cloudinary")
+                                                ? img.image_url.replace(
+                                                    "/upload/",
+                                                    "/upload/w_800,f_auto,q_auto/"
+                                                )
+                                                : img.image_url
+                                        }
+                                        alt={img.title || "Feed image"}
+                                        draggable={false}
+                                        decoding="async"
+                                        onLoad={(e) =>
+                                            handleFirstSlideLoad(e, img.id)
+                                        }
+                                        onClick={handleImageClick}
+                                        className="max-w-full max-h-full object-contain cursor-pointer select-none"
+                                    />
+                                    {!loadedImages[img.id] && (
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <GlobalLoader />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* The actual current slide */}
-                            <img
-                                key={img.id}
-                                src={
-                                    img.image_url.includes("cloudinary")
-                                        ? img.image_url.replace(
-                                            "/upload/",
-                                            "/upload/w_800,f_auto,q_auto/"
-                                        )
-                                        : img.image_url
-                                }
-                                onLoad={(e) => {
-                                    const el = e.currentTarget;
-                                    if (
-                                        el.naturalWidth &&
-                                        el.naturalHeight &&
-                                        !aspectRatios[img.id]
-                                    ) {
-                                        setAspectRatios((prev) => ({
-                                            ...prev,
-                                            [img.id]:
-                                                el.naturalWidth /
-                                                el.naturalHeight,
-                                        }));
-                                    }
-                                    setLoadedImages((prev) => ({
-                                        ...prev,
-                                        [img.id]: true,
-                                    }));
-                                }}
-                                onClick={(e) => {
-                                    // Ignore tap if it was actually a swipe
-                                    if (Math.abs(touchDeltaX.current) > 10)
-                                        return;
-                                    handleImageClick();
-                                }}
-                                style={{
-                                    transform: `translateX(${swipeOffset}px)`,
-                                    transition:
-                                        touchStartX.current === null
-                                            ? "transform 220ms ease-out"
-                                            : "none",
-                                }}
-                                className={`relative z-10 w-full h-full object-contain cursor-pointer transition-opacity duration-300 ${loadedImages[img.id]
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                    }`}
-                                alt={img.title || "Feed image"}
-                                draggable={false}
-                            />
-
-                            {/* ── Carousel UI ── */}
+                            {/* ── Carousel UI (arrows / dots / counter) ── */}
                             {totalSlides > 1 && (
                                 <>
                                     {currentSlide > 0 && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setCurrentSlide((s) =>
-                                                    Math.max(0, s - 1)
-                                                );
+                                                setCurrentSlide((s) => Math.max(0, s - 1));
                                             }}
                                             className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center opacity-100 shadow-lg transition-colors"
                                             aria-label="Previous image"
@@ -1029,10 +1065,7 @@ export default function FeedMediaPanel({
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setCurrentSlide((s) =>
-                                                    Math.min(
-                                                        totalSlides - 1,
-                                                        s + 1
-                                                    )
+                                                    Math.min(totalSlides - 1, s + 1)
                                                 );
                                             }}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center opacity-100 shadow-lg transition-colors"
@@ -1066,7 +1099,7 @@ export default function FeedMediaPanel({
                                         ))}
                                     </div>
 
-                                    {/* Counter */}
+                                    {/* Counter — fixed size, never shrinks */}
                                     <div className="absolute top-3 left-3 z-20 bg-black/50 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                         {currentSlide + 1}/{totalSlides}
                                     </div>
@@ -1085,6 +1118,7 @@ export default function FeedMediaPanel({
                                 </button>
                             )}
                         </div>
+
                         <div className="p-4 pt-3">
                             {img.description && (
                                 <p className="text-[15px] mb-3 text-gray-800 dark:text-gray-200">
@@ -1167,210 +1201,44 @@ export default function FeedMediaPanel({
                 <div className="h-[1px] flex-1 bg-gray-300 dark:bg-gray-800" />
             </div>
 
-            {/* Comment Modal */}
-            <AnimatePresence>
-                {isCommentModalOpen && img && (
-                    <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm p-0 md:p-4">
-                        <motion.div
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{
-                                type: "spring",
-                                damping: 25,
-                                stiffness: 300,
-                            }}
-                            className="bg-white dark:bg-zinc-900 w-full md:w-[90vw] lg:w-[85vw] xl:max-w-6xl h-[92vh] md:h-[85vh] rounded-t-2xl md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl"
-                        >
-                            <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
-                                <div className="w-8 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-                            </div>
 
-                            <div className="hidden md:flex flex-1 bg-gray-50 dark:bg-zinc-800/30 items-center justify-center border-r dark:border-gray-800 p-4">
-                                <img
-                                    src={
-                                        img.image_url?.includes("cloudinary")
-                                            ? img.image_url.replace(
-                                                "/upload/",
-                                                "/upload/f_auto,q_auto/"
-                                            )
-                                            : img.image_url
-                                    }
-                                    className="max-h-full max-w-full object-contain rounded-lg"
-                                    alt={img.title || "Image"}
-                                    loading="lazy"
-                                    onError={(e) => {
-                                        e.currentTarget.src = "/fallback-image.jpg";
-                                    }}
-                                />
-                            </div>
-
-                            <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-900 min-h-0">
-                                <div className="p-3 md:p-4 border-b dark:border-gray-800 flex justify-between items-center bg-white dark:bg-zinc-900 flex-shrink-0">
-                                    <div>
-                                        <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                            Comments
-                                        </h3>
-                                        {img.title && (
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
-                                                {img.title}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <button
-                                        onClick={() => setIsCommentModalOpen(false)}
-                                        className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-                                    >
-                                        <X
-                                            size={18}
-                                            className="text-gray-500 dark:text-gray-400"
-                                        />
-                                    </button>
-                                </div>
-
-                                <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50 dark:bg-zinc-800/20 custom-scrollbar">
-                                    {comments.length > 0 ? (
-                                        comments.map((c) => (
-                                            <div
-                                                key={c.id}
-                                                className="flex gap-2 md:gap-3 group"
-                                            >
-                                                <img
-                                                    src={
-                                                        c.profiles?.avatar_url ||
-                                                        "/UsersAvatar.jpg"
-                                                    }
-                                                    className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700 flex-shrink-0"
-                                                    alt="avatar"
-                                                    loading="lazy"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="bg-white dark:bg-gray-800 p-2.5 md:p-3 rounded-2xl shadow-sm border dark:border-gray-700">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                                                                {c.profiles?.name || "User"}
-                                                            </p>
-                                                            <span className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
-                                                                {new Date(
-                                                                    c.created_at
-                                                                ).toLocaleDateString(
-                                                                    undefined,
-                                                                    {
-                                                                        month: "short",
-                                                                        day: "numeric",
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit",
-                                                                    }
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
-                                                            {c.content}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex gap-3 mt-1 ml-2">
-                                                        <button
-                                                            onClick={() =>
-                                                                setCommentText(
-                                                                    `@${c.profiles
-                                                                        ?.name || "User"
-                                                                    } `
-                                                                )
-                                                            }
-                                                            className="text-[10px] md:text-xs text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
-                                                        >
-                                                            Reply
-                                                        </button>
-                                                        {c.user_id === user?.id && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleEditComment(
-                                                                            c.id,
-                                                                            c.content
-                                                                        )
-                                                                    }
-                                                                    className="text-[10px] md:text-xs text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleDeleteComment(
-                                                                            c.id
-                                                                        )
-                                                                    }
-                                                                    className="text-[10px] md:text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
-                                                                >
-                                                                    Delete
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-center py-10 md:py-12">
-                                            <div className="w-14 h-14 md:w-16 md:h-16 mb-3 md:mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                                <svg
-                                                    className="w-7 h-7 md:w-8 md:h-8 text-gray-400"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={1.5}
-                                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                                                    />
-                                                </svg>
-                                            </div>
-                                            <p className="text-gray-500 dark:text-gray-400 font-medium text-sm md:text-base">
-                                                No comments yet
-                                            </p>
-                                            <p className="text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-1">
-                                                Be the first to start the conversation
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="p-3 md:p-4 border-t dark:border-gray-800 bg-white dark:bg-zinc-900 flex-shrink-0">
-                                    <div className="flex gap-2">
-                                        <input
-                                            value={commentText}
-                                            onChange={(e) =>
-                                                setCommentText(e.target.value)
-                                            }
-                                            onKeyDown={(e) =>
-                                                e.key === "Enter" &&
-                                                handlePostComment()
-                                            }
-                                            placeholder="Write a comment..."
-                                            className="flex-1 bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                        />
-                                        <button
-                                            onClick={handlePostComment}
-                                            disabled={
-                                                !commentText.trim() ||
-                                                isSubmittingComment
-                                            }
-                                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-2 md:p-2.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center min-w-[40px] md:min-w-[42px]"
-                                        >
-                                            <Send size={16} />
-                                        </button>
-                                    </div>
-                                    <p className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 mt-1.5 md:mt-2 text-center">
-                                        Press Enter to send
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Shared comments modal — same experience as question comments */}
+            {isCommentModalOpen && img && (
+                <CommentsModal
+                    variant="image"
+                    entityId={img.id}
+                    activeQuestion={img.id}
+                    setActiveQuestion={(v: any) => setIsCommentModalOpen(!!v)}
+                    questions={[
+                        {
+                            id: img.id,
+                            question_text: img.title || "Shared image",
+                            quiz_title: img.profiles?.name || "Community",
+                        },
+                    ]}
+                    comments={comments}
+                    user={user}
+                    replyTo={imageReplyTo}
+                    setReplyTo={setImageReplyTo}
+                    toggleCommentLike={() => { }}
+                    newComment={commentText}
+                    setNewComment={setCommentText}
+                    addComment={handlePostComment}
+                    deleteComment={handleDeleteComment}
+                    leftPanel={
+                        <img
+                            src={
+                                img.image_url?.includes("cloudinary")
+                                    ? img.image_url.replace("/upload/", "/upload/w_1200,f_auto,q_auto/")
+                                    : img.image_url
+                            }
+                            alt={img.title || "Image"}
+                            className="max-w-full max-h-full object-contain"
+                            draggable={false}
+                        />
+                    }
+                />
+            )}
         </div>
     );
 }

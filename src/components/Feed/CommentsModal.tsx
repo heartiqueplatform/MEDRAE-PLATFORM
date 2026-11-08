@@ -1,34 +1,65 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Reply, ThumbsUp, X, Trash2, MoreVertical } from "lucide-react";
+import React, {
+    useMemo,
+    useState,
+    useEffect,
+    useCallback,
+    useRef,
+} from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+    X,
+    Send,
+    Trash2,
+    CornerDownRight,
+    Heart,
+    Check,
+    ChevronDown,
+    MessageCircle,
+} from "lucide-react";
 
-// Cache for question details (prevents re-fetching)
-const questionDetailsCache = new Map();
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { supabase } from "@/lib/supabaseClient";
+
+// ═══════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════
+
+type Variant = "question" | "image";
+
+type CommentRow = {
+    id: string;
+    body: string;            // normalized text (mapped from comment_text OR content)
+    created_at: string;
+    updated_at?: string;
+    user_id: string;
+    parent_id: string | null;
+    profiles?: { name?: string; avatar_url?: string } | null;
+    comment_likes?: { user_id: string }[];
+    isOptimistic?: boolean;
+    error?: boolean;
+    is_deleted?: boolean;
+};
+
+type CommentNode = CommentRow & {
+    children: CommentNode[];
+    has_liked: boolean;
+};
 
 type Props = {
-    activeQuestion: any;
-    setActiveQuestion: (val: any) => void;
-    questions: any[];
+    variant?: Variant;
+    /** ID of the question or image */
+    entityId?: string;
+    /** Optional content shown ONLY on desktop, to the left of the comments. */
+    leftPanel?: React.ReactNode;
+
+
+    // Legacy props (used by Feed.tsx for questions)
+    activeQuestion?: any;
+    setActiveQuestion?: (val: any) => void;
+    questions?: any[];
     comments: any[];
     user: any;
     replyTo: any;
@@ -37,188 +68,89 @@ type Props = {
     newComment: string;
     setNewComment: (val: string) => void;
     addComment: () => void;
-    deleteComment: (commentId: string) => Promise<void>;
+    deleteComment?: (commentId: string) => Promise<void>;
 };
 
-// Memoized option component to prevent re-renders
-const OptionItem = React.memo(({ opt, text, isCorrect }: { opt: string; text: string; isCorrect: boolean }) => {
-    if (!text) return null;
+// ═══════════════════════════════════════════════════════════════
+// VARIANT CONFIG
+// ═══════════════════════════════════════════════════════════════
 
-    return (
-        <div
-            className={`
-                p-3 rounded-lg
-                transition-all duration-200
-                ${isCorrect
-                    ? 'bg-green-100 dark:bg-green-950/30 border-l-4 border-green-500'
-                    : 'bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800'
-                }
-            `}
-        >
-            <div className="flex items-start gap-2">
-                <span className={`
-                    font-bold text-sm px-2 py-0.5 rounded
-                    ${isCorrect
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }
-                `}>
-                    {opt}
-                </span>
-                <span className="text-gray-700 dark:text-gray-300 flex-1 break-words">
-                    {text}
-                </span>
-                {isCorrect && (
-                    <span className="text-xs text-green-600 dark:text-green-400 font-medium flex-shrink-0">
-                        ✓ Correct
-                    </span>
-                )}
-            </div>
-        </div>
-    );
-});
+const VARIANTS = {
+    question: {
+        table: "qfeed_comments",
+        textColumn: "comment_text" as const,
+        parentColumn: "question_id" as const,
+        likesTable: "qfeed_comment_likes" as const,
+    },
+    image: {
+        table: "qfeed_images_comments",
+        textColumn: "content" as const,
+        parentColumn: "image_id" as const,
+        likesTable: "qfeed_images_comment_likes" as const,
+    },
+};
 
-OptionItem.displayName = 'OptionItem';
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
 
-// Memoized comment component
-const CommentItem = React.memo(({
-    comment,
-    user,
-    onReply,
-    onLike,
-    onDelete,
-    isDeleting
-}: {
-    comment: any;
-    user: any;
-    onReply: (id: string) => void;
-    onLike: (id: string) => void;
-    onDelete: (id: string) => void;
-    isDeleting: boolean;
-}) => {
-    const isReply = !!comment.parent_id;
-    const liked = comment.comment_likes?.some((l: any) => l.user_id === user?.id);
-    const isFailed = comment.error;
-    const isOwner = user?.id === comment.user_id;
+function normalize(raw: any, textKey: "comment_text" | "content"): CommentRow {
+    return {
+        id: raw.id,
+        body: raw[textKey] ?? raw.body ?? "",
+        created_at: raw.created_at,
+        updated_at: raw.updated_at,
+        user_id: raw.user_id,
+        parent_id: raw.parent_id ?? null,
+        profiles: raw.profiles ?? null,
+        comment_likes: raw.comment_likes ?? [],
+        isOptimistic: raw.isOptimistic,
+        error: raw.error,
+        is_deleted: raw.is_deleted,
+    };
+}
 
-    if (comment.is_deleted) return null;
+function buildTree(flat: CommentRow[], currentUserId?: string): CommentNode[] {
+    const byId = new Map<string, CommentNode>();
+    for (const c of flat) {
+        if (c.is_deleted) continue;
+        byId.set(c.id, {
+            ...c,
+            children: [],
+            has_liked: !!c.comment_likes?.some((l) => l.user_id === currentUserId),
+        });
+    }
+    const roots: CommentNode[] = [];
+    for (const node of byId.values()) {
+        if (node.parent_id && byId.has(node.parent_id)) {
+            byId.get(node.parent_id)!.children.push(node);
+        } else {
+            roots.push(node);
+        }
+    }
+    const sortRec = (nodes: CommentNode[]) => {
+        nodes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        nodes.forEach((n) => sortRec(n.children));
+    };
+    sortRec(roots);
+    return roots;
+}
 
-    return (
-        <div
-            className={`
-                flex items-start gap-3
-                transition-all duration-200
-                hover:bg-gray-50 dark:hover:bg-gray-800/30
-                rounded-lg p-2 group
-                ${isReply ? "ml-6 md:ml-8 pl-3 border-l-2 border-gray-200 dark:border-gray-700" : ""}
-                ${isFailed ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800" : ""}
-            `}
-        >
-            <img
-                src={comment.profiles?.avatar_url || "/UsersAvatar.jpg"}
-                alt={comment.profiles?.name || "User"}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700 flex-shrink-0"
-                loading="lazy"
-            />
+function countDescendants(node: CommentNode): number {
+    let n = node.children.length;
+    for (const c of node.children) n += countDescendants(c);
+    return n;
+}
 
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-                            {comment.profiles?.name || "Anonymous"}
-                            {comment.isOptimistic && (
-                                <span className="ml-2 text-xs text-blue-500 animate-pulse">
-                                    Sending...
-                                </span>
-                            )}
-                            {isFailed && (
-                                <span className="ml-2 text-xs text-red-500">
-                                    Failed - Click to retry
-                                </span>
-                            )}
-                        </p>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
-                            {new Date(comment.created_at).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </span>
-                    </div>
+const MAX_VISUAL_DEPTH = 4;
 
-                    {isOwner && !comment.isOptimistic && !isFailed && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0"
-                                    aria-label="Comment actions"
-                                >
-                                    <MoreVertical size={14} />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-32">
-                                <DropdownMenuItem
-                                    onClick={() => onDelete(comment.id)}
-                                    className="text-red-600 focus:text-red-600"
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 size={14} className="mr-2" />
-                                    Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                </div>
-
-                <p className="text-gray-700 dark:text-gray-300 text-sm mt-1 break-words">
-                    {comment.comment_text}
-                </p>
-
-                {!comment.isOptimistic && !isFailed && (
-                    <div className="flex gap-4 text-xs mt-2">
-                        <button
-                            className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
-                            onClick={() => onReply(comment.id)}
-                            aria-label="Reply to comment"
-                        >
-                            <Reply size={14} />
-                            <span>Reply</span>
-                        </button>
-
-                        <button
-                            className="flex items-center gap-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
-                            onClick={() => onLike(comment.id)}
-                            aria-label={liked ? "Unlike comment" : "Like comment"}
-                        >
-                            {liked ? (
-                                <span className="text-red-500">❤️</span>
-                            ) : (
-                                <ThumbsUp size={14} />
-                            )}
-                            <span>{comment.comment_likes?.length || 0}</span>
-                        </button>
-                    </div>
-                )}
-
-                {isFailed && (
-                    <button
-                        onClick={() => {
-                            window.dispatchEvent(new CustomEvent('retryComment', { detail: comment }));
-                        }}
-                        className="text-xs text-red-500 hover:text-red-600 mt-1"
-                    >
-                        Click to retry
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-});
-
-CommentItem.displayName = 'CommentItem';
+// ═══════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════
 
 export default function CommentsModal({
+    variant = "question",
+    entityId,
     activeQuestion,
     setActiveQuestion,
     questions,
@@ -231,43 +163,34 @@ export default function CommentsModal({
     setNewComment,
     addComment,
     deleteComment,
+    leftPanel,
 }: Props) {
-    // Get the current question - memoized to prevent unnecessary recalculations
-    const currentQuestion = useMemo(() =>
-        questions.find((q) => q.id === activeQuestion),
+    const cfg = VARIANTS[variant];
+    const isOpen = variant === "image" ? !!entityId : !!activeQuestion;
+    const currentQuestion = useMemo(
+        () => questions?.find((q) => q.id === activeQuestion),
         [questions, activeQuestion]
     );
 
-    // Local state for optimistic comment updates
-    const [optimisticComments, setOptimisticComments] = useState<any[]>([]);
+    const [optimisticComments, setOptimisticComments] = useState<CommentRow[]>([]);
     const [isAddingOptimistic, setIsAddingOptimistic] = useState(false);
-    const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+    const [editDraft, setEditDraft] = useState("");
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [likeMap, setLikeMap] = useState<Record<string, boolean>>({});
+    const inputRef = useRef<HTMLTextAreaElement>(null);
     const isMounted = useRef(true);
 
-    // Combine real comments with optimistic ones
-    const displayComments = useMemo(() => {
-        if (optimisticComments.length === 0) return comments;
-        const existingIds = new Set(comments.map(c => c.id));
-        const newOptimistic = optimisticComments.filter(c => !existingIds.has(c.id));
-        return [...comments, ...newOptimistic];
-    }, [comments, optimisticComments]);
-
-    // Filter out deleted comments
-    const visibleComments = useMemo(() => {
-        return displayComments.filter(comment => !comment.is_deleted);
-    }, [displayComments]);
-
-    // Reset optimistic comments when modal closes
+    // Mobile detection
     useEffect(() => {
-        if (!activeQuestion) {
-            setOptimisticComments([]);
-            setIsAddingOptimistic(false);
-            setDeletingCommentId(null);
-        }
-    }, [activeQuestion]);
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
 
-    // Cleanup on unmount
     useEffect(() => {
         isMounted.current = true;
         return () => {
@@ -275,322 +198,701 @@ export default function CommentsModal({
         };
     }, []);
 
-    // Retry comment handler
+    // Reset on close
     useEffect(() => {
-        const handleRetry = (event: CustomEvent) => {
-            const failedComment = event.detail;
-            setOptimisticComments(prev => prev.filter(c => c.id !== failedComment.id));
-            setNewComment(failedComment.comment_text);
-            if (failedComment.parent_id) setReplyTo(failedComment.parent_id);
-        };
+        if (!isOpen) {
+            setOptimisticComments([]);
+            setIsAddingOptimistic(false);
+            setEditingCommentId(null);
+            setEditDraft("");
+            setDeletingId(null);
+        }
+    }, [isOpen]);
 
-        window.addEventListener('retryComment', handleRetry as EventListener);
-        return () => window.removeEventListener('retryComment', handleRetry as EventListener);
+    // Retry failed
+    useEffect(() => {
+        const handler = (event: CustomEvent) => {
+            const failed = event.detail;
+            setOptimisticComments((prev) => prev.filter((c) => c.id !== failed.id));
+            setNewComment(failed.body ?? failed.comment_text ?? "");
+            if (failed.parent_id) setReplyTo(failed.parent_id);
+        };
+        window.addEventListener("retryComment", handler as EventListener);
+        return () => window.removeEventListener("retryComment", handler as EventListener);
     }, [setNewComment, setReplyTo]);
 
-    // Wrapper for addComment with optimistic update
-    const handleAddComment = useCallback(async () => {
-        if (!newComment.trim() || !user || !activeQuestion || isAddingOptimistic) return;
+    // ── Build tree from parent-supplied comments ──────────
+    const tree = useMemo(() => {
+        const normalized: CommentRow[] = comments.map((c) =>
+            normalize(
+                {
+                    ...c,
+                    comment_likes: likeMap[c.id] !== undefined
+                        ? c.comment_likes // let parent keep source of truth, or fallback below
+                        : c.comment_likes,
+                },
+                cfg.textColumn
+            )
+        );
+        const optimistic: CommentRow[] = optimisticComments;
+        const merged = [
+            ...normalized,
+            ...optimistic.filter((o) => !normalized.some((c) => c.id === o.id)),
+        ];
+        const tree0 = buildTree(merged, user?.id);
+        // Apply local likeMap overrides
+        const applyLike = (nodes: CommentNode[]) => {
+            nodes.forEach((n) => {
+                if (likeMap[n.id] !== undefined) n.has_liked = likeMap[n.id];
+                applyLike(n.children);
+            });
+        };
+        applyLike(tree0);
+        return tree0;
+    }, [comments, optimisticComments, user?.id, cfg.textColumn, likeMap]);
 
-        // Create optimistic comment
+    const totalCount = useMemo(() => {
+        const count = (nodes: CommentNode[]): number =>
+            nodes.reduce((s, n) => s + 1 + count(n.children), 0);
+        return count(tree);
+    }, [tree]);
+
+    // ── Add ─────────────────────────────────────────────
+    const handleAddComment = useCallback(async () => {
+        if (!newComment.trim() || !user || !isOpen || isAddingOptimistic) return;
+
         const tempId = `temp_${Date.now()}_${Math.random()}`;
-        const optimisticComment = {
+        const optimistic: CommentRow = {
             id: tempId,
-            comment_text: newComment,
+            body: newComment,
             created_at: new Date().toISOString(),
             user_id: user.id,
             parent_id: replyTo || null,
             profiles: {
-                name: user.user_metadata?.full_name || user.email?.split('@')[0] || "User",
-                avatar_url: user.user_metadata?.avatar_url || "/UsersAvatar.jpg"
+                name: user.user_metadata?.full_name || user.email?.split("@")[0] || "You",
+                avatar_url: user.user_metadata?.avatar_url || "/UsersAvatar.jpg",
             },
             comment_likes: [],
             isOptimistic: true,
-            is_deleted: false
         };
 
-        // Add optimistic comment to UI immediately
-        setOptimisticComments(prev => [...prev, optimisticComment]);
+        setOptimisticComments((prev) => [...prev, optimistic]);
         setIsAddingOptimistic(true);
 
-        // Store current input and reply state
-        const currentComment = newComment;
-        const currentReplyTo = replyTo;
-
-        // Clear input immediately for better UX
+        const savedText = newComment;
+        const savedReplyTo = replyTo;
         setNewComment("");
         if (replyTo) setReplyTo(null);
+        if (navigator.vibrate) navigator.vibrate(15);
 
         try {
-            // Call the actual addComment function
             await addComment();
-
-            // Remove optimistic comment after successful addition
-            setOptimisticComments(prev => prev.filter(c => c.id !== tempId));
-        } catch (error) {
-            // On error, keep the optimistic comment but mark it as failed
-            console.error("Failed to add comment:", error);
-            setOptimisticComments(prev =>
-                prev.map(c =>
-                    c.id === tempId
-                        ? { ...c, error: true, comment_text: currentComment }
-                        : c
+            if (isMounted.current) {
+                setOptimisticComments((prev) => prev.filter((c) => c.id !== tempId));
+            }
+        } catch (err) {
+            console.error("Failed to add comment:", err);
+            if (!isMounted.current) return;
+            setOptimisticComments((prev) =>
+                prev.map((c) =>
+                    c.id === tempId ? { ...c, error: true, body: savedText } : c
                 )
             );
-
-            // Restore input on error
-            setNewComment(currentComment);
-            if (currentReplyTo) setReplyTo(currentReplyTo);
-
-            // Remove failed optimistic comment after 5 seconds (increased from 3)
+            setNewComment(savedText);
+            if (savedReplyTo) setReplyTo(savedReplyTo);
             setTimeout(() => {
                 if (isMounted.current) {
-                    setOptimisticComments(prev => prev.filter(c => c.id !== tempId));
+                    setOptimisticComments((prev) => prev.filter((c) => c.id !== tempId));
                 }
             }, 5000);
         } finally {
-            setIsAddingOptimistic(false);
+            if (isMounted.current) setIsAddingOptimistic(false);
         }
-    }, [newComment, user, activeQuestion, replyTo, addComment, setNewComment, setReplyTo, isAddingOptimistic]);
+    }, [newComment, user, isOpen, replyTo, addComment, setNewComment, setReplyTo, isAddingOptimistic]);
 
-    // Handle delete comment
-    const handleDeleteComment = useCallback(async (commentId: string) => {
-        if (!user) return;
+    // ── Edit ────────────────────────────────────────────
+    const handleSaveEdit = useCallback(
+        async (comment: CommentNode) => {
+            if (!user?.id || comment.user_id !== user.id) return false;
+            const trimmed = editDraft.trim();
+            if (!trimmed) return false;
+            if (trimmed === comment.body) {
+                setEditingCommentId(null);
+                return true;
+            }
+            setIsSavingEdit(true);
+            try {
+                const { error } = await supabase
+                    .from(cfg.table)
+                    .update({ [cfg.textColumn]: trimmed })
+                    .eq("id", comment.id)
+                    .eq("user_id", user.id);
+                if (error) throw error;
+                if (navigator.vibrate) navigator.vibrate(12);
+                setEditingCommentId(null);
+                setEditDraft("");
+                return true;
+            } catch (err) {
+                console.warn("[CommentsModal] edit failed:", err);
+                return false;
+            } finally {
+                if (isMounted.current) setIsSavingEdit(false);
+            }
+        },
+        [editDraft, user?.id, cfg.table, cfg.textColumn]
+    );
 
-        setIsDeleting(true);
-        try {
-            await deleteComment(commentId);
-            setDeletingCommentId(null);
-        } catch (error) {
-            console.error("Failed to delete comment:", error);
-            alert("Failed to delete comment. Please try again.");
-        } finally {
-            setIsDeleting(false);
+    // ── Delete ──────────────────────────────────────────
+    const handleDeleteTwoStep = useCallback(
+        async (comment: CommentNode) => {
+            if (!user?.id || comment.user_id !== user.id) return;
+            if (deletingId !== comment.id) {
+                setDeletingId(comment.id);
+                setTimeout(() => {
+                    setDeletingId((cur) => (cur === comment.id ? null : cur));
+                }, 4000);
+                return;
+            }
+            try {
+                if (deleteComment) {
+                    await deleteComment(comment.id);
+                } else {
+                    // Direct write when no parent callback
+                    const { error } = await supabase
+                        .from(cfg.table)
+                        .update({ is_deleted: true })
+                        .eq("id", comment.id)
+                        .eq("user_id", user.id);
+                    if (error) throw error;
+                }
+                setDeletingId(null);
+            } catch (err) {
+                console.warn("[CommentsModal] delete failed:", err);
+            }
+        },
+        [user?.id, deletingId, deleteComment, cfg.table]
+    );
+
+    // ── Like (image variant writes directly) ────────────
+    const handleLike = useCallback(
+        async (commentId: string) => {
+            if (!user?.id) return;
+            const current = likeMap[commentId];
+            const existing = tree
+                .flatMap(function flatten(n): CommentNode[] {
+                    return [n, ...n.children.flatMap(flatten)];
+                })
+                .find((c) => c.id === commentId);
+            const wasLiked = current ?? existing?.has_liked ?? false;
+            const next = !wasLiked;
+
+            // Optimistic
+            setLikeMap((prev) => ({ ...prev, [commentId]: next }));
+            if (navigator.vibrate) navigator.vibrate(10);
+
+            try {
+                if (variant === "question" && toggleCommentLike) {
+                    // Parent handles it (existing behaviour)
+                    await Promise.resolve(toggleCommentLike(commentId));
+                } else {
+                    // Image: write directly
+                    if (wasLiked) {
+                        await supabase
+                            .from(cfg.likesTable)
+                            .delete()
+                            .match({ comment_id: commentId, user_id: user.id });
+                    } else {
+                        await supabase
+                            .from(cfg.likesTable)
+                            .insert({ comment_id: commentId, user_id: user.id });
+                    }
+                }
+            } catch (err) {
+                console.warn("[CommentsModal] like failed:", err);
+                setLikeMap((prev) => ({ ...prev, [commentId]: wasLiked }));
+            }
+        },
+        [user?.id, likeMap, tree, toggleCommentLike, variant, cfg.likesTable]
+    );
+
+    // ── Close ───────────────────────────────────────────
+    const handleClose = useCallback(() => {
+        if (variant === "image" && setActiveQuestion) {
+            setActiveQuestion(null);
+        } else if (setActiveQuestion) {
+            setActiveQuestion(null);
         }
-    }, [deleteComment, user]);
+        setReplyTo(null);
+        setOptimisticComments([]);
+        setIsAddingOptimistic(false);
+        setEditingCommentId(null);
+        setEditDraft("");
+        setDeletingId(null);
+        setLikeMap({});
+    }, [setActiveQuestion, setReplyTo, variant]);
 
-    // Handle keyboard shortcut
-    const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && newComment.trim() && !e.shiftKey && !isAddingOptimistic) {
-            e.preventDefault();
-            handleAddComment();
-        }
-    }, [newComment, handleAddComment, isAddingOptimistic]);
+    // ── Enter key ───────────────────────────────────────
+    const handleInputKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (e.key === "Enter" && !e.shiftKey && newComment.trim()) {
+                e.preventDefault();
+                handleAddComment();
+            }
+        },
+        [newComment, handleAddComment]
+    );
 
-    // Memoize the options list
-    const optionsList = useMemo(() => {
-        if (!currentQuestion) return null;
-        return ["A", "B", "C", "D"].map((opt) => {
-            const text = currentQuestion[`option_${opt.toLowerCase()}`];
-            if (!text) return null;
-            return (
-                <OptionItem
-                    key={opt}
-                    opt={opt}
-                    text={text}
-                    isCorrect={currentQuestion.correct_answer === opt}
-                />
-            );
-        }).filter(Boolean);
-    }, [currentQuestion]);
+    if (!isOpen) return null;
 
-    // Memoize the comments list
-    const commentsList = useMemo(() => {
-        if (visibleComments.length === 0) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full text-center py-10 md:py-12">
-                    <div className="w-14 h-14 md:w-16 md:h-16 mb-3 md:mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                        <svg className="w-7 h-7 md:w-8 md:h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
+    // ── Header content (compact entity summary) ─────────
+    const headerBlock = variant === "question" && currentQuestion ? (
+        <div className="flex-shrink-0 px-3 pt-2 pb-3 border-b border-gray-100 dark:border-[#30363d]">
+            {currentQuestion.quiz_title && (
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-[#0d1c2e] px-2 py-0.5 rounded-md mb-1.5">
+                    {currentQuestion.quiz_title}
+                </span>
+            )}
+            <p className="text-[13px] font-semibold text-gray-900 dark:text-[#e6edf3] leading-snug">
+                {currentQuestion.question_text}
+            </p>
+        </div>
+    ) : null;
+
+    const content = (
+        <div className="flex flex-col h-full min-h-0">
+            {headerBlock}
+
+            <div className="flex-shrink-0 px-3 py-2 border-b border-gray-100 dark:border-[#30363d] flex items-center gap-1.5">
+                <MessageCircle size={13} className="text-gray-500 dark:text-[#8b949e]" />
+                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-[#8b949e]">
+                    {totalCount === 0
+                        ? "No comments yet"
+                        : `${totalCount} comment${totalCount === 1 ? "" : "s"}`}
+                </p>
+            </div>
+
+            <div
+                className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 space-y-1"
+                style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+                {tree.length === 0 && !isAddingOptimistic && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-[#161b22] flex items-center justify-center mb-2">
+                            <MessageCircle size={22} className="text-gray-400 dark:text-[#8b949e]" />
+                        </div>
+                        <p className="text-[13px] font-bold text-gray-700 dark:text-[#e6edf3]">
+                            No comments yet
+                        </p>
+                        <p className="text-[11.5px] text-gray-500 dark:text-[#8b949e] mt-0.5">
+                            Be the first to start the discussion
+                        </p>
                     </div>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium text-sm md:text-base">No comments yet</p>
-                    <p className="text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-1">Be the first to start the discussion</p>
+                )}
+                {tree.map((node) => (
+                    <CommentRow
+                        key={node.id}
+                        node={node}
+                        depth={0}
+                        user={user}
+                        replyTo={replyTo}
+                        editingCommentId={editingCommentId}
+                        editDraft={editDraft}
+                        setEditDraft={setEditDraft}
+                        isSavingEdit={isSavingEdit}
+                        deletingId={deletingId}
+                        onStartReply={(id) => {
+                            setReplyTo(id);
+                            requestAnimationFrame(() => inputRef.current?.focus());
+                        }}
+                        onLike={handleLike}
+                        onStartEdit={(c) => {
+                            setEditingCommentId(c.id);
+                            setEditDraft(c.body);
+                        }}
+                        onCancelEdit={() => {
+                            setEditingCommentId(null);
+                            setEditDraft("");
+                        }}
+                        onSaveEdit={handleSaveEdit}
+                        onDeleteTwoStep={handleDeleteTwoStep}
+                    />
+                ))}
+            </div>
+
+            <AnimatePresence>
+                {replyTo && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="flex-shrink-0 overflow-hidden border-t border-gray-100 dark:border-[#30363d]"
+                    >
+                        <div className="flex items-center justify-between px-3 py-2 bg-blue-50 dark:bg-[#0d1c2e]">
+                            <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 truncate">
+                                Replying to{" "}
+                                <b>
+                                    {tree
+                                        .flatMap(function flatten(n): CommentNode[] {
+                                            return [n, ...n.children.flatMap(flatten)];
+                                        })
+                                        .find((c) => c.id === replyTo)?.profiles?.name || "comment"}
+                                </b>
+                            </p>
+                            <button
+                                onClick={() => setReplyTo(null)}
+                                className="text-[11px] font-bold text-gray-500 hover:text-gray-700 dark:text-[#8b949e] dark:hover:text-[#e6edf3]"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {user?.id && (
+                <div
+                    className="flex-shrink-0 border-t border-gray-100 dark:border-[#30363d] p-2.5 flex gap-2 items-end bg-white dark:bg-[#0d1117]"
+                    style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
+                >
+                    <img
+                        src={user.user_metadata?.avatar_url || "/UsersAvatar.jpg"}
+                        alt="You"
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    />
+                    <textarea
+                        ref={inputRef}
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                        placeholder={replyTo ? "Write your reply…" : "Write a comment…"}
+                        rows={1}
+                        disabled={isAddingOptimistic}
+                        className="flex-1 resize-none bg-gray-100 dark:bg-[#161b22] border-0 rounded-xl px-3 py-2 text-[13px] leading-snug text-gray-900 dark:text-[#e6edf3] placeholder:text-gray-400 dark:placeholder:text-[#8b949e] outline-none focus:ring-2 focus:ring-blue-500 max-h-24 min-h-[38px]"
+                    />
+                    <button
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() || isAddingOptimistic}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white p-2 rounded-xl flex items-center justify-center min-w-[38px] min-h-[38px] active:scale-95 transition-all flex-shrink-0"
+                        aria-label="Post comment"
+                    >
+                        <Send size={15} />
+                    </button>
                 </div>
-            );
-        }
-
-        return visibleComments.map((c) => (
-            <CommentItem
-                key={c.id}
-                comment={c}
-                user={user}
-                onReply={setReplyTo}
-                onLike={toggleCommentLike}
-                onDelete={setDeletingCommentId}
-                isDeleting={isDeleting && deletingCommentId === c.id}
-            />
-        ));
-    }, [visibleComments, user, setReplyTo, toggleCommentLike, isDeleting, deletingCommentId]);
-
-    if (!activeQuestion) return null;
+            )}
+        </div>
+    );
 
     return (
         <>
-            <Dialog
-                open={!!activeQuestion}
-                onOpenChange={() => {
-                    setActiveQuestion(null);
-                    setReplyTo(null);
-                    setOptimisticComments([]);
-                    setIsAddingOptimistic(false);
-                    setDeletingCommentId(null);
-                }}
-            >
-                <DialogContent
-                    className="w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-7xl h-[100dvh] md:h-[85vh] p-0 overflow-hidden bg-white dark:bg-zinc-900 rounded-none md:rounded-xl shadow-2xl border-0"
-                    aria-describedby={undefined}
+            {isMobile ? (
+                <BottomSheet
+                    open={isOpen}
+                    onClose={handleClose}
+                    title="Discussion"
+                    maxHeight="90vh"
                 >
-                    {/* Drag handle for mobile */}
-                    <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
-                        <div className="w-8 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-                    </div>
-
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-3 md:p-4 border-b dark:border-gray-800 bg-white dark:bg-zinc-900 flex-shrink-0">
-                        <DialogHeader className="p-0">
-                            <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                {replyTo ? "Reply to Comment" : "Discussion"}
-                            </DialogTitle>
-                            <DialogDescription className="sr-only">
-                                View and post comments on this question. Replies appear indented under parent comments.
-                            </DialogDescription>
-                        </DialogHeader>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
-                        {/* LEFT SIDE - QUESTION PANEL */}
-                        <div className="w-full md:w-1/2 lg:w-2/5 border-b md:border-b-0 md:border-r dark:border-gray-800 overflow-y-auto custom-scrollbar p-3 md:p-5 max-h-[35vh] md:max-h-full bg-gray-50/50 dark:bg-zinc-800/30 flex-shrink-0">
-                            {currentQuestion && (
-                                <div className="space-y-4 md:space-y-5">
-                                    {/* Quiz Title Badge */}
-                                    <div className="inline-block">
-                                        <span className="text-[10px] md:text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/50 px-2 md:px-3 py-0.5 md:py-1 rounded-full">
-                                            {currentQuestion.quiz_title}
-                                        </span>
-                                    </div>
-
-                                    {/* Question Text */}
-                                    <p className="text-sm md:text-base lg:text-lg font-bold text-gray-900 dark:text-gray-100 leading-relaxed">
-                                        {currentQuestion.question_text}
-                                    </p>
-
-                                    {/* Options Grid */}
-                                    <div className="flex flex-col gap-2 md:gap-2.5">
-                                        <p className="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            Answer Options
-                                        </p>
-                                        {optionsList}
-                                    </div>
-
-                                    {/* Correct Answer Highlight */}
-                                    <div className="mt-3 md:mt-4 p-2.5 md:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                                        <p className="text-[10px] md:text-xs font-semibold text-blue-600 dark:text-blue-400 mb-0.5 md:mb-1">
-                                            💡 Correct Answer
-                                        </p>
-                                        <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 break-words">
-                                            <span className="font-bold">{currentQuestion.correct_answer}.</span>{' '}
-                                            {currentQuestion[`option_${currentQuestion.correct_answer.toLowerCase()}`]}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* RIGHT SIDE - COMMENTS PANEL */}
-                        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-zinc-900">
-                            {/* Reply Indicator Bar */}
-                            {replyTo && (
-                                <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-800 flex-shrink-0">
-                                    <p className="text-xs md:text-sm text-blue-600 dark:text-blue-400">
-                                        Replying to comment
-                                    </p>
-                                    <button
-                                        onClick={() => setReplyTo(null)}
-                                        className="text-[10px] md:text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                                        aria-label="Cancel reply"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Comments List */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-4 space-y-3 md:space-y-4">
-                                {commentsList}
-                            </div>
-
-                            {/* Comment Input Section */}
-                            <div className="border-t dark:border-gray-800 p-3 md:p-4 bg-white dark:bg-zinc-900 flex-shrink-0">
-                                <div className="flex gap-2 items-end">
-                                    <div className="flex-1">
-                                        <Input
-                                            placeholder={replyTo ? "Write your reply..." : "Write a comment..."}
-                                            value={newComment}
-                                            onChange={(e) => setNewComment(e.target.value)}
-                                            onKeyPress={handleKeyPress}
-                                            disabled={isAddingOptimistic}
-                                            className="bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-xl py-2 md:py-2.5 text-xs md:text-sm"
-                                            aria-label="Comment input"
-                                        />
-                                        {replyTo && (
-                                            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                Replying to comment • <button
-                                                    onClick={() => setReplyTo(null)}
-                                                    className="text-blue-600 hover:underline transition-colors"
-                                                    aria-label="Cancel reply"
-                                                >
-                                                    Cancel reply
-                                                </button>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <Button
-                                        onClick={handleAddComment}
-                                        disabled={!newComment.trim() || isAddingOptimistic}
-                                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl px-4 md:px-5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm h-9 md:h-10 flex-shrink-0"
-                                        aria-label="Post comment"
-                                    >
-                                        {isAddingOptimistic ? "Sending..." : "Post"}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Dialog */}
-            <AlertDialog open={!!deletingCommentId} onOpenChange={() => setDeletingCommentId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                                Are you sure you want to delete this comment? This action cannot be undone.
-
-                                {deletingCommentId && (
-                                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded max-h-32 overflow-y-auto">
-                                        <div className="text-sm text-gray-600 dark:text-gray-400 break-words">
-                                            {visibleComments.find(c => c.id === deletingCommentId)?.comment_text}
+                    <div style={{ height: "calc(90vh - 44px)" }}>{content}</div>
+                </BottomSheet>
+            ) : (
+                createPortal(
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="fixed inset-0 z-[2147483647] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+                                onClick={handleClose}
+                            >
+                                <motion.div
+                                    initial={{ scale: 0.96, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.96, opacity: 0 }}
+                                    transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`w-full bg-white dark:bg-[#0d1117] rounded-2xl overflow-hidden flex ${leftPanel ? "max-w-6xl" : "max-w-2xl flex-col"
+                                        }`}
+                                    style={{ maxHeight: "85vh" }}
+                                >
+                                    {/* LEFT PANEL (only when provided — image preview) */}
+                                    {leftPanel && (
+                                        <div className="flex-1 min-w-0 bg-black flex items-center justify-center relative">
+                                            {leftPanel}
                                         </div>
+                                    )}
+
+                                    {/* RIGHT SIDE: header + comments */}
+                                    <div
+                                        className={
+                                            leftPanel
+                                                ? "w-[400px] flex-shrink-0 flex flex-col min-h-0"
+                                                : "flex flex-col min-h-0 flex-1"
+                                        }
+                                    >
+                                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-[#30363d] flex-shrink-0">
+                                            <h2 className="text-[15px] font-bold text-gray-900 dark:text-[#e6edf3]">
+                                                Discussion
+                                            </h2>
+                                            <button
+                                                onClick={handleClose}
+                                                className="p-1.5 rounded-full bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-[#8b949e] hover:bg-gray-200 dark:hover:bg-[#30363d] hover:dark:text-[#e6edf3] active:scale-95 transition"
+                                                aria-label="Close"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                        {content}
                                     </div>
-                                )}
-                            </div>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => deletingCommentId && handleDeleteComment(deletingCommentId)}
-                            disabled={isDeleting}
-                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                        >
-                            {isDeleting ? "Deleting..." : "Delete"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>,
+                    document.body
+                )
+            )}
         </>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CommentRow — recursive (unchanged from question variant)
+// ═══════════════════════════════════════════════════════════════
+
+function CommentRow({
+    node,
+    depth,
+    user,
+    replyTo,
+    editingCommentId,
+    editDraft,
+    setEditDraft,
+    isSavingEdit,
+    deletingId,
+    onStartReply,
+    onLike,
+    onStartEdit,
+    onCancelEdit,
+    onSaveEdit,
+    onDeleteTwoStep,
+}: {
+    node: CommentNode;
+    depth: number;
+    user: any;
+    replyTo: any;
+    editingCommentId: string | null;
+    editDraft: string;
+    setEditDraft: (v: string) => void;
+    isSavingEdit: boolean;
+    deletingId: string | null;
+    onStartReply: (id: string) => void;
+    onLike: (id: string) => void;
+    onStartEdit: (c: CommentNode) => void;
+    onCancelEdit: () => void;
+    onSaveEdit: (c: CommentNode) => Promise<boolean>;
+    onDeleteTwoStep: (c: CommentNode) => void;
+}) {
+    const isMine = user?.id && node.user_id === user.id;
+    const isReplying = replyTo === node.id;
+    const isEditing = editingCommentId === node.id;
+    const isDeleting = deletingId === node.id;
+    const isOptimistic = !!node.isOptimistic;
+    const hasError = !!node.error;
+
+    const [showAllReplies, setShowAllReplies] = useState(false);
+    const PREVIEW_COUNT = 3;
+    const totalDescendants = useMemo(() => countDescendants(node), [node]);
+    const hasMoreReplies = totalDescendants > PREVIEW_COUNT;
+    const visibleChildren = showAllReplies ? node.children : node.children.slice(0, PREVIEW_COUNT);
+    const hiddenCount = node.children.length - visibleChildren.length;
+    const indent = Math.min(depth, MAX_VISUAL_DEPTH) * 16;
+
+    return (
+        <div>
+            <div
+                className={`flex gap-2 items-start ${isReplying ? "bg-blue-50/60 dark:bg-[#0d1c2e]/40 rounded-xl" : ""
+                    } ${hasError ? "bg-red-50 dark:bg-[#241012] rounded-xl" : ""}`}
+                style={{ marginLeft: indent, padding: "4px 6px" }}
+            >
+                <img
+                    src={node.profiles?.avatar_url || "/UsersAvatar.jpg"}
+                    alt={node.profiles?.name || "User"}
+                    className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                    loading="lazy"
+                />
+                <div className="flex-1 min-w-0">
+                    {isEditing ? (
+                        <div className="bg-gray-100 dark:bg-[#161b22] rounded-xl px-2.5 py-1.5">
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <p className="text-[11px] font-bold text-gray-900 dark:text-[#e6edf3] truncate">
+                                    {node.profiles?.name || "You"}
+                                </p>
+                                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-bold">
+                                    editing
+                                </span>
+                            </div>
+                            <textarea
+                                value={editDraft}
+                                onChange={(e) => setEditDraft(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Escape") onCancelEdit();
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        onSaveEdit(node);
+                                    }
+                                }}
+                                rows={2}
+                                className="w-full resize-none bg-transparent border-0 outline-none text-[13px] leading-snug text-gray-900 dark:text-[#e6edf3] max-h-40"
+                                autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-1.5 mt-1 pt-1 border-t border-gray-200/60 dark:border-[#30363d]">
+                                <button
+                                    onClick={onCancelEdit}
+                                    disabled={isSavingEdit}
+                                    className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-gray-700 dark:text-[#8b949e] dark:hover:text-[#e6edf3] px-2 py-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#21262d] active:scale-95 disabled:opacity-50"
+                                >
+                                    <X size={11} />
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => onSaveEdit(node)}
+                                    disabled={isSavingEdit || !editDraft.trim() || editDraft.trim() === node.body}
+                                    className="flex items-center gap-1 text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <Check size={11} />
+                                    {isSavingEdit ? "Saving…" : "Save"}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-100 dark:bg-[#161b22] rounded-xl px-2.5 py-1.5">
+                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                <p className="text-[11px] font-bold text-gray-900 dark:text-[#e6edf3] truncate">
+                                    {node.profiles?.name || "User"}
+                                </p>
+                                {isOptimistic && (
+                                    <span className="text-[9px] text-blue-500 font-bold animate-pulse">
+                                        sending…
+                                    </span>
+                                )}
+                                {hasError && (
+                                    <span className="text-[9px] text-red-500 font-bold">failed</span>
+                                )}
+                                <span className="text-[9px] text-gray-500 dark:text-[#8b949e] flex-shrink-0">
+                                    ·{" "}
+                                    {new Date(node.created_at).toLocaleDateString(undefined, {
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                </span>
+                            </div>
+                            <p className="text-[13px] text-gray-800 dark:text-[#e6edf3] break-words whitespace-pre-wrap">
+                                {node.body}
+                            </p>
+                        </div>
+                    )}
+
+                    {!isEditing && !isOptimistic && !hasError && (
+                        <div className="flex items-center gap-3 mt-1 ml-1 flex-wrap">
+                            <button
+                                onClick={() => onLike(node.id)}
+                                className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${node.has_liked
+                                    ? "text-rose-500"
+                                    : "text-gray-500 hover:text-rose-500 dark:text-[#8b949e] dark:hover:text-rose-400"
+                                    }`}
+                            >
+                                <Heart size={11} fill={node.has_liked ? "currentColor" : "none"} />
+                                {(node.comment_likes?.length || 0) > 0 && node.comment_likes!.length}
+                            </button>
+                            <button
+                                onClick={() => onStartReply(node.id)}
+                                className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-blue-600 dark:text-[#8b949e] dark:hover:text-blue-400"
+                            >
+                                <CornerDownRight size={11} />
+                                Reply
+                            </button>
+                            {isMine && (
+                                <>
+                                    <button
+                                        onClick={() => onStartEdit(node)}
+                                        className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-blue-600 dark:text-[#8b949e] dark:hover:text-blue-400"
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                    <button
+                                        onClick={() => onDeleteTwoStep(node)}
+                                        className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${isDeleting
+                                            ? "text-red-600 bg-red-50 dark:bg-[#241012] px-2 py-0.5 rounded-md"
+                                            : "text-gray-500 hover:text-red-600 dark:text-[#8b949e] dark:hover:text-red-400"
+                                            }`}
+                                    >
+                                        <Trash2 size={11} />
+                                        {isDeleting ? "Confirm?" : "Delete"}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {hasError && (
+                        <button
+                            onClick={() =>
+                                window.dispatchEvent(
+                                    new CustomEvent("retryComment", { detail: node })
+                                )
+                            }
+                            className="text-[10px] text-red-500 hover:text-red-600 font-bold mt-1 ml-1"
+                        >
+                            Click to retry
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {node.children.length > 0 && (
+                <div className="mt-1">
+                    {visibleChildren.map((child) => (
+                        <CommentRow
+                            key={child.id}
+                            node={child}
+                            depth={depth + 1}
+                            user={user}
+                            replyTo={replyTo}
+                            editingCommentId={editingCommentId}
+                            editDraft={editDraft}
+                            setEditDraft={setEditDraft}
+                            isSavingEdit={isSavingEdit}
+                            deletingId={deletingId}
+                            onStartReply={onStartReply}
+                            onLike={onLike}
+                            onStartEdit={onStartEdit}
+                            onCancelEdit={onCancelEdit}
+                            onSaveEdit={onSaveEdit}
+                            onDeleteTwoStep={onDeleteTwoStep}
+                        />
+                    ))}
+                    {hasMoreReplies && !showAllReplies && (
+                        <button
+                            onClick={() => setShowAllReplies(true)}
+                            className="flex items-center gap-1 mt-1 ml-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                            style={{ marginLeft: indent + 36 }}
+                        >
+                            <ChevronDown size={12} />
+                            Show {hiddenCount} more {hiddenCount === 1 ? "reply" : "replies"}
+                        </button>
+                    )}
+                    {hasMoreReplies && showAllReplies && (
+                        <button
+                            onClick={() => setShowAllReplies(false)}
+                            className="flex items-center gap-1 mt-1 ml-1 text-[11px] font-bold text-gray-500 dark:text-[#8b949e] hover:underline"
+                            style={{ marginLeft: indent + 36 }}
+                        >
+                            <ChevronDown size={12} className="rotate-180" />
+                            Show less
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }
