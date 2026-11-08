@@ -822,6 +822,8 @@ export default function StudentDashboard() {
           />
         )}
       </AnimatePresence>
+      {/* 🧪 Dev-only: force popup visible on every refresh, bypassing weekend gate */}
+      <Referral />
       <div className="w-full space-y-2 md:px-4 lg:px-6">
 
         {/* ---- ABOVE THE FOLD: keep as-is, mounts immediately ---- */}
@@ -852,11 +854,6 @@ export default function StudentDashboard() {
           <ShortPaper2 limit={5} />
         </DeferredMount>
 
-
-
-        <DeferredMount fallback={<div className="h-[180px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <Referral />
-        </DeferredMount>
         {/* Top Students Leaderboard */}
         <DeferredMount fallback={<div className="h-[400px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
           <Card className="relative overflow-hidden rounded-2xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-none mt-1">

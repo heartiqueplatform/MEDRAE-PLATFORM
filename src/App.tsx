@@ -348,6 +348,7 @@ const FOOTER_HIDDEN_PREFIXES = [
 const FooterGate = ({ user }: { user: any }) => {
   const location = useLocation();
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
 
   useEffect(() => {
     const onPlayerVisibility = (e: Event) => {
@@ -359,8 +360,20 @@ const FooterGate = ({ user }: { user: any }) => {
       window.removeEventListener("music-player-visibility", onPlayerVisibility);
   }, []);
 
+  // 📣 Referral popup hides the footer while it's open
+  useEffect(() => {
+    const onReferralVisibility = (e: Event) => {
+      const detail = (e as CustomEvent<{ open: boolean }>).detail;
+      setReferralOpen(!!detail?.open);
+    };
+    window.addEventListener("referral-popup-visibility", onReferralVisibility);
+    return () =>
+      window.removeEventListener("referral-popup-visibility", onReferralVisibility);
+  }, []);
+
   if (!user) return null;
-  if (playerOpen) return null;                         // ← NEW
+  if (playerOpen) return null;
+  if (referralOpen) return null;                       // ← NEW
   if (FOOTER_HIDDEN_PREFIXES.some((p) => location.pathname.startsWith(p))) {
     return null;
   }

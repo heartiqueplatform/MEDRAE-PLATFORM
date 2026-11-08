@@ -1,226 +1,46 @@
+// src/components/school-wars/SchoolWarsCard.tsx
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { institutions } from "@/components/forms/institutions.data";
 import {
     Trophy,
     Share2,
     UserPlus,
-    ArrowUpRight,
     Search,
-    X,
     GraduationCap,
     Check,
     Loader2,
-    Flame,
-    TrendingUp,
+    ChevronRight,
+    Users,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { UserProfileModal } from "@/components/UserProfileModal";
+import { InstitutionPicker } from "./InstitutionPicker";
+import { AllSchoolsSheet } from "./AllSchoolsSheet";
+import { SchoolStudentsSheet } from "./SchoolStudentsSheet";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    CACHE_KEY,
+    CURRENT_INSTITUTION_KEY,
+    type LeaderboardRow,
+    type CacheEnvelope,
+    readCache,
+    writeCache,
+    isFresh,
+    readCachedInstitution,
+    writeCachedInstitution,
+    prettyLabel,
+} from "@/lib/school-wars/schoolWarsCache";
 
-const CACHE_KEY = "school_wars_leaderboard_v8";
-const CURRENT_INSTITUTION_KEY = "school_wars_current_institution_v1";
-const CACHE_TTL_MS = 15 * 60 * 1000;
-const HARD_STALE_MS = 6 * 60 * 60 * 1000;
 const POST_SAVE_STALE_MS = 30 * 1000;
 const VISIBLE_ROWS = 5;
-
-// Single hero image instead of 4 cramped slivers
-const HERO_IMAGE = "/high7.png";
-
-type LeaderboardRow = {
-    rank: number;
-    institution: string;
-    institution_label: string;
-    member_count: number;
-    total_attempts: number;
-    school_score: number;
-    top_score: number;
-    last_activity: string | null;
-    has_activity: boolean;
-};
-
-type CacheEnvelope = {
-    data: LeaderboardRow[];
-    ts: number;
-    dbRefreshedAt: number | null;
-};
-
-// ─── localStorage helpers (unchanged) ───────────────────────────────────
-function readCache(): CacheEnvelope | null {
-    try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw) as CacheEnvelope;
-        if (!Array.isArray(parsed?.data)) return null;
-        if (Date.now() - parsed.ts > HARD_STALE_MS) {
-            localStorage.removeItem(CACHE_KEY);
-            return null;
-        }
-        return parsed;
-    } catch {
-        return null;
-    }
-}
-
-function writeCache(data: LeaderboardRow[], dbRefreshedAt: number | null) {
-    try {
-        const envelope: CacheEnvelope = { data, ts: Date.now(), dbRefreshedAt };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(envelope));
-    } catch { }
-}
-
-function isFresh(env: CacheEnvelope | null): boolean {
-    if (!env) return false;
-    return Date.now() - env.ts < CACHE_TTL_MS;
-}
-
-function readCachedInstitution(): string | null {
-    try {
-        const raw = localStorage.getItem(CURRENT_INSTITUTION_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw) as { slug?: string; ts?: number };
-        if (!parsed?.slug) return null;
-        if (parsed.ts && Date.now() - parsed.ts > 30 * 24 * 60 * 60 * 1000) {
-            localStorage.removeItem(CURRENT_INSTITUTION_KEY);
-            return null;
-        }
-        return parsed.slug;
-    } catch {
-        return null;
-    }
-}
-
-function writeCachedInstitution(slug: string | null) {
-    try {
-        if (!slug || slug === "other") {
-            localStorage.removeItem(CURRENT_INSTITUTION_KEY);
-            return;
-        }
-        localStorage.setItem(
-            CURRENT_INSTITUTION_KEY,
-            JSON.stringify({ slug, ts: Date.now() })
-        );
-    } catch { }
-}
-
-function prettyLabel(slug: string, fallback: string): string {
-    const found = institutions.find((i) => i.value === slug);
-    return found?.label ?? fallback;
-}
-
-// ─── Institution picker (unchanged) ─────────────────────────────────────
-function InstitutionPicker({
-    value,
-    onChange,
-    hasError,
-}: {
-    value: string;
-    onChange: (v: string) => void;
-    hasError?: boolean;
-}) {
-    const [query, setQuery] = useState("");
-    const selected = institutions.find((i) => i.value === value);
-
-    const grouped = useMemo(() => {
-        const term = query.trim().toLowerCase();
-        const filtered = term
-            ? institutions.filter(
-                (i) =>
-                    i.label.toLowerCase().includes(term) ||
-                    i.value.toLowerCase().includes(term)
-            )
-            : institutions;
-
-        const tags = [
-            { tag: "kmtc", title: "KMTC Campuses", items: filtered.filter((i) => i.tag === "kmtc") },
-            { tag: "university", title: "Universities", items: filtered.filter((i) => i.tag === "university") },
-            { tag: "hospital", title: "Hospital / Mission / Nursing Colleges", items: filtered.filter((i) => i.tag === "hospital") },
-            { tag: "other", title: "Other Colleges", items: filtered.filter((i) => i.tag === "other") },
-        ];
-        return tags.filter((t) => t.items.length > 0);
-    }, [query]);
-
-    return (
-        <Select value={value || ""} onValueChange={onChange}>
-            <SelectTrigger
-                className={`text-xs md:text-sm h-10 md:h-11 w-full bg-white dark:bg-[#1f2630] ${hasError ? "border-destructive" : ""
-                    }`}
-            >
-                <SelectValue placeholder="Search or choose institution">
-                    {selected?.label ?? ""}
-                </SelectValue>
-            </SelectTrigger>
-
-            <SelectContent className="max-h-[340px] p-0">
-                <div className="sticky -top-2 z-10 bg-popover border-b border-border p-0">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            onClick={(e) => e.stopPropagation()}
-                            placeholder="Search e.g. 'KMTC Nakuru'"
-                            className="w-full pl-9 pr-8 py-2.5 rounded-none bg-transparent border-0 text-xs md:text-sm outline-none focus:ring-0"
-                        />
-                        {query && (
-                            <button
-                                type="button"
-                                onClick={() => setQuery("")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-accent"
-                            >
-                                <X className="w-3.5 h-3.5 text-muted-foreground" />
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                <div className="py-1">
-                    {grouped.length === 0 ? (
-                        <div className="p-6 text-center text-xs md:text-sm text-muted-foreground">
-                            No institution matches "{query}"
-                        </div>
-                    ) : (
-                        grouped.map((group) => (
-                            <div key={group.tag}>
-                                <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/50">
-                                    {group.title} ({group.items.length})
-                                </div>
-                                {group.items.map((inst) => (
-                                    <SelectItem
-                                        key={inst.value}
-                                        value={inst.value}
-                                        className="text-xs md:text-sm"
-                                    >
-                                        {inst.label}
-                                    </SelectItem>
-                                ))}
-                            </div>
-                        ))
-                    )}
-                </div>
-            </SelectContent>
-        </Select>
-    );
-}
 
 interface Props {
     currentUserInstitution: string | null | undefined;
     onInstitutionChanged?: (slug: string) => void;
 }
 
-export function SchoolWarsCard({
-    currentUserInstitution,
-    onInstitutionChanged,
-}: Props) {
+export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }: Props) {
     const initial = readCache();
     const cachedInstitution = readCachedInstitution();
 
@@ -229,7 +49,6 @@ export function SchoolWarsCard({
     const [dbRefreshedAt, setDbRefreshedAt] = useState<number | null>(
         initial?.dbRefreshedAt ?? null
     );
-    const [expanded, setExpanded] = useState(false);
 
     const [localInstitution, setLocalInstitution] = useState<string | null>(
         cachedInstitution
@@ -238,6 +57,15 @@ export function SchoolWarsCard({
     const [pickerOpen, setPickerOpen] = useState(false);
     const [pickedInstitution, setPickedInstitution] = useState<string>("");
     const [savingInstitution, setSavingInstitution] = useState(false);
+
+    const [inviteMenuOpen, setInviteMenuOpen] = useState(false);
+
+    const [allSchoolsOpen, setAllSchoolsOpen] = useState(false);
+    const [studentsSheet, setStudentsSheet] = useState<{
+        open: boolean;
+        school: LeaderboardRow | null;
+    }>({ open: false, school: null });
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
     const lastSaveAtRef = useRef<number>(0);
 
@@ -295,9 +123,7 @@ export function SchoolWarsCard({
     const triggerCronRefresh = useCallback(async () => {
         try {
             const { error } = await supabase.rpc("refresh_school_wars_leaderboard");
-            if (error) {
-                console.warn("[SchoolWars] cron refresh RPC failed:", error.message);
-            }
+            if (error) console.warn("[SchoolWars] cron refresh RPC failed:", error.message);
         } catch (err) {
             console.warn("[SchoolWars] cron refresh threw:", err);
         }
@@ -381,7 +207,6 @@ export function SchoolWarsCard({
     );
 
     const topScore = rows[0]?.school_score ?? 0;
-    const activeSchools = rows.filter((r) => r.has_activity).length;
     const champion = rows[0];
 
     const schoolLabelForInvites = useMemo(() => {
@@ -441,33 +266,17 @@ export function SchoolWarsCard({
     const openInvite = (builder: () => string | null) => {
         const url = builder();
         if (url) window.open(url, "_blank");
+        setInviteMenuOpen(false);
     };
 
     const handleSaveInstitution = useCallback(async () => {
         if (!pickedInstitution) {
-            toast({
-                title: "Pick a school first",
-                description: "Choose your institution from the list.",
-                variant: "destructive",
-            });
+            toast({ title: "Pick a school first", description: "Choose from the list.", variant: "destructive" });
             return;
         }
-        const known = institutions.some((i) => i.value === pickedInstitution);
-        if (!known) {
-            toast({
-                title: "Invalid institution",
-                description: "Please select from the dropdown list.",
-                variant: "destructive",
-            });
-            return;
-        }
-
         setSavingInstitution(true);
         try {
-            const {
-                data: { user },
-                error: userErr,
-            } = await supabase.auth.getUser();
+            const { data: { user }, error: userErr } = await supabase.auth.getUser();
             if (userErr || !user) throw new Error("Not signed in");
 
             const { error } = await supabase
@@ -488,22 +297,16 @@ export function SchoolWarsCard({
                     localStorage.setItem("userProfile", JSON.stringify(parsed));
                 }
             } catch { }
+
             window.dispatchEvent(
-                new CustomEvent("profileUpdated", {
-                    detail: { institution: pickedInstitution },
-                })
+                new CustomEvent("profileUpdated", { detail: { institution: pickedInstitution } })
             );
 
-            try {
-                localStorage.removeItem(CACHE_KEY);
-            } catch { }
+            try { localStorage.removeItem(CACHE_KEY); } catch { }
 
             toast({
                 title: "Institution set",
-                description: `You're now competing for ${prettyLabel(
-                    pickedInstitution,
-                    pickedInstitution
-                )}.`,
+                description: `You're now competing for ${prettyLabel(pickedInstitution, pickedInstitution)}.`,
             });
 
             setPickerOpen(false);
@@ -523,57 +326,31 @@ export function SchoolWarsCard({
         }
     }, [pickedInstitution, onInstitutionChanged, fetchLeaderboard, triggerCronRefresh]);
 
-    const { visibleRows, restRows, hasHiddenRows } = useMemo(() => {
-        const top5 = rows.slice(0, VISIBLE_ROWS);
-        const rest = rows.slice(VISIBLE_ROWS);
-
-        if (!mySchoolSlug) {
-            return {
-                visibleRows: top5,
-                restRows: rest,
-                hasHiddenRows: rest.length > 0,
-            };
-        }
-
-        const mineInTop5 = top5.some((r) => r.institution === mySchoolSlug);
-        if (mineInTop5) {
-            return {
-                visibleRows: top5,
-                restRows: rest,
-                hasHiddenRows: rest.length > 0,
-            };
-        }
-
-        const mine = rows.find((r) => r.institution === mySchoolSlug)!;
-        const lastTop5 = top5[VISIBLE_ROWS - 1];
-        const swappedTop5 = [...top5.slice(0, VISIBLE_ROWS - 1), mine];
-        const newRest = [lastTop5, ...rest].filter(
-            (r) => r.institution !== mySchoolSlug
-        );
-
-        return {
-            visibleRows: swappedTop5,
-            restRows: newRest,
-            hasHiddenRows: newRest.length > 0,
-        };
+    const top5 = useMemo(() => {
+        if (!mySchoolSlug) return rows.slice(0, VISIBLE_ROWS);
+        const inTop = rows.slice(0, VISIBLE_ROWS);
+        if (inTop.some((r) => r.institution === mySchoolSlug)) return inTop;
+        const mine = rows.find((r) => r.institution === mySchoolSlug);
+        if (!mine) return inTop;
+        return [...inTop.slice(0, VISIBLE_ROWS - 1), mine];
     }, [rows, mySchoolSlug]);
 
-    const timeAgo = useMemo(() => {
-        if (!dbRefreshedAt) return null;
-        const ms = Date.now() - dbRefreshedAt;
-        if (ms < 60_000) return "just now";
-        const min = Math.floor(ms / 60_000);
-        if (min < 60) return `${min}m ago`;
-        const hr = Math.floor(min / 60);
-        return `${hr}h ago`;
-    }, [dbRefreshedAt]);
+    const showInvite = !!schoolLabelForInvites;
 
-    if (!loading && rows.length === 0) {
+    if (loading) {
+        return (
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-12 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                ))}
+            </div>
+        );
+    }
+
+    if (rows.length === 0) {
         return (
             <div className="rounded-2xl bg-white dark:bg-[#161b22] p-5">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    School Wars
-                </p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">School Wars</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                     The leaderboard is initialising. Complete a quiz to place your school on the board.
                 </p>
@@ -581,350 +358,224 @@ export function SchoolWarsCard({
         );
     }
 
-    if (loading) {
-        return (
-            <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden animate-pulse">
-                <div className="h-32 bg-slate-200 dark:bg-slate-800" />
-                <div className="p-4 space-y-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="h-14 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    // ── RANK CHIP — the redesigned # column ────────────────────────
-    // 1 → gold, 2 → silver, 3 → bronze, 4+ → subtle neutral
-    const RankChip = ({ rank }: { rank: number }) => {
-        const theme =
-            rank === 1
-                ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm shadow-amber-500/30"
-                : rank === 2
-                    ? "bg-gradient-to-br from-slate-300 to-slate-500 text-white shadow-sm shadow-slate-500/20"
-                    : rank === 3
-                        ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-sm shadow-orange-500/20"
-                        : "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400";
-
-        return (
-            <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px]   tabular-nums shrink-0 ${theme}`}
-            >
-                {rank}
-            </div>
-        );
+    const RankBadge = ({ rank }: { rank: number }) => {
+        if (rank === 1)
+            return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500 text-white text-sm font-bold tabular-nums shrink-0">1</div>;
+        if (rank === 2)
+            return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-400 text-white text-sm font-bold tabular-nums shrink-0">2</div>;
+        if (rank === 3)
+            return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-500 text-white text-sm font-bold tabular-nums shrink-0">3</div>;
+        return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 text-sm font-bold tabular-nums shrink-0">{rank}</div>;
     };
-
-    const renderChampion = (row: LeaderboardRow) => {
-        const isMine = row.institution === mySchoolSlug;
-        const label = prettyLabel(row.institution, row.institution_label);
-
-        return (
-            <div
-                key={row.institution}
-                className="relative px-4 py-4 overflow-hidden
-                           bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50
-                           dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-orange-950/30
-                            border-0"
-            >
-                <div className="relative flex items-center gap-3">
-                    {/* Champion trophy chip instead of #1 */}
-                    <div className="shrink-0 w-10 h-10 rounded-full
-                                    bg-gradient-to-br from-amber-400 to-amber-600
-                                    flex items-center justify-center
-                                    shadow-md shadow-amber-500/40">
-                        <Trophy size={18} className="text-white" strokeWidth={2.5} />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-base font-bold text-slate-900 dark:text-white leading-tight truncate">
-                                {label}
-                            </h4>
-                            {isMine && (
-                                <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded
-                                                 bg-amber-200/80 dark:bg-amber-500/25
-                                                 text-amber-800 dark:text-amber-200">
-                                    You
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                            {row.member_count} student{row.member_count === 1 ? "" : "s"}
-                            {row.has_activity && ` · ${row.total_attempts} quiz${row.total_attempts === 1 ? "" : "zes"}`}
-                        </p>
-                    </div>
-
-                    {row.has_activity && (
-                        <div className="shrink-0 text-right">
-                            <div className="text-xl   text-amber-600 dark:text-amber-400 tabular-nums leading-none">
-                                {row.school_score.toFixed(1)}<span className="text-sm font-bold">%</span>
-                            </div>
-                            <p className="text-[9px] font-bold uppercase tracking-wider text-amber-700/70 dark:text-amber-300/70 mt-0.5">
-                                Avg
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    const renderRow = (row: LeaderboardRow) => {
-        const isMine = row.institution === mySchoolSlug;
-        const label = prettyLabel(row.institution, row.institution_label);
-
-        return (
-            <div
-                key={row.institution}
-                className={
-                    isMine
-                        ? "bg-blue-50/60 dark:bg-blue-950/15 px-4 py-3 border-l-2 border-blue-500"
-                        : "px-4 py-3 border-b border-slate-100/70 dark:border-white/[0.04] last:border-b-0 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors"
-                }
-            >
-                <div className="flex items-center gap-3">
-                    {/* Clean rank chip — no # prefix */}
-                    <RankChip rank={row.rank} />
-
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                                {label}
-                            </p>
-                            {isMine && (
-                                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded
-                                                 bg-blue-100 dark:bg-blue-500/20
-                                                 text-blue-700 dark:text-blue-300">
-                                    You
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            {row.member_count} student{row.member_count === 1 ? "" : "s"}
-                            {row.has_activity
-                                ? ` · ${row.total_attempts} quiz${row.total_attempts === 1 ? "" : "zes"}`
-                                : " · no activity yet"}
-                        </p>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                        {row.has_activity ? (
-                            <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
-                                {row.school_score.toFixed(1)}
-                                <span className="text-slate-400 dark:text-slate-500 font-normal ml-0.5">%</span>
-                            </span>
-                        ) : (
-                            <span className="text-xs text-slate-300 dark:text-slate-600 tabular-nums">—</span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const showInviteButtons = !!schoolLabelForInvites;
-
     return (
-        <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+        <>
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+                {/* ── HEADER (slim, no image) ── */}
+                <div className="px-4 py-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-[#0d1117] dark:via-[#161b22] dark:to-[#0d1117]">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                            <h3 className="text-sm font-bold text-white tracking-tight truncate">
+                                School Wars
+                            </h3>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                                · This week
+                            </span>
+                        </div>
 
-            {/* ═══════════════ HERO ═══════════════ */}
-            <div className="relative h-28 sm:h-32 overflow-hidden">
-                {/* Single hero image, full-bleed */}
-                <img
-                    src={HERO_IMAGE}
-                    alt=""
-                    aria-hidden
-                    loading="lazy"
-                    onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-                {/* Dark wash so text always reads */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/40 to-slate-900/20" />
-
-                {/* Title overlay */}
-                <div className="absolute inset-0 flex flex-col justify-end px-4 pb-3">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                        <Trophy size={12} className="text-amber-300" />
-                        <span className="text-[10px]   uppercase tracking-widest text-amber-300">
-                            Leaderboard
-                        </span>
-                    </div>
-                    <h3 className="text-lg sm:text-xl   tracking-tight text-white drop-shadow-md leading-none">
-                        School Wars
-                    </h3>
-                </div>
-
-            </div>
-
-            {/* Meta line under hero */}
-            <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    This week
-                </p>
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider tabular-nums">
-                    {activeSchools} of {rows.length} active
-                </p>
-            </div>
-
-            {/* ─── SMART BUTTONS ─── */}
-            {showInviteButtons ? (
-                <div className="px-4 pb-3 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        <button
-                            onClick={() => openInvite(buildInviteCoursemate)}
-                            className="inline-flex items-center justify-center gap-1.5
-                                       text-[12px] font-bold px-2.5 py-2.5 rounded-xl
-                                       bg-blue-600 hover:bg-blue-700 active:bg-blue-800
-                                       text-white shadow-sm shadow-blue-500/30 transition-colors"
-                        >
-                            <Share2 size={13} />
-                            Invite coursemate
-                        </button>
-                        <button
-                            onClick={() => openInvite(buildInviteNewCampus)}
-                            className="inline-flex items-center justify-center gap-1.5
-                                       text-[12px] font-bold px-2.5 py-2.5 rounded-xl
-                                       bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800
-                                       text-white shadow-sm shadow-emerald-500/30 transition-colors"
-                        >
-                            <UserPlus size={13} />
-                            Invite new campus
-                        </button>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
-                        Both invite to{" "}
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">
-                            {schoolLabelForInvites}
-                        </span>
-                        {myRank ? (
-                            <>
-                                {" "}· rank {myRank}
-                                {myRank > 1 && hasActivity && (
+                        {showInvite && (
+                            <div className="relative shrink-0">
+                                <button
+                                    onClick={() => setInviteMenuOpen((v) => !v)}
+                                    className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 active:bg-white/20 text-white text-[11px] font-bold transition-colors"
+                                >
+                                    <Share2 className="w-3 h-3" />
+                                    Invite
+                                </button>
+                                {inviteMenuOpen && (
                                     <>
-                                        {" "}·{" "}
-                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">
-                                            {(topScore - myScore).toFixed(1)}% behind top
-                                        </span>
+                                        <div className="fixed inset-0 z-10" onClick={() => setInviteMenuOpen(false)} />
+                                        <div className="absolute right-0 top-9 z-20 w-52 rounded-xl bg-white dark:bg-[#1f2630] overflow-hidden shadow-lg dark:shadow-black/50">
+                                            <button
+                                                onClick={() => openInvite(buildInviteCoursemate)}
+                                                className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5"
+                                            >
+                                                <Share2 className="w-3.5 h-3.5 text-blue-500" />
+                                                Invite coursemate
+                                            </button>
+                                            <div className="h-px bg-slate-100 dark:bg-white/5" />
+                                            <button
+                                                onClick={() => openInvite(buildInviteNewCampus)}
+                                                className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5"
+                                            >
+                                                <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+                                                Invite new campus
+                                            </button>
+                                        </div>
                                     </>
                                 )}
-                            </>
-                        ) : (
-                            <> · not on the board yet — first quiz will place you</>
+                            </div>
                         )}
-                    </p>
-                </div>
-            ) : pickerOpen ? (
-                <div className="px-4 pb-3">
-                    <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/20 p-3 space-y-2">
-                        <div className="flex items-center gap-1.5">
-                            <GraduationCap size={14} className="text-blue-600 dark:text-blue-400" />
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                                Set your institution
-                            </p>
-                        </div>
-                        <InstitutionPicker
-                            value={pickedInstitution}
-                            onChange={setPickedInstitution}
-                        />
-                        <div className="flex gap-2">
-                            <button
-                                onClick={handleSaveInstitution}
-                                disabled={!pickedInstitution || savingInstitution}
-                                className="flex-1 inline-flex items-center justify-center gap-1.5
-                                           text-[12px] font-bold px-3 py-2 rounded-lg
-                                           bg-blue-600 hover:bg-blue-700 active:bg-blue-800
-                                           text-white shadow-sm shadow-blue-500/30 transition-colors
-                                           disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {savingInstitution ? (
-                                    <>
-                                        <Loader2 size={13} className="animate-spin" />
-                                        Saving…
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check size={13} />
-                                        Save & join board
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setPickerOpen(false);
-                                    setPickedInstitution("");
-                                }}
-                                className="px-3 py-2 rounded-lg text-[12px] font-semibold
-                                           border border-slate-200 dark:border-white/10
-                                           bg-white dark:bg-[#1f2630]
-                                           text-slate-700 dark:text-slate-200
-                                           hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
                     </div>
                 </div>
-            ) : (
-                <div className="px-4 pb-3">
-                    <button
-                        onClick={() => setPickerOpen(true)}
-                        className="w-full inline-flex items-center justify-center gap-1.5
-                                   text-[13px] font-bold px-3 py-2.5 rounded-xl
-                                   bg-blue-600 hover:bg-blue-700 active:bg-blue-800
-                                   text-white shadow-sm shadow-blue-500/30 transition-colors"
-                    >
-                        <GraduationCap size={14} />
-                        Set your institution to compete
-                        <ArrowUpRight size={14} />
-                    </button>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1.5">
-                        Pick your school once — then invite coursemates from here.
-                    </p>
-                </div>
-            )}
 
-            {/* Champion (rank 1) */}
-            {champion && renderChampion(champion)}
+                {/* ── SET INSTITUTION CTA ── */}
+                {!showInvite && !pickerOpen && (
+                    <div className="px-4 pt-3 pb-2">
+                        <button
+                            onClick={() => setPickerOpen(true)}
+                            className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-bold px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-white/[0.1] active:scale-[0.99] transition-all"
+                        >
+                            <GraduationCap className="w-4 h-4" />
+                            Set your institution to compete
+                            <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1.5">
+                            Pick your school once — then invite coursemates.
+                        </p>
+                    </div>
+                )}
 
-            {/* Ranks 2–5 (or user swap-in) */}
-            <div>
-                {visibleRows.filter((r) => r.institution !== champion?.institution)
-                    .map(renderRow)}
+                {pickerOpen && (
+                    <div className="px-4 pt-3 pb-3">
+                        <div className="rounded-xl bg-slate-50 dark:bg-white/[0.04] p-3 space-y-2">
+                            <div className="flex items-center gap-1.5">
+                                <GraduationCap className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                                    Set your institution
+                                </p>
+                            </div>
+                            <InstitutionPicker value={pickedInstitution} onChange={setPickedInstitution} />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleSaveInstitution}
+                                    disabled={!pickedInstitution || savingInstitution}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 text-[12px] font-bold px-3 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {savingInstitution ? (
+                                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+                                    ) : (
+                                        <><Check className="w-3.5 h-3.5" /> Save & join</>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => { setPickerOpen(false); setPickedInstitution(""); }}
+                                    className="px-3 py-2 rounded-lg text-[12px] font-semibold bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/[0.1] transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── TOP 5 LIST ── */}
+                <ul className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+                    {top5.map((row) => {
+                        const isMine = row.institution === mySchoolSlug;
+                        const label = prettyLabel(row.institution, row.institution_label);
+                        return (
+                            <li key={row.institution}>
+                                <button
+                                    onClick={() => setStudentsSheet({ open: true, school: row })}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${isMine
+                                        ? "bg-blue-50/60 dark:bg-blue-950/15"
+                                        : "hover:bg-slate-50 dark:hover:bg-white/[0.03] active:bg-slate-100 dark:active:bg-white/[0.06]"
+                                        }`}
+                                >
+                                    <RankBadge rank={row.rank} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                                                {label}
+                                            </p>
+                                            {isMine && (
+                                                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 shrink-0">
+                                                    You
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            {row.member_count} student{row.member_count === 1 ? "" : "s"}
+                                            {row.has_activity
+                                                ? ` · ${row.total_attempts} quiz${row.total_attempts === 1 ? "" : "zes"}`
+                                                : " · no activity yet"}
+                                        </p>
+                                    </div>
+                                    <div className="shrink-0 flex items-center gap-1">
+                                        {row.has_activity ? (
+                                            <span className="text-[13px] font-bold text-slate-900 dark:text-white tabular-nums">
+                                                {row.school_score.toFixed(1)}
+                                                <span className="text-slate-400 font-normal ml-0.5">%</span>
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
+                                        )}
+                                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
+                                    </div>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
+
+                {/* ── FOOTER: See all ── */}
+                <button
+                    onClick={() => setAllSchoolsOpen(true)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50/60 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/[0.05] active:bg-slate-200 dark:active:bg-white/[0.08] transition-colors"
+                >
+                    <span className="flex items-center gap-2 text-[12px] font-bold text-slate-700 dark:text-slate-200">
+                        <Users className="w-3.5 h-3.5 text-slate-500" />
+                        See all {rows.length} schools
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
+                {/* My school status footer */}
+                {mySchool && (
+                    <div className="px-4 py-2 bg-slate-50/40 dark:bg-white/[0.01] flex items-center justify-between">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                {schoolLabelForInvites}
+                            </span>
+                            {" "}· rank {myRank}
+                        </p>
+                        {myRank && myRank > 1 && hasActivity && (
+                            <p className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 tabular-nums shrink-0">
+                                {(topScore - myScore).toFixed(1)}% behind
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* Expand / collapse */}
-            {hasHiddenRows && (
-                <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.06]">
-                    <button
-                        onClick={() => setExpanded((e) => !e)}
-                        className="inline-flex items-center gap-1 text-[12px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                    >
-                        {expanded ? "Hide full ranking" : `See all ${rows.length} schools`}
-                        <ArrowUpRight size={13} className={expanded ? "rotate-90 transition-transform" : "transition-transform"} />
-                    </button>
-                </div>
-            )}
+            {/* ── SHEETS ── */}
+            <AllSchoolsSheet
+                open={allSchoolsOpen}
+                onClose={() => setAllSchoolsOpen(false)}
+                rows={rows}
+                mySchoolSlug={mySchoolSlug}
+                onPickSchool={(row) => {
+                    setAllSchoolsOpen(false);
+                    // small delay so the first sheet closes before the second opens
+                    setTimeout(() => setStudentsSheet({ open: true, school: row }), 180);
+                }}
+            />
 
-            {expanded && restRows.length > 0 && (
-                <div className="max-h-[320px] overflow-y-auto border-t border-slate-100 dark:border-white/[0.06] custom-scrollbar">
-                    {restRows.map(renderRow)}
-                </div>
-            )}
+            <SchoolStudentsSheet
+                open={studentsSheet.open}
+                onClose={() => setStudentsSheet({ open: false, school: null })}
+                school={studentsSheet.school}
+                onPickStudent={(userId) => {
+                    setStudentsSheet({ open: false, school: null });
+                    setTimeout(() => setSelectedStudentId(userId), 180);
+                }}
+            />
 
-            {/* Footer */}
-            {timeAgo && (
-                <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                        Updated {timeAgo}
-                    </p>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                        Resets Sunday, 9PM
-                    </p>
-                </div>
-            )}
-        </div>
+            <UserProfileModal
+                userId={selectedStudentId}
+                onClose={() => setSelectedStudentId(null)}
+            />
+        </>
     );
 }

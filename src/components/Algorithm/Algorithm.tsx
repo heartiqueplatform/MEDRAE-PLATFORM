@@ -99,7 +99,12 @@ function HeroLottie() {
     }, []);
 
     return (
-        <div className="pointer-events-none absolute top-2 right-2 w-[120px] h-[120px] md:w-[150px] md:h-[150px] opacity-90">
+        <div
+            className="pointer-events-none absolute top-1 right-1
+               w-16 h-16 sm:w-24 sm:h-24 md:w-[150px] md:h-[150px]
+               opacity-70 sm:opacity-85 md:opacity-90
+               -z-0"
+        >
             <Suspense fallback={null}>
                 <Lottie
                     src={nurseAnimation}
@@ -265,10 +270,15 @@ function HugeBarChart({
             )}
 
             <div
-                className="flex gap-3 items-end overflow-x-auto pt-14 pb-1 px-1
-                    [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
-                    snap-x snap-mandatory"
-                style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch" }}
+                className="flex gap-3 items-end overflow-x-auto overflow-y-visible pt-14 pb-1 px-1
+        [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+        snap-x snap-mandatory"
+                style={{
+                    touchAction: "pan-x pan-y",   // ← allow vertical scroll to pass through
+                    WebkitOverflowScrolling: "touch",
+                    overscrollBehaviorX: "contain",
+                    overscrollBehaviorY: "auto",
+                }}
             >
                 {data.map((d, i) => {
                     const heightPct = Math.max(4, Math.min(100, d.score));
@@ -280,7 +290,12 @@ function HugeBarChart({
                             onMouseEnter={() => setActiveIdx(i)}
                             onMouseLeave={() => setActiveIdx(null)}
                             onTouchStart={() => setActiveIdx(i)}
-                            onClick={() => setActiveIdx(isActive ? null : i)}
+                            onClick={() => {
+                                setActiveIdx(isActive ? null : i);
+                                if (!isActive) {
+                                    setTimeout(() => setActiveIdx((cur) => (cur === i ? null : cur)), 3000);
+                                }
+                            }}
                             className="snap-start shrink-0 flex flex-col items-center gap-1.5 w-[58px] outline-none"
                             aria-label={`${d.fullName}: ${d.score}%`}
                         >
@@ -636,7 +651,7 @@ ${isHighScore
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
                                 <Brain className="w-3.5 h-3.5 text-white/70" />
-                                <span className="text-[9px] md:text-[10px] font-medium tracking-[0.18em] text-white/70 uppercase">
+                                <span className="text-[9px] md:text-[10px] font-medium tracking-[0.18em] text-white/70 ">
                                     Exam Prediction Readiness
                                 </span>
                             </div>
@@ -715,7 +730,7 @@ ${isHighScore
 
                             <div className="relative z-10 w-full">
                                 {chartMode === "line" && scoreSeries.length >= 2 && (
-                                    <div className="w-full h-[200px]">
+                                    <div className="w-full h-[200px]" style={{ touchAction: "pan-y" }}>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <AreaChart
                                                 data={lineChartData}

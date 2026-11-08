@@ -1,3 +1,6 @@
+// src/components/QuickDuelStrip.tsx
+"use client";
+
 import {
     memo,
     useCallback,
@@ -16,23 +19,11 @@ import {
     CheckCircle2,
     AlertCircle,
     Loader2,
-    // ⬇️⬇️ NEW — invite icons
-    Gift,
-    Share2,
-    Copy,
-    Check,
-    Users,
-    Sparkles,
+    Search,          // ⬅️ NEW — for "Find a challenger"
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { UserProfileModal } from "./UserProfileModal";
-// ⬇️⬇️ NEW — referral helpers
-import {
-    getMyReferralCode,
-    getMyReferralStats,
-    type ReferralStats,
-} from "@/lib/referrals";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -60,6 +51,7 @@ type Player = {
     institution?: string | null;
     is_same_school?: boolean;
 };
+
 type Props = {
     userId: string;
     initialHistory?: Duel[];
@@ -80,6 +72,7 @@ const HISTORY_KEY = "quick_duel_history_v3";
 const PLAYERS_KEY = "quick_duel_players_v3";
 const CACHE_TTL = 60 * 1000;
 const POLL_INTERVAL = 60 * 1000;
+const SCHOOL_SLUG_KEY = "school_wars_current_institution_v1";
 
 function readCache<T>(key: string): T | null {
     if (typeof window === "undefined") return null;
@@ -93,7 +86,23 @@ function readCache<T>(key: string): T | null {
         return null;
     }
 }
-const SCHOOL_SLUG_KEY = "school_wars_current_institution_v1";
+
+function readCacheAny<T>(key: string): T | null {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return JSON.parse(raw).d as T;
+    } catch {
+        return null;
+    }
+}
+
+function writeCache<T>(key: string, data: T) {
+    try {
+        localStorage.setItem(key, JSON.stringify({ d: data, t: Date.now() }));
+    } catch { }
+}
 
 function readSchoolSlug(): string | null {
     if (typeof window === "undefined") return null;
@@ -107,14 +116,9 @@ function readSchoolSlug(): string | null {
         return null;
     }
 }
-function writeCache<T>(key: string, data: T) {
-    try {
-        localStorage.setItem(key, JSON.stringify({ d: data, t: Date.now() }));
-    } catch { }
-}
 
 /* ------------------------------------------------------------------ */
-/*  Safe avatar — handles broken URLs                                  */
+/*  Safe avatar                                                       */
 /* ------------------------------------------------------------------ */
 
 const FALLBACK = "/pwa-512x512.png";
@@ -139,31 +143,15 @@ function SafeImg({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Referral share message                                             */
-/* ------------------------------------------------------------------ */
-
-const buildShareMessage = (code: string): string =>
-    `Hey  I'm using *Medrae Nursing* to prepare for my Nursing and NCK exams.\n\n` +
-    `6,500+ exam-style questions, unit-based revision, instant explanations  built for DCHN, BSN & KRN students.\n\n` +
-    `Use my link and we BOTH get FREE Premium:\n` +
-    `https://medrae.vercel.app/?ref=${code}\n\n` +
-    `You get 1 day free. I get 2. Win-win `;
-
-/* ------------------------------------------------------------------ */
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 
-function QuickDuelStripBase({
-    userId,
-    initialHistory,
-    initialPlayers,
-}: Props) {
+function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
     const navigate = useNavigate();
 
     const cachedHistory = useMemo(() => readCacheAny<Duel[]>(HISTORY_KEY), []);
     const cachedPlayers = useMemo(() => readCacheAny<Player[]>(PLAYERS_KEY), []);
-    // Prefer prop only if it's actually populated.
-    // Falls back to disk cache, then empty.
+
     const seedHistory =
         (initialHistory?.length ?? 0) > 0
             ? initialHistory!
@@ -190,163 +178,10 @@ function QuickDuelStripBase({
     const fetchedRef = useRef(false);
     const isMountedRef = useRef(true);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-    const [sharing, setSharing] = useState(false);
     const [challenge, setChallenge] = useState<ChallengeState>({ status: "idle" });
-    const [schoolSlug, setSchoolSlug] = useState<string | null>(() => {
-        try {
-            const raw = localStorage.getItem("school_wars_current_institution_v1");
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            return parsed?.slug ?? null;
-        } catch {
-            return null;
-        }
-    });
-    /* -------------------------------------------------------------- */
-    /*  Referral state (lazy, once)                                    */
-    /* -------------------------------------------------------------- */
-    const REFERRAL_CODE_KEY = "quick_duel_referral_code_v1";
-    const REFERRAL_STATS_KEY = "quick_duel_referral_stats_v1";
 
-    const cachedReferralCode = useMemo(
-        () => readCacheAny<string>(REFERRAL_CODE_KEY),
-        []
-    );
-    const cachedReferralStats = useMemo(
-        () => readCacheAny<ReferralStats>(REFERRAL_STATS_KEY),
-        []
-    );
-
-    const [referralCode, setReferralCode] = useState<string | null>(
-        cachedReferralCode ?? null
-    );
-    const [referralStats, setReferralStats] = useState<ReferralStats>(
-        cachedReferralStats ?? { invites: 0, pending: 0, daysEarned: 0 }
-    );
-    // Only show referral skeleton on first-ever visit (no cache at all).
-    const [referralLoading, setReferralLoading] = useState(
-        cachedReferralCode === null
-    );
-    const [copied, setCopied] = useState(false);
-    const referralFetchedRef = useRef(false);
-
-    useEffect(() => {
-        if (!userId) return;
-        if (referralFetchedRef.current) return;
-        referralFetchedRef.current = true;
-
-        // Cache hit → skip network entirely. This is what stops the flicker.
-        if (cachedReferralCode !== null) {
-            setReferralLoading(false);
-            return;
-        }
-
-        let cancelled = false;
-        setReferralLoading(true);
-        (async () => {
-            try {
-                const [code, stats] = await Promise.all([
-                    getMyReferralCode(userId),
-                    getMyReferralStats(userId),
-                ]);
-                if (cancelled) return;
-                setReferralCode(code);
-                setReferralStats(stats);
-                writeCache(REFERRAL_CODE_KEY, code);
-                writeCache(REFERRAL_STATS_KEY, stats);
-            } catch {
-                /* silent */
-            } finally {
-                if (!cancelled) setReferralLoading(false);
-            }
-        })();
-        return () => { cancelled = true; };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId]);
-
-    const shareUrl = referralCode
-        ? `https://medrae.vercel.app/?ref=${referralCode}`
-        : "";
-    const shareMessage = referralCode ? buildShareMessage(referralCode) : "";
-
-    const handleShareWhatsApp = useCallback(() => {
-        if (!referralCode) return;
-        if (navigator.vibrate) navigator.vibrate(15);
-        window.open(
-            `https://wa.me/?text=${encodeURIComponent(shareMessage)}`,
-            "_blank"
-        );
-    }, [referralCode, shareMessage]);
-
-    /* -------------------------------------------------------------- */
-    /*  Copy FIRST — handleShareNative depends on it (TDZ fix)        */
-    /* -------------------------------------------------------------- */
-    const handleCopy = useCallback(async () => {
-        if (!referralCode) return;
-        if (navigator.vibrate) navigator.vibrate(10);
-        try {
-            await navigator.clipboard.writeText(shareMessage);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch { /* ignore */ }
-    }, [referralCode, shareMessage]);
-
-    /* -------------------------------------------------------------- */
-    /*  Native share — timeout + AbortController + copy fallback.     */
-    /*  Re-entry guarded via `sharing` (iOS freezes on 2nd call).     */
-    /* -------------------------------------------------------------- */
-    const SHARE_TIMEOUT_MS = 15000;
-
-    const handleShareNative = useCallback(async () => {
-        if (!referralCode) return;
-        if (sharing) return;               // ← guard re-entry
-        setSharing(true);                  // ← lock button
-        if (navigator.vibrate) navigator.vibrate(10);
-
-        const canShare =
-            typeof navigator !== "undefined" &&
-            typeof (navigator as any).share === "function";
-
-        if (!canShare) {
-            setSharing(false);             // ← unlock
-            await handleCopy();
-            return;
-        }
-
-        const controller =
-            typeof AbortController !== "undefined" ? new AbortController() : null;
-
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
-        const timeoutPromise = new Promise<"timeout">((resolve) => {
-            timeoutId = setTimeout(() => {
-                try { controller?.abort(); } catch { /* ignore */ }
-                resolve("timeout");
-            }, SHARE_TIMEOUT_MS);
-        });
-
-        try {
-            const sharePromise = (navigator as any).share({
-                title: "Medrae — free AI tutor for student nurses",
-                text: "🎓 Use my link and we BOTH get FREE Premium:",
-                url: shareUrl,
-                ...(controller ? { signal: controller.signal } : {}),
-            }) as Promise<void>;
-
-            const result = await Promise.race([sharePromise, timeoutPromise]);
-
-            if (result === "timeout") {
-                await handleCopy();
-            }
-        } catch (err: any) {
-            const name = err?.name;
-            if (name !== "AbortError" && name !== "NotAllowedError") {
-                await handleCopy();
-            }
-        } finally {
-            if (timeoutId) clearTimeout(timeoutId);
-            setSharing(false);             // ← always unlock
-        }
-    }, [referralCode, shareUrl, handleCopy, sharing]);
+    // kept for the challenge flow + school row bucketing
+    const [schoolSlug, setSchoolSlug] = useState<string | null>(() => readSchoolSlug());
 
     /* -------------------------------------------------------------- */
     /*  Fetch                                                          */
@@ -367,20 +202,15 @@ function QuickDuelStripBase({
                 setPlayers(instantPlayers);
                 setLoading(false);
             }
+
             try {
-                /* ---------- 1. resolve my school slug (self-heal from DB) ---------- */
-                /* ---------- 1. resolve my school slug (DB is the source of truth) ---------- */
                 let mySchoolSlug = readSchoolSlug();
 
-                /* ---------- 2. fire all queries in parallel ---------- */
-                // ALWAYS fetch from DB — localStorage can be stale (e.g. Settings page
-                // updates profiles.institution but not the school_wars key).
                 const mePromise = supabase
                     .from("profiles")
                     .select("institution")
                     .eq("user_id", userId)
                     .single();
-
 
                 const duelsPromise = supabase
                     .from("challenges")
@@ -423,7 +253,6 @@ function QuickDuelStripBase({
 
                 if (!isMountedRef.current) return;
 
-                /* ---------- 3. DB is the source of truth — overwrite stale localStorage ---------- */
                 const dbInstitution =
                     meRes?.data?.institution && meRes.data.institution !== "other"
                         ? meRes.data.institution
@@ -432,7 +261,6 @@ function QuickDuelStripBase({
                 let schoolRows: any[] = schoolRes?.data ?? [];
 
                 if (dbInstitution !== mySchoolSlug) {
-                    // localStorage was stale (or missing) — use the DB value
                     mySchoolSlug = dbInstitution;
 
                     if (mySchoolSlug) {
@@ -450,7 +278,6 @@ function QuickDuelStripBase({
                         setSchoolSlug(null);
                     }
 
-                    // Re-fetch the school bucket with the CORRECT slug
                     if (mySchoolSlug) {
                         const { data: refetched } = await supabase
                             .from("profiles")
@@ -464,7 +291,6 @@ function QuickDuelStripBase({
                     }
                 }
 
-                /* ---------- 4. map duels ---------- */
                 const duels: Duel[] = (duelsRes.data ?? []).map((c: any) => {
                     const iAmFrom = c.from_user_id === userId;
                     const my = iAmFrom ? c.score_to_beat : c.opponent_score;
@@ -482,7 +308,6 @@ function QuickDuelStripBase({
                     };
                 });
 
-                /* ---------- 5. preserve pins ---------- */
                 const prevPlayers = players.length ? players : cachedPlayers ?? [];
                 const pinMap = new Map<string, { is_pinned: boolean; pinned_at?: number }>();
                 prevPlayers.forEach((p) => {
@@ -506,7 +331,6 @@ function QuickDuelStripBase({
                     };
                 };
 
-                /* ---------- 6. merge school + global ---------- */
                 const schoolPlayers = schoolRows.map((p: any) => toPlayer(p, true));
                 const schoolIds = new Set(schoolPlayers.map((p) => p.user_id));
 
@@ -516,7 +340,6 @@ function QuickDuelStripBase({
 
                 const mergedPlayers = [...schoolPlayers, ...globalPlayers];
 
-                /* ---------- 7. write ---------- */
                 if (duelsRes.data) {
                     setHistory(duels);
                     writeCache(HISTORY_KEY, duels);
@@ -534,22 +357,9 @@ function QuickDuelStripBase({
                 }
             }
         },
-        [userId]
+        [userId, players, cachedPlayers]
     );
-    /**
-     * Read cache ignoring TTL — for rendering.
-     * Returns whatever is on disk, however old.
-     */
-    function readCacheAny<T>(key: string): T | null {
-        if (typeof window === "undefined") return null;
-        try {
-            const raw = localStorage.getItem(key);
-            if (!raw) return null;
-            return JSON.parse(raw).d as T;
-        } catch {
-            return null;
-        }
-    }
+
     useEffect(() => {
         const goOnline = () => {
             setIsOffline(false);
@@ -564,17 +374,13 @@ function QuickDuelStripBase({
             window.removeEventListener("offline", goOffline);
         };
     }, [fetchData]);
-    /* -------------------------------------------------------------- */
-    /*  Lifecycle                                                      */
-    /* -------------------------------------------------------------- */
+
     useEffect(() => {
         isMountedRef.current = true;
         fetchData(false);
 
         const refreshIfStale = () => {
             if (document.hidden) return;
-            // ✅ Only refetch if cache is older than the TTL.
-            // New users don't appear every 5 seconds — no need to hammer the DB.
             const stale =
                 (readCache<Duel[]>(HISTORY_KEY) === null) &&
                 (readCache<Player[]>(PLAYERS_KEY) === null);
@@ -596,9 +402,7 @@ function QuickDuelStripBase({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchData]);
-    /* -------------------------------------------------------------- */
-    /*  React to school change (from SchoolWarsCard / other tab)      */
-    /* -------------------------------------------------------------- */
+
     useEffect(() => {
         const onSchoolChanged = () => {
             if (!isMountedRef.current) return;
@@ -616,9 +420,7 @@ function QuickDuelStripBase({
             window.removeEventListener("profileUpdated", onSchoolChanged as EventListener);
         };
     }, [fetchData]);
-    /* -------------------------------------------------------------- */
-    /*  Pin toggle                                                     */
-    /* -------------------------------------------------------------- */
+
     const togglePin = useCallback((playerId: string) => {
         if (navigator.vibrate) navigator.vibrate(15);
         setPlayers((prev) => {
@@ -636,9 +438,6 @@ function QuickDuelStripBase({
         });
     }, []);
 
-    /* -------------------------------------------------------------- */
-    /*  Sorted players                                                 */
-    /* -------------------------------------------------------------- */
     const sortedPlayers = useMemo(() => {
         return [...players].sort((a, b) => {
             if (a.is_pinned && !b.is_pinned) return -1;
@@ -654,9 +453,6 @@ function QuickDuelStripBase({
         });
     }, [players]);
 
-    /* -------------------------------------------------------------- */
-    /*  Challenge flow                                                 */
-    /* -------------------------------------------------------------- */
     const sendChallenge = useCallback(
         async (player: Player) => {
             if (!userId || !player.user_id) return;
@@ -732,15 +528,14 @@ function QuickDuelStripBase({
         [players, sendChallenge, navigate]
     );
 
-
     const lastDuel = history[0];
 
-    /* -------------------------------------------------------------- */
-    /*  Skeleton                                                       */
-    /* -------------------------------------------------------------- */
-    // Skeleton ONLY for users who have never had data on this device.
-    // Any cached data (regardless of age) → paint immediately, refresh
-    // silently in the background. Instagram-style.
+    /* ⬇️ NEW — navigation to the challenger search page */
+    const goToChallengePage = useCallback(() => {
+        if (navigator.vibrate) navigator.vibrate(10);
+        navigate("/challenge");
+    }, [navigate]);
+
     const hasDiskCache =
         (readCacheAny<Duel[]>(HISTORY_KEY)?.length ?? 0) > 0 ||
         (readCacheAny<Player[]>(PLAYERS_KEY)?.length ?? 0) > 0;
@@ -761,13 +556,29 @@ function QuickDuelStripBase({
     return (
         <>
             <section
-                className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-4 font-sans"
+                className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 font-sans"
                 style={{ contain: "layout paint" }}
             >
-                {/* ---------- Players row ---------- */}
+                {/* ── Players row header — one pill-shaped search bar ── */}
+                <button
+                    onClick={goToChallengePage}
+                    className="w-full flex items-center gap-2 h-10 px-3 mb-3 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-white/[0.1] active:scale-[0.99] transition-all -mx-5 px-5 md:mx-0 md:px-3"
+                    style={{ touchAction: "manipulation" }}
+                    aria-label="Search sparring partners"
+                >
+                    <Search size={15} strokeWidth={2.5} className="shrink-0 text-slate-400 dark:text-slate-500" />
+                    <span className="text-[12.5px] font-medium tracking-tight truncate flex-1 text-left">
+                        Search sparring partners…
+                    </span>
+                    <Swords size={13} className="shrink-0 text-blue-500/70 dark:text-blue-400/70" />
+                </button>
+
+                {/* ── Players row — EDGE-TO-EDGE on phone ── */}
                 {sortedPlayers.length > 0 ? (
                     <div
-                        className="flex gap-5 overflow-x-auto -mx-2 px-2 pb-2 pt-1"
+                        className="flex gap-5 overflow-x-auto pb-2 pt-1
+                                   -mx-5 px-5       /* kills outer p-5 on phone */
+                                   md:mx-0 md:px-0" /* restores on desktop */
                         style={{
                             scrollbarWidth: "none",
                             msOverflowStyle: "none",
@@ -814,7 +625,6 @@ function QuickDuelStripBase({
                                     </p>
                                     <p className="text-[11px] font-medium text-slate-400 truncate w-full mt-0.5">
                                         @{p.username}
-
                                     </p>
                                     {p.is_same_school && (
                                         <span className="inline-flex items-center gap-0.5 mt-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
@@ -863,7 +673,6 @@ function QuickDuelStripBase({
                     </div>
                 ) : !loading ? (
                     isOffline ? (
-                        /* ── Offline ── */
                         <div className="flex flex-col items-center justify-center py-6 text-center px-2">
                             <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-2">
                                 <AlertCircle className="w-5 h-5 text-amber-600" strokeWidth={2.5} />
@@ -876,7 +685,6 @@ function QuickDuelStripBase({
                             </p>
                         </div>
                     ) : (
-                        /* ── Online but the fetch failed or returned empty ── */
                         <div className="flex flex-col items-center justify-center py-6 text-center px-2">
                             <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
                                 <Swords className="w-5 h-5 text-blue-600" strokeWidth={2.5} />
@@ -904,22 +712,24 @@ function QuickDuelStripBase({
                     )
                 ) : null}
 
-                {/* ---------- Last battle card (own bordered container) ---------- */}
+                {/* ── Last battle card — edge-to-edge on phone too ── */}
                 {lastDuel && (
                     <div
-                        className={`flex items-center gap-3 p-3 rounded-2xl border ${lastDuel.won
-                            ? "bg-emerald-500/5 border-0"
-                            : "bg-rose-500/5 border-0"
+                        className={`mt-4 flex items-center gap-3 p-3 rounded-2xl
+                                    -mx-5 px-5 py-3  /* edge-to-edge on phone */
+                                    md:mx-0 md:px-3  /* restored inside on desktop */
+                                    ${lastDuel.won
+                                ? "bg-emerald-500/5"
+                                : "bg-rose-500/5"
                             }`}
                     >
-                        {/* ⬇️⬇️ FIXED — avatar now matches players row (80px) */}
                         <div className="relative shrink-0">
                             <SafeImg
                                 src={lastDuel.opponent_avatar}
                                 alt={lastDuel.opponent_name}
                                 loading="lazy"
                                 decoding="async"
-                                className="w-[80px] h-[80px] rounded-full object-cover"
+                                className="w-[64px] h-[64px] rounded-full object-cover md:w-[80px] md:h-[80px]"
                             />
                             <span
                                 className={`absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-900 ${lastDuel.won ? "bg-emerald-500" : "bg-rose-500"
@@ -953,18 +763,6 @@ function QuickDuelStripBase({
                     </div>
                 )}
 
-                {/* ---------- Invite friends card (subtle, quiet) ---------- */}
-                <InviteFriendsCard
-                    loading={referralLoading}
-                    code={referralCode}
-                    stats={referralStats}
-                    copied={copied}
-                    sharing={sharing}
-                    onWhatsApp={handleShareWhatsApp}
-                    onNative={handleShareNative}
-                    onCopy={handleCopy}
-                />
-
                 <UserProfileModal
                     userId={selectedUserId}
                     onClose={() => setSelectedUserId(null)}
@@ -977,120 +775,6 @@ function QuickDuelStripBase({
                 onRetry={retryChallenge}
             />
         </>
-    );
-}
-
-/* ------------------------------------------------------------------ */
-/*  InviteFriendsCard — quiet, subtle, no loud gradient                */
-/* ------------------------------------------------------------------ */
-
-function InviteFriendsCard({
-    loading,
-    code,
-    stats,
-    copied,
-    sharing,
-    onWhatsApp,
-    onNative,
-    onCopy,
-}: {
-    loading: boolean;
-    code: string | null;
-    stats: ReferralStats;
-    copied: boolean;
-    sharing: boolean;
-    onWhatsApp: () => void;
-    onNative: () => void;
-    onCopy: () => void;
-}) {
-    // Quiet skeleton — matches the soft card styling
-    if (loading) {
-        return (
-            <div className="rounded-2xl border-0 bg-slate-50/60 dark:bg-slate-800/30 p-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                        <div className="h-2.5 w-2/3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!code) return null;
-
-    const hasInvites = stats.invites > 0;
-
-    return (
-        <div className="rounded-2xl border-0 bg-slate-50/60 dark:bg-slate-800/30 p-3">
-            {/* Header row */}
-            <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-violet-500/10 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
-                    <Gift size={16} className="text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                        Invite friends, earn free Premium
-                    </p>
-                    <p className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
-                        <Sparkles size={9} className="text-violet-500" />
-                        +2 days for you · +1 day for them
-                    </p>
-                </div>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                <button
-                    onClick={onWhatsApp}
-                    className="h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200/70 dark:border-slate-600/60 text-slate-700 dark:text-slate-200 font-bold text-[10.5px] flex items-center justify-center gap-1 active:scale-[0.97] transition-transform"
-                    style={{ touchAction: "manipulation" }}
-                    aria-label="Share invite on WhatsApp"
-                >
-                    <Share2 size={11} />
-                    WhatsApp
-                </button>
-                <button
-                    onClick={onNative}
-                    disabled={sharing}
-                    className="h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200/70 dark:border-slate-600/60 text-slate-700 dark:text-slate-200 font-bold text-[10.5px] flex items-center justify-center gap-1 active:scale-[0.97] transition-transform disabled:opacity-50 disabled:pointer-events-none"
-                    style={{ touchAction: "manipulation" }}
-                    aria-label="Share invite"
-                >
-                    {sharing ? (
-                        <Loader2 size={11} className="animate-spin" />
-                    ) : (
-                        <Sparkles size={11} />
-                    )}
-                    {sharing ? "…" : "More"}
-                </button>
-                <button
-                    onClick={onCopy}
-                    className="h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200/70 dark:border-slate-600/60 text-slate-700 dark:text-slate-200 font-bold text-[10.5px] flex items-center justify-center gap-1 active:scale-[0.97] transition-transform"
-                    style={{ touchAction: "manipulation" }}
-                    aria-label="Copy invite link"
-                >
-                    {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                    {copied ? "Copied" : "Copy"}
-                </button>
-            </div>
-
-            {/* Live stats (only when there are invites) */}
-            {hasInvites && (
-                <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center gap-3 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1">
-                        <Users size={10} className="text-emerald-500" />
-                        {stats.invites} joined
-                    </span>
-                    <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-                    <span className="flex items-center gap-1">
-                        <Gift size={10} className="text-violet-500" />
-                        {stats.daysEarned} days earned
-                    </span>
-                </div>
-            )}
-        </div>
     );
 }
 
@@ -1248,7 +932,7 @@ function ChallengeOverlay({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Skeleton — avatar placeholder now matches 80px                     */
+/*  Skeleton                                                           */
 /* ------------------------------------------------------------------ */
 
 function StripSkeleton() {
@@ -1257,7 +941,7 @@ function StripSkeleton() {
             className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-5 font-sans"
             style={{ contain: "layout paint" }}
         >
-            <div className="flex gap-5">
+            <div className="flex gap-5 -mx-5 px-5 md:mx-0 md:px-0">
                 {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="shrink-0 w-[116px] flex flex-col items-center">
                         <div className="w-[80px] h-[80px] rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse mb-2" />
@@ -1267,7 +951,6 @@ function StripSkeleton() {
                     </div>
                 ))}
             </div>
-            <div className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
         </section>
     );
 }

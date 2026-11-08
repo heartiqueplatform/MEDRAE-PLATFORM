@@ -138,7 +138,6 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
 
     const handleFindHelp = React.useCallback(async () => {
         if (!userId) return;
-
         setIsLoadingHelpers(true);
         try {
             const helpers = await fetchHelpOthersWithCache(supabase, q.id);
@@ -156,7 +155,6 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
 
     const handleEnableHelp = React.useCallback(async () => {
         if (!phoneInput.trim() || !userId || !activeQuestionId) return;
-
         try {
             await supabase.from("question_notes").upsert([{
                 user_id: userId,
@@ -204,11 +202,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                     className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition-all font-medium border-0"
                                 />
                             </div>
-
                             <p className="mt-3 text-[11px] text-slate-400 leading-relaxed px-1">
                                 By providing your number, you agree to let other nursing students reach out to you for study assistance.
                             </p>
-
                             <div className="grid grid-cols-2 gap-3 mt-6">
                                 <button
                                     onClick={() => {
@@ -220,7 +216,6 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 >
                                     Cancel
                                 </button>
-
                                 <button
                                     onClick={handleEnableHelp}
                                     className="px-4 py-3 text-sm font-bold rounded-xl bg-teal-600 text-white hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2"
@@ -234,11 +229,11 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                 </div>
             )}
 
-            {/* ─── MAIN PANEL — no borders, no shadow, soft note-paper bg ─── */}
-            <div className="w-full mt-2 bg-amber-50/40 rounded-sm dark:bg-slate-800/80 overflow-hidden transition-all">
+            {/* ─── MAIN PANEL ─── */}
+            <div className="w-full h-full flex flex-col bg-amber-50/40 dark:bg-slate-800/80 rounded-xl overflow-hidden transition-all">
 
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-amber-100/50 dark:bg-slate-800/70">
+                {/* ── Header ── */}
+                <div className="flex items-center justify-between px-4 py-3 bg-amber-100/50 dark:bg-slate-800/70 shrink-0">
                     <div className="flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 text-amber-600 dark:text-amber-400">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
@@ -254,8 +249,8 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                     )}
                 </div>
 
-                {/* Textarea — paper-like */}
-                <div className="p-1">
+                {/* ── Textarea (grows to fill) ── */}
+                <div className="flex-1 min-h-0 p-1 flex flex-col">
                     <textarea
                         value={notes[q.id] || ""}
                         onChange={(e) => {
@@ -264,17 +259,23 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                             saveNoteOffline(q.id, val).catch(console.error);
                             syncStatus(!!understood[q.id], !!notUnderstood[q.id]);
                         }}
-                        className="w-full min-h-[160px] p-4 text-sm bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 hide-scrollbar"
+                        className="w-full flex-1 min-h-[160px] p-4 text-sm bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 hide-scrollbar"
                         placeholder="Reflect on this question... Why was it tricky? What's the key takeaway?"
                     />
                 </div>
 
-                {/* Action Toolbar */}
-                {/* Action Toolbar — flush rows, dividers, edge-to-edge */}
-                <div className="border-t border-amber-200/50 dark:border-slate-700/50">
+                {/* ── Subtle empty-space filler (shows when textarea is short) ── */}
+                <div className="px-4 pb-3 -mt-1 shrink-0">
+                    <p className="text-[11px] text-amber-700/70 dark:text-amber-300/70 italic leading-relaxed">
+                        💡 Writing it down makes it stick. A short note here compounds into exam-day recall.
+                    </p>
+                </div>
 
-                    {/* Row 1 — Understood | Need Help — 2 equal cells, divider between */}
-                    <div className="grid grid-cols-2 divide-x divide-amber-200/50 dark:divide-slate-700/50 border-b border-amber-200/50 dark:border-slate-700/50">
+                {/* ── Action Toolbar — no dividers, flat buttons ── */}
+                <div className="shrink-0 p-2 space-y-1.5">
+
+                    {/* Row 1 — Understood | Need Help */}
+                    <div className="grid grid-cols-2 gap-1.5">
                         <button
                             onClick={() => {
                                 const next = !understood[q.id];
@@ -282,9 +283,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
                                 syncStatus(next, false);
                             }}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-3 text-xs font-semibold transition-colors ${understood[q.id]
-                                ? 'bg-green-500/10 text-green-700 dark:text-green-400'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-amber-100/60 dark:hover:bg-slate-700/40'}`}
+                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${understood[q.id]
+                                ? 'bg-green-500/15 text-green-700 dark:text-green-400'
+                                : 'bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 shrink-0">
                                 <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.74-5.24Z" clipRule="evenodd" />
@@ -299,9 +300,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setUnderstood(prev => ({ ...prev, [q.id]: false }));
                                 syncStatus(false, next);
                             }}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-3 text-xs font-semibold transition-colors ${notUnderstood[q.id]
-                                ? 'bg-red-500/10 text-red-700 dark:text-red-400'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-amber-100/60 dark:hover:bg-slate-700/40'}`}
+                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${notUnderstood[q.id]
+                                ? 'bg-red-500/15 text-red-700 dark:text-red-400'
+                                : 'bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 shrink-0">
                                 <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
@@ -310,14 +311,14 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                         </button>
                     </div>
 
-                    {/* Row 2 — Mark attempt — full width */}
+                    {/* Row 2 — Mark attempt */}
                     <button
                         onClick={() => {
                             const nextVal = (attempts[q.id] || 0) + 1;
                             setAttempts(prev => ({ ...prev, [q.id]: nextVal }));
                             syncStatus(!!understood[q.id], !!notUnderstood[q.id], nextVal);
                         }}
-                        className="w-full flex items-center justify-between gap-2 px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-amber-100/60 dark:hover:bg-slate-700/40 transition-colors border-b border-amber-200/50 dark:border-slate-700/50"
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60 transition-all active:scale-[0.98]"
                     >
                         <span>Mark attempt</span>
                         {attempts[q.id] > 0 && (
@@ -326,8 +327,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                             </span>
                         )}
                     </button>
-                    {/* Row 3 — Help | Buddy — 2 equal cells */}
-                    <div className="grid grid-cols-2 divide-x divide-amber-200/50 dark:divide-slate-700/50 border-b border-amber-200/50 dark:border-slate-700/50">
+
+                    {/* Row 3 — Help | Buddy */}
+                    <div className="grid grid-cols-2 gap-1.5">
                         <button
                             onClick={() => {
                                 if (!userId || helpOthersDisabled[q.id]) return;
@@ -336,9 +338,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setHelpModalOpen(true);
                             }}
                             disabled={helpOthersDisabled[q.id]}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-3 text-xs font-semibold transition-colors ${helpOthersDisabled[q.id]
-                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-amber-100/60 dark:hover:bg-slate-700/40'}`}
+                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${helpOthersDisabled[q.id]
+                                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                                : 'bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 shrink-0">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
@@ -349,7 +351,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                         <button
                             onClick={handleFindHelp}
                             disabled={isLoadingHelpers}
-                            className="flex items-center justify-center gap-1.5 px-2 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-amber-100/60 dark:hover:bg-slate-700/40 transition-colors disabled:opacity-50"
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60 transition-all active:scale-[0.98] disabled:opacity-50"
                         >
                             {isLoadingHelpers ? (
                                 <div className="w-4 h-4 flex items-center justify-center shrink-0">
@@ -364,7 +366,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                         </button>
                     </div>
 
-                    {/* Row 4 — Save — full width, prominent */}
+                    {/* Row 4 — Save (flat, no stress) */}
                     <button
                         onClick={async () => {
                             if (!userId) return;
@@ -382,7 +384,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                             setSaved(true);
                             setTimeout(() => setSaved(false), 2000);
                         }}
-                        className={`w-full flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-semibold transition-colors ${saved
+                        className={`w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all active:scale-[0.98] ${saved
                             ? 'bg-green-500 text-white'
                             : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                     >

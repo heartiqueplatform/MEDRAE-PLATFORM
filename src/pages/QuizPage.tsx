@@ -962,7 +962,7 @@ Please provide a detailed discussion and guidance.`;
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div className="min-w-0 flex-1">
-              <h1 className="break-words">
+              <h1 className="break-words font-bold text-lg md:text-xl">
                 {unit}
               </h1>
               <p className="text-muted-foreground mt-0.5">
@@ -1187,14 +1187,12 @@ Please provide a detailed discussion and guidance.`;
                   return (
                     <div
                       key={q.id}
-                      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-4 lg:gap-6 w-full"
+                      className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full items-stretch"
                     >
                       {/* ─── LEFT: question card ─── */}
                       <div
                         className={cn(
-                          "flex flex-col px-2 py-3 md:py-4 transition-all duration-300",
-                          "shadow-sm rounded-xl",
-
+                          "flex flex-col px-2 py-3 md:py-4 transition-all rounded-xl duration-300 h-full",
                           understood[q.id]
                             ? "bg-emerald-50/40 dark:bg-emerald-500/10"
                             : notUnderstood[q.id]
@@ -1525,7 +1523,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                       </div>
 
                       {/* ─── RIGHT: sticky insights + notes rail ─── */}
-                      <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100dvh-120px)] lg:overflow-y-auto custom-scrollbar">
+                      <aside className="flex flex-col h-full">
                         <QuestionInsights
                           confidenceLevel={confidenceLevels[q.id]}
                           showReasonBox={showReasonBox[q.id]}
@@ -1554,7 +1552,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                             }
                           }}
                         />
-                        <div className="w-full border-0 bg-transparent">
+                        <div className="w-full flex-1 min-h-0 border-0 bg-transparent">
                           <NotesEvaluationPanel
                             q={q}
                             userId={userId}
