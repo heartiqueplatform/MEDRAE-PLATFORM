@@ -56,16 +56,43 @@ async function checkEntitlement(
     paperId: string
 ): Promise<EntitlementRow> {
     if (!userId) return null;
-    const { data, error } = await supabase
+
+    // Single source of truth — subscription OR per-paper
+    const { data: hasAccess, error } = await supabase.rpc("lm_has_access", {
+        p_user_id: userId,
+        p_paper_id: paperId,
+    });
+
+    if (error || !hasAccess) return null;
+
+    // Resolve expires_at: per-paper first, else subscription
+    const { data: ent } = await supabase
         .from("lm_entitlements")
-        .select("expires_at,is_active")
+        .select("expires_at")
         .eq("user_id", userId)
         .eq("paper_id", paperId)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
         .maybeSingle();
-    if (error || !data) return null;
-    if (!data.is_active) return null;
-    if (new Date(data.expires_at).getTime() <= Date.now()) return null;
-    return data;
+
+    if (ent?.expires_at) {
+        return { expires_at: ent.expires_at, is_active: true };
+    }
+
+    // Subscription-backed
+    const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("expires_at")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (!sub?.expires_at) return null;
+
+    return { expires_at: sub.expires_at, is_active: true };
 }
 
 export default function LastMinuteReader() {
