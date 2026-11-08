@@ -320,6 +320,7 @@ const BottomBarWrapper = () => {
 // Routes where the fixed bottom Footer should NOT appear.
 // These are full-screen pages that own the whole viewport.
 const FOOTER_HIDDEN_PREFIXES = [
+  "/feed",
   "/medtube",
   "/quiz",
   "/Medrae-quizzes",
@@ -340,7 +341,6 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/cpd",
   "/live-classes",
   "/nursing/quiz",
-  "/challenge",
   "/streak/restore",
   "/last-minute",
 ];
