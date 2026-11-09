@@ -1,6 +1,6 @@
 // src/navigation/tabs.ts
-// ONE ordered list. Footer + TabStack + SwipeTabs all read from this.
-// Order = swipe order. Wrap-around at the ends.
+// ONE ordered list. Footer + TabStack read from this.
+// Order = display order. No swipe navigation.
 
 import type { ComponentType, JSX } from "react";
 import StudentDashboard from "@/pages/dashboard/student";
@@ -17,29 +17,17 @@ export type TabDef = {
     element: ComponentType;
 };
 
-// ⚠️ ORDER MATTERS. Swipe moves left/right through this exact array.
+// ⚠️ ORDER MATTERS. Footer reads this order left → right.
+//   `MyMistakes` stays MOUNTED for perf (kept warm in TabStack),
+//   but is NOT shown in the footer — no footer icon exists for it.
 export const STUDENT_TABS: TabDef[] = [
     { path: "/dashboard/student", label: "Home", icon: null as any, element: StudentDashboard },
     { path: "/feed", label: "Feed", icon: null as any, element: Feed },
     { path: "/Medrae-quizzes", label: "Quizzes", icon: null as any, element: MedraeQuizzes },
     { path: "/listen", label: "Listen", icon: null as any, element: ListenPage },
     { path: "/menu", label: "Menu", icon: null as any, element: MenuPage },
-    // MyMistakes stays MOUNTED for perf but is NOT swipeable (no footer icon).
     { path: "/my-mistakes", label: "Mistakes", icon: null as any, element: MyMistakes },
 ];
 
-// The paths swipe can land on — must match Footer's icons exactly, in order.
-export const SWIPE_PATHS: string[] = [
-    "/dashboard/student",
-    "/feed",
-    "/Medrae-quizzes",
-    "/listen",
-    "/menu",
-];
-
-// Swipe is DISABLED on these paths (precious screens — user must tap).
-export const SWIPE_DISABLED_PATHS = new Set<string>([
-    "/listen",
-]);
-
+// Set of every path that TabStack should keep mounted (not just footer tabs).
 export const TAB_PATHS = new Set(STUDENT_TABS.map((t) => t.path));

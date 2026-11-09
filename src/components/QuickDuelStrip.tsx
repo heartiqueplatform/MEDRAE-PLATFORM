@@ -19,7 +19,8 @@ import {
     CheckCircle2,
     AlertCircle,
     Loader2,
-    Search,          // ⬅️ NEW — for "Find a challenger"
+    Search,
+    Users,          // ⬅️ NEW — for "Find a challenger"
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -560,9 +561,17 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                 style={{ contain: "layout paint" }}
             >
                 {/* ── Players row header — one pill-shaped search bar ── */}
+                {/* ── Players row header — edge-to-edge search bar on phone ── */}
                 <button
                     onClick={goToChallengePage}
-                    className="w-full flex items-center gap-2 h-10 px-3 mb-3 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-white/[0.1] active:scale-[0.99] transition-all -mx-5 px-5 md:mx-0 md:px-3"
+                    className="flex items-center gap-2 h-11 px-4 mb-3
+               -mx-5 md:mx-0
+               rounded-none md:rounded-xl
+               bg-slate-100 dark:bg-white/[0.06]
+               text-slate-500 dark:text-slate-400
+               hover:bg-slate-200/70 dark:hover:bg-white/[0.1]
+               active:scale-[0.99] transition-all
+               w-[calc(100%+2.5rem)] md:w-full"
                     style={{ touchAction: "manipulation" }}
                     aria-label="Search sparring partners"
                 >
@@ -570,9 +579,8 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                     <span className="text-[12.5px] font-medium tracking-tight truncate flex-1 text-left">
                         Search sparring partners…
                     </span>
-                    <Swords size={13} className="shrink-0 text-blue-500/70 dark:text-blue-400/70" />
+                    <Users size={13} className="shrink-0 text-blue-500/70 dark:text-blue-400/70" />
                 </button>
-
                 {/* ── Players row — EDGE-TO-EDGE on phone ── */}
                 {sortedPlayers.length > 0 ? (
                     <div
