@@ -1,22 +1,25 @@
-// src/pages/MenuPage.tsx
-// The /menu route exists only so swipe + footer can navigate to it.
-// But the drawer itself stays an OVERLAY — full-screen, slides over
-// everything, exactly like before. We just drive it from the URL
-// instead of from local state.
-
 import { MobileDrawer } from "@/components/MobileDrawer";
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 
 export default function MenuPage() {
     const navigate = useNavigate();
+    const skipBack = useRef(false);
 
     return (
         <MobileDrawer
             isOpen={true}
             setIsOpen={(open) => {
-                // Closing the drawer = go back to the previous tab.
-                if (!open) navigate(-1);
+                if (open) return;
+                if (skipBack.current) {
+                    // Drawer already navigated to a real route — don't go back.
+                    skipBack.current = false;
+                    return;
+                }
+                navigate(-1);
             }}
+            // 👇 new prop so the drawer tells MenuPage "I handled nav myself"
+            onInternalNavigate={() => { skipBack.current = true; }}
         />
     );
 }

@@ -66,6 +66,7 @@ interface MobileDrawerProps {
     userRole?: "student" | "tutor" | "staff";
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
+    onInternalNavigate?: () => void;
 }
 
 interface DrawerItem {
@@ -303,7 +304,7 @@ const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
 /* ============================================================
    MAIN
    ============================================================ */
-export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: MobileDrawerProps) {
+export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInternalNavigate }: MobileDrawerProps) {
     const { setIsOpen: setDrawerContext } = useDrawer();
     const navigate = useNavigate();
     const drawerRef = useRef<HTMLDivElement>(null);
@@ -610,9 +611,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
 
         tapFeedback("light");
+        onInternalNavigate?.();
         setIsOpen(false);
         smartNav(null, url);
-    }, [smartNav, tapFeedback, setIsOpen]);
+    }, [smartNav, tapFeedback, setIsOpen, onInternalNavigate]);
 
     const handleLogout = useCallback(async () => {
         setIsLoggingOut(true);
