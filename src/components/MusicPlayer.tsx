@@ -1043,14 +1043,19 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                             className="absolute inset-0 flex flex-col bg-background dark:bg-[#0d1117]"
                                         >
                                             <div className="shrink-0 px-3 pt-2 pb-2">
-                                                <EpisodeSearchBar />
+                                                <EpisodeSearchBar
+                                                    onSearchMemory={handleSearchMemory}
+                                                    onSearchLocal={handleSearchLocal}
+                                                    onSearchRemote={handleSearchRemote}
+                                                    onSelect={handleSearchSelect}
+                                                    placeholder="Search episodes…"
+                                                />
                                             </div>
                                             <div className="flex-1 min-h-0">
                                                 {listEl}
                                             </div>
                                         </motion.div>
                                     )}
-
                                     {screen === "admin" && isAdmin && (
                                         <motion.div
                                             key="m-admin"

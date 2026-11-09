@@ -84,7 +84,8 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
   const loaderHiddenRef = useRef(false);
   const location = useLocation();
   const isListenRoute = location.pathname === "/listen";
-
+  // 🎯 Chat FAB only on student dashboard — matches the amber crown FAB.
+  const showChatFab = location.pathname === "/dashboard/student";
   useEffect(() => {
     if (!loaderHiddenRef.current && user && user.name && user.name !== "Unknown User") {
       loaderHiddenRef.current = true;
@@ -144,9 +145,11 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
         </div>
       </div>
 
-      <ErrorBoundary label="FloatingChatButton">
-        <FloatingChatButton userId={userId || user?.id} />
-      </ErrorBoundary>
+      {showChatFab && (
+        <ErrorBoundary label="FloatingChatButton">
+          <FloatingChatButton userId={userId || user?.id} />
+        </ErrorBoundary>
+      )}
     </div>
   );
 });
