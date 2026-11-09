@@ -283,10 +283,7 @@ export default function ChatRoomPanel({
                         </button>
                     </div>
                 )}
-                <div
-                    className="p-4 flex items-center gap-3"
-                    style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
-                >
+                <div className="p-3 flex items-center gap-3">
                     <div className="relative flex-1">
                         <Input
                             value={input}
