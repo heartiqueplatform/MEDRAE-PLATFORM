@@ -29,7 +29,7 @@ const pending = new Map<string, Promise<any>>();
 // (e.g. adding image_url to Unit). Old cache entries become
 // invisible automatically — users never have to clear anything.
 // ────────────────────────────────────────────────────────────
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 
 const LS_PREFIX = `chatcache_${CACHE_VERSION}_`;
 const LS_TS_PREFIX = `chatcache_${CACHE_VERSION}_ts_`;
