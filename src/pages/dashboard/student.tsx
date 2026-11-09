@@ -11,6 +11,7 @@ import {
   ChevronDown,
   User
 } from "lucide-react";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 import Cropper from "react-easy-crop";
 import {
   Select,
@@ -1050,10 +1051,13 @@ export default function StudentDashboard() {
         </DeferredMount>
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
         <div
-          className="fixed z-30 right-4 md:bottom-14 md:right-5"
-          style={{
-            bottom: `calc(60px + env(safe-area-inset-bottom, 0px) + 32px)`,
-          }}
+          className={cn(
+            "fixed z-30 right-4",
+            // ── Mobile: EXACT previous position (bottom calc) ──
+            "max-md:bottom-[calc(60px+env(safe-area-inset-bottom,0px)+32px)]",
+            // ── Desktop: clearly lower, right-aligned ──
+            "md:bottom-8 md:right-5"
+          )}
         >
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -1063,87 +1067,75 @@ export default function StudentDashboard() {
               if (navigator.vibrate) navigator.vibrate(40);
               handleOpenDialog();
             }}
-            aria-label="Open best"
+            aria-label="Open leaderboard"
             className={cn(
               "group flex items-center justify-center rounded-full",
               // ---- SHAPE & SIZE ----
-              // Mobile: perfect circle 56x56
               "w-14 h-14 p-0",
-              // Desktop: pill with label
               "md:w-auto md:h-auto md:min-w-[110px] md:pl-3 md:pr-4 md:py-2.5",
-
               // ---- LAYOUT ----
               "gap-0 md:gap-2",
-
-              // ---- COLORS: LIGHT ----
-              "bg-white hover:bg-slate-50",
-              "text-slate-800 hover:text-slate-900",
-              "ring-1 ring-slate-200 hover:ring-slate-300",
-
-              // ---- COLORS: DARK ----
-              "dark:bg-[#21262d] dark:hover:bg-[#30363d]",
-              "dark:text-white dark:ring-white/10 dark:hover:ring-white/20",
-
-              // ---- SHADOW ----
-              "shadow-lg shadow-slate-900/10",
-              "dark:shadow-none",
-
+              // ---- COLORS: SOLID AMBER FAB ----
+              "bg-amber-500 hover:bg-amber-600",
+              "text-white",
+              "ring-1 ring-amber-400/50 hover:ring-amber-400/70",
+              // ---- DARK: same amber, slightly deeper ring ----
+              "dark:bg-amber-500 dark:hover:bg-amber-600",
+              "dark:ring-amber-400/30 dark:hover:ring-amber-400/50",
+              // ---- SHADOW: color-tinted, matches FAB ----
+              "shadow-lg shadow-amber-500/30",
+              "dark:shadow-amber-900/40",
               // ---- MOTION ----
               "transition-colors duration-300 ease-out",
               "focus:outline-none focus-visible:ring-2",
-              "focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+              "focus-visible:ring-white/80 dark:focus-visible:ring-white/70"
             )}
           >
             {/* Icon chip — full-size on mobile, small chip on desktop */}
             <span
               className={cn(
                 "relative flex items-center justify-center rounded-full overflow-visible",
-                // Mobile: full-size, no visible chip bg
-                "w-full h-full bg-transparent text-slate-700",
-                // Desktop: small 28px chip
-                "md:w-7 md:h-7 md:bg-slate-100 md:text-slate-700",
-                // Dark overrides
-                "dark:text-white",
-                "md:dark:bg-white/10 md:dark:text-white"
+                "w-full h-full bg-transparent",
+                // Desktop: subtle white tint chip inside the amber button
+                "md:w-7 md:h-7 md:bg-white/15",
+                "text-white"
               )}
             >
+              {/* White ping dot — visible on amber */}
+              {topStudents.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+                </span>
+              )}
+
+              {/* White Lucide icon — Crown when leader exists, Trophy otherwise */}
               {topStudents.length > 0 ? (
-                <>
-                  {/* ping dot */}
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-                  </span>
-
-                  {/* avatar fills the chip */}
-                  <span className="w-full h-full rounded-full overflow-hidden block">
-                    <img
-                      src={topStudents[0].avatar_url || "/background03.jpg"}
-                      alt={topStudents[0].name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </span>
-
-                  {/* crown badge */}
-                  <span className="absolute -bottom-1.5 -right-1.5 bg-amber-500 text-white p-1 rounded-full">
-                    <Crown className="w-3 h-3 fill-current" />
-                  </span>
-                </>
+                <Crown
+                  className="w-6 h-6 md:w-4 md:h-4 text-white"
+                  strokeWidth={2.2}
+                />
               ) : (
                 <Trophy
-                  className="w-6 h-6 md:w-4 md:h-4 text-slate-400 dark:text-white/60"
+                  className="w-6 h-6 md:w-4 md:h-4 text-white/85"
+                  strokeWidth={2.2}
                 />
               )}
             </span>
 
             {/* Label — desktop only */}
-            <span className="hidden md:inline text-sm font-semibold">Best</span>
+            <span className="hidden md:inline text-sm font-semibold text-white">
+              Best
+            </span>
           </motion.button>
         </div>
-
         {/* ✅ LEADERBOARD SHEET — bottom-up, drag-to-dismiss */}
-        <BottomSheet open={overlayOpen} onClose={() => setOverlayOpen(false)}>
+        {/* ✅ LEADERBOARD — bottom sheet on phone, centered modal on desktop */}
+        <CenteredModal
+          open={overlayOpen}
+          onClose={() => setOverlayOpen(false)}
+          maxWidthClass="max-w-md"
+        >
           <div className="px-5 pt-2 pb-8">
             <div className="flex items-center justify-center gap-2 mb-5">
               <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
@@ -1236,7 +1228,7 @@ export default function StudentDashboard() {
               </div>
             </div>
           </div>
-        </BottomSheet>
+        </CenteredModal>
 
 
 

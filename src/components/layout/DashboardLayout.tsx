@@ -1,5 +1,5 @@
 "use client";
-import { useNavigate, } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { Toaster } from "@/components/ui/toaster";
@@ -66,23 +66,14 @@ const MIN_STREAK_FETCH_INTERVAL = 60 * 60 * 1000;
 // -------------------------------------------------------------
 // RightPanel Component
 // -------------------------------------------------------------
-const RightPanel = memo(({ userId }: { userId: string }) => {
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto hide-scrollbar space-y-4 w-[400px] -mt-2 p-0">
-        <ErrorBoundary label="FloatingChat">
-          <Suspense fallback={
-            <div className="flex items-center justify-center p-4">
-              <div className="animate-pulse text-gray-400">Loading chat...</div>
-            </div>
-          }>
-            <FloatingChat currentUserId={userId} />
-          </Suspense>
-        </ErrorBoundary>
-      </div>
-    </div>
-  );
-});
+// -------------------------------------------------------------
+// RightPanel — intentionally removed. The chat is now owned
+// exclusively by <FloatingChatButton /> (bottom-right pill).
+// Phone → full-screen overlay. Desktop → 3-pane floating window.
+// Keeping this stub avoids touching other imports/references.
+// -------------------------------------------------------------
+const RightPanel = memo((_props: { userId: string }) => null);
+RightPanel.displayName = "RightPanel";
 
 RightPanel.displayName = "RightPanel";
 
@@ -91,6 +82,8 @@ RightPanel.displayName = "RightPanel";
 // -------------------------------------------------------------
 const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode, children, userId }: any) => {
   const loaderHiddenRef = useRef(false);
+  const location = useLocation();
+  const isListenRoute = location.pathname === "/listen";
 
   useEffect(() => {
     if (!loaderHiddenRef.current && user && user.name && user.name !== "Unknown User") {
@@ -100,7 +93,21 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
       }
     }
   }, [user]);
-
+  // 🔥 PREFETCH: Warm the MusicPlayer chunk on boot so tapping Listen
+  // is instant. Without this, the first tap waits for the lazy chunk
+  // to download (3–10s on mobile), and `__studifyOpen` isn't defined
+  // yet, so nothing happens.
+  useEffect(() => {
+    const warm = () => {
+      import("@/components/MusicPlayer").catch(() => { });
+    };
+    // Idle callback so we don't compete with first paint
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(warm, { timeout: 1500 });
+    } else {
+      setTimeout(warm, 800);
+    }
+  }, []);
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-full overflow-hidden bg-background selection:bg-primary/30">
       <MedicalDoodles className="-z-10 pointer-events-none" />
@@ -109,7 +116,9 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
         <AppSidebar userRole={role} className="flex-shrink-0" />
 
         <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden max-w-[880px] mx-auto">
-          <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
+          {location.pathname !== "/listen" && (
+            <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
+          )}
           <main
             data-scroll-container
             className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar outline-none"
@@ -118,17 +127,20 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
               <div className="flex-1 pt-4 px-0 md:px-4 lg:px-6">
                 <TabStack />
               </div>
-              <div className="h-[68px] md:hidden shrink-0" />
+              {/* Only reserve footer space when the footer actually shows */}
+              {!isListenRoute && <div className="h-[68px] md:hidden shrink-0" />}
             </div>
           </main>
 
           <Toaster />
 
-          <ErrorBoundary label="MusicPlayer">
-            <Suspense fallback={null}>
-              <MusicPlayer />
-            </Suspense>
-          </ErrorBoundary>
+          {!isListenRoute && (
+            <ErrorBoundary label="MusicPlayer">
+              <Suspense fallback={null}>
+                <MusicPlayer />
+              </Suspense>
+            </ErrorBoundary>
+          )}
         </div>
       </div>
 

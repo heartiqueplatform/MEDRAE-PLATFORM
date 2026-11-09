@@ -28,7 +28,7 @@ export interface DbShow {
 export class StudifyDB extends Dexie {
     episodes!: Table<DbEpisode, string>;
     shows!: Table<DbShow, string>;
-
+    audioBlobs!: Table<DbAudioBlob, string>;
     constructor() {
         super("studify");
 
@@ -41,6 +41,12 @@ export class StudifyDB extends Dexie {
         this.version(2).stores({
             episodes: "id, showId, [showId+publishedAt], publishedAt, cachedAt",
             shows: "id, appleId, title",
+        });
+        // v3 adds offline audio blobs
+        this.version(3).stores({
+            episodes: "id, showId, [showId+publishedAt], publishedAt, cachedAt",
+            shows: "id, appleId, title",
+            audioBlobs: "episodeId, downloadedAt",
         });
     }
 }
@@ -134,4 +140,46 @@ export async function searchEpisodesLocal(query: string, limit = 40): Promise<Db
 
     all.sort(compareEpisodes);
     return all.slice(0, limit);
+}
+// ═══════════════════════════════════════════════════════════
+// OFFLINE DOWNLOADS — audio blobs in IndexedDB
+// ═══════════════════════════════════════════════════════════
+export interface DbAudioBlob {
+    episodeId: string;
+    blob: Blob;
+    mimeType: string;
+    size: number;
+    downloadedAt: number;
+}
+
+/** Get a stored audio blob for an episode (or null). */
+export async function getAudioBlob(
+    episodeId: string
+): Promise<DbAudioBlob | null> {
+    try {
+        const row = await (studifyDb as any).audioBlobs.get(episodeId);
+        return row ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/** Save a downloaded blob. Overwrites if it exists. */
+export async function putAudioBlob(row: DbAudioBlob): Promise<void> {
+    await (studifyDb as any).audioBlobs.put(row);
+}
+
+/** Delete a downloaded blob. */
+export async function deleteAudioBlob(episodeId: string): Promise<void> {
+    await (studifyDb as any).audioBlobs.delete(episodeId);
+}
+
+/** List all downloaded episode IDs (fast — key-only scan). */
+export async function listDownloadedIds(): Promise<string[]> {
+    try {
+        const keys = await (studifyDb as any).audioBlobs.toCollection().primaryKeys();
+        return keys as string[];
+    } catch {
+        return [];
+    }
 }

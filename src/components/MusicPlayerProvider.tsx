@@ -9,7 +9,9 @@ import React, {
     useCallback,
     ReactNode,
 } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
+import { supabase, isReallyOnline } from "@/lib/supabaseClient";
+import { getAudioBlob } from "@/lib/studifyDb";
 import {
     studifyDb,
     putEpisodes,
@@ -52,12 +54,11 @@ interface MusicPlayerContextProps {
     setMuted: React.Dispatch<React.SetStateAction<boolean>>;
     setRepeatMode: React.Dispatch<React.SetStateAction<RepeatMode>>;
     setProgress: (progress: number) => void;
-    audioRef: React.RefObject<HTMLAudioElement>;
+    audioRef: React.RefObject<HTMLAudioElement | null>;
     refreshEpisodes: (opts?: { silent?: boolean }) => Promise<void>;
     fetchShowEpisodes: (showId: string) => Promise<Track[]>;
     searchEpisodesRemote: (query: string) => Promise<Track[]>;
     prefetchAudio: (src: string, priority?: number) => void;
-    // ✅ history API
     history: HistoryEntry[];
     clearHistory: () => void;
     removeFromHistory: (id: string) => void;
@@ -68,27 +69,17 @@ const MusicPlayerContext = createContext<MusicPlayerContextProps | undefined>(
 );
 
 const MAIN_FETCH_LIMIT = 200;
-const CACHE_TTL_MS = 1000 * 60 * 15; // 15 min
+const CACHE_TTL_MS = 1000 * 60 * 15;
 
-// ✅ Synchronous localStorage snapshot — paints the episode list in the
-//    same frame the app mounts, before Dexie (async IDB) can resolve.
 const SNAPSHOT_KEY = "medrae_podcast_snapshot_v1";
-const SNAPSHOT_MAX_AGE = 1000 * 60 * 60 * 24; // 24h
+const SNAPSHOT_MAX_AGE = 1000 * 60 * 60 * 24;
 
-// ─────────────────────────────────────────────────────────────
-// CANONICAL ORDER
-// Must match:
-//   • Supabase's ORDER BY (published_at DESC, id ASC)
-//   • Dexie's compareEpisodes (publishedAt DESC, id ASC)
-// If they disagree, the list visibly reorders on every
-// snapshot → Dexie → Supabase handoff.
-// ─────────────────────────────────────────────────────────────
 function sortTracks(list: Track[]): Track[] {
     return [...list].sort((a, b) => {
         const ap = a.publishedAt ? Date.parse(a.publishedAt) : 0;
         const bp = b.publishedAt ? Date.parse(b.publishedAt) : 0;
-        if (ap !== bp) return bp - ap;             // newest first
-        return (a.id ?? a.src).localeCompare(b.id ?? b.src); // stable tiebreak
+        if (ap !== bp) return bp - ap;
+        return (a.id ?? a.src).localeCompare(b.id ?? b.src);
     });
 }
 
@@ -109,34 +100,33 @@ function readSnapshot(): Track[] | null {
 function writeSnapshot(tracks: Track[]) {
     if (typeof window === "undefined") return;
     try {
-        // Only the last 60 tracks — keeps localStorage under the 5MB cap.
         const slice = tracks.slice(0, 60);
         localStorage.setItem(
             SNAPSHOT_KEY,
             JSON.stringify({ tracks: slice, ts: Date.now() })
         );
     } catch {
-        /* quota exceeded — ignore */
+        /* quota */
     }
 }
 
 // ═══════════════════════════════════════════════════════════
-// PLAYBACK HISTORY — "Continue listening"
+// HISTORY
 // ═══════════════════════════════════════════════════════════
 const HISTORY_KEY = "medrae_play_history_v1";
 const HISTORY_MAX = 30;
 
 export interface HistoryEntry {
-    id: string;           // episode id (stable, unique)
-    src: string;          // audio url
-    name: string;         // episode title
+    id: string;
+    src: string;
+    name: string;
     artwork?: string;
     showTitle?: string;
     showId?: string;
     duration?: number;
     publishedAt?: string;
-    position: number;     // seconds — where the user left off
-    lastPlayedAt: number; // ms timestamp
+    position: number;
+    lastPlayedAt: number;
 }
 
 function readHistory(): HistoryEntry[] {
@@ -162,7 +152,7 @@ function writeHistory(entries: HistoryEntry[]) {
             JSON.stringify(entries.slice(0, HISTORY_MAX))
         );
     } catch {
-        /* quota — ignore */
+        /* quota */
     }
 }
 
@@ -184,12 +174,10 @@ function upsertHistory(
         position: Math.max(0, Math.floor(position || 0)),
         lastPlayedAt: Date.now(),
     };
-    // Remove any prior entry for the same id, then unshift the new one
     const filtered = existing.filter((e) => e.id !== id);
     return [entry, ...filtered].slice(0, HISTORY_MAX);
 }
 
-// ── Mapping helpers ──
 function rowToDbEpisode(e: any): DbEpisode {
     const show = Array.isArray(e.podcast_shows)
         ? e.podcast_shows[0]
@@ -222,12 +210,16 @@ function dbToTrack(e: DbEpisode): Track {
 }
 
 export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
-    // ✅ Seed from the synchronous localStorage snapshot so the first render
-    //    already has tracks. Dexie will overwrite with a slightly fresher
-    //    version on the next tick, then Supabase refreshes in the background.
     const snapshot = typeof window !== "undefined" ? readSnapshot() : null;
     const [tracks, setTracks] = useState<Track[]>(() => sortTracks(snapshot ?? []));
-    const [loading, setLoading] = useState(false);
+    // ✅ loading = TRUE only when we have literally nothing to show.
+    //    If we painted from snapshot, we are NOT loading.
+    const [loading, setLoading] = useState<boolean>(() => {
+        if (typeof window === "undefined") return true;
+        // Only show skeleton if we truly have no snapshot. Even then,
+        // a timer below clears it after 800ms so the UI is never blank.
+        return (snapshot?.length ?? 0) === 0;
+    });
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolumeState] = useState(1);
@@ -235,32 +227,35 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
     const [progress, setProgress] = useState(0);
 
-    // ✅ Playback history — reads synchronously from localStorage
     const [history, setHistory] = useState<HistoryEntry[]>(() => readHistory());
     const historyRef = useRef<HistoryEntry[]>(history);
     useEffect(() => {
         historyRef.current = history;
     }, [history]);
 
-    const audioRef = useRef<HTMLAudioElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastRefreshRef = useRef<number>(0);
     const currentSrcRef = useRef<string | undefined>(undefined);
-    // 👇 new — track which URLs we've already prefetched this session
     const prefetchedSrcsRef = useRef<Set<string>>(new Set());
     const prefetchQueueRef = useRef<{ src: string; priority: number }[]>([]);
     const prefetchRunningRef = useRef(false);
 
-
-    // ✅ Persist a synchronous snapshot every time tracks change.
-    //    Cheap (only 60 items), sync, quota-safe.
     useEffect(() => {
         if (tracks.length === 0) return;
         writeSnapshot(tracks);
     }, [tracks]);
-
-    // ── 1. Hydrate from Dexie (indexedDB) as a fallback layer ──
-    //    If we already painted from the localStorage snapshot, use Dexie
-    //    only to seed `lastRefreshRef` (so we don't hit the network too early).
+    // 🚨 SAFETY NET: never let loading block the UI for more than 800ms.
+    //    If the network probe (isReallyOnline) or the Supabase fetch hangs,
+    //    the player still renders with whatever tracks it has (possibly 0).
+    //    A skeleton for half a second is acceptable — forever is not.
+    useEffect(() => {
+        if (!loading) return;
+        const t = setTimeout(() => {
+            setLoading(false);
+        }, 800);
+        return () => clearTimeout(t);
+    }, [loading]);
+    // ── 1. Hydrate from Dexie ──
     useEffect(() => {
         let cancelled = false;
         (async () => {
@@ -269,8 +264,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 if (cancelled) return;
 
                 if (cached.length > 0) {
-                    // ✅ Only overwrite tracks if Dexie has STRICTLY more than
-                    //    we already have. Prevents a "flash back" to old data.
                     setTracks((prev) =>
                         cached.length > prev.length
                             ? sortTracks(cached.map(dbToTrack))
@@ -279,11 +272,14 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                     setLoading(false);
                     lastRefreshRef.current = cached[0].cachedAt;
                 } else if (snapshot === null) {
-                    // No snapshot AND no Dexie data → still loading.
+                    // No snapshot, no Dexie → genuinely nothing. Keep loading=true
+                    // so the skeleton shows while Supabase fetches.
                     setLoading(true);
                 }
             } catch (e) {
                 console.error("Dexie hydrate failed:", e);
+                // ✅ Still clear loading so we never hang on a broken IndexedDB
+                if (snapshot === null) setLoading(false);
             }
         })();
         return () => {
@@ -292,49 +288,76 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── 2. Fetch fresh from Supabase ──
+    // ── 2. Fetch from Supabase ──
     const refreshEpisodes = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent ?? false;
         const now = Date.now();
         const stale = now - lastRefreshRef.current > CACHE_TTL_MS;
 
         if (silent && !stale) return;
-        if (!silent) setLoading(true);
 
-        const { data: epRows, error: epErr } = await supabase
-            .from("podcast_episodes")
-            .select(
-                `
-                id, title, audio_url, duration, published_at, show_id, is_hidden,
-                podcast_shows ( title, artwork_url )
-            `
-            )
-            .eq("is_hidden", false)
-            .order("published_at", { ascending: false, nullsFirst: false })
-            .order("id", { ascending: true })           // ✅ unique tiebreaker
-            .limit(MAIN_FETCH_LIMIT);
-
-        if (epErr) {
-            console.error("Failed to load episodes:", epErr);
-            if (!silent) setLoading(false);
-            return;
+        // ✅ Only show skeleton if we truly have nothing to show.
+        //    Never flip loading=true when we already painted from cache.
+        let showedSkeleton = false;
+        if (!silent) {
+            setLoading((prev) => {
+                // We only set true if tracks is currently empty. We read
+                // tracks via a ref trick — but here we can just check
+                // using the closure's current `tracks` snapshot.
+                return prev && tracks.length > 0 ? false : prev;
+            });
+            // Instead, decide based on the tracks we have RIGHT NOW:
+            showedSkeleton = tracks.length === 0;
+            if (showedSkeleton) setLoading(true);
         }
 
-        await putEpisodes((epRows ?? []).map(rowToDbEpisode));
+        try {
+            // ✅ Short-circuit offline: no network, no skeleton, no waiting.
+            // ✅ Try the fetch regardless. isReallyOnline can be wrong on
+            //    iOS Safari (adblock, low-power mode, flaky probes). If the
+            //    fetch fails, we fall through to the catch and keep cache.
+            const online = await isReallyOnline().catch(() => true);
+            if (!online && navigator.onLine === false) {
+                // Only skip when the browser itself says offline.
+                if (tracks.length > 0) setLoading(false);
+                if (showedSkeleton) setLoading(false);
+                return;
+            }
 
-        const episodeTracks: Track[] = sortTracks(
-            (epRows ?? []).map(rowToDbEpisode).map(dbToTrack)
-        );
-        setTracks(episodeTracks);
-        setCurrentIndex((prev) => (prev < episodeTracks.length ? prev : 0));
-        lastRefreshRef.current = Date.now();
-        setLoading(false);
-    }, []);
+            const { data: epRows, error: epErr } = await supabase
+                .from("podcast_episodes")
+                .select(
+                    `
+                    id, title, audio_url, duration, published_at, show_id, is_hidden,
+                    podcast_shows ( title, artwork_url )
+                `
+                )
+                .eq("is_hidden", false)
+                .order("published_at", { ascending: false, nullsFirst: false })
+                .order("id", { ascending: true })
+                .limit(MAIN_FETCH_LIMIT);
 
-    // ✅ Re-fetch episodes when auth settles so personalized data lands.
-    //    NOTE: must live BELOW the refreshEpisodes useCallback — const
-    //    declarations are not hoisted, so referencing it earlier crashes
-    //    with "Cannot access 'refreshEpisodes' before initialization".
+            if (epErr) {
+                console.error("Failed to load episodes:", epErr);
+                return; // finally will clear loading
+            }
+
+            await putEpisodes((epRows ?? []).map(rowToDbEpisode));
+
+            const episodeTracks: Track[] = sortTracks(
+                (epRows ?? []).map(rowToDbEpisode).map(dbToTrack)
+            );
+            setTracks(episodeTracks);
+            setCurrentIndex((prev) => (prev < episodeTracks.length ? prev : 0));
+            lastRefreshRef.current = Date.now();
+        } catch (err) {
+            console.error("refreshEpisodes threw:", err);
+        } finally {
+            // ✅ ALWAYS clears. This is the bug that used to hang offline.
+            setLoading(false);
+        }
+    }, [tracks.length]);
+
     useEffect(() => {
         const { data: sub } = supabase.auth.onAuthStateChange((event) => {
             if (
@@ -347,10 +370,8 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         });
         return () => sub.subscription.unsubscribe();
     }, [refreshEpisodes]);
-    // ── Real audio prefetch — warms the browser cache for the first
-    //    few KB of an episode so play() starts almost instantly.
-    //    Priority: current episode next, then the next 3 in the list.
-    //    Concurrency capped at 2 so we don't hog bandwidth.
+
+    // ── Prefetch ──
     const prefetchAudio = useCallback((src: string, priority = 0) => {
         if (!src) return;
         if (prefetchedSrcsRef.current.has(src)) return;
@@ -368,76 +389,63 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 if (prefetchedSrcsRef.current.has(src)) continue;
                 prefetchedSrcsRef.current.add(src);
 
-                // AbortController + setTimeout instead of AbortSignal.timeout
-                // because AbortSignal.timeout is not available in older Safari.
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
                 try {
-                    // Range request for the first ~256KB — enough to start
-                    // playback immediately when the user taps. The browser
-                    // caches the response keyed by URL, so play() hits cache.
                     const res = await fetch(src, {
                         method: "GET",
                         headers: { Range: "bytes=0-262143" },
                         cache: "force-cache",
                         signal: controller.signal,
                     });
-                    // If the server ignored the Range header, it responds
-                    // 200 with the FULL body. Cancel immediately so we don't
-                    // burn 40MB per episode on metered connections.
                     if (res.status === 200) {
-                        try { await res.body?.cancel(); } catch { /* ignore */ }
+                        try { await res.body?.cancel(); } catch { }
                     } else {
-                        // 206 — the range worked. Read the small body so the
-                        // browser caches it.
-                        try { await res.arrayBuffer(); } catch { /* ignore */ }
+                        try { await res.arrayBuffer(); } catch { }
                     }
-                } catch {
-                    /* network error / timeout — ignore */
-                } finally {
+                } catch { }
+                finally {
                     clearTimeout(timeoutId);
                 }
-
-                // Small gap between prefetches so we don't starve the audio stream
                 await new Promise((r) => setTimeout(r, 120));
             }
             prefetchRunningRef.current = false;
         };
-
         run();
     }, []);
 
-    // ── When the current track changes, prefetch the next 3 in the list ──
     useEffect(() => {
         const current = tracks[currentIndex];
         if (!current?.src) return;
-
-        // Highest priority: mark current as already-fetched so we never
-        // re-prefetch it (the audio element owns it)
         prefetchedSrcsRef.current.add(current.src);
-
-        // Next 3 (or however many exist)
-        // Prefetch the next 5 (or however many exist)
         for (let i = 1; i <= 5; i++) {
             const next = tracks[currentIndex + i];
             if (next?.src) prefetchAudio(next.src, i);
         }
     }, [tracks, currentIndex, prefetchAudio]);
-    // ── 3. On-demand fetch for a specific show (unlimited) ──
+
+    // ── Fetch a specific show's episodes ──
     const fetchShowEpisodes = useCallback(
         async (showId: string): Promise<Track[]> => {
+            // ✅ Offline → return Dexie cache immediately.
+            const online = await isReallyOnline();
+            if (!online) {
+                const cached = await getEpisodesForShow(showId);
+                return sortTracks(cached.map(dbToTrack));
+            }
+
             const { data, error } = await supabase
                 .from("podcast_episodes")
                 .select(
                     `
-                id, title, audio_url, duration, published_at, show_id, is_hidden,
-                podcast_shows ( title, artwork_url )
-            `
+                    id, title, audio_url, duration, published_at, show_id, is_hidden,
+                    podcast_shows ( title, artwork_url )
+                `
                 )
                 .eq("is_hidden", false)
                 .eq("show_id", showId)
                 .order("published_at", { ascending: false, nullsFirst: false })
-                .order("id", { ascending: true });           // ✅ unique tiebreaker
+                .order("id", { ascending: true });
 
             if (error) {
                 console.error("Failed to load show episodes:", error);
@@ -451,23 +459,21 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         },
         []
     );
-    /**
-     * Search episodes server-side. Used as the final layer of the
-     * search stack — only fires when the query is 2+ chars and the
-     * user has paused typing for ~150 ms.
-     */
+
     const searchEpisodesRemote = useCallback(async (query: string): Promise<Track[]> => {
         const q = query.trim();
         if (q.length < 2) return [];
 
-        // PostgREST .or() with ilike — matches title OR show title
+        const online = await isReallyOnline();
+        if (!online) return [];
+
         const pattern = `%${q}%`;
         const { data, error } = await supabase
             .from("podcast_episodes")
             .select(`
-            id, title, audio_url, duration, published_at, show_id, is_hidden,
-            podcast_shows ( title, artwork_url )
-        `)
+                id, title, audio_url, duration, published_at, show_id, is_hidden,
+                podcast_shows ( title, artwork_url )
+            `)
             .eq("is_hidden", false)
             .or(`title.ilike.${pattern}`)
             .order("published_at", { ascending: false, nullsFirst: false })
@@ -482,32 +488,23 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         const dbEps = (data ?? []).map(rowToDbEpisode);
         return sortTracks(dbEps.map(dbToTrack));
     }, []);
-    // ── 4. Initial kick ──
+
     useEffect(() => {
-        // ✅ If we already painted from snapshot, we never show a loader — go silent.
-        //    If we have nothing, show a proper load.
         const hasAnything = tracks.length > 0;
         refreshEpisodes({ silent: hasAnything });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshEpisodes]);
 
-
-
-    // ═══════════════════════════════════════════════════════════
-    // ── 5b. Record playback into history whenever the current
-    //        track changes or periodically during playback.
-    // ═══════════════════════════════════════════════════════════
+    // ── History recording ──
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
-        // Whenever the current track changes → seed a history entry at position 0
         const current = tracks[currentIndex];
         if (current?.src) {
             const id = current.id || current.src;
             setHistory((prev) => {
                 const existing = prev.find((e) => e.id === id);
-                // Only update if it's not already the top entry — avoids infinite loops
                 if (existing && prev[0]?.id === id && existing.position === 0)
                     return prev;
                 const next = upsertHistory(current, existing?.position ?? 0, prev);
@@ -518,7 +515,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
 
         let lastSaved = -1;
         const onTime = () => {
-            // Save every 5 seconds of playback — cheap write, keeps position current
             const t = Math.floor(audio.currentTime);
             if (t === lastSaved || t % 5 !== 0) return;
             lastSaved = t;
@@ -537,18 +533,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         return () => audio.removeEventListener("timeupdate", onTime);
     }, [tracks, currentIndex]);
 
-    // ── 6. Play / pause / volume ──
-    // ═══════════════════════════════════════════════════════════
-    // ── 5. AUDIO SRC + PLAY/PAUSE + VOLUME ──
-    // One effect handles everything. Setting `src` and calling
-    // `play()` in the same commit is what makes streaming work:
-    // the browser begins buffering from the src assignment, and
-    // play() resolves as soon as the first chunks arrive.
-    //
-    // Do NOT call audio.load() — it resets readyState to 0 and
-    // forces a full re-buffer, which on a 60 MB podcast means
-    // the play() waits 20+ seconds before starting.
-    // ═══════════════════════════════════════════════════════════
+    // ── PLAY / PAUSE / VOLUME (with offline guard + blob playback) ──
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
@@ -556,37 +541,72 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         const next = tracks[currentIndex]?.src;
         if (!next) return;
 
-        // ── 1. Swap the source only when it actually changed ──
-        if (currentSrcRef.current !== next) {
-            currentSrcRef.current = next;
-            audio.src = next;
-            // NOTE: no audio.load() here — see comment above.
-        }
+        let cancelled = false;
 
-        // ── 2. Apply volume + mute every time ──
-        audio.volume = volume;
-        audio.muted = muted;
+        void (async () => {
+            if (currentSrcRef.current !== next) {
+                currentSrcRef.current = next;
 
-        // ── 3. Drive play/pause ──
-        if (isPlaying) {
-            audio.play().catch((err: any) => {
-                if (err?.name === "AbortError") return; // normal race
-                console.warn("[MusicPlayer] play() failed:", err?.name, err?.message, {
-                    src: next?.slice(0, 80),
-                    readyState: audio.readyState,
-                    networkState: audio.networkState,
+                // ✅ If this episode was downloaded, play from blob: URL.
+                const trackId = tracks[currentIndex]?.id;
+                if (trackId) {
+                    try {
+                        const row = await getAudioBlob(trackId);
+                        if (cancelled) return;
+                        if (row?.blob) {
+                            const blobUrl = URL.createObjectURL(row.blob);
+                            audio.src = blobUrl;
+                            audio.volume = volume;
+                            audio.muted = muted;
+                            if (isPlaying) {
+                                audio.play().catch(() => setLoading(false));
+                            } else {
+                                audio.pause();
+                            }
+                            return;
+                        }
+                    } catch { /* fall through to remote */ }
+                }
+                if (cancelled) return;
+                audio.src = next;
+            }
+
+            audio.volume = volume;
+            audio.muted = muted;
+
+            if (isPlaying) {
+                // ✅ Offline guard — allow blob or already-buffered.
+                const offline =
+                    typeof navigator !== "undefined" && navigator.onLine === false;
+                if (offline) {
+                    const isBlob = audio.src.startsWith("blob:");
+                    const buffered = audio.readyState >= 2;
+                    if (!isBlob && !buffered) {
+                        toast.error("You're offline", {
+                            description: "This episode isn't downloaded. Reconnect to play it.",
+                            id: "offline-play-block",
+                        });
+                        setIsPlaying(false);
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                audio.play().catch((err: any) => {
+                    if (err?.name === "AbortError") return;
+                    console.warn("[MusicPlayer] play() failed:", err?.name, err?.message);
+                    setLoading(false);
                 });
-                setLoading(false); // don't leave the spinner stuck
-            });
-        } else {
-            audio.pause();
-        }
+            } else {
+                audio.pause();
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [tracks, currentIndex, isPlaying, volume, muted]);
-    // ═══════════════════════════════════════════════════════════
-    // ── 7. PREFETCH NEXT TRACK ──
-    // When <10s remain, warm the browser cache for the next episode
-    // so track transitions are gapless.
-    // ═══════════════════════════════════════════════════════════
+    // ── Prefetch next track at <10s remaining ──
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
@@ -604,7 +624,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
             if (next.src === currentSrcRef.current) return;
 
             primedFor = next.src;
-            // Silent prefetch — browser caches the bytes, we don't play them.
             const pre = new Audio();
             pre.preload = "auto";
             pre.src = next.src;
@@ -614,22 +633,17 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         return () => audio.removeEventListener("timeupdate", onTime);
     }, [tracks, currentIndex]);
 
-    // ── 8. Stable action callbacks ──
+    // ── Actions ──
     const togglePlay = useCallback((force?: boolean) => {
         setIsPlaying((prev) => (force !== undefined ? force : !prev));
     }, []);
 
-    // ✅ Attach lifecycle listeners to the <audio> element once so
-    //    `loading` flips off the moment audio is actually outputting,
-    //    not when the entire buffer is downloaded.
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
         const onPlaying = () => setLoading(false);
         const onPlay = () => setLoading(false);
-        // Belt-and-suspenders: if the browser refuses to fire events,
-        // a 3-second timer after play() guarantees we drop the spinner.
         let safetyTimer: ReturnType<typeof setTimeout> | null = null;
         const onPlayStart = () => {
             if (safetyTimer) clearTimeout(safetyTimer);
@@ -639,7 +653,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         audio.addEventListener("playing", onPlaying);
         audio.addEventListener("play", onPlayStart);
         audio.addEventListener("play", onPlay);
-        audio.addEventListener("error", onPlaying);   // hide spinner on error too
+        audio.addEventListener("error", onPlaying);
 
         return () => {
             audio.removeEventListener("playing", onPlaying);
@@ -651,7 +665,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const toggleMute = useCallback(() => setMuted((prev) => !prev), []);
-
     const toggleRepeat = useCallback(
         () =>
             setRepeatMode((prev) =>
@@ -664,7 +677,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         () => setCurrentIndex((prev) => (prev + 1) % Math.max(tracks.length, 1)),
         [tracks.length]
     );
-
     const prevTrack = useCallback(
         () =>
             setCurrentIndex(
@@ -672,7 +684,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
             ),
         [tracks.length]
     );
-
     const setVolume = useCallback((vol: number) => setVolumeState(vol), []);
 
     const clearHistory = useCallback(() => {
@@ -714,14 +725,14 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 audioRef,
                 refreshEpisodes,
                 fetchShowEpisodes,
-                // ✅ history
                 history,
                 clearHistory,
                 removeFromHistory,
                 searchEpisodesRemote,
-                prefetchAudio,   // 👇 new
+                prefetchAudio,
             }}
         >
+            <audio ref={audioRef} crossOrigin="anonymous" preload="metadata" />
             {children}
         </MusicPlayerContext.Provider>
     );

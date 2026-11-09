@@ -103,16 +103,21 @@ export default function FeedQuestionsTab({
         return () => obs.disconnect();
     }, [hasMore, loading, onLoadMore]);
 
-    const mediaPosts = useMemo(() => {
-        if (!feedImages || feedImages.length === 0) return [];
-        const groups = new Map<string, any[]>();
+    // ── STABLE media group keys ──────────────────────────────────────
+    // We sort the group keys alphabetically so that regardless of the
+    // order feedImages arrived in (pagination, caching, etc.), the
+    // SAME question index always maps to the SAME group key.
+    // This is what prevents "media disappears until refresh".
+    const mediaGroupKeys = useMemo(() => {
+        if (!feedImages || feedImages.length === 0) return [] as string[];
+        const set = new Set<string>();
         for (const im of feedImages) {
-            const key = im.post_group_id || `single_${im.id}`;
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key)!.push(im);
+            set.add(im.post_group_id || `single_${im.id}`);
         }
-        return Array.from(groups.keys());
+        return Array.from(set).sort();
     }, [feedImages]);
+
+    const imagesReady = mediaGroupKeys.length > 0;
 
     return (
         <div className="w-full max-w-4xl mx-auto">
@@ -127,13 +132,19 @@ export default function FeedQuestionsTab({
                 const liked = q.qfeed_likes?.some((l: any) => l.user_id === user?.id);
                 const selected = answers[q.id];
 
+                // Only inject when images are actually loaded AND we have
+                // a stable group to point at. Deterministic index means
+                // the same question always gets the same media post.
                 const shouldInjectMedia =
-                    mediaPosts.length > 0 &&
+                    imagesReady &&
                     (index + 1) % MEDIA_EVERY_N === 0;
 
-                const mediaPostIndex =
-                    Math.floor(index / MEDIA_EVERY_N) % mediaPosts.length;
-                const mediaGroupKey = mediaPosts[mediaPostIndex];
+                const mediaGroupKey = shouldInjectMedia
+                    ? mediaGroupKeys[
+                    Math.floor(index / MEDIA_EVERY_N) %
+                    mediaGroupKeys.length
+                    ]
+                    : null;
 
                 return (
                     <div key={q.id}>
@@ -228,7 +239,6 @@ export default function FeedQuestionsTab({
                                         })}
                                     </div>
 
-                                    {/* ── EXPLANATION — GitHub dark, no blue ── */}
                                     {selected && (
                                         <div className="mt-2 w-full rounded-xl overflow-hidden bg-gray-50 dark:bg-[#161b22]">
                                             <div className="px-3 py-2 flex items-center gap-2 border-b border-gray-200 dark:border-[#30363d]">
@@ -245,7 +255,6 @@ export default function FeedQuestionsTab({
                                         </div>
                                     )}
 
-                                    {/* ── ACTION BUTTONS — medium-big, Lucide icons, grouped left ── */}
                                     <div className="flex items-center gap-2 mt-2 pt-1">
                                         <Button
                                             variant="ghost"
@@ -289,7 +298,7 @@ export default function FeedQuestionsTab({
                             </Card>
                         </motion.div>
 
-                        {shouldInjectMedia && (
+                        {shouldInjectMedia && mediaGroupKey && (
                             <FeedMediaPanel
                                 key={`media-inline-${index}-${mediaGroupKey}`}
                                 index={index}

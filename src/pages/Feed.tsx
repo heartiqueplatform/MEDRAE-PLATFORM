@@ -52,6 +52,22 @@ const fetchWithDedupe = async (
   return p;
 };
 
+// ── Shared image-row mapper (used in 3 places, was duplicated) ──
+const mapImageRow = (row: any) => ({
+  id: row.id,
+  image_url: row.image_url,
+  description: row.description,
+  title: row.title,
+  storage_path: "cloudinary",
+  added_by: row.added_by,
+  created_at: row.created_at,
+  post_group_id: row.post_group_id,
+  post_group_order: row.post_group_order,
+  profiles: { name: row.uploader_name, avatar_url: row.uploader_avatar },
+});
+
+const IMAGES_PAGE_SIZE = 15;
+
 export default function Feed() {
   const session = useSession();
   const userId = session?.user?.id;
@@ -147,7 +163,6 @@ export default function Feed() {
     if (!viewerOpen) return;
     const prevOverflow = document.body.style.overflow;
     const prevPaddingRight = document.body.style.paddingRight;
-    // Prevent layout shift when scrollbar disappears
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
@@ -158,7 +173,9 @@ export default function Feed() {
       document.body.style.paddingRight = prevPaddingRight;
     };
   }, [viewerOpen]);
+
   // ── Load user + initial cached state ─────────────────────
+  // ── ALSO PREFETCH IMAGES HERE so inline media panels show ─
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -190,11 +207,20 @@ export default function Feed() {
         const cachedCount = localStorage.getItem(`feed_count_${uid}`);
         if (cachedCount) setQuestionCount(parseInt(cachedCount));
 
-        const fresh = await fetchQuestions(0, 8, uid);
-        if (!cancelled) {
-          setQuestions(fresh.filter((q: any) => !savedAnswers[q.id]));
-          setPage(0);
-        }
+        // ── Fire questions AND images in parallel ──
+        const [fresh, imageRows] = await Promise.all([
+          fetchQuestions(0, 8, uid),
+          fetchFirstImageBatch(uid),
+        ]);
+
+        if (cancelled) return;
+
+        setQuestions(fresh.filter((q: any) => !savedAnswers[q.id]));
+        setPage(0);
+
+        setFeedImages(imageRows);
+        setImagePage(0);
+        if (imageRows.length < IMAGES_PAGE_SIZE) setHasMoreImages(false);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -205,47 +231,67 @@ export default function Feed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Load images when images tab opens ────────────────────
+  // ── Extra image pages when images tab opens ──────────────
+  // Page 0 is already prefetched on mount. This effect only
+  // handles page >= 1 when the user scrolls the Images tab.
   useEffect(() => {
     if (activeTab !== "images" || !userId || isLoadingImages) return;
+    if (imagePage === 0 && feedImages.length > 0) return; // already loaded on mount
     const loadImages = async () => {
       setIsLoadingImages(true);
       try {
-        const cacheKey = `unseen_images_page_${imagePage}_user_${userId}`;
-        const images = await fetchWithDedupe(cacheKey, async () => {
-          const { data, error } = await supabase.rpc("get_unseen_feed_images", {
-            p_user_id: userId,
-            p_limit: 15,
-            p_offset: imagePage * 15,
-          });
-          if (error) return [];
-          return (data ?? []).map((row: any) => ({
-            id: row.id,
-            image_url: row.image_url,
-            description: row.description,
-            title: row.title,
-            storage_path: "cloudinary",
-            added_by: row.added_by,
-            created_at: row.created_at,
-            post_group_id: row.post_group_id,
-            post_group_order: row.post_group_order,
-            profiles: { name: row.uploader_name, avatar_url: row.uploader_avatar },
-          }));
-        }, 60_000);
-
-        if (!images || images.length === 0) {
+        const rows = await fetchImagesPage(userId, imagePage);
+        if (!rows || rows.length === 0) {
           setHasMoreImages(false);
           if (imagePage === 0) setFeedImages([]);
         } else {
-          setFeedImages((prev) => (imagePage === 0 ? images : [...prev, ...images]));
-          if (images.length < 15) setHasMoreImages(false);
+          setFeedImages((prev) => {
+            if (imagePage === 0) return rows;
+            const seen = new Set(prev.map((i) => i.id));
+            return [...prev, ...rows.filter((r) => !seen.has(r.id))];
+          });
+          if (rows.length < IMAGES_PAGE_SIZE) setHasMoreImages(false);
         }
       } finally {
         setIsLoadingImages(false);
       }
     };
     loadImages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, userId, imagePage]);
+
+  // ── Image fetchers (shared, deduped) ─────────────────────
+  const fetchFirstImageBatch = async (uid: string) => {
+    return fetchWithDedupe(
+      `unseen_images_page_0_user_${uid}`,
+      async () => {
+        const { data, error } = await supabase.rpc("get_unseen_feed_images", {
+          p_user_id: uid,
+          p_limit: IMAGES_PAGE_SIZE,
+          p_offset: 0,
+        });
+        if (error) return [];
+        return (data ?? []).map(mapImageRow);
+      },
+      60_000
+    );
+  };
+
+  const fetchImagesPage = async (uid: string, pageNum: number) => {
+    return fetchWithDedupe(
+      `unseen_images_page_${pageNum}_user_${uid}`,
+      async () => {
+        const { data, error } = await supabase.rpc("get_unseen_feed_images", {
+          p_user_id: uid,
+          p_limit: IMAGES_PAGE_SIZE,
+          p_offset: pageNum * IMAGES_PAGE_SIZE,
+        });
+        if (error) return [];
+        return (data ?? []).map(mapImageRow);
+      },
+      60_000
+    );
+  };
 
   // ── fetchQuestions ───────────────────────────────────────
   const fetchQuestions = async (pageNum: number, limit: number, uid: string) => {
@@ -356,7 +402,6 @@ export default function Feed() {
       return n;
     });
 
-    // Refresh XP from DB — trigger may have awarded at 10th question boundary
     supabase
       .from("profiles")
       .select("tokens")
@@ -370,16 +415,13 @@ export default function Feed() {
     if (counts) setVoteStats((prev) => ({ ...prev, [q.id]: counts }));
   };
 
-  // ── Like handler ─────────────────────────────────────────
   // ── Like handler — INSTANT UI, silent DB write ────────────
   const handleLike = async (questionId: string, liked: boolean) => {
     if (!user?.id) return;
 
-    // 1. Instant haptic + sound (no waiting)
     if (navigator.vibrate) navigator.vibrate(10);
     if (!liked && !isMuted) playSound("tap-correct", false);
 
-    // 2. Optimistic UI update — happens in the SAME frame as the tap
     setQuestions((prev) =>
       prev.map((q) => {
         if (q.id !== questionId) return q;
@@ -390,7 +432,6 @@ export default function Feed() {
       })
     );
 
-    // 3. Fire DB write in the background — UI never waits for it
     try {
       if (liked) {
         const { error } = await supabase
@@ -405,7 +446,6 @@ export default function Feed() {
         if (error) throw error;
       }
     } catch (err) {
-      // 4. Only on failure: revert the UI
       console.warn("[Feed] like failed, reverting:", err);
       setQuestions((prev) =>
         prev.map((q) => {
@@ -580,9 +620,13 @@ export default function Feed() {
     setHasMore(true);
     setHasMoreImages(true);
     if (userId) {
-      const fresh = await fetchQuestions(0, 8, userId);
+      const [fresh, imageRows] = await Promise.all([
+        fetchQuestions(0, 8, userId),
+        fetchFirstImageBatch(userId),
+      ]);
       setQuestions(fresh);
-      // Refresh tokens too
+      setFeedImages(imageRows);
+      if (imageRows.length < IMAGES_PAGE_SIZE) setHasMoreImages(false);
       supabase
         .from("profiles")
         .select("tokens")
@@ -592,29 +636,6 @@ export default function Feed() {
           if (data?.tokens != null) setUserTokens(data.tokens);
         });
     }
-    if (userId) {
-      const { data } = await supabase.rpc("get_unseen_feed_images", {
-        p_user_id: userId,
-        p_limit: 15,
-        p_offset: 0,
-      });
-      if (data) {
-        setFeedImages(
-          data.map((row: any) => ({
-            id: row.id,
-            image_url: row.image_url,
-            description: row.description,
-            title: row.title,
-            storage_path: "cloudinary",
-            added_by: row.added_by,
-            created_at: row.created_at,
-            post_group_id: row.post_group_id,
-            post_group_order: row.post_group_order,
-            profiles: { name: row.uploader_name, avatar_url: row.uploader_avatar },
-          }))
-        );
-      }
-    }
   };
 
   return (
@@ -622,25 +643,19 @@ export default function Feed() {
       {/* Sticky header — TABS ONLY (no FeedControls) */}
       <div className="sticky top-0 z-40 w-full bg-white dark:bg-[#0d1117]">
         <div className="w-full max-w-4xl mx-auto flex items-center">
-          {/* Back button — left of tabs */}
           <button
             onClick={() => navigate(-1)}
-            className="flex-shrink-0 pl-2 pr-1 py-2.5 text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-[#e6edf3] active:scale-95 transition"
+            className="flex-shrink-0 pl-2 pr-0.5 py-2.5 text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-[#e6edf3] active:scale-95 transition"
             aria-label="Go back"
           >
             <ChevronLeft size={22} strokeWidth={2.2} />
           </button>
 
-          {/* Tabs fill the rest */}
           <div className="flex-1 min-w-0">
             <FeedTabs
               active={activeTab}
               onChange={setActiveTab}
-              counts={{
-                questions: questionCount,
-                images: feedImages.length,
-                community: feedImages.length,
-              }}
+              counts={{ questions: questionCount, images: feedImages.length }}
             />
           </div>
         </div>
@@ -670,7 +685,6 @@ export default function Feed() {
               onLike={handleLike}
               onOpenComments={loadComments}
               onLoadMore={loadMore}
-              // ── media injection props ──
               feedImages={feedImages}
               loadedImages={loadedImages}
               setLoadedImages={setLoadedImages}
@@ -776,7 +790,6 @@ export default function Feed() {
               className="fixed inset-0 z-[2147483647] bg-black flex items-center justify-center overflow-hidden touch-pan-y"
               onClick={closeViewer}
               style={{
-                // Hard guarantee — no scrollbar can appear inside the viewer
                 overflow: "hidden",
                 touchAction: "pan-y pinch-zoom",
               }}

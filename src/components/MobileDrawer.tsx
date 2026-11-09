@@ -900,8 +900,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             animate="visible"
                             exit="hidden"
                             className="fixed inset-0 z-[99999] md:hidden flex flex-col
-                                       bg-white dark:bg-[#0d1117]"
+               bg-white dark:bg-[#0d1117]"
                             style={{ willChange: "transform", backfaceVisibility: "hidden" }}
+                            data-drawer-root="true"
                         >
                             {/* Header */}
                             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-[#21262d] flex-shrink-0 bg-white dark:bg-[#0d1117]">
@@ -948,7 +949,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
                                     </svg>
                                 </div>
-                                <h2 className="flex-1 text-[15px] tracking-tight">
+                                <h2 className="flex-1 text-[15px] font-bold tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
                                     <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-1 align-middle">
@@ -1223,6 +1224,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
         </>
     );
 }

@@ -24,6 +24,8 @@ import MarketFeed from "./pages/market";
 import CreateListingPage from "./pages/market/create";
 import MyListings from "./pages/market/my-listings";
 import ListingDetail from "./pages/market/[id]";
+import ListenPage from "@/pages/ListenPage";
+import MenuPage from "@/pages/MenuPage";
 // Pages
 import ChallengePage from "./pages/challenge";
 import { AuthProvider } from "@/context/AuthProvider";
@@ -321,6 +323,9 @@ const BottomBarWrapper = () => {
 // These are full-screen pages that own the whole viewport.
 const FOOTER_HIDDEN_PREFIXES = [
   "/feed",
+  "/menu",
+  "/listen",
+  "/chat",
   "/medtube",
   "/quiz",
   "/Medrae-quizzes",
@@ -655,7 +660,11 @@ const AppContent = () => {
 
                           {/* Analytics */}
                           <Route path="/analytics" element={<StudentAnalyticsPage />} />
-
+                          {/* 🆕 Swipe destinations — rendered inside <TabStack> via STUDENT_TABS.
+    These routes exist so URL changes fire properly. The actual element
+    rendering happens in TabStack, not here. */}
+                          <Route path="/listen" element={null} />
+                          <Route path="/menu" element={null} />
                           {/* Core features */}
                           {/* Core features */}
                           <Route path="/my-mistakes" element={null} />

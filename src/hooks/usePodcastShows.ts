@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isReallyOnline } from "@/lib/supabaseClient";
 import {
     getAllShows,
     putShows,
@@ -24,7 +24,6 @@ export interface PodcastShow {
 
 const CACHE_TTL_MS = 1000 * 60 * 15;
 
-// ✅ Canonical order — matches Dexie's getAllShows and the Supabase ORDER BY.
 function sortShows(list: PodcastShow[]): PodcastShow[] {
     return [...list].sort((a, b) => {
         const t = a.title.localeCompare(b.title);
@@ -53,88 +52,96 @@ export function usePodcastShows() {
 
     const refresh = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent ?? false;
-        if (!silent) setLoading(true);
 
-        // ✅ Session first (reads local storage synchronously), then verify
-        //    with getUser() as a fallback. Prevents userId from being null
-        //    when the SDK hasn't finished reading the token yet.
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId =
-            sessionData?.session?.user?.id ??
-            (await supabase.auth.getUser()).data?.user?.id ??
-            null;
+        // ✅ Only show skeleton if we truly have nothing to render.
+        const showedSkeleton = !silent && shows.length === 0;
+        if (showedSkeleton) setLoading(true);
 
-        const { data: showRows, error: showErr } = await supabase
-            .from("podcast_shows")
-            .select(`
-                id, apple_id, title, author, artwork_url, description, explicit, is_active,
-                podcast_episodes!left ( id, is_hidden )
-            `)
-            .eq("is_active", true)
-            .order("title", { ascending: true })        // ✅ canonical
-            .order("id", { ascending: true });          // ✅ unique tiebreaker
+        try {
+            const online = await isReallyOnline();
+            if (!online) {
+                // Offline → keep whatever Dexie has. No skeleton, no hang.
+                return;
+            }
 
-        if (showErr) {
-            console.error("load shows:", showErr);
-            if (!silent) setLoading(false);
-            return;
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId =
+                sessionData?.session?.user?.id ??
+                (await supabase.auth.getUser()).data?.user?.id ??
+                null;
+
+            const { data: showRows, error: showErr } = await supabase
+                .from("podcast_shows")
+                .select(`
+                    id, apple_id, title, author, artwork_url, description, explicit, is_active,
+                    podcast_episodes!left ( id, is_hidden )
+                `)
+                .eq("is_active", true)
+                .order("title", { ascending: true })
+                .order("id", { ascending: true });
+
+            if (showErr) {
+                console.error("load shows:", showErr);
+                return;
+            }
+
+            const epCount = new Map<string, number>();
+            (showRows ?? []).forEach((s: any) => {
+                const eps = (s.podcast_episodes ?? []) as { is_hidden: boolean }[];
+                epCount.set(s.id, eps.filter((e) => !e.is_hidden).length);
+            });
+
+            const { data: endRows } = await supabase
+                .from("podcast_endorsements")
+                .select("show_id, user_id")
+                .order("show_id", { ascending: true })
+                .order("user_id", { ascending: true });
+
+            const endCount = new Map<string, number>();
+            const myEndorsements = new Set<string>();
+            (endRows ?? []).forEach((r: any) => {
+                endCount.set(r.show_id, (endCount.get(r.show_id) ?? 0) + 1);
+                if (userId && r.user_id === userId) myEndorsements.add(r.show_id);
+            });
+
+            const merged: PodcastShow[] = sortShows(
+                (showRows ?? []).map((s: any) => ({
+                    id: s.id,
+                    apple_id: s.apple_id,
+                    title: s.title,
+                    author: s.author,
+                    artwork_url: s.artwork_url,
+                    description: s.description,
+                    explicit: s.explicit,
+                    episode_count: epCount.get(s.id) ?? 0,
+                    endorsement_count: endCount.get(s.id) ?? 0,
+                    user_endorsed: myEndorsements.has(s.id),
+                }))
+            );
+
+            await putShows(
+                merged.map((s): DbShow => ({
+                    id: s.id,
+                    appleId: s.apple_id,
+                    title: s.title,
+                    author: s.author ?? undefined,
+                    artwork: s.artwork_url ?? undefined,
+                    description: s.description ?? undefined,
+                    episodeCount: s.episode_count,
+                    endorsementCount: s.endorsement_count,
+                    cachedAt: Date.now(),
+                }))
+            );
+
+            setShows(merged);
+        } catch (err) {
+            console.error("refresh shows threw:", err);
+        } finally {
+            setLoading(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shows.length]);
 
-        // Count unhidden episodes per show from the nested rows
-        const epCount = new Map<string, number>();
-        (showRows ?? []).forEach((s: any) => {
-            const eps = (s.podcast_episodes ?? []) as { is_hidden: boolean }[];
-            epCount.set(s.id, eps.filter((e) => !e.is_hidden).length);
-        });
-
-        const { data: endRows } = await supabase
-            .from("podcast_endorsements")
-            .select("show_id, user_id")
-            .order("show_id", { ascending: true })      // ✅ deterministic
-            .order("user_id", { ascending: true });
-
-        const endCount = new Map<string, number>();
-        const myEndorsements = new Set<string>();
-        (endRows ?? []).forEach((r: any) => {
-            endCount.set(r.show_id, (endCount.get(r.show_id) ?? 0) + 1);
-            if (userId && r.user_id === userId) myEndorsements.add(r.show_id);
-        });
-
-        const merged: PodcastShow[] = sortShows(
-            (showRows ?? []).map((s: any) => ({
-                id: s.id,
-                apple_id: s.apple_id,
-                title: s.title,
-                author: s.author,
-                artwork_url: s.artwork_url,
-                description: s.description,
-                explicit: s.explicit,
-                episode_count: epCount.get(s.id) ?? 0,
-                endorsement_count: endCount.get(s.id) ?? 0,
-                user_endorsed: myEndorsements.has(s.id),
-            }))
-        );
-
-        // Persist to Dexie in canonical order too
-        await putShows(
-            merged.map((s): DbShow => ({
-                id: s.id,
-                appleId: s.apple_id,
-                title: s.title,
-                author: s.author ?? undefined,
-                artwork: s.artwork_url ?? undefined,
-                description: s.description ?? undefined,
-                episodeCount: s.episode_count,
-                endorsementCount: s.endorsement_count,
-                cachedAt: Date.now(),
-            }))
-        );
-
-        setShows(merged);
-        setLoading(false);
-    }, []);
-
-    // Hydrate from Dexie first
     useEffect(() => {
         (async () => {
             const cached = await getAllShows();
@@ -146,7 +153,6 @@ export function usePodcastShows() {
         })();
     }, [refresh]);
 
-    // ✅ Re-run the fetch when auth settles so personalized data lands
     useEffect(() => {
         const { data: sub } = supabase.auth.onAuthStateChange((event) => {
             if (
@@ -161,7 +167,6 @@ export function usePodcastShows() {
         return () => sub.subscription.unsubscribe();
     }, [refresh]);
 
-    // ── OPTIMISTIC endorse ──
     const toggleEndorse = useCallback(
         async (showId: string) => {
             const { data: userData } = await supabase.auth.getUser();

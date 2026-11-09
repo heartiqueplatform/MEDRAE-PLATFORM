@@ -6,6 +6,13 @@ import { ChatBubbleIcon } from "@/components/icons/ChatBubbleIcon";
 
 const FloatingChat = lazy(() => import("@/components/FloatingChat"));
 
+const dispatchChatVisibility = (open: boolean) => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+        new CustomEvent("chat-overlay-visibility", { detail: { open } })
+    );
+};
+
 interface FloatingChatButtonProps {
     userId: string;
 }
@@ -26,7 +33,10 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === "Escape") setIsOpen(false);
+            if (e.key === "Escape") {
+                setIsOpen(false);
+                dispatchChatVisibility(false);
+            }
         };
         document.addEventListener("keydown", handleEscape);
         return () => document.removeEventListener("keydown", handleEscape);
@@ -35,58 +45,74 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
     const handleOpen = useCallback(() => {
         setIsOpen(true);
         setUnreadCount(0);
+        dispatchChatVisibility(true);
     }, []);
 
-    const handleClose = useCallback(() => setIsOpen(false), []);
+    const handleClose = useCallback(() => {
+        dispatchChatVisibility(false);
+        setIsOpen(false);
+    }, []);
 
     if (isDrawerOpen) return null;
 
     return (
-        <div className="hidden md:block">
-            {/* Trigger button — light-mode first */}
+        <>
+            {/* Trigger — solid blue FAB, matches app primary color */}
             <button
                 onClick={handleOpen}
                 aria-label="Open chat"
                 className={cn(
-                    "group fixed bottom-32 right-5 z-30",
-                    "flex items-center gap-2 rounded-full pl-3 pr-4 py-2.5",
-                    "min-w-[110px] justify-center",
-                    // light mode (default)
-                    "bg-white hover:bg-slate-50",
-                    "text-slate-800 hover:text-slate-900",
-                    "ring-1 ring-slate-200 hover:ring-slate-300",
-                    // dark mode override
-                    "dark:bg-[#21262d] dark:hover:bg-[#30363d]",
-                    "dark:text-white dark:ring-white/10 dark:hover:ring-white/20",
-                    // shadow
-                    "shadow-lg shadow-slate-900/10",
-                    "dark:shadow-none",
+                    "group fixed right-4 z-30",
+                    // ── Mobile: sits ABOVE the crown button ──
+                    "max-md:bottom-[calc(60px+env(safe-area-inset-bottom,0px)+100px)]",
+                    // ── Desktop position ──
+                    "md:bottom-32 md:right-5",
+                    // ── Mobile shape: perfect 56×56 circle ──
+                    "max-md:w-14 max-md:h-14 max-md:p-0 max-md:rounded-full max-md:justify-center",
+                    // ── Desktop shape: pill with label ──
+                    "md:flex md:items-center md:gap-2 md:rounded-full md:pl-3 md:pr-4 md:py-2.5 md:min-w-[110px] md:justify-center",
+                    // ---- COLORS: SOLID BLUE FAB ----
+                    "bg-blue-600 hover:bg-blue-700",
+                    "text-white",
+                    "ring-1 ring-blue-500/40 hover:ring-blue-500/60",
+                    // ---- DARK: same blue, slightly deeper ring ----
+                    "dark:bg-blue-600 dark:hover:bg-blue-700",
+                    "dark:ring-blue-400/30 dark:hover:ring-blue-400/50",
+                    // ---- SHADOW: soft, color-tinted ----
+                    "shadow-lg shadow-blue-600/25",
+                    "dark:shadow-blue-900/40",
+                    // ---- MOTION ----
                     "transition-all duration-300 ease-out",
                     "active:scale-[0.96]",
                     "focus:outline-none focus-visible:ring-2",
-                    "focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400",
+                    "focus-visible:ring-white/80 dark:focus-visible:ring-white/70",
                     isOpen && "pointer-events-none scale-0 opacity-0"
                 )}
             >
                 <span
                     className={cn(
-                        "relative flex items-center justify-center w-7 h-7 rounded-full",
-                        // light mode icon chip
-                        "bg-slate-100 text-slate-700",
-                        // dark mode icon chip
-                        "dark:bg-white/10 dark:text-white"
+                        "relative flex items-center justify-center rounded-full",
+                        // ── Mobile: full-size, no chip bg ──
+                        "max-md:w-full max-md:h-full max-md:bg-transparent",
+                        // ── Desktop: small white/15 tint chip ──
+                        "md:w-7 md:h-7 md:bg-white/15",
+                        // ---- ICON: always white ----
+                        "text-white"
                     )}
                 >
-                    <ChatBubbleIcon className="w-4 h-4" strokeWidth={1.75} />
+                    <ChatBubbleIcon
+                        className="w-6 h-6 md:w-4 md:h-4 text-white"
+                        strokeWidth={2}
+                    />
 
                     {unreadCount > 0 && (
                         <span
                             className={cn(
                                 "absolute -top-1 -right-1 z-10",
                                 "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1",
-                                "bg-emerald-500 text-[10px] font-semibold leading-none text-white",
-                                // ring matches button bg in both themes
-                                "ring-2 ring-white dark:ring-[#21262d]"
+                                // Amber badge — readable on blue, matches crown style
+                                "bg-amber-500 text-[10px] font-bold leading-none text-white",
+                                "ring-2 ring-white dark:ring-blue-600"
                             )}
                         >
                             {unreadCount > 9 ? "9+" : unreadCount}
@@ -94,7 +120,10 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
                     )}
                 </span>
 
-                <span className="text-sm font-semibold hidden sm:inline">Chat</span>
+                {/* Label — desktop only */}
+                <span className="hidden md:inline text-sm font-semibold text-white">
+                    Chat
+                </span>
             </button>
 
             {/* Chat panel — unchanged */}
@@ -124,6 +153,6 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
                     />
                 </Suspense>
             </div>
-        </div>
+        </>
     );
 }

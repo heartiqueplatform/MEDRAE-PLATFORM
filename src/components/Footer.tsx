@@ -21,16 +21,12 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
 };
 
 /* ============================================================
-   ICONS — v4
-   • Active = vivid BLUE stroke (never solid white fill)
-   • Stroke width 2.1 active / 1.9 inactive
-   • Internal detail lines use blue-tinted white (not pure white)
+   ICONS
    ============================================================ */
 
-const SW = (active: boolean) => (active ? 2.1 : 1.9);
+const SW = (active: boolean) => (active ? 2.5 : 1.8);
 
-// Internal "cutout" lines for active icons — blue-tinted, NOT pure white
-const ACTIVE_DETAIL = "rgba(147,197,253,0.85)"; // tailwind blue-300
+const ACTIVE_DETAIL = "rgba(147,197,253,0.9)";
 
 // ── HOME ────────────────────────────────────────────────────
 const IconHome = ({ active }: { active: boolean }) => (
@@ -42,22 +38,50 @@ const IconHome = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
     </svg>
 );
 
-// ── QUIZZES (heart) ────────────────────────────────────────
+// ── QUIZZES — VERIFIED BADGE (shield + tick) ───────────────
+// ── QUIZZES — META-STYLE VERIFIED CHECK ────────────────────
+// ── QUIZZES — META-STYLE VERIFIED CHECK ────────────────────
+// Mathematically rigid scalloped badge: 8 evenly-spaced arcs.
+// Built on a 26×26 viewBox centered at (13, 13).
+// Inner radius = 6, scallop bump radius = 2.1, outer tip = 8.1.
+// Every point is ABSOLUTE and symmetric — no drift.
 const IconQuizzes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Scalloped 8-point badge — rigid geometry */}
         <path
-            d="M13 21.8S4.4 16.6 4.4 10.9a4.9 4.9 0 0 1 8.6-3.1 4.9 4.9 0 0 1 8.6 3.1c0 5.7-8.6 10.9-8.6 10.9Z"
+            d="
+                M13 4.9
+                A2.1 2.1 0 0 1 18.72 6.12
+                A2.1 2.1 0 0 1 21.88 10.28
+                A2.1 2.1 0 0 1 21.1 16.72
+                A2.1 2.1 0 0 1 16.88 19.88
+                A2.1 2.1 0 0 1 9.12 19.88
+                A2.1 2.1 0 0 1 4.9 16.72
+                A2.1 2.1 0 0 1 4.12 10.28
+                A2.1 2.1 0 0 1 7.28 6.12
+                A2.1 2.1 0 0 1 13 4.9
+                Z
+            "
             stroke="currentColor"
             strokeWidth={SW(active)}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.22 : 0}
+        />
+        {/* Checkmark tick — centered */}
+        <path
+            d="m9.5 13 2.5 2.5 4.75-5"
+            stroke={active ? ACTIVE_DETAIL : "currentColor"}
+            strokeWidth={active ? 2.2 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fill="none"
         />
     </svg>
 );
@@ -75,7 +99,7 @@ const IconFeed = ({ active }: { active: boolean }) => (
             strokeWidth={SW(active)}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <path
             d="M19.25 8.5h1.5A2.25 2.25 0 0 1 23 10.75v10.5a2.25 2.25 0 0 1-2.25 2.25"
@@ -85,14 +109,13 @@ const IconFeed = ({ active }: { active: boolean }) => (
             strokeLinejoin="round"
             fill="none"
         />
-        {/* Detail lines — always visible, tinted when active */}
-        <path d="M7.5 9.25h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
-        <path d="M7.5 13h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
-        <path d="M7.5 16.75h5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M7.5 9.25h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
+        <path d="M7.5 13h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
+        <path d="M7.5 16.75h5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
     </svg>
 );
 
-// ── MISTAKES (kept for Menu badge / future use) ──────────
+// ── MISTAKES ────────────────────────────────────────────────
 const IconMistakes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -102,7 +125,7 @@ const IconMistakes = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <path
             d="M13 21.5s8.8-5.4 8.8-11.2a4.9 4.9 0 0 0-8.8-3.05"
@@ -111,13 +134,13 @@ const IconMistakes = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
             transform="translate(1.2 0)"
         />
         <path
             d="m11.2 6.8 1.8 2.6-1.4 2.2 1.4 2.4-1.4 2.3 1.4 2.4"
             stroke={active ? ACTIVE_DETAIL : "currentColor"}
-            strokeWidth={active ? 1.6 : 1.7}
+            strokeWidth={active ? 1.7 : 1.8}
             strokeLinecap="round"
             strokeLinejoin="round"
             transform="translate(0.7 0)"
@@ -125,7 +148,7 @@ const IconMistakes = ({ active }: { active: boolean }) => (
     </svg>
 );
 
-// ── CPD (award/medal) ──────────────────────────────────────
+// ── CPD ─────────────────────────────────────────────────────
 const IconCpd = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle
@@ -135,7 +158,7 @@ const IconCpd = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <path
             d="M8.75 14.75 8 22.25l5-2.75 5 2.75-.75-7.5"
@@ -144,12 +167,12 @@ const IconCpd = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
     </svg>
 );
 
-// ── CATALOG (book) ──────────────────────────────────────────
+// ── CATALOG ─────────────────────────────────────────────────
 const IconCatalog = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -158,49 +181,34 @@ const IconCatalog = ({ active }: { active: boolean }) => (
             strokeWidth={SW(active)}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
-        <path d="M8.5 3.25v19.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.6 : SW(false)} strokeLinecap="round" />
-        {!active && (
-            <>
-                <path d="M12 9.5h5.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
-                <path d="M12 13h5.5" stroke="currentColor" strokeWidth={SW(false)} strokeLinecap="round" />
-            </>
-        )}
-        {active && (
-            <>
-                <path d="M12 9.5h5.5" stroke={ACTIVE_DETAIL} strokeWidth={1.6} strokeLinecap="round" />
-                <path d="M12 13h5.5" stroke={ACTIVE_DETAIL} strokeWidth={1.6} strokeLinecap="round" />
-            </>
-        )}
+        <path d="M8.5 3.25v19.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M12 9.5h5.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M12 13h5.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
     </svg>
 );
 
-// ── PROGRESS (bar chart) ───────────────────────────────────
+// ── PROGRESS ────────────────────────────────────────────────
 const IconProgress = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M4.25 21.75h17.5"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-        />
-        <rect x="6.5" y="13" width="3.5" height="7" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
-        <rect x="11.25" y="9" width="3.5" height="11" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
-        <rect x="16" y="5" width="3.5" height="15" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
+        <path d="M4.25 21.75h17.5" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" />
+        <rect x="6.5" y="13" width="3.5" height="7" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="11.25" y="9" width="3.5" height="11" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="16" y="5" width="3.5" height="15" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
     </svg>
 );
 
-// ── MENU (three lines) ─────────────────────────────────────
+// ── MENU ────────────────────────────────────────────────────
 const IconMenu = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4.5 7.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
-        <path d="M4.5 13h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
-        <path d="M4.5 18.5h17" stroke="currentColor" strokeWidth={active ? 2.3 : 2.1} strokeLinecap="round" />
+        <path d="M4.5 7.5h17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
+        <path d="M4.5 13h17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
+        <path d="M4.5 18.5h17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
     </svg>
 );
 
-// ── HEADPHONES (podcasts / listen) ─────────────────────────
+// ── HEADPHONES ──────────────────────────────────────────────
 const IconHeadphones = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -220,7 +228,7 @@ const IconHeadphones = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <rect
             x="17.5"
@@ -231,12 +239,12 @@ const IconHeadphones = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
     </svg>
 );
 
-// ── TUTOR EXAMS (clipboard check) ──────────────────────────
+// ── TUTOR EXAMS ─────────────────────────────────────────────
 const IconTutorExams = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -246,7 +254,7 @@ const IconTutorExams = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <rect
             x="9"
@@ -257,13 +265,13 @@ const IconTutorExams = ({ active }: { active: boolean }) => (
             stroke="currentColor"
             strokeWidth={SW(active)}
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
-        <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-// ── EXAM RESULTS (document check) ──────────────────────────
+// ── EXAM RESULTS ────────────────────────────────────────────
 const IconExamResults = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -273,7 +281,7 @@ const IconExamResults = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <path
             d="M15 3.25v6h6"
@@ -282,25 +290,25 @@ const IconExamResults = ({ active }: { active: boolean }) => (
             strokeLinecap="round"
             strokeLinejoin="round"
         />
-        <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M9.5 19.5h7" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9.5 19.5h7" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
     </svg>
 );
 
-// ── ANALYTICS (bar chart) ─────────────────────────────────
+// ── ANALYTICS ───────────────────────────────────────────────
 const IconAnalytics = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
-        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
-        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
+        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
     </svg>
 );
 
 /* ============================================================
-   NAV ITEM — v4
-   • Active color = vivid blue in BOTH modes (never white)
-   • Label: active = blue-600 (light) / blue-400 (dark), bold
-   • Tile gradient kept subtle so icon stays readable
+   NAV ITEM
+   • Active = vivid blue + BOLD label + solid-ish pill
+   • Inactive = muted grey + medium label
+   • Icon stroke weight jumps 1.8 → 2.5
    ============================================================ */
 const NavItem = memo(({
     icon: Icon,
@@ -322,18 +330,19 @@ const NavItem = memo(({
 
     const showActive = isActive || pending;
 
-    // ── Vivid active color, in BOTH modes (Instagram/WhatsApp style) ──
+    // Active = vivid blue
+    // Active = vivid blue. Inactive = PURE BLACK (light mode) / PURE WHITE (dark mode).
     const activeColor = isDark ? "#60a5fa" : "#2563eb"; // blue-400 / blue-600
-    const inactiveColor = isDark ? "#9ca3af" : "#6b7280"; // gray-400 / gray-500
-
+    const inactiveColor = isDark ? "#ffffff" : "#000000";
     const iconColorStyle = showActive
         ? { color: activeColor }
         : { color: inactiveColor };
 
+    // BOLD on active, medium on inactive — clear weight jump
+    // Active label = bold blue. Inactive label = pure black (light) / pure white (dark).
     const labelColor = showActive
         ? (isDark ? "text-blue-400" : "text-blue-600")
-        : (isDark ? "text-gray-400" : "text-gray-500");
-
+        : (isDark ? "text-white" : "text-black");
     const handlePointerDown = (e: React.PointerEvent) => {
         setPressed(true);
         setPending(true);
@@ -342,10 +351,10 @@ const NavItem = memo(({
     };
     const clear = () => setPressed(false);
 
-    // Subtle active tile — lighter than before so the vivid icon pops
+    // Visible active tile — this is the WhatsApp-style "pill"
     const activeTileBg = isDark
-        ? "linear-gradient(160deg, rgba(59,130,246,0.14) 0%, rgba(37,99,235,0.06) 100%)"
-        : "linear-gradient(160deg, rgba(59,130,246,0.12) 0%, rgba(37,99,235,0.05) 100%)";
+        ? "rgba(96,165,250,0.22)"
+        : "rgba(37,99,235,0.16)";
 
     return (
         <button
@@ -374,7 +383,7 @@ const NavItem = memo(({
                 }}
             />
 
-            {/* Active tile — very subtle, no shadow */}
+            {/* Active tile — solid-looking pill */}
             <div
                 className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
                 style={{
@@ -406,9 +415,9 @@ const NavItem = memo(({
                 )}
             </div>
 
-            {/* Label */}
+            {/* Label — BOLD when active */}
             <span
-                className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-semibold" : "font-medium"
+                className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-bold" : "font-medium"
                     } ${labelColor}`}
             >
                 {label}
@@ -436,6 +445,7 @@ export function Footer() {
     const [drawerReady, setDrawerReady] = useState(false);
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
+    const [chatOpen, setChatOpen] = useState(false);
     const scrollContainerRef = useRef<Element | null>(null);
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         try {
@@ -546,15 +556,22 @@ export function Footer() {
         e.stopPropagation();
         superFastTap("success");
 
-        const opener = (window as any).__studifyOpen;
-        if (typeof opener === "function") {
-            opener("episodes");
-        } else {
-            requestAnimationFrame(() => {
-                const retry = (window as any).__studifyOpen;
-                if (typeof retry === "function") retry("episodes");
-            });
-        }
+        let attempts = 0;
+        const MAX_ATTEMPTS = 15;
+
+        const tryOpen = () => {
+            const opener = (window as any).__studifyOpen;
+            if (typeof opener === "function") {
+                opener("episodes");
+                return;
+            }
+            attempts++;
+            if (attempts < MAX_ATTEMPTS) {
+                setTimeout(tryOpen, 100);
+            }
+        };
+
+        tryOpen();
     }, []);
 
     useEffect(() => {
@@ -583,7 +600,16 @@ export function Footer() {
         window.addEventListener('resize', updateSafeArea);
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
-
+    useEffect(() => {
+        const onChatVisibility = (e: Event) => {
+            const detail = (e as CustomEvent<{ open: boolean }>).detail;
+            setChatOpen(!!detail?.open);
+        };
+        window.addEventListener("chat-overlay-visibility", onChatVisibility);
+        return () => {
+            window.removeEventListener("chat-overlay-visibility", onChatVisibility);
+        };
+    }, []);
     useEffect(() => {
         let container: Element | null = null;
         let detach: (() => void) | null = null;
@@ -660,68 +686,67 @@ export function Footer() {
         (theme === 'dark'
             ? 'before:via-white/8 before:to-transparent '
             : 'before:via-black/6 before:to-transparent');
+    const isOnMenuRoute = location.pathname === "/menu";
+
     return (
         <>
-            <div
-                className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
+            {!chatOpen && !isOnMenuRoute && (
+                <div
+                    className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
                     transition-all duration-300 ease-out
                     ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
-                    ${isDrawerOpen ? 'opacity-0 pointer-events-none' : ''}
                     ${footerBgClass}
                     flex justify-around items-center px-1
                     select-none`}
-                style={{
-                    height: `${footerHeight}px`,
-                    willChange: 'transform, opacity',
-                    paddingBottom: `${safeAreaBottom}px`,
-                    WebkitBackfaceVisibility: 'hidden',
-                    backfaceVisibility: 'hidden',
-                }}
-            >
-                {/* ✅ 1. Home — always first */}
-                <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
+                    style={{
+                        height: `${footerHeight}px`,
+                        willChange: 'transform, opacity',
+                        paddingBottom: `${safeAreaBottom}px`,
+                        WebkitBackfaceVisibility: 'hidden',
+                        backfaceVisibility: 'hidden',
+                    }}
+                >
+                    <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
 
-                {/* ✅ 2. Feed (student) | Tutor Exams (tutor) | CPD (staff) */}
-                {isStudent && (
-                    <NavItem icon={IconFeed} label="Feed" isActive={isActive("/feed")} onPress={(e) => handleNavigate(e, "/feed")} isDark={theme === 'dark'} />
-                )}
-                {isTutor && (
-                    <NavItem icon={IconTutorExams} label="Tutor Exams" isActive={isActive("/tutor/exams")} onPress={(e) => handleNavigate(e, "/tutor/exams")} isDark={theme === 'dark'} />
-                )}
-                {isStaff && (
-                    <NavItem icon={IconCpd} label="CPD" isActive={isActive("/cpd")} onPress={(e) => handleNavigate(e, "/cpd")} isDark={theme === 'dark'} />
-                )}
+                    {isStudent && (
+                        <NavItem icon={IconFeed} label="Feed" isActive={isActive("/feed")} onPress={(e) => handleNavigate(e, "/feed")} isDark={theme === 'dark'} />
+                    )}
+                    {isTutor && (
+                        <NavItem icon={IconTutorExams} label="Tutor Exams" isActive={isActive("/tutor/exams")} onPress={(e) => handleNavigate(e, "/tutor/exams")} isDark={theme === 'dark'} />
+                    )}
+                    {isStaff && (
+                        <NavItem icon={IconCpd} label="CPD" isActive={isActive("/cpd")} onPress={(e) => handleNavigate(e, "/cpd")} isDark={theme === 'dark'} />
+                    )}
 
-                {/* ✅ 3. MIDDLE HERO — Quizzes (student) | Analytics (tutor) | Catalog (staff) */}
-                {isStudent && (
-                    <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
-                )}
-                {isTutor && (
-                    <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
-                )}
-                {isStaff && (
-                    <NavItem icon={IconCatalog} label="Catalog" isActive={isActive("/cpd/catalog")} onPress={(e) => handleNavigate(e, "/cpd/catalog")} isDark={theme === 'dark'} />
-                )}
+                    {isStudent && (
+                        <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
+                    )}
+                    {isTutor && (
+                        <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
+                    )}
+                    {isStaff && (
+                        <NavItem icon={IconCatalog} label="Catalog" isActive={isActive("/cpd/catalog")} onPress={(e) => handleNavigate(e, "/cpd/catalog")} isDark={theme === 'dark'} />
+                    )}
 
-                {/* ✅ 4. Listen — every role, opens overlay */}
-                <NavItem
-                    icon={IconHeadphones}
-                    label="Listen"
-                    isActive={false}
-                    onPress={handleOpenPodcasts}
-                    isDark={theme === 'dark'}
-                />
+                    <NavItem
+                        icon={IconHeadphones}
+                        label="Listen"
+                        isActive={isActive("/listen")}
+                        onPress={(e) => handleNavigate(e, "/listen")}
+                        isDark={theme === 'dark'}
+                    />
 
-                {/* ✅ 5. Menu — one only. Badge for mistakes (students) */}
-                <NavItem
-                    icon={IconMenu}
-                    label="Menu"
-                    isActive={isDrawerOpen}
-                    onPress={handleMenuPress}
-                    isDark={theme === 'dark'}
-                    badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
-                />
-            </div>
+                    <NavItem
+                        icon={IconMenu}
+                        label="Menu"
+                        isActive={isActive("/menu")}
+                        onPress={(e) => handleNavigate(e, "/menu")}
+                        isDark={theme === 'dark'}
+                        badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
+                    />
+                </div>
+            )}
+
 
             <Suspense fallback={null}>
                 {isDrawerOpen && (
@@ -729,7 +754,9 @@ export function Footer() {
                 )}
             </Suspense>
 
-            <div className="md:hidden pointer-events-none" style={{ height: `${footerHeight + 8}px` }} />
+            {!chatOpen && (
+                <div className="md:hidden pointer-events-none" style={{ height: `${footerHeight + 8}px` }} />
+            )}
         </>
     );
 }

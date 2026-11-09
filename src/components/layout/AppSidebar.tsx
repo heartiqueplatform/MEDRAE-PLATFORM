@@ -510,29 +510,31 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const handleOpenPodcasts = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
 
+    // 🔁 Retry loop: chunk may still be downloading. Try every 100ms for 1.5s.
+    let attempts = 0;
+    const MAX_ATTEMPTS = 15;
+
+    const tryOpen = () => {
+      const opener = (window as any).__studifyOpen;
+      if (typeof opener === "function") {
+        opener("episodes");
+        return;
+      }
+      attempts++;
+      if (attempts < MAX_ATTEMPTS) {
+        setTimeout(tryOpen, 100);
+      }
+    };
+
     // Close the sidebar on tablet-ish widths first so it isn't hiding the modal.
     if (windowWidth < 1024) {
       toggleSidebar();
-      // Give the sidebar's collapse animation a beat before opening the player
-      setTimeout(() => {
-        const opener = (window as any).__studifyOpen;
-        if (typeof opener === "function") opener("episodes");
-      }, 220);
+      setTimeout(tryOpen, 220);
       return;
     }
 
-    const opener = (window as any).__studifyOpen;
-    if (typeof opener === "function") {
-      opener("episodes");
-    } else {
-      // MusicPlayer not yet mounted — retry next frame
-      requestAnimationFrame(() => {
-        const retry = (window as any).__studifyOpen;
-        if (typeof retry === "function") retry("episodes");
-      });
-    }
+    tryOpen();
   }, [toggleSidebar, windowWidth]);
-
   // ✅ MAIN — student-only items hidden for tutor & staff
   const mainItems = useMemo(() => {
     const base = [

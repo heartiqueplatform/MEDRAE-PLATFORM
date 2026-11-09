@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { cacheGet, cacheSet } from "@/lib/localCache";
 
@@ -317,11 +317,21 @@ export function useEpisodeInteractions() {
         []
     );
 
+    // 🔥 Ref so `get` stays stable — no cascade re-renders in episode rows.
+    const stateRef = useRef(state);
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
+
     const get = useCallback(
         (targetType: TargetType, targetId: string) =>
-            state.get(keyOf(targetType, targetId)) ?? EMPTY,
-        [state]
+            stateRef.current.get(keyOf(targetType, targetId)) ?? EMPTY,
+        []
     );
 
-    return { toggle, hydrate, get };
+    // 🚀 STABLE return — same object shape across renders.
+    return useMemo(
+        () => ({ toggle, hydrate, get }),
+        [toggle, hydrate, get]
+    );
 }

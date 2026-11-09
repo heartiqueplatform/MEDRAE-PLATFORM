@@ -28,7 +28,7 @@ const isOffline = (): boolean =>
 let _reachability: { value: boolean; at: number } | null = null;
 const REACHABILITY_TTL = 10 * 1000;
 
-async function isReallyOnline(timeoutMs = 2500): Promise<boolean> {
+export async function isReallyOnline(timeoutMs = 2500): Promise<boolean> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return false;
   }
