@@ -28,6 +28,26 @@ const flagOf = (kind: ReactionKind): "liked" | "loved" | "saved" =>
 // ─── localStorage cache ────────────────────────────────────────
 const CACHE_KEY = "reactions:v1";
 
+// ✅ Hydration throttle — skip the network if we hydrated recently
+const HYDRATED_CACHE_KEY = "reactions:hydratedAt:v1";
+const HYDRATED_TTL_MS = 5 * 60 * 1000; // 5 min
+
+function hydratedRecently(): boolean {
+    try {
+        const raw = localStorage.getItem(HYDRATED_CACHE_KEY);
+        if (!raw) return false;
+        return Date.now() - Number(raw) < HYDRATED_TTL_MS;
+    } catch {
+        return false;
+    }
+}
+
+function markHydrated() {
+    try {
+        localStorage.setItem(HYDRATED_CACHE_KEY, String(Date.now()));
+    } catch { }
+}
+
 type PersistShape = Record<string, InteractionState>;
 
 function loadCache(): Map<string, InteractionState> {
@@ -76,7 +96,6 @@ export function useEpisodeInteractions() {
 
     // ─────────────────────────────────────────────────────────
     // Persist to localStorage on every state change.
-    // Cheap — the map is small and writes are ~1 KB.
     // ─────────────────────────────────────────────────────────
     useEffect(() => {
         persist(state);
@@ -93,8 +112,6 @@ export function useEpisodeInteractions() {
 
     /**
      * Write only if the value actually changed.
-     * Returning `prev` from the updater = React skips the re-render.
-     * This is what stops the "content rearranging itself" on hydrate.
      */
     const writeIfChanged = useCallback(
         (key: string, next: InteractionState) => {
@@ -152,9 +169,6 @@ export function useEpisodeInteractions() {
                         p_kind: kind,
                     });
 
-                    // ─────────────────────────────────────────
-                    // 3a. FAILURE → roll back the optimistic flip
-                    // ─────────────────────────────────────────
                     if (error) {
                         console.error("toggle_reaction failed:", error);
                         setState((prev) => {
@@ -179,10 +193,6 @@ export function useEpisodeInteractions() {
                         return;
                     }
 
-                    // ─────────────────────────────────────────
-                    // 3b. SUCCESS → reconcile with server truth
-                    //     Uses writeIfChanged → no re-render if equal
-                    // ─────────────────────────────────────────
                     const row = Array.isArray(data) ? data[0] : data;
                     if (row) {
                         setState((prev) => {
@@ -196,7 +206,6 @@ export function useEpisodeInteractions() {
                                     [kind]: Number(row.count),
                                 },
                             };
-                            // Skip the write if the server agrees with us
                             if (eq(cur, merged)) return prev;
                             next.set(key, merged);
                             return next;
@@ -218,6 +227,15 @@ export function useEpisodeInteractions() {
                 ? episodeIds
                 : episodeIds.filter((id) => !hydratedRef.current.has(id));
             if (newIds.length === 0) return;
+
+            // ✅ Skip the network entirely if we hydrated recently
+            //    (state already painted from localStorage cache).
+            //    This is THE fix for /listen mount lag.
+            if (!opts?.force && hydratedRecently()) {
+                newIds.forEach((id) => hydratedRef.current.add(id));
+                return;
+            }
+
             newIds.forEach((id) => hydratedRef.current.add(id));
 
             const {
@@ -240,7 +258,6 @@ export function useEpisodeInteractions() {
                     : Promise.resolve({ data: [] as any[] }),
             ]);
 
-            // Fold raw reaction rows into per-episode flags
             const myFlags = new Map<
                 string,
                 { liked: boolean; loved: boolean; saved: boolean }
@@ -258,8 +275,6 @@ export function useEpisodeInteractions() {
                 myFlags.set(id, cur);
             }
 
-            // ✅ ONE batched setState. Return `prev` if nothing changed
-            //    → zero re-renders when localStorage already matched the server.
             setState((prev) => {
                 let mutated = false;
                 const next = new Map(prev);
@@ -267,7 +282,6 @@ export function useEpisodeInteractions() {
                 for (const s of (statsRes.data ?? []) as any[]) {
                     const key = keyOf("episode", s.episode_id);
 
-                    // Never clobber an in-flight optimistic update
                     if (inFlightRef.current.has(key)) continue;
 
                     const mine = myFlags.get(s.episode_id) ?? {
@@ -289,13 +303,12 @@ export function useEpisodeInteractions() {
                     };
 
                     const cur = next.get(key);
-                    if (cur && eq(cur, server)) continue; // ← no change, skip
+                    if (cur && eq(cur, server)) continue;
 
                     next.set(key, server);
                     mutated = true;
                 }
 
-                // Episodes with reactions but no stats row yet
                 for (const [id, mine] of myFlags) {
                     const key = keyOf("episode", id);
                     if (next.has(key)) continue;
@@ -313,11 +326,13 @@ export function useEpisodeInteractions() {
 
                 return mutated ? next : prev;
             });
+
+            // ✅ Mark hydration time — next mount within 5 min skips network
+            markHydrated();
         },
         []
     );
 
-    // 🔥 Ref so `get` stays stable — no cascade re-renders in episode rows.
     const stateRef = useRef(state);
     useEffect(() => {
         stateRef.current = state;
@@ -329,7 +344,6 @@ export function useEpisodeInteractions() {
         []
     );
 
-    // 🚀 STABLE return — same object shape across renders.
     return useMemo(
         () => ({ toggle, hydrate, get }),
         [toggle, hydrate, get]

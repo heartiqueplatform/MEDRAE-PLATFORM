@@ -24,6 +24,41 @@ export interface PodcastShow {
 
 const CACHE_TTL_MS = 1000 * 60 * 15;
 
+// ─────────────────────────────────────────────────────────────
+// ✅ localStorage cache — survives reload, paints instantly,
+//    kills the 2-network-query lag on every /listen open.
+// ─────────────────────────────────────────────────────────────
+const LS_CACHE_KEY = "medrae:podcast_shows:v1";
+const LS_TTL_MS = 15 * 60 * 1000; // 15 min
+
+function readLsCache(): PodcastShow[] | null {
+    try {
+        const raw = localStorage.getItem(LS_CACHE_KEY);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        if (!Array.isArray(data) || data.length === 0) return null;
+        // Offline → trust stale cache. Better than blank.
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+            return data as PodcastShow[];
+        }
+        if (Date.now() - ts < LS_TTL_MS) return data as PodcastShow[];
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+function writeLsCache(data: PodcastShow[]) {
+    try {
+        localStorage.setItem(
+            LS_CACHE_KEY,
+            JSON.stringify({ data, ts: Date.now() })
+        );
+    } catch {
+        // Quota — ignore, memory cache still works
+    }
+}
+
 function sortShows(list: PodcastShow[]): PodcastShow[] {
     return [...list].sort((a, b) => {
         const t = a.title.localeCompare(b.title);
@@ -47,8 +82,15 @@ function dbToShow(s: DbShow): PodcastShow {
 }
 
 export function usePodcastShows() {
-    const [shows, setShows] = useState<PodcastShow[]>([]);
-    const [loading, setLoading] = useState(true);
+    // ✅ Paint from localStorage SYNCHRONOUSLY on first render
+    const [shows, setShows] = useState<PodcastShow[]>(() => {
+        const cached = readLsCache();
+        return cached ? sortShows(cached) : [];
+    });
+    const [loading, setLoading] = useState(() => {
+        const cached = readLsCache();
+        return !cached || cached.length === 0;
+    });
 
     const refresh = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent ?? false;
@@ -60,7 +102,7 @@ export function usePodcastShows() {
         try {
             const online = await isReallyOnline();
             if (!online) {
-                // Offline → keep whatever Dexie has. No skeleton, no hang.
+                // Offline → keep whatever localStorage / Dexie has.
                 return;
             }
 
@@ -134,6 +176,7 @@ export function usePodcastShows() {
             );
 
             setShows(merged);
+            writeLsCache(merged); // ✅ persist for instant next mount
         } catch (err) {
             console.error("refresh shows threw:", err);
         } finally {
@@ -144,13 +187,19 @@ export function usePodcastShows() {
 
     useEffect(() => {
         (async () => {
-            const cached = await getAllShows();
-            if (cached.length > 0) {
-                setShows(sortShows(cached.map(dbToShow)));
-                setLoading(false);
+            // If localStorage already painted, skip the Dexie round-trip
+            const lsCached = readLsCache();
+            if (!lsCached || lsCached.length === 0) {
+                const dexieCached = await getAllShows();
+                if (dexieCached.length > 0) {
+                    setShows(sortShows(dexieCached.map(dbToShow)));
+                    setLoading(false);
+                }
             }
-            refresh({ silent: true });
+            // Always refresh in background (silent if we already have data)
+            refresh({ silent: (lsCached?.length ?? 0) > 0 || shows.length > 0 });
         })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh]);
 
     useEffect(() => {
@@ -178,8 +227,8 @@ export function usePodcastShows() {
 
             const wasEndorsed = target.user_endorsed;
 
-            setShows((prev) =>
-                prev.map((s) =>
+            setShows((prev) => {
+                const next = prev.map((s) =>
                     s.id === showId
                         ? {
                             ...s,
@@ -187,8 +236,10 @@ export function usePodcastShows() {
                             endorsement_count: Math.max(0, s.endorsement_count + (wasEndorsed ? -1 : 1)),
                         }
                         : s
-                )
-            );
+                );
+                writeLsCache(next);
+                return next;
+            });
 
             try {
                 if (wasEndorsed) {
@@ -206,8 +257,8 @@ export function usePodcastShows() {
                 }
             } catch (e) {
                 console.error("endorse failed:", e);
-                setShows((prev) =>
-                    prev.map((s) =>
+                setShows((prev) => {
+                    const next = prev.map((s) =>
                         s.id === showId
                             ? {
                                 ...s,
@@ -215,8 +266,10 @@ export function usePodcastShows() {
                                 endorsement_count: Math.max(0, s.endorsement_count + (wasEndorsed ? 1 : -1)),
                             }
                             : s
-                    )
-                );
+                    );
+                    writeLsCache(next);
+                    return next;
+                });
             }
         },
         [shows]

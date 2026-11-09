@@ -526,15 +526,14 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       }
     };
 
-    // Close the sidebar on tablet-ish widths first so it isn't hiding the modal.
-    if (windowWidth < 1024) {
+    // ✅ Close the sidebar AND open the player at the same time.
+    //    The overlay has z-index 2147483647 — it covers the sidebar
+    //    instantly. No need to wait 220ms for the animation.
+    if (window.innerWidth < 1024) {
       toggleSidebar();
-      setTimeout(tryOpen, 220);
-      return;
     }
-
     tryOpen();
-  }, [toggleSidebar, windowWidth]);
+  }, [toggleSidebar]);   // ← removed windowWidth dependency
   // ✅ MAIN — student-only items hidden for tutor & staff
   const mainItems = useMemo(() => {
     const base = [

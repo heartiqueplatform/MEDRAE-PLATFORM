@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { cacheGet, cacheSet, isFresh, cacheGetStamped } from "@/lib/localCache";
+import { cacheGet, cacheSet } from "@/lib/localCache";
 
 export interface FollowState {
     following: boolean;
@@ -14,7 +14,26 @@ const EMPTY: FollowState = Object.freeze({
 });
 
 const CACHE_KEY = "follows";
-const HYDRATED_KEY = "follows:hydratedAt";
+
+// ✅ Hydration throttle — skip the network if we hydrated recently
+const HYDRATED_CACHE_KEY = "follows:hydratedAt:v1";
+const HYDRATED_TTL_MS = 5 * 60 * 1000; // 5 min
+
+function hydratedRecently(): boolean {
+    try {
+        const raw = localStorage.getItem(HYDRATED_CACHE_KEY);
+        if (!raw) return false;
+        return Date.now() - Number(raw) < HYDRATED_TTL_MS;
+    } catch {
+        return false;
+    }
+}
+
+function markHydrated() {
+    try {
+        localStorage.setItem(HYDRATED_CACHE_KEY, String(Date.now()));
+    } catch { }
+}
 
 type FollowMap = Record<string, FollowState>;
 
@@ -141,6 +160,15 @@ export function useShowFollows() {
 
         const newIds = showIds.filter((id) => !hydratedRef.current.has(id));
         if (newIds.length === 0 && !opts?.force) return;
+
+        // ✅ Skip the network entirely if we hydrated recently.
+        //    State already painted from localStorage cache.
+        //    This is THE fix for /listen mount lag.
+        if (!opts?.force && hydratedRecently()) {
+            newIds.forEach((id) => hydratedRef.current.add(id));
+            return;
+        }
+
         newIds.forEach((id) => hydratedRef.current.add(id));
 
         const {
@@ -166,7 +194,6 @@ export function useShowFollows() {
             (myFollowsRes.data ?? []).map((r: any) => r.show_id as string)
         );
 
-        // ✅ Batch the write — build a merged map, then commit ONE setState
         setState((prev) => {
             let mutated = false;
             const next = new Map(prev);
@@ -185,13 +212,12 @@ export function useShowFollows() {
                     cur.following === server.following &&
                     cur.followerCount === server.followerCount
                 ) {
-                    continue; // ← no change → no re-render
+                    continue; // no change → no re-render
                 }
                 next.set(s.show_id, server);
                 mutated = true;
             }
 
-            // Shows the user follows but that don't have a stats row yet
             for (const id of mySet) {
                 if (inFlightRef.current.has(id)) continue;
                 const cur = next.get(id);
@@ -202,6 +228,9 @@ export function useShowFollows() {
 
             return mutated ? next : prev;
         });
+
+        // ✅ Mark hydration time — next mount within 5 min skips network
+        markHydrated();
     }, []);
 
     const get = useCallback(
