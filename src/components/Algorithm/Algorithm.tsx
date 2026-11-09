@@ -131,7 +131,7 @@ function barColorFor(score: number) {
 }
 
 // --- Horizontal Snap Carousel ---
-function SnapCarousel({ children, itemWidthClass = "w-[42vw] sm:w-[180px]" }: {
+function SnapCarousel({ children, itemWidthClass = "w-[48vw] sm:w-[200px]" }: {
     children: React.ReactNode;
     itemWidthClass?: string;
 }) {
@@ -629,7 +629,7 @@ export default function Algorithm() {
             : { colors: ["#ef4444", "#dc2626", "#b91c1c"] as [string, string, string], glow: "#ef4444" };
 
     return (
-        <div className="w-full space-y-2 px-2">
+        <div className="w-full space-y-2 px-1">
             {/* HERO CARD */}
             <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-muted/30">
                 <div className="px-3 md:px-6 pt-3 md:pt-6">

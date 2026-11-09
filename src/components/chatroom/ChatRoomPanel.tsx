@@ -54,6 +54,31 @@ export default function ChatRoomPanel({
         return () => document.removeEventListener("mousedown", h);
     }, [emojiOpen]);
 
+    // ✅ Lock panel height to the VISUAL viewport (fixes iOS/Android keyboard push)
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const vv = window.visualViewport;
+        const updateHeight = () => {
+            const h = vv ? vv.height : window.innerHeight;
+            document.documentElement.style.setProperty("--chat-panel-height", `${h}px`);
+        };
+        updateHeight();
+        if (vv) {
+            vv.addEventListener("resize", updateHeight);
+            vv.addEventListener("scroll", updateHeight);
+        } else {
+            window.addEventListener("resize", updateHeight);
+        }
+        return () => {
+            if (vv) {
+                vv.removeEventListener("resize", updateHeight);
+                vv.removeEventListener("scroll", updateHeight);
+            } else {
+                window.removeEventListener("resize", updateHeight);
+            }
+            document.documentElement.style.removeProperty("--chat-panel-height");
+        };
+    }, []);
     // ── Empty state (no unit selected) ─────────────────────────
     if (!activeUnit) {
         return (
@@ -74,7 +99,10 @@ export default function ChatRoomPanel({
     };
 
     return (
-        <div className="flex flex-col h-full min-h-0 w-full overflow-hidden relative bg-white dark:bg-[#0d1117]">
+        <div
+            className="flex flex-col min-h-0 w-full overflow-hidden relative bg-white dark:bg-[#0d1117]"
+            style={{ height: "var(--chat-panel-height, 100%)" }}
+        >
             {/* HEADER — fixed, never scrolls */}
             <div className="flex-none bg-white dark:bg-[#161b22] px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -105,7 +133,9 @@ export default function ChatRoomPanel({
             </div>
 
             {/* MESSAGES — only this scrolls */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-4 bg-gray-50 dark:bg-[#0d1117]">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-4 bg-gray-50 dark:bg-[#0d1117]"
+                style={{ touchAction: "pan-y" }}
+            >
                 {messages.length === 0 ? (
                     <div className="h-full min-h-[450px] flex flex-col items-center justify-center py-10 text-center">
                         <div className="h-28 w-28 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] mb-6">
