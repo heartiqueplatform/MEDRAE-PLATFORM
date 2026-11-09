@@ -179,13 +179,13 @@ export default function ChatListPanel({
                                     )}
                                 >
                                     <div className="relative shrink-0">
-                                        <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d]">
+                                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d]">
                                             <img src={avatarUrl} alt="group" className="h-full w-full object-cover" draggable={false} />
                                         </div>
-                                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-[#161b22] bg-emerald-500" />
+                                        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white dark:ring-[#161b22] bg-emerald-500" />
                                         {isPinned && (
-                                            <div className="absolute -top-1 -left-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-[#161b22]">
-                                                <Pin size={8} className="text-white fill-white" strokeWidth={2.5} />
+                                            <div className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-[#161b22]">
+                                                <Pin size={10} className="text-white fill-white" strokeWidth={2.5} />
                                             </div>
                                         )}
                                     </div>
@@ -245,7 +245,7 @@ export default function ChatListPanel({
                                     onClick={() => handleRowClick(unit)}
                                     className="group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#21262d] cursor-pointer transition-all opacity-70 select-none"
                                 >
-                                    <div className="h-9 w-9 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] shrink-0">
+                                    <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] shrink-0">
                                         <img src={LOCAL_AVATARS[0]} alt="" className="h-full w-full object-cover" draggable={false} />
                                     </div>
                                     <div className="flex-1 min-w-0">

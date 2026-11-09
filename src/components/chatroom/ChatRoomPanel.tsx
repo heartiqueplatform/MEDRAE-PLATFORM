@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Check, MessageCircle, X, Edit2, Trash2, CornerUpLeft } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
@@ -75,8 +74,8 @@ export default function ChatRoomPanel({
     };
 
     return (
-        <div className="flex flex-col h-full w-full overflow-hidden relative bg-white dark:bg-[#0d1117]">
-            {/* HEADER */}
+        <div className="flex flex-col h-full min-h-0 w-full overflow-hidden relative bg-white dark:bg-[#0d1117]">
+            {/* HEADER — fixed, never scrolls */}
             <div className="flex-none bg-white dark:bg-[#161b22] px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button
@@ -105,11 +104,11 @@ export default function ChatRoomPanel({
                 )}
             </div>
 
-            {/* MESSAGES */}
-            <ScrollArea className="flex-1 overflow-y-auto px-4 bg-gray-50 dark:bg-[#0d1117]">
+            {/* MESSAGES — only this scrolls */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-4 bg-gray-50 dark:bg-[#0d1117]">
                 {messages.length === 0 ? (
                     <div className="h-full min-h-[450px] flex flex-col items-center justify-center py-10 text-center">
-                        <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] mb-6">
+                        <div className="h-28 w-28 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] mb-6">
                             <img src="/background05.jpg" alt="Unit Roster" className="h-full w-full object-cover" />
                         </div>
                         <div className="space-y-2 px-6">
@@ -140,7 +139,7 @@ export default function ChatRoomPanel({
                                     onClick={(e) => { e.stopPropagation(); setSelectedMessage((p) => (p === msg.id ? null : msg.id)); }}
                                     className={cn("flex items-end gap-2", isMe ? "flex-row-reverse" : "flex-row", !isSameSender ? "mt-6" : "mt-1")}
                                 >
-                                    <Avatar className="h-9 w-9 shrink-0">
+                                    <Avatar className="h-12 w-12 shrink-0">
                                         {msg.avatar_url ? (
                                             <img src={msg.avatar_url} alt={msg.sender_name || "avatar"} className="h-full w-full object-cover" />
                                         ) : (
@@ -229,9 +228,9 @@ export default function ChatRoomPanel({
                         <div ref={endRef} className="h-2" />
                     </div>
                 )}
-            </ScrollArea>
+            </div>
 
-            {/* COMPOSER */}
+            {/* COMPOSER — fixed at bottom, never scrolls */}
             <div className="flex-none relative bg-white dark:bg-[#161b22]">
                 {replyingTo && (
                     <div className="px-4 py-3 bg-gray-50 dark:bg-[#21262d] flex justify-between items-center">
@@ -284,6 +283,7 @@ export default function ChatRoomPanel({
                 </div>
             </div>
 
+            {/* EMOJI PICKER */}
             {emojiOpen && (
                 <div ref={emojiRef} className="absolute bottom-20 right-4 z-[30] rounded-2xl overflow-hidden">
                     <EmojiPicker

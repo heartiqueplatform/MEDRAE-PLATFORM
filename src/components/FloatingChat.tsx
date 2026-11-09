@@ -147,7 +147,7 @@ export default function FloatingChat({ currentUserId: propUserId, isOpen = true,
       )}
 
       {showInfo && (
-        <div className="h-full w-full overflow-hidden relative border-l border-gray-100 dark:border-white/5">
+        <div className="h-full w-full overflow-hidden relative">
           {!collapsed && (
             <ResizeHandle
               width={rightWidth}

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Headphones, Podcast, Sparkles, Clock, Calendar, ThumbsUp, Heart } from 'lucide-react';
+import { Play, Headphones, Sparkles, Clock, Calendar, ThumbsUp, Heart } from 'lucide-react';
 import { useMusicPlayer } from './MusicPlayerProvider';
 import type { Track } from './MusicPlayerProvider';
 import { useEpisodeInteractions } from "@/hooks/useEpisodeInteractions";
@@ -75,7 +75,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
         const seed = daySeed();
         const shuffled = seededShuffle(tracks, seed);
         const feat = shuffled[0] ?? null;
-        const top = shuffled.slice(1, 8);
+        const top = shuffled.slice(1, 7); // 6 picks — pairs cleanly with grid
         return { featured: feat, topPicks: top };
     }, [tracks]);
 
@@ -95,33 +95,24 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
     const featuredInteraction = featured.id ? getInteraction("episode", featured.id) : null;
 
     return (
-        <section className="w-full max-w-5xl mx-auto">
+        <section className="w-full">
             {/* ── header row ── */}
-            <div className="flex items-center justify-between mb-4 px-1">
-                <div className="flex items-center gap-2">
-
-                    <div>
-                        <h2 className="text-sm   tracking-tight text-gh-l-text dark:text-gh-text leading-none">
-                            Studify Daily Pulse
-                        </h2>
-                        <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400  tracking-widest mt-0.5">
-                            Curated for you · Today
-                        </p>
-                    </div>
-                </div>
-                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-gh-l-muted dark:text-gh-muted uppercase tracking-widest">
+            {/* ── header row ── */}
+            <div className="flex items-center justify-end mb-3 px-4">
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-gh-l-muted dark:text-gh-muted uppercase tracking-widest shrink-0">
                     <Calendar size={11} />
                     {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </div>
             </div>
 
-            {/* ── FEATURED EPISODE — premium hero card ── */}
+            {/* ── FEATURED EPISODE — edge-to-edge premium hero on phone ── */}
             <motion.button
                 onClick={() => handlePlay(featured)}
-                whileHover={{ scale: 1.008 }}
-                whileTap={{ scale: 0.995 }}
+                whileHover={{ scale: 1.006 }}
+                whileTap={{ scale: 0.996 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                className="relative w-full overflow-hidden rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-4 md:p-5 mb-5 text-left font-sans antialiased"
+                className="relative w-full overflow-hidden rounded-none sm:rounded-xl
+                    bg-gh-l-card dark:bg-gh-card p-0 md:p-5 mb-6 text-left font-sans antialiased"
             >
                 {/* blurred artwork background */}
                 {featured.artwork && (
@@ -131,10 +122,9 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                     </div>
                 )}
 
-
                 <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
                     {/* artwork */}
-                    <div className="relative shrink-0 w-full md:w-44 md:h-44 lg:w-52 lg:h-52 aspect-square md:aspect-auto rounded-xl overflow-hidden shadow-none">
+                    <div className="relative shrink-0 w-full md:w-44 md:h-44 lg:w-52 lg:h-52 aspect-square md:aspect-auto rounded-none sm:rounded-xl overflow-hidden">
                         {featured.artwork ? (
                             <img src={featured.artwork} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -143,27 +133,28 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                             </div>
                         )}
                         <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="w-14 h-14 rounded-full bg-blue-600 shadow-none flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center">
                                 <Play size={22} fill="white" className="text-white ml-0.5" />
                             </div>
                         </div>
                     </div>
 
                     {/* meta */}
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="inline-flex items-center gap-1 text-[9px]   uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                    {/* meta */}
+                    <div className="flex-1 min-w-0 px-4 md:px-0 pb-4 md:pb-0">
+                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
                                 <Sparkles size={9} />
                                 Today's pick
                             </span>
                             {featured.showTitle && (
-                                <span className="hidden sm:inline text-[9px]   uppercase tracking-widest text-gh-l-muted dark:text-gh-muted truncate">
+                                <span className="hidden sm:inline text-[9px] uppercase tracking-widest text-gh-l-muted dark:text-gh-muted truncate">
                                     · {featured.showTitle}
                                 </span>
                             )}
                         </div>
 
-                        <h3 className="text-base md:text-lg   tracking-tight text-gh-l-text dark:text-gh-text leading-snug line-clamp-2">
+                        <h3 className="text-base md:text-lg tracking-tight text-gh-l-text dark:text-gh-text leading-snug line-clamp-2">
                             {featured.name}
                         </h3>
 
@@ -215,7 +206,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
 
                         {/* play CTA row */}
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs   px-3 py-1.5 rounded-full shadow-none">
+                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full">
                                 <Play size={12} fill="white" className="ml-0.5" />
                                 Play now
                             </span>
@@ -228,18 +219,16 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                 </div>
             </motion.button>
 
-            {/* ── TOP 8 RANDOM PICKS ── */}
-            <div className="mb-2 px-1 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-xs   tracking-tight text-gh-l-text dark:text-gh-text ">
-                        Top 8~Eight for today
-                    </h3>
-                </div>
-                <span className="text-[9px] font-bold text-gh-l-muted dark:text-gh-muted  tracking-widest">
+            {/* ── TOP 6 FOR TODAY — 2 columns on phone (Apple-feel density) ── */}
+            <div className="mb-3 px-4 flex items-center justify-between">
+                <h3 className="text-xs tracking-tight text-gh-l-text dark:text-gh-text">
+                    More for today
+                </h3>
+                <span className="text-[9px] font-bold text-gh-l-muted dark:text-gh-muted tracking-widest">
                     Shuffled daily
                 </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 px-1">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-4 px-4">
                 {topPicks.map((t, i) => (
                     <TopPickCard
                         key={t.id || i}
@@ -286,7 +275,7 @@ function TopPickCard({
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none overflow-hidden hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow font-sans antialiased"
+            className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card overflow-hidden font-sans antialiased"
         >
             {/* ── Big artwork on top, edge to edge ── */}
             <div className="relative w-full aspect-square overflow-hidden">
@@ -302,25 +291,25 @@ function TopPickCard({
                     </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 shadow-none flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
                         <Play size={20} fill="white" className="text-white ml-0.5" />
                     </div>
                 </div>
             </div>
 
             {/* ── Meta row below ── */}
-            <div className="p-3">
-                <p className="text-[13px] font-bold truncate text-gh-l-text dark:text-gh-text">
+            <div className="p-2.5">
+                <p className="text-[12.5px] font-bold truncate text-gh-l-text dark:text-gh-text">
                     {track.name}
                 </p>
-                <p className="mt-1 text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
+                <p className="mt-0.5 text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
                     {track.showTitle ? `${track.showTitle} · ` : ''}
                     {track.duration ? fmtTime(track.duration) : '—'}
                 </p>
 
                 {/* ✅ Engagement strip */}
                 {showStrip && (
-                    <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[9px] font-bold">
+                    <div className="mt-1.5 flex items-center gap-1 flex-wrap text-[9px] font-bold">
                         {hasPlays && (
                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                                 <Play size={8} fill="currentColor" />
@@ -346,11 +335,11 @@ function TopPickCard({
             </div>
 
             {/* ── Full-width counter strip at the bottom ── */}
-            <div className="w-full flex items-center justify-between px-3 py-2 bg-gh-l-hover dark:bg-gh-hover">
-                <span className="text-[10px]    tracking-widest text-gh-l-muted dark:text-gh-muted">
+            <div className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gh-l-hover dark:bg-gh-hover">
+                <span className="text-[9px] tracking-widest text-gh-l-muted dark:text-gh-muted">
                     Pick {index + 1}
                 </span>
-                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]   flex items-center justify-center">
+                <span className="w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-full bg-blue-600 text-white text-[9px] flex items-center justify-center">
                     {index + 1}
                 </span>
             </div>
@@ -361,11 +350,11 @@ function TopPickCard({
 // ── Skeleton ───────────────────────────────────────────
 function DailyDoseSkeleton() {
     return (
-        <section className="w-full max-w-5xl mx-auto animate-pulse">
-            <div className="h-5 w-32 rounded-full bg-gh-l-hover dark:bg-gh-hover mb-4" />
-            <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-5 mb-5">
-                <div className="flex items-center gap-4">
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl bg-gh-l-hover dark:bg-gh-hover" />
+        <section className="w-full animate-pulse">
+            <div className="h-5 w-32 rounded-full bg-gh-l-hover dark:bg-gh-hover mb-4 mx-4" />
+            <div className="w-full rounded-none sm:rounded-xl bg-gh-l-card dark:bg-gh-card p-4 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="w-full md:w-32 aspect-square md:aspect-auto md:h-32 rounded-xl bg-gh-l-hover dark:bg-gh-hover" />
                     <div className="flex-1 space-y-3">
                         <div className="h-3 w-24 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
                         <div className="h-4 w-4/5 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
@@ -374,11 +363,11 @@ function DailyDoseSkeleton() {
                     </div>
                 </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-4 px-4">
                 {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="rounded-xl bg-gh-l-card dark:bg-gh-card p-3 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gh-l-hover dark:bg-gh-hover" />
-                        <div className="flex-1 space-y-2">
+                    <div key={i} className="rounded-xl bg-gh-l-card dark:bg-gh-card overflow-hidden">
+                        <div className="w-full aspect-square bg-gh-l-hover dark:bg-gh-hover" />
+                        <div className="p-2.5 space-y-2">
                             <div className="h-3 rounded-full bg-gh-l-hover dark:bg-gh-hover" style={{ width: '80%' }} />
                             <div className="h-2.5 rounded-full bg-gh-l-hover dark:bg-gh-hover" style={{ width: '50%' }} />
                         </div>
@@ -406,32 +395,32 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="group w-full text-left rounded-xl overflow-hidden shadow-none hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow bg-gh-l-card dark:bg-gh-card font-sans antialiased"
+            className="group w-full text-left rounded-xl overflow-hidden bg-gh-l-card dark:bg-gh-card font-sans antialiased"
         >
             <div className="relative w-full aspect-square bg-gradient-to-br from-[#B150F2] to-[#8927EB] flex items-center justify-center">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,255,255,0.25),transparent_60%)]" />
-                <ApplePodcastsIcon className="w-20 h-20 md:w-28 md:h-28 text-white relative z-10 drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]" />
+                <ApplePodcastsIcon className="w-16 h-16 md:w-28 md:h-28 text-white relative z-10 drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]" />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-white shadow-none flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
                         <Play size={20} className="text-[#8927EB] ml-0.5" />
                     </div>
                 </div>
             </div>
 
-            <div className="p-3">
-                <p className="text-[13px] font-bold truncate text-gh-l-text dark:text-gh-text">
+            <div className="p-2.5">
+                <p className="text-[12.5px] font-bold truncate text-gh-l-text dark:text-gh-text">
                     Browse library
                 </p>
-                <p className="mt-1 text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
+                <p className="mt-0.5 text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
                     Open all episodes
                 </p>
             </div>
 
-            <div className="w-full flex items-center justify-between px-3 py-2 bg-gh-l-hover dark:bg-gh-hover">
-                <span className="text-[10px]    tracking-widest text-gh-l-muted dark:text-gh-muted">
+            <div className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gh-l-hover dark:bg-gh-hover">
+                <span className="text-[9px] tracking-widest text-gh-l-muted dark:text-gh-muted">
                     Apple Podcasts
                 </span>
-                <span className="w-5 h-5 rounded-full bg-[#8927EB] text-white text-[10px]   flex items-center justify-center">
+                <span className="w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-full bg-[#8927EB] text-white text-[9px] flex items-center justify-center">
                     →
                 </span>
             </div>

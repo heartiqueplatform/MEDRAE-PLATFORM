@@ -57,7 +57,7 @@ interface AlgorithmData {
 // --- Skeleton ---
 function AlgorithmSkeleton() {
     return (
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-3 px-2">
             <div className="relative overflow-hidden rounded-xl border-0 bg-white dark:bg-slate-800/50">
                 <div className="p-6 md:p-8 flex flex-col items-center">
                     <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse mb-4" />
@@ -70,7 +70,7 @@ function AlgorithmSkeleton() {
             </div>
             <div className="flex gap-2 overflow-hidden">
                 {[1, 2, 3].map(i => (
-                    <div key={i} className="min-w-[78vw] sm:min-w-[280px] h-[140px] rounded-2xl bg-white dark:bg-slate-800/50 animate-pulse" />
+                    <div key={i} className="min-w-[62vw] sm:min-w-[240px] h-[140px] rounded-2xl bg-white dark:bg-slate-800/50 animate-pulse" />
                 ))}
             </div>
         </div>
@@ -131,7 +131,7 @@ function barColorFor(score: number) {
 }
 
 // --- Horizontal Snap Carousel ---
-function SnapCarousel({ children, itemWidthClass = "w-[78vw] sm:w-[280px]" }: {
+function SnapCarousel({ children, itemWidthClass = "w-[42vw] sm:w-[180px]" }: {
     children: React.ReactNode;
     itemWidthClass?: string;
 }) {
@@ -162,7 +162,7 @@ function SnapCarousel({ children, itemWidthClass = "w-[78vw] sm:w-[280px]" }: {
         const el = scrollerRef.current;
         if (!el) return;
         const card = el.querySelector<HTMLElement>("[data-card]");
-        const amount = (card?.offsetWidth ?? 280) + 12;
+        const amount = (card?.offsetWidth ?? 240) + 12;
         el.scrollBy({ left: dir * amount, behavior: "smooth" });
     };
 
@@ -629,10 +629,10 @@ export default function Algorithm() {
             : { colors: ["#ef4444", "#dc2626", "#b91c1c"] as [string, string, string], glow: "#ef4444" };
 
     return (
-        <div className="w-full space-y-2">
+        <div className="w-full space-y-2 px-2">
             {/* HERO CARD */}
             <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-muted/30">
-                <div className="px-4 md:px-6 pt-4 md:pt-6">
+                <div className="px-3 md:px-6 pt-3 md:pt-6">
                     <div
                         className={`relative overflow-hidden rounded-2xl p-4 md:p-6
 ${isHighScore
@@ -678,7 +678,7 @@ ${isHighScore
 
                 {/* CHART WITH TOGGLE */}
                 {(scoreSeries.length >= 2 || barData.length >= 1) && (
-                    <div className="px-4 md:px-6 mt-2">
+                    <div className="px-3 md:px-6 mt-2">
                         <div
                             className={`relative overflow-hidden rounded-2xl p-3 pt-3
                 ${isHighScore
@@ -813,7 +813,7 @@ ${isHighScore
                     </div>
                 )}
 
-                <div className="px-5 md:px-8 pb-5 md:pb-6">
+                <div className="px-4 md:px-8 pb-4 md:pb-6">
                     <div className="h-px bg-gray-100 dark:bg-gray-800 my-4" />
                     <div className="grid grid-cols-2 gap-2">
                         <button
@@ -903,12 +903,12 @@ ${isHighScore
                                 <div
                                     key={unit.quiz_id}
                                     onClick={() => handleUnitClick(unit.quiz_id)}
-                                    className={`relative h-full p-3 rounded-2xl cursor-pointer
+                                    className={`relative h-full p-2.5 rounded-2xl cursor-pointer
                                         transition-transform active:scale-[0.98]
                                         bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
                                         ${tierBg}`}
                                 >
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center justify-between mb-1.5">
                                         <div className="flex items-center gap-1.5">
                                             {medal ? (
                                                 <span className="text-base leading-none">{medal}</span>
@@ -928,18 +928,18 @@ ${isHighScore
                                             {unit.trend === "Improving" ? "▲" : unit.trend === "Declining" ? "▼" : "—"}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-2 min-h-[2.2em]">
+                                    <h4 className="text-[12.5px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1.5 min-h-[2em]">
                                         {unit.unit_name}
                                     </h4>
-                                    <div className="flex items-end justify-between mb-2">
-                                        <span className={`text-2xl font-bold tabular-nums leading-none ${tierText}`}>
+                                    <div className="flex items-end justify-between mb-1.5">
+                                        <span className={`text-xl font-bold tabular-nums leading-none ${tierText}`}>
                                             {unit.average_score.toFixed(0)}%
                                         </span>
                                         <div className={tierText}>
                                             <MasteryDots score={unit.average_score} />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1 text-[9px] font-semibold">
+                                    <div className="flex items-center gap-0.5 text-[8.5px] font-semibold">
                                         <span className="px-1.5 py-0.5 rounded bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                                             B{unit.best_score.toFixed(0)}
                                         </span>
