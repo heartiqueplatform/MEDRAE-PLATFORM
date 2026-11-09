@@ -79,6 +79,7 @@ export default function ChatRoomPanel({
             document.documentElement.style.removeProperty("--chat-panel-height");
         };
     }, []);
+
     // ── Empty state (no unit selected) ─────────────────────────
     if (!activeUnit) {
         return (
@@ -98,34 +99,59 @@ export default function ChatRoomPanel({
         setReplyingTo(null);
     };
 
+    // ✅ Unit avatar in header — same image as the chat list
+    const headerAvatar = activeUnitData?.image_url?.trim()
+        ? activeUnitData.image_url
+        : null;
+
     return (
         <div
             className="flex flex-col min-h-0 w-full overflow-hidden relative bg-white dark:bg-[#0d1117]"
             style={{ height: "var(--chat-panel-height, 100%)" }}
         >
             {/* HEADER — fixed, never scrolls */}
-            <div className="flex-none bg-white dark:bg-[#161b22] px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={onBack}
-                        className="p-2 rounded-xl bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#30363d] transition-all"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                    <div className="flex flex-col">
-                        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            <div className="flex-none bg-white dark:bg-[#161b22] px-3 py-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+
+                    {/* ✅ Unit avatar — WhatsApp / Instagram style */}
+                    <div className="relative shrink-0">
+                        <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d]">
+                            {headerAvatar ? (
+                                <img
+                                    src={headerAvatar}
+                                    alt={activeUnitData?.title || "unit"}
+                                    className="h-full w-full object-cover"
+                                    draggable={false}
+                                    loading="eager"
+                                    decoding="async"
+                                    crossOrigin="anonymous"
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[13px] font-bold">
+                                    {(activeUnitData?.title || activeUnit || "U").substring(0, 2).toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+                        {/* online dot */}
+                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-[#161b22] bg-emerald-500" />
+                    </div>
+
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                             {activeUnitData?.title || activeUnit}
                         </h2>
                         <div className="flex items-center gap-1.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Active</span>
                         </div>
                     </div>
                 </div>
+
                 {onClose && (
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-xl bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#30363d] transition-all"
+                        aria-label="Close"
+                        className="p-2 rounded-xl bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#30363d] transition-all shrink-0 active:scale-90"
                     >
                         <X className="h-4 w-4" />
                     </button>
@@ -139,7 +165,17 @@ export default function ChatRoomPanel({
                 {messages.length === 0 ? (
                     <div className="h-full min-h-[450px] flex flex-col items-center justify-center py-10 text-center">
                         <div className="h-28 w-28 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] mb-6">
-                            <img src="/background05.jpg" alt="Unit Roster" className="h-full w-full object-cover" />
+                            {headerAvatar ? (
+                                <img
+                                    src={headerAvatar}
+                                    alt="Unit Roster"
+                                    className="h-full w-full object-cover"
+                                    loading="eager"
+                                    decoding="async"
+                                />
+                            ) : (
+                                <img src="/background05.jpg" alt="Unit Roster" className="h-full w-full object-cover" />
+                            )}
                         </div>
                         <div className="space-y-2 px-6">
                             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">

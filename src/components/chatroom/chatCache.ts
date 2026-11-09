@@ -13,7 +13,6 @@
 //   • TTL per entry (configurable per call)
 //   • Offline: serve cache regardless of TTL (never blank)
 // ─────────────────────────────────────────────────────────────
-
 type CacheEntry<T> = {
     data: T;
     ts: number;      // when cached
@@ -25,9 +24,15 @@ const MAX_ENTRIES = 200; // hard cap on memory map size
 const memory = new Map<string, CacheEntry<any>>();
 const pending = new Map<string, Promise<any>>();
 
-const LS_PREFIX = "chatcache_";
-const LS_TS_PREFIX = "chatcache_ts_";
+// ── CACHE VERSIONING ────────────────────────────────────────
+// Bump this number whenever you change the SHAPE of cached data
+// (e.g. adding image_url to Unit). Old cache entries become
+// invisible automatically — users never have to clear anything.
+// ────────────────────────────────────────────────────────────
+const CACHE_VERSION = "v2";
 
+const LS_PREFIX = `chatcache_${CACHE_VERSION}_`;
+const LS_TS_PREFIX = `chatcache_${CACHE_VERSION}_ts_`;
 const isOffline = (): boolean =>
     typeof navigator !== "undefined" && navigator.onLine === false;
 
@@ -199,4 +204,30 @@ export function getCacheStats() {
         pendingSize: pending.size,
         maxEntries: MAX_ENTRIES,
     };
+}
+/**
+ * Purge any cache entries from OLD versions.
+ * Called once on app boot — safe to call repeatedly.
+ * Removes `chatcache_units`, `chatcache_v1_units`, etc.,
+ * but leaves current version's keys intact.
+ */
+export function purgeOldCacheVersions(): void {
+    try {
+        const currentPrefix = `chatcache_${CACHE_VERSION}_`;
+        const allPrefix = "chatcache_";
+        const toRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if (!k.startsWith(allPrefix)) continue;
+            if (k.startsWith(currentPrefix)) continue; // keep current
+            toRemove.push(k);
+        }
+        toRemove.forEach((k) => localStorage.removeItem(k));
+        if (toRemove.length > 0) {
+            console.info(`[chat-cache] purged ${toRemove.length} old cache keys`);
+        }
+    } catch {
+        // Ignore — cache purge must never break the app
+    }
 }

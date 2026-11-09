@@ -18,6 +18,9 @@ export interface Unit {
     id: string;
     unit_code: string;
     title: string;
+    /** ✅ Quiz artwork — same image as Medrae Quizzes page. Cached by the
+     *  browser, so chat avatars cost zero extra network requests. */
+    image_url?: string | null;
 }
 
 export type ActiveScreen = "list" | "chat";

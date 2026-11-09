@@ -157,7 +157,12 @@ export default function ChatListPanel({
                             const unread = messages.length - (lastReadMap[unit.unit_code]
                                 ? messages.findIndex((m) => m.id === lastReadMap[unit.unit_code]) + 1
                                 : 0);
-                            const avatarUrl = LOCAL_AVATARS[index % LOCAL_AVATARS.length];
+                            // ✅ Use the quiz image (same as Medrae Quizzes page) for instant
+                            //    recognition + browser cache hit = zero lag on the chat list.
+                            const avatarUrl =
+                                unit.image_url && unit.image_url.trim()
+                                    ? unit.image_url
+                                    : LOCAL_AVATARS[index % LOCAL_AVATARS.length];
                             const isPinned = pinnedUnits.has(unit.unit_code);
                             const isActive = activeUnit === unit.unit_code && layout === "columns";
                             return (
@@ -179,13 +184,22 @@ export default function ChatListPanel({
                                     )}
                                 >
                                     <div className="relative shrink-0">
-                                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d]">
-                                            <img src={avatarUrl} alt="group" className="h-full w-full object-cover" draggable={false} />
+                                        <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d]">
+                                            <img
+                                                src={avatarUrl}
+                                                alt="group"
+                                                className="h-full w-full object-cover"
+                                                draggable={false}
+                                                loading="lazy"
+                                                decoding="async"
+                                                crossOrigin="anonymous"
+                                                referrerPolicy="no-referrer"
+                                            />
                                         </div>
                                         <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white dark:ring-[#161b22] bg-emerald-500" />
                                         {isPinned && (
-                                            <div className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-[#161b22]">
-                                                <Pin size={10} className="text-white fill-white" strokeWidth={2.5} />
+                                            <div className="absolute -top-1 -left-1 h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-[#161b22]">
+                                                <Pin size={12} className="text-white fill-white" strokeWidth={2.5} />
                                             </div>
                                         )}
                                     </div>
@@ -234,28 +248,44 @@ export default function ChatListPanel({
                                 <Archive size={14} />
                                 <span className="text-[12px] font-semibold">Archived ({archivedList.length})</span>
                             </button>
-                            {showArchived && archivedList.map((unit) => (
-                                <div
-                                    key={unit.unit_code}
-                                    onPointerDown={() => startLongPress(unit)}
-                                    onPointerUp={cancelLongPress}
-                                    onPointerLeave={cancelLongPress}
-                                    onPointerCancel={cancelLongPress}
-                                    onContextMenu={(e) => { e.preventDefault(); onOpenActionSheet(unit); }}
-                                    onClick={() => handleRowClick(unit)}
-                                    className="group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#21262d] cursor-pointer transition-all opacity-70 select-none"
-                                >
-                                    <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] shrink-0">
-                                        <img src={LOCAL_AVATARS[0]} alt="" className="h-full w-full object-cover" draggable={false} />
+                            {showArchived && archivedList.map((unit) => {
+                                // ✅ Same image rule for archived rows
+                                const archivedAvatar =
+                                    unit.image_url && unit.image_url.trim()
+                                        ? unit.image_url
+                                        : LOCAL_AVATARS[0];
+                                return (
+                                    <div
+                                        key={unit.unit_code}
+                                        onPointerDown={() => startLongPress(unit)}
+                                        onPointerUp={cancelLongPress}
+                                        onPointerLeave={cancelLongPress}
+                                        onPointerCancel={cancelLongPress}
+                                        onContextMenu={(e) => { e.preventDefault(); onOpenActionSheet(unit); }}
+                                        onClick={() => handleRowClick(unit)}
+                                        className="group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#21262d] cursor-pointer transition-all opacity-70 select-none"
+                                    >
+                                        <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 dark:bg-[#21262d] shrink-0">
+                                            <img
+                                                src={archivedAvatar}
+                                                alt=""
+                                                className="h-full w-full object-cover"
+                                                draggable={false}
+                                                loading="lazy"
+                                                decoding="async"
+                                                crossOrigin="anonymous"
+                                                referrerPolicy="no-referrer"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 truncate">
+                                                {unit.title}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 dark:text-gray-500">Long-press for actions</p>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 truncate">
-                                            {unit.title}
-                                        </p>
-                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">Long-press for actions</p>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

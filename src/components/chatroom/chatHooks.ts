@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { playSound } from "@/lib/soundManager";
-import { getCached, setCached, invalidateCached, fetchCached } from "./chatCache";
+import { getCached, setCached, invalidateCached, fetchCached, purgeOldCacheVersions } from "./chatCache";
 import { Message, Unit, CK, TTL } from "./types";
 
 export function useChatData(currentUserId: string | undefined) {
@@ -24,6 +24,9 @@ export function useChatData(currentUserId: string | undefined) {
     };
 
     // ── Load units (cached first, then network) ────────────────
+    // ✅ image_url is now included so chat avatars can use the SAME
+    //    image as the Medrae Quizzes page — instant recognition + cached
+    //    by the browser, so no extra network hit.
     const loadUserUnits = useCallback(async () => {
         if (unitsLoaded) return;
         const cached = getCached<Unit[]>(CK.UNITS);
@@ -37,13 +40,14 @@ export function useChatData(currentUserId: string | undefined) {
                 async () => {
                     const { data, error } = await supabase
                         .from("quizzes")
-                        .select("id, unit_code, unit")
+                        .select("id, unit_code, unit, image_url")
                         .order("unit", { ascending: true });
                     if (error) throw error;
                     return (data || []).map((u: any) => ({
                         id: u.id,
                         unit_code: u.unit_code,
                         title: u.unit || u.unit_code,
+                        image_url: u.image_url || null,
                     }));
                 },
                 { ttl: TTL.UNITS, revalidate: true }
@@ -387,7 +391,12 @@ export function useChatData(currentUserId: string | undefined) {
     }, [currentUserId]);
 
     // ── Init ───────────────────────────────────────────────────
-    useEffect(() => { loadUserUnits(); }, [loadUserUnits]);
+    // ── Init ───────────────────────────────────────────────────
+    useEffect(() => {
+        // ✅ Purge stale cache from older app versions on boot
+        purgeOldCacheVersions();
+        loadUserUnits();
+    }, [loadUserUnits]);
     useEffect(() => { loadUserUnitState(); }, [loadUserUnitState]);
 
     // ── Derived lists ──────────────────────────────────────────
