@@ -2,13 +2,52 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, AlertTriangle, ArrowRight, Badge, Camera, Stethoscope, Activity, Zap, Scan, CheckCircle2, Clock, FastForward, FileCheck, Flag, Mic, Monitor, ShieldAlert, ShieldCheck, Timer, VolumeX, Wifi } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Camera,
+  Stethoscope,
+  Activity,
+  Zap,
+  Scan,
+  CheckCircle2,
+  Clock,
+  FastForward,
+  FileCheck,
+  Flag,
+  Monitor,
+  ShieldAlert,
+  ShieldCheck,
+  Timer,
+  VolumeX,
+  Wifi,
+  ChevronLeft,
+} from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
+import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (p: number | number[] = 15) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+  playSound("ui-tap");
+  if (type === "success") vibrate([15, 30, 15]);
+  else if (type === "warning") vibrate(60);
+  else vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                         */
+/* ------------------------------------------------------------------ */
 
 export default function InstructionPage() {
   const navigate = useNavigate();
+
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [canStart, setCanStart] = useState(false);
   const [setupSkipped, setSetupSkipped] = useState(false);
@@ -17,19 +56,23 @@ export default function InstructionPage() {
   const [micReady, setMicReady] = useState(false);
   const [loudWarning, setLoudWarning] = useState(false);
   const [loadingPage, setLoadingPage] = useState(true);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationIdRef = useRef<number | null>(null);
+
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanningMic, setScanningMic] = useState(false);
   const [scanProgressMic, setScanProgressMic] = useState(0);
 
+  /* Mount delay */
   useEffect(() => {
     const timer = setTimeout(() => setLoadingPage(false), 300);
     return () => clearTimeout(timer);
   }, []);
 
+  /* Countdown */
   useEffect(() => {
     if (secondsLeft === null) return;
     if (secondsLeft <= 0) return;
@@ -39,14 +82,29 @@ export default function InstructionPage() {
     return () => clearInterval(timer);
   }, [secondsLeft]);
 
+  /* Enable start when ready or skipped */
   useEffect(() => {
     if (setupSkipped || (secondsLeft !== null && secondsLeft <= 15)) {
       setCanStart(true);
     }
   }, [secondsLeft, setupSkipped]);
 
+  /* Cleanup audio animation */
+  useEffect(() => {
+    return () => {
+      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+    };
+  }, []);
+
   const handleStartQuiz = () => {
-    if (canStart) navigate("/simulation/take");
+    if (!canStart) return;
+    tap("success");
+    navigate("/simulation/take");
+  };
+
+  const handleBack = () => {
+    tap();
+    navigate(-1);
   };
 
   const enableCamera = async () => {
@@ -68,7 +126,8 @@ export default function InstructionPage() {
   const enableMic = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       source.connect(analyser);
@@ -86,7 +145,7 @@ export default function InstructionPage() {
       const draw = () => {
         animationIdRef.current = requestAnimationFrame(draw);
         analyser.getByteFrequencyData(dataArray);
-        canvasCtx.fillStyle = "#f3f4f6";
+        canvasCtx.fillStyle = "#0d1117";
         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
         let maxVolume = 0;
         const barWidth = (canvas.width / bufferLength) * 2.5;
@@ -94,9 +153,9 @@ export default function InstructionPage() {
         for (let i = 0; i < bufferLength; i++) {
           const barHeight = dataArray[i] / 2;
           maxVolume = Math.max(maxVolume, dataArray[i]);
-          let color = "green";
-          if (barHeight > 40 && barHeight <= 80) color = "blue";
-          if (barHeight > 80) color = "red";
+          let color = "#10b981";
+          if (barHeight > 40 && barHeight <= 80) color = "#3b82f6";
+          if (barHeight > 80) color = "#f43f5e";
           canvasCtx.fillStyle = color;
           canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
           x += barWidth + 1;
@@ -112,492 +171,552 @@ export default function InstructionPage() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
-    };
-  }, []);
+  const handleInitCamera = async () => {
+    if (cameraReady || scanning) return;
+    tap();
+    setScanning(true);
+    setScanProgress(0);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 1;
+      setScanProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setScanning(false);
+      }
+    }, 150);
+    await enableCamera();
+  };
+
+  const handleInitMic = async () => {
+    if (micReady || scanningMic) return;
+    tap();
+    setScanningMic(true);
+    setScanProgressMic(0);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 1;
+      setScanProgressMic(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setScanningMic(false);
+      }
+    }, 150);
+    await enableMic();
+  };
+
+  const handleSkip = () => {
+    tap("warning");
+    setSetupSkipped(true);
+    setCanStart(true);
+  };
 
   if (loadingPage) {
-    return <GlobalLoader message="Setting simulation page..." />;
+    return <GlobalLoader message="Preparing simulation…" />;
   }
 
   return (
-    <div className="w-full min-h-[100svh] bg-[#F8FAFC] dark:bg-background flex flex-col">
-      {/* Setup Card — flat, edge-to-edge */}
-      <Card className="w-full rounded-none border-0 shadow-none bg-transparent flex flex-col">
-        <CardHeader className="space-y-1 pt-6 pb-4 px-5 md:px-6">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2 text-blue-600 font-semibold text-[10px] md:text-xs uppercase tracking-[0.2em]">
-              <ShieldCheck className="w-4 h-4" />
-              Secure Environment Setup
-            </div>
-            <p className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              {new Date().toLocaleDateString(undefined, {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          </div>
+    <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+      {/* ── Header ──────────────────────────────────────── */}
+      <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                         bg-white dark:bg-[#0d1117]
+                         border-b border-slate-200/70 dark:border-white/[0.06]
+                         z-30 safe-top">
+        <button
+          onClick={handleBack}
+          aria-label="Go back"
+          className="h-10 w-10 rounded-full flex items-center justify-center
+                     text-slate-700 dark:text-slate-200
+                     active:bg-slate-100 dark:active:bg-white/5"
+          style={{ touchAction: "manipulation" }}
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold leading-tight truncate
+                         text-slate-900 dark:text-white">
+            System check
+          </h1>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+            Step 2 of 3 · Verify your peripherals
+          </p>
+        </div>
+        {canStart && (
+          <span className="shrink-0 inline-flex items-center gap-1
+                           bg-emerald-50 dark:bg-emerald-400/10
+                           text-emerald-700 dark:text-emerald-400
+                           text-[10px] font-bold uppercase tracking-wider
+                           px-2 py-1 rounded-full">
+            <CheckCircle2 className="h-3 w-3" />
+            Ready
+          </span>
+        )}
+      </header>
 
-          <CardTitle className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-            Proctorium <span className="text-blue-600">Verification</span>
-          </CardTitle>
-          <CardDescription className="text-slate-500 dark:text-slate-300 font-medium text-sm">
-            Establish your secure connection by calibrating your peripherals below.
-          </CardDescription>
-        </CardHeader>
+      {/* ── Body ────────────────────────────────────────── */}
+      <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+        <div className="w-full max-w-3xl mx-auto px-4 py-4 pb-32 space-y-3 safe-bottom">
 
-        <CardContent className="px-4 md:px-6 space-y-6">
-          {/* System Status Control Bar */}
-          <div className="bg-slate-100/70 dark:bg-slate-800/60 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div
-                className={`flex items-center justify-center w-11 h-11 rounded-full flex-shrink-0 ${canStart
-                  ? "bg-green-100 text-green-600 dark:bg-green-950/40"
-                  : "bg-blue-100 text-blue-600 dark:bg-blue-950/40 animate-pulse"
-                  }`}
-              >
-                {canStart ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">
-                  {setupSkipped
-                    ? "Verification Bypassed"
-                    : canStart
-                      ? "System Ready"
-                      : "Initializing Hardware"}
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-300 mt-1 truncate">
-                  {setupSkipped
-                    ? "Monitoring is currently disabled"
-                    : secondsLeft === null
-                      ? "Awaiting camera and microphone sync..."
-                      : secondsLeft > 0
-                        ? `Automated check completes in ${secondsLeft}s`
-                        : "All systems operational"}
-                </p>
-              </div>
-            </div>
+          {/* Status bar */}
+          <StatusBar
+            canStart={canStart}
+            setupSkipped={setupSkipped}
+            secondsLeft={secondsLeft}
+            onSkip={handleSkip}
+          />
 
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-              {!canStart && !setupSkipped && (
-                <Button
-                  variant="ghost"
-                  className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 underline underline-offset-4"
-                  onClick={() => {
-                    setSetupSkipped(true);
-                    setCanStart(true);
-                  }}
-                >
-                  Skip & Proceed anyway
-                </Button>
-              )}
-              <Button
-                size="lg"
-                className={`font-extrabold px-6 rounded-xl transition-all w-full sm:w-auto ${canStart
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600"
-                  }`}
-                onClick={handleStartQuiz}
-                disabled={!canStart}
-              >
-                {canStart ? "Start Simulation" : "System Locked"}
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Setup Skipped Warning */}
+          {/* Skipped warning */}
           {setupSkipped && (
-            <div className="flex items-start gap-3 p-4 bg-orange-50 dark:bg-orange-950/30 rounded-xl">
-              <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-orange-800 dark:text-orange-300 font-medium leading-relaxed">
-                <strong>Security Notice:</strong> You have opted to skip hardware
-                verification. The simulation will proceed, but proctoring logs will
-                show "No Feed Available."
+            <div className="flex items-start gap-2 p-3 rounded-xl
+                            bg-amber-50 dark:bg-amber-400/10">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                <strong>Security notice:</strong> You skipped hardware
+                verification. Proctoring logs will show "No feed available."
               </p>
             </div>
           )}
 
           {/* Camera + Mic grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-            {/* CAMERA */}
-            <div className="flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`p-1.5 rounded-lg ${cameraReady
-                      ? "bg-emerald-500/10 text-emerald-500"
-                      : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                      }`}
-                  >
-                    <Camera className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    Visual Telemetry
-                  </span>
-                </div>
-                {cameraReady && (
-                  <span className="text-[9px] border border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-full animate-pulse font-bold tracking-wider">
-                    LIVE FEED
-                  </span>
-                )}
-              </div>
-
-              <div className="relative w-full max-w-[260px] aspect-square rounded-xl overflow-hidden bg-slate-950">
-                <div className="absolute inset-6 border-l-2 border-t-2 border-white/20 w-8 h-8 rounded-tl-md z-20" />
-                <div className="absolute inset-6 right-6 left-auto border-r-2 border-t-2 border-white/20 w-8 h-8 rounded-tr-md z-20" />
-                <div className="absolute inset-6 top-auto border-l-2 border-b-2 border-white/20 w-8 h-8 rounded-bl-md z-20" />
-                <div className="absolute inset-6 top-auto left-auto border-r-2 border-b-2 border-white/20 w-8 h-8 rounded-br-md z-20" />
-
-                <video
-                  ref={videoRef}
-                  className={`w-full h-full object-cover transition-opacity duration-1000 ${scanning ? "opacity-40" : "opacity-90"
-                    }`}
-                  autoPlay
-                  muted
-                  playsInline
-                />
-
-                {scanning && (
-                  <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-indigo-950/40 backdrop-blur-[1px]">
-                    <div className="relative">
-                      <Scan className="w-14 h-14 text-white/50 animate-pulse" />
-                      <div className="absolute inset-0 border-2 border-indigo-400 rounded-full animate-ping opacity-50" />
-                    </div>
-                    <div className="mt-5 flex flex-col items-center gap-1">
-                      <span className="text-white font-mono text-lg  ">
-                        {scanProgress}%
-                      </span>
-                      <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-[0.3em]">
-                        Identity Sync...
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {!scanning && !cameraReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 text-slate-400">
-                    <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mb-3">
-                      <ShieldCheck className="w-7 h-7 opacity-30" />
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest">
-                      Awaiting Link
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <Button
-                onDoubleClick={async () => {
-                  if (!cameraReady && !scanning) {
-                    setScanning(true);
-                    setScanProgress(0);
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                      progress += 1;
-                      setScanProgress(progress);
-                      if (progress >= 100) {
-                        clearInterval(interval);
-                        setScanning(false);
-                      }
-                    }, 150);
-                    await enableCamera();
-                  }
-                }}
-                onClick={async () => {
-                  // single tap also works on mobile (double-tap is unreliable there)
-                  if (!cameraReady && !scanning) {
-                    setScanning(true);
-                    setScanProgress(0);
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                      progress += 1;
-                      setScanProgress(progress);
-                      if (progress >= 100) {
-                        clearInterval(interval);
-                        setScanning(false);
-                      }
-                    }, 150);
-                    await enableCamera();
-                  }
-                }}
-                disabled={scanning || cameraReady}
-                className={`mt-3 w-full max-w-[240px] h-11 rounded-xl font-bold uppercase tracking-tight transition-all text-xs ${cameraReady
-                  ? "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-default"
-                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                  }`}
-              >
-                {cameraReady
-                  ? "Optical Link Active"
-                  : scanning
-                    ? "Analyzing..."
-                    : "Initialize Optical Scan"}
-              </Button>
-            </div>
-
-            {/* MIC */}
-            <div className="flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`p-1.5 rounded-lg ${micReady
-                      ? "bg-blue-500/10 text-blue-500"
-                      : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                      }`}
-                  >
-                    <Stethoscope className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    Auscultation Feed
-                  </span>
-                </div>
-                {micReady && (
-                  <div className="flex items-center gap-1.5">
-                    <Activity className="w-3 h-3 text-blue-500 animate-pulse" />
-                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">
-                      Synchronized
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="relative w-full max-w-[260px] aspect-square rounded-xl overflow-hidden bg-slate-950">
-                <div className="absolute inset-0 opacity-10 bg-[linear-gradient(#444_1px,transparent_1px),linear-gradient(90deg,#444_1px,transparent_1px)] bg-[size:20px_20px]" />
-                <canvas
-                  ref={canvasRef}
-                  width={288}
-                  height={288}
-                  className="w-full h-full relative z-10 opacity-80"
-                />
-
-                {loudWarning && (
-                  <div className="absolute inset-x-3 top-3 z-40 bg-red-600/90 backdrop-blur-md text-white py-2 px-3 rounded-xl flex items-center justify-center gap-2 animate-pulse">
-                    <VolumeX className="w-4 h-4" />
-                    <span className="text-[10px]   uppercase tracking-widest text-center">
-                      High Ambient Noise Detected
-                    </span>
-                  </div>
-                )}
-
-                {scanningMic && (
-                  <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-blue-950/60 backdrop-blur-md">
-                    <Stethoscope className="w-12 h-12 text-blue-400 mb-4 animate-pulse" />
-                    <div className="w-40 h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-400 transition-all duration-300"
-                        style={{ width: `${scanProgressMic}%` }}
-                      />
-                    </div>
-                    <span className="mt-4 text-[10px] font-mono text-blue-200 uppercase tracking-[0.2em]">
-                      Sonic Calibration...
-                    </span>
-                  </div>
-                )}
-
-                {!scanningMic && !micReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 text-slate-400">
-                    <Zap className="w-8 h-8 opacity-20 mb-2" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">
-                      Auscultation Idle
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <Button
-                onClick={async () => {
-                  if (!micReady && !scanningMic) {
-                    setScanningMic(true);
-                    setScanProgressMic(0);
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                      progress += 1;
-                      setScanProgressMic(progress);
-                      if (progress >= 100) {
-                        clearInterval(interval);
-                        setScanningMic(false);
-                      }
-                    }, 150);
-                    await enableMic();
-                  }
-                }}
-                disabled={micReady || scanningMic}
-                className={`mt-3 w-full max-w-[240px] h-11 rounded-xl font-bold uppercase tracking-tight transition-all text-xs ${micReady
-                  ? "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-default"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-              >
-                {micReady
-                  ? "Sonic Stream Synced"
-                  : scanningMic
-                    ? "Calibrating..."
-                    : "Initiate Audio Link"}
-              </Button>
-            </div>
-          </div>
-
-          {/* Environmental Requirements */}
-          <div className="p-4 bg-slate-100/70 dark:bg-slate-800/60 rounded-xl">
-            <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
-              <Monitor className="w-4 h-4" />
-              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                Environmental Requirements
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-              <p>
-                <strong className="text-slate-900 dark:text-white">
-                  Desktop Authorization:
-                </strong>{" "}
-                This simulation environment is optimized for desktop hardware.
-                Motor activity and facial recognition are monitored via the
-                browser secure layer.
-              </p>
-              <p>
-                <strong className="text-slate-900 dark:text-white">
-                  Live Feedback:
-                </strong>{" "}
-                You will notice your motor activity being tracked and hear
-                periodic audio feedback. This reflects the real-world NCK
-                proctoring experience.
-              </p>
-            </div>
-
-            <div className="mt-4 pt-4 flex items-center justify-between">
-              <span className="text-[10px] text-slate-500 dark:text-slate-500 font-medium italic">
-                Tap the button to trigger the secure handshake.
-              </span>
-              <div className="flex gap-1.5">
-                <div className="h-1 w-4 bg-blue-600 rounded-full" />
-                <div className="h-1 w-4 bg-slate-300 dark:bg-slate-700 rounded-full" />
-                <div className="h-1 w-4 bg-slate-300 dark:bg-slate-700 rounded-full" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Instructions Card — flat, edge-to-edge */}
-      <Card className="w-full rounded-none border-0 shadow-none bg-transparent flex flex-col">
-        <CardHeader className="pt-8 pb-4 px-5 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="h-7 w-1 bg-blue-600 rounded-full" />
-            <CardTitle className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
-              NCK Simulation Protocol & Guide
-            </CardTitle>
-          </div>
-        </CardHeader>
-
-        <CardContent className="px-4 md:px-6 pb-8 text-slate-700 dark:text-slate-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <InstructionBox
-              icon={<Monitor className="w-5 h-5 text-blue-500" />}
-              title="Exam Environment"
-              desc="Answer one question at a time. Maintain a quiet, distraction-free environment."
-            />
-            <InstructionBox
-              icon={<CheckCircle2 className="w-5 h-5 text-green-500" />}
-              title="Question Format"
-              desc="Four choices per question. Only one is correct. Review carefully before selecting."
-            />
-            <InstructionBox
-              icon={<Flag className="w-5 h-5 text-orange-500" />}
-              title="Review System"
-              desc="Use the 'Flag' feature to mark difficult questions for later review."
-            />
-            <InstructionBox
-              icon={<FastForward className="w-5 h-5 text-slate-500" />}
-              title="Navigation"
-              desc="Unsure? Use 'Skip'. All skipped or flagged items appear before final submission."
-            />
-            <InstructionBox
-              icon={<Timer className="w-5 h-5 text-red-500" />}
-              title="Time Management"
-              desc="The timer starts immediately. Track your pace; the system auto-submits on expiry."
-            />
-            <InstructionBox
-              icon={<Wifi className="w-5 h-5 text-cyan-500" />}
-              title="Connectivity"
-              desc="Stable internet is required. Avoid refreshing or navigating away from the tab."
-            />
-            <InstructionBox
-              icon={<ShieldAlert className="w-5 h-5 text-amber-600" />}
-              title="Proctoring Rules"
-              desc="Switching tabs or prolonged inactivity may trigger an automatic session termination."
-            />
-            <InstructionBox
-              icon={<FileCheck className="w-5 h-5 text-indigo-500" />}
-              title="Final Submission"
-              desc="Click 'Submit' to end. Results, explanations, and scores are generated instantly."
-            />
+            {/* Camera */}
+            {/* Camera — compact row */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+              <div className="flex items-center gap-3">
+                {/* Small media preview */}
+                <div className="relative h-16 w-28 rounded-xl overflow-hidden bg-black shrink-0">
+                  <video
+                    ref={videoRef}
+                    className={`w-full h-full object-cover transition-opacity duration-700 ${scanning ? "opacity-40" : "opacity-90"
+                      }`}
+                    autoPlay
+                    muted
+                    playsInline
+                  />
+
+                  {scanning && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
+                      <Scan className="h-5 w-5 text-white/70 animate-pulse" />
+                      <p className="text-white text-[9px] font-bold tabular-nums mt-0.5">
+                        {scanProgress}%
+                      </p>
+                    </div>
+                  )}
+
+                  {!scanning && !cameraReady && (
+                    <div className="absolute inset-0 flex items-center justify-center
+                        bg-slate-100 dark:bg-white/[0.03]">
+                      <ShieldCheck className="h-6 w-6 text-slate-400 dark:text-slate-500 opacity-60" />
+                    </div>
+                  )}
+
+                  {cameraReady && (
+                    <span className="absolute top-1 left-1
+                         bg-emerald-500 text-white
+                         text-[8px] font-bold uppercase tracking-wider
+                         px-1 py-0.5 rounded">
+                      Live
+                    </span>
+                  )}
+                </div>
+
+                {/* Text + action */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Camera className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                    <p className="text-[10px] font-bold uppercase tracking-wider
+                      text-slate-500 dark:text-slate-400 leading-none">
+                      Camera
+                    </p>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-1.5">
+                    {cameraReady ? "Visual feed active" : scanning ? "Scanning…" : "Visual feed"}
+                  </h3>
+                  <button
+                    onClick={handleInitCamera}
+                    disabled={scanning || cameraReady}
+                    className={`h-8 px-3 rounded-lg
+                    text-[11px] font-bold
+                    flex items-center justify-center gap-1
+                    transition-transform
+                    ${cameraReady
+                        ? "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400 cursor-default"
+                        : scanning
+                          ? "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 cursor-wait"
+                          : "bg-blue-600 text-white active:scale-[0.97]"
+                      }`}
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    {cameraReady ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Enabled
+                      </>
+                    ) : scanning ? (
+                      "Scanning…"
+                    ) : (
+                      "Enable"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Mic */}
+            {/* Microphone — compact row */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+              <div className="flex items-center gap-3">
+                {/* Small media preview */}
+                <div className="relative h-16 w-28 rounded-xl overflow-hidden bg-[#0d1117] shrink-0">
+                  <canvas
+                    ref={canvasRef}
+                    width={128}
+                    height={128}
+                    className="w-full h-full relative z-10 opacity-90"
+                  />
+
+                  {loudWarning && (
+                    <div className="absolute inset-0 flex items-center justify-center
+                        bg-rose-600/90 z-30">
+                      <VolumeX className="h-5 w-5 text-white" />
+                    </div>
+                  )}
+
+                  {scanningMic && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center
+                        bg-black/60 z-30">
+                      <Stethoscope className="h-5 w-5 text-blue-400 animate-pulse" />
+                      <p className="text-blue-200 text-[9px] font-bold tabular-nums mt-0.5">
+                        {scanProgressMic}%
+                      </p>
+                    </div>
+                  )}
+
+                  {!scanningMic && !micReady && (
+                    <div className="absolute inset-0 flex items-center justify-center
+                        bg-slate-100 dark:bg-white/[0.03]">
+                      <Zap className="h-5 w-5 text-slate-400 dark:text-slate-500 opacity-40" />
+                    </div>
+                  )}
+
+                  {micReady && (
+                    <span className="absolute top-1 left-1
+                         bg-blue-500 text-white
+                         text-[8px] font-bold uppercase tracking-wider
+                         px-1 py-0.5 rounded z-20">
+                      On
+                    </span>
+                  )}
+                </div>
+
+                {/* Text + action */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Stethoscope className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                    <p className="text-[10px] font-bold uppercase tracking-wider
+                      text-slate-500 dark:text-slate-400 leading-none">
+                      Microphone
+                    </p>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-1.5">
+                    {micReady ? "Audio feed active" : scanningMic ? "Calibrating…" : "Audio feed"}
+                  </h3>
+                  <button
+                    onClick={handleInitMic}
+                    disabled={micReady || scanningMic}
+                    className={`h-8 px-3 rounded-lg
+                    text-[11px] font-bold
+                    flex items-center justify-center gap-1
+                    transition-transform
+                    ${micReady
+                        ? "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400 cursor-default"
+                        : scanningMic
+                          ? "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 cursor-wait"
+                          : "bg-blue-600 text-white active:scale-[0.97]"
+                      }`}
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    {micReady ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Enabled
+                      </>
+                    ) : scanningMic ? (
+                      "Calibrating…"
+                    ) : (
+                      "Enable"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </section>
           </div>
 
-          {/* Final Action Zone */}
-          <div className="mt-8 pt-6 flex flex-col items-center">
-            <div className="flex items-center gap-2 mb-5">
-              <div
-                className={`h-2 w-2 rounded-full ${canStart ? "bg-green-500 animate-pulse" : "bg-slate-300"
-                  }`}
-              />
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                {canStart
-                  ? "Security Handshake Complete"
-                  : "Pending Hardware Authorization"}
-              </span>
+          {/* Environmental requirements */}
+          <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg
+                              bg-blue-400/10
+                              flex items-center justify-center shrink-0">
+                <Monitor className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider
+                              text-blue-600 dark:text-blue-400 leading-none mb-1">
+                  Environment
+                </p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                  Requirements
+                </h3>
+              </div>
             </div>
 
-            <Button
-              className={`w-full max-w-md h-14 text-base md:text-lg   transition-all duration-300 rounded-2xl group ${canStart
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600"
-                }`}
-              onClick={handleStartQuiz}
-              disabled={!canStart}
-            >
-              {canStart ? (
-                <span className="flex items-center gap-2">
-                  START EXAMINATION NOW
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              ) : (
-                "INITIALIZING SECURE LAYER..."
-              )}
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3
+                            text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed pt-1">
+              <p>
+                <strong className="text-slate-900 dark:text-white">
+                  Desktop recommended:
+                </strong>{" "}
+                The simulation is optimised for desktop. Motor activity and
+                facial recognition are monitored via the browser secure layer.
+              </p>
+              <p>
+                <strong className="text-slate-900 dark:text-white">
+                  Live feedback:
+                </strong>{" "}
+                You will see your motor activity tracked and hear periodic
+                audio feedback — reflecting the real NCK proctoring experience.
+              </p>
+            </div>
+          </section>
 
-            <p className="mt-4 text-[10px] text-slate-400 font-medium max-w-xs text-center leading-relaxed">
-              By clicking start, you agree to the simulation terms and proctoring
-              monitoring protocols.
-            </p>
+          {/* Exam protocol */}
+          <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg
+                              bg-violet-400/10
+                              flex items-center justify-center shrink-0">
+                <FileCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider
+                              text-violet-600 dark:text-violet-400 leading-none mb-1">
+                  Protocol
+                </p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                  NCK simulation guide
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+              <ProtocolItem
+                icon={<Monitor className="h-3.5 w-3.5" />}
+                tone="blue"
+                title="Environment"
+                desc="Answer one question at a time. Keep a quiet space."
+              />
+              <ProtocolItem
+                icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                tone="emerald"
+                title="Question format"
+                desc="Four choices, one correct. Review carefully before selecting."
+              />
+              <ProtocolItem
+                icon={<Flag className="h-3.5 w-3.5" />}
+                tone="amber"
+                title="Review system"
+                desc="Flag difficult questions for later review."
+              />
+              <ProtocolItem
+                icon={<FastForward className="h-3.5 w-3.5" />}
+                tone="neutral"
+                title="Navigation"
+                desc="Skip and revisit — flagged or skipped items appear before submission."
+              />
+              <ProtocolItem
+                icon={<Timer className="h-3.5 w-3.5" />}
+                tone="rose"
+                title="Time"
+                desc="Timer starts immediately. Auto-submits on expiry."
+              />
+              <ProtocolItem
+                icon={<Wifi className="h-3.5 w-3.5" />}
+                tone="sky"
+                title="Connectivity"
+                desc="Stable internet required. Do not refresh or leave the tab."
+              />
+              <ProtocolItem
+                icon={<ShieldAlert className="h-3.5 w-3.5" />}
+                tone="amber"
+                title="Proctoring"
+                desc="Tab switching or prolonged inactivity may terminate the session."
+              />
+              <ProtocolItem
+                icon={<FileCheck className="h-3.5 w-3.5" />}
+                tone="violet"
+                title="Submission"
+                desc="Submit to end. Results and explanations generate instantly."
+              />
+            </div>
+          </section>
+        </div>
+      </main>
+
+      {/* ── Pinned footer ────────────────────────────────── */}
+      <footer className="shrink-0 px-4 py-3
+                   bg-white dark:bg-[#0d1117]
+                   border-t border-slate-200/70 dark:border-white/[0.06]
+                   safe-bottom">
+        <div className="w-full max-w-md mx-auto">
+          <div className="flex items-center justify-center gap-1.5 mb-2">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${canStart ? "bg-emerald-500 animate-pulse" : "bg-slate-300 dark:bg-white/[0.15]"
+                }`}
+            />
+            <span className="text-[9px] font-bold uppercase tracking-wider
+                       text-slate-500 dark:text-slate-400">
+              {canStart ? "Security handshake complete" : "Pending hardware authorisation"}
+            </span>
           </div>
-        </CardContent>
-      </Card>
+
+          <button
+            onClick={handleStartQuiz}
+            disabled={!canStart}
+            className={`w-full h-11 rounded-xl text-white
+                  text-sm font-bold
+                  flex items-center justify-center gap-2
+                  transition-transform
+                  ${canStart
+                ? "bg-emerald-600 active:scale-[0.97]"
+                : "bg-slate-200 dark:bg-white/[0.08] text-slate-400 dark:text-slate-500 cursor-not-allowed"
+              }`}
+            style={{ touchAction: "manipulation" }}
+          >
+            {canStart ? (
+              <>
+                Start examination
+                <ArrowRight className="h-4 w-4" />
+              </>
+            ) : (
+              "Initializing secure layer…"
+            )}
+          </button>
+
+          <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400
+                  text-center leading-snug">
+            By clicking start you agree to simulation terms and proctoring protocols.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function InstructionBox({
+/* ------------------------------------------------------------------ */
+/*  Sub-components                                                    */
+/* ------------------------------------------------------------------ */
+
+function StatusBar({
+  canStart,
+  setupSkipped,
+  secondsLeft,
+  onSkip,
+}: {
+  canStart: boolean;
+  setupSkipped: boolean;
+  secondsLeft: number | null;
+  onSkip: () => void;
+}) {
+  return (
+    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${canStart
+            ? "bg-emerald-400/10 text-emerald-600 dark:text-emerald-400"
+            : "bg-blue-400/10 text-blue-600 dark:text-blue-400"
+            }`}
+        >
+          {canStart ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <Clock className="h-5 w-5 animate-pulse" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+            {setupSkipped
+              ? "Verification bypassed"
+              : canStart
+                ? "System ready"
+                : "Initialising hardware"}
+          </h3>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug truncate">
+            {setupSkipped
+              ? "Monitoring disabled"
+              : secondsLeft === null
+                ? "Awaiting camera and microphone…"
+                : secondsLeft > 0
+                  ? `Automated check in ${secondsLeft}s`
+                  : "All systems operational"}
+          </p>
+        </div>
+
+        {!canStart && !setupSkipped && (
+          <button
+            onClick={onSkip}
+            className="shrink-0 h-9 px-2.5 rounded-lg
+                       bg-amber-50 dark:bg-amber-400/10
+                       text-amber-700 dark:text-amber-400
+                       text-[11px] font-bold
+                       active:scale-[0.97] transition-transform"
+            style={{ touchAction: "manipulation" }}
+          >
+            Skip
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ProtocolItem({
   icon,
+  tone,
   title,
   desc,
 }: {
   icon: React.ReactNode;
+  tone: "blue" | "emerald" | "amber" | "rose" | "sky" | "violet" | "neutral";
   title: string;
   desc: string;
 }) {
+  const toneClass = {
+    blue: "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400",
+    emerald:
+      "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400",
+    amber:
+      "bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400",
+    rose: "bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400",
+    sky: "bg-sky-50 dark:bg-sky-400/10 text-sky-600 dark:text-sky-400",
+    violet:
+      "bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-400",
+    neutral:
+      "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300",
+  }[tone];
+
   return (
-    <div className="flex gap-3 p-3 rounded-xl">
-      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+    <div className="flex items-start gap-2 p-2 rounded-xl
+                    bg-slate-50 dark:bg-[#0d1117]">
+      <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${toneClass}`}>
         {icon}
       </div>
-      <div className="space-y-0.5 min-w-0">
-        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight">
           {title}
-        </h4>
-        <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed font-medium">
+        </p>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
           {desc}
         </p>
       </div>

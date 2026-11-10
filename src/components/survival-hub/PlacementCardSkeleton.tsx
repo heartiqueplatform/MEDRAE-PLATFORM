@@ -1,53 +1,35 @@
-import React from 'react';
+import React from "react";
 
 export const PlacementCardSkeleton = () => {
     return (
-        <div className="overflow-hidden rounded-2xl bg-white dark:bg-muted/30 md:shadow-sm animate-pulse">
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden
+                        w-full max-w-sm mx-auto animate-pulse">
+            {/* Photo */}
+            <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-white/[0.06]" />
 
-            {/* PHOTO SECTION SKELETON */}
-            <div className="relative h-48 md:h-56 w-full bg-slate-200 dark:bg-slate-700">
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-12 w-12 rounded-full bg-slate-300 dark:bg-slate-600" />
-                </div>
-            </div>
-
-            <div className="p-4 md:p-5">
-                {/* Header Badges Skeleton */}
-                <div className="mb-2 md:mb-3 flex items-center justify-between flex-wrap gap-1">
-                    <div className="rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 md:px-2 py-0.5 md:py-1">
-                        <div className="h-2 w-16 rounded bg-slate-300 dark:bg-slate-600" />
-                    </div>
-                    <div className="flex items-center gap-1.5 md:gap-2">
-                        <div className="flex items-center gap-0.5 md:gap-1">
-                            <div className="h-2.5 w-2.5 rounded bg-slate-200 dark:bg-slate-700" />
-                            <div className="h-2 w-20 rounded bg-slate-200 dark:bg-slate-700" />
-                        </div>
-                        <div className="h-6 w-6 rounded-lg bg-slate-200 dark:bg-slate-700" />
-                    </div>
+            <div className="p-3 space-y-2.5">
+                {/* County + status row */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="h-4 w-16 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="h-4 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
                 </div>
 
-                {/* Title Skeleton */}
-                <div className="h-6 md:h-7 w-48 rounded bg-slate-200 dark:bg-slate-700 mb-1" />
-                <div className="h-3 w-32 rounded bg-slate-200 dark:bg-slate-700 mb-3 md:mb-4" />
-
-                {/* Wards Section Skeleton — no border */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl mb-3 md:mb-4">
-                    <div className="flex items-start gap-1.5 md:gap-2">
-                        <div className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700 mt-0.5" />
-                        <div className="flex-1">
-                            <div className="h-3 w-40 rounded bg-slate-200 dark:bg-slate-700" />
-                            <div className="h-3 w-56 rounded bg-slate-200 dark:bg-slate-700 mt-1" />
-                        </div>
-                    </div>
+                {/* Title + location */}
+                <div className="space-y-1.5">
+                    <div className="h-4 w-3/4 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="h-2.5 w-1/2 rounded bg-slate-100 dark:bg-white/[0.06]" />
                 </div>
 
-                {/* Action Buttons Skeleton */}
-                <div className="grid grid-cols-1 gap-1.5 md:gap-2 mt-3 md:mt-4">
-                    <div className="h-10 md:h-12 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-700" />
-                    <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                        <div className="h-9 md:h-10 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-700" />
-                        <div className="h-9 md:h-10 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-700" />
-                    </div>
+                {/* Wards box */}
+                <div className="rounded-xl bg-slate-100 dark:bg-white/[0.06] p-2.5 h-14" />
+
+                {/* Primary CTA */}
+                <div className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
+
+                {/* Secondary row */}
+                <div className="grid grid-cols-2 gap-1.5">
+                    <div className="h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
                 </div>
             </div>
         </div>

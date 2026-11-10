@@ -1156,6 +1156,56 @@ export function MedraeQuizzes() {
                                       </Button>
                                     )}
                                   </div>
+                                  {/* ⭐ RATING ROW — 5 stars, centered */}
+                                  {unit.id && (
+                                    <div className="pt-4 mt-2 border-t border-slate-100 dark:border-white/[0.04]">
+                                      <p className="text-[9px] font-bold tracking-widest
+                                                    text-slate-400 dark:text-slate-500 text-center mb-1.5">
+                                        {myState?.rating
+                                          ? `You rated ${myState.rating} ${myState.rating === 1 ? "star" : "stars"} · tap again to clear`
+                                          : "Tap a star to rate"}
+                                      </p>
+                                      <div className="flex items-center justify-center gap-0">
+                                        {[1, 2, 3, 4, 5].map((n) => {
+                                          const filled = (myState?.rating ?? 0) >= n;
+                                          return (
+                                            <button
+                                              key={n}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!unit.id) return;
+                                                const current = withLocal(unit.id).rating ?? 0;
+                                                const nextRating = current === n ? 0 : n;
+                                                setBubbleKey(`rt:${unit.code}:${n}`);
+                                                patchMirror(unit.id, { rating: nextRating === 0 ? undefined : nextRating });
+                                                rateQuiz(unit.id, nextRating);
+                                                if (navigator.vibrate) navigator.vibrate(20);
+                                              }}
+                                              className="relative flex items-center justify-center
+                                                         h-9 w-9 rounded-md
+                                                         active:scale-[0.92] transition-transform
+                                                         touch-manipulation"
+                                              style={{ touchAction: "manipulation" }}
+                                              aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
+                                            >
+                                              {bubbleKey === `rt:${unit.code}:${n}` && (
+                                                <BubblePop color="#F59E0B" emoji="⭐" />
+                                              )}
+                                              <Star
+                                                size={20}
+                                                fill={filled ? "currentColor" : "none"}
+                                                strokeWidth={1.75}
+                                                className={`relative z-10 transition-colors ${filled
+                                                  ? "text-amber-500"
+                                                  : "text-slate-300 dark:text-slate-600"
+                                                  }`}
+                                              />
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
 
                                   {/* ACTIONS ROW — bookmark left, share right, with labels */}
                                   <div className="flex items-center gap-2 pt-5 mt-1">

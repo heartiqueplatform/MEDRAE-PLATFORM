@@ -1,10 +1,25 @@
 "use client";
+
 import { TermsButton } from "@/components/ui/TermsButton";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-hot-toast";
-import { ChevronLeft, CheckCircle, Heart, Info, Phone, ShieldAlert, X } from "lucide-react";
+import {
+    ChevronLeft,
+    CheckCircle,
+    Heart,
+    Info,
+    Phone,
+    ShieldAlert,
+    X,
+} from "lucide-react";
+import { CenteredModal } from "@/components/ui/CenteredModal";
+import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
 
 interface Listing {
     id: string;
@@ -29,97 +44,85 @@ interface Listing {
     contact_clicks?: number;
 }
 
-// Skeleton Component
-const DetailSkeleton = () => {
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (p: number | number[] = 12) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    playSound("ui-tap");
+    if (type === "success") vibrate([15, 30, 15]);
+    else if (type === "warning") vibrate(40);
+    else vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                          */
+/* ------------------------------------------------------------------ */
+
+function DetailSkeleton({ onBack }: { onBack: () => void }) {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-background animate-pulse">
-            {/* Top Navigation Bar Skeleton */}
-            <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 px-3 md:px-4 py-3">
-                <div className="max-w-6xl mx-auto flex justify-between items-center">
-                    <div className="h-8 w-20 md:h-9 md:w-28 rounded bg-gray-200 dark:bg-gray-700" />
-                    <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
-                </div>
-            </div>
+        <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+            <Header onBack={onBack} title="Listing" subtitle="Loading…" />
 
-            <div className="max-w-6xl mx-auto px-3 md:px-4 pt-3 md:pt-4">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-6">
-
-                    {/* LEFT COLUMN Skeleton */}
-                    <div className="lg:col-span-7 space-y-3 md:space-y-4">
-                        {/* Main Image Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
-                            <div className="relative w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                                <div className="w-full aspect-square md:aspect-[4/3]">
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-300 dark:bg-gray-600" />
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Thumbnails Row Skeleton */}
-                            <div className="flex gap-1.5 md:gap-2 p-2 md:p-3">
-                                {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="w-16 h-16 md:w-20 md:h-20 rounded-lg md:rounded-xl bg-gray-200 dark:bg-gray-700" />
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Description Box Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
-                            <div className="h-6 md:h-7 w-32 rounded bg-gray-200 dark:bg-gray-700 mb-2 md:mb-4" />
-                            <div className="space-y-2">
-                                <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700" />
-                                <div className="h-3 w-5/6 rounded bg-gray-200 dark:bg-gray-700" />
-                                <div className="h-3 w-4/6 rounded bg-gray-200 dark:bg-gray-700" />
-                                <div className="h-3 w-3/6 rounded bg-gray-200 dark:bg-gray-700" />
-                            </div>
+            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+                <div className="w-full max-w-3xl mx-auto px-4 py-4 pb-24 space-y-3 safe-bottom animate-pulse">
+                    {/* Image */}
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+                        <div className="aspect-square w-full bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="flex gap-1.5 p-2">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div
+                                    key={i}
+                                    className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-white/[0.06]"
+                                />
+                            ))}
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN Skeleton */}
-                    <div className="lg:col-span-5 space-y-3 md:space-y-4">
-                        {/* Price Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
-                            <div className="mb-3 md:mb-4">
-                                <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700 mb-1" />
-                                <div className="h-7 md:h-9 w-48 rounded bg-gray-200 dark:bg-gray-700" />
-                            </div>
-                            <div className="flex items-baseline gap-1.5 md:gap-2 mb-3 md:mb-4">
-                                <div className="h-8 md:h-10 w-32 rounded bg-gray-200 dark:bg-gray-700" />
-                            </div>
-                            <div className="flex flex-col gap-1.5 md:gap-2">
-                                <div className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-gray-200 dark:bg-gray-700" />
-                                <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                                    <div className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-gray-200 dark:bg-gray-700" />
-                                    <div className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-gray-200 dark:bg-gray-700" />
-                                </div>
-                            </div>
+                    {/* Price card */}
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <div className="h-3 w-20 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-5 w-3/4 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-7 w-32 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
+                            <div className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
                         </div>
+                    </div>
 
-                        {/* Seller Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-6">
-                            <div className="h-3 w-32 rounded bg-gray-200 dark:bg-gray-700 mb-3 md:mb-4" />
-                            <div className="flex items-center gap-3 md:gap-4">
-                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gray-200 dark:bg-gray-700" />
-                                <div>
-                                    <div className="h-5 md:h-6 w-32 rounded bg-gray-200 dark:bg-gray-700 mb-1" />
-                                    <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-                                </div>
-                            </div>
-                            <div className="mt-3 md:mt-4 pt-3 md:pt-4">
-                                <div className="h-3 w-48 rounded bg-gray-200 dark:bg-gray-700" />
+                    {/* Description card */}
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                        <div className="h-4 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-3 w-full rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-3 w-5/6 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-3 w-4/6 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                    </div>
+
+                    {/* Seller card */}
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <div className="h-3 w-20 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
+                            <div className="space-y-1.5">
+                                <div className="h-4 w-32 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Footer Skeleton */}
-                <div className="text-center py-4 md:py-6 px-4 md:px-0">
-                    <div className="h-4 w-48 rounded bg-gray-200 dark:bg-gray-700 mx-auto" />
-                </div>
-            </div>
+            </main>
         </div>
     );
-};
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main                                                              */
+/* ------------------------------------------------------------------ */
 
 export default function ListingDetail() {
     const { id } = useParams();
@@ -127,18 +130,12 @@ export default function ListingDetail() {
     const [listing, setListing] = useState<Listing | null>(null);
     const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
-    const [theme, setTheme] = useState<"light" | "dark">("light");
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [reported, setReported] = useState(false);
     const [saving, setSaving] = useState(false);
     const [reporting, setReporting] = useState(false);
     const [activeImage, setActiveImage] = useState<string | null>(null);
-
-    useEffect(() => {
-        const storedTheme = (localStorage.getItem("theme") as "light" | "dark") || "light";
-        setTheme(storedTheme);
-    }, []);
 
     useEffect(() => {
         const getUser = async () => {
@@ -151,7 +148,6 @@ export default function ListingDetail() {
     useEffect(() => {
         const checkUserActions = async () => {
             if (!user?.id || !listing?.id) return;
-
             const { data: savedData } = await supabase
                 .from("market_saves")
                 .select("id")
@@ -168,12 +164,12 @@ export default function ListingDetail() {
                 .maybeSingle();
             setReported(!!reportData);
         };
-
         checkUserActions();
     }, [user, listing]);
 
     useEffect(() => {
         if (id) fetchListing();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const fetchListing = async () => {
@@ -191,7 +187,9 @@ export default function ListingDetail() {
                 return;
             }
 
-            const expired = data.status !== "active" || (data.expires_at && new Date(data.expires_at) < new Date());
+            const expired =
+                data.status !== "active" ||
+                (data.expires_at && new Date(data.expires_at) < new Date());
             if (expired) {
                 toast.error("This listing has expired or been removed.");
                 navigate("/market");
@@ -243,19 +241,17 @@ export default function ListingDetail() {
 
     const handleSave = async () => {
         if (!listing || !user?.id) return;
+        tap();
         setSaving(true);
         try {
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from("market_saves")
-                .insert({
-                    user_id: user.id,
-                    listing_id: listing.id,
-                })
+                .insert({ user_id: user.id, listing_id: listing.id })
                 .select();
 
             if (error) throw error;
             setSaved(true);
-            toast.success("Saved to your wishlist!");
+            toast.success("Saved to your wishlist");
         } catch (err) {
             console.error(err);
             toast.error("Failed to save listing.");
@@ -266,16 +262,15 @@ export default function ListingDetail() {
 
     const handleContact = async () => {
         if (!listing) return;
-
         if (!user?.id) {
-            toast.error("You must be logged in to contact the seller");
+            toast.error("Sign in to contact the seller");
             return;
         }
-
         if (!listing.seller_phone) {
             toast.error("Seller has not provided a phone number.");
             return;
         }
+        tap("success");
 
         try {
             const { error } = await supabase
@@ -286,7 +281,6 @@ export default function ListingDetail() {
                 toast.error("Failed to register contact");
                 return;
             }
-
             await supabase.from("market_activity").insert({
                 listing_id: listing.id,
                 user_id: user.id,
@@ -311,10 +305,9 @@ export default function ListingDetail() {
 
     const handleReport = async () => {
         if (!listing || !user?.id) return;
-
         const reason = prompt("Why are you reporting this listing?");
         if (!reason) return;
-
+        tap("warning");
         setReporting(true);
         try {
             await supabase.from("market_reports").insert({
@@ -323,7 +316,7 @@ export default function ListingDetail() {
                 reason,
             });
             setReported(true);
-            toast.success("Report submitted!");
+            toast.success("Report submitted");
         } catch (err) {
             console.error(err);
             toast.error("Failed to report.");
@@ -332,201 +325,353 @@ export default function ListingDetail() {
         }
     };
 
-    if (loading) return <DetailSkeleton />;
-    if (!listing) return <DetailSkeleton />;
+    const handleBack = () => {
+        tap();
+        navigate("/dashboard", { replace: true });
+    };
+
+    if (loading || !listing) return <DetailSkeleton onBack={handleBack} />;
+
+    const allImages =
+        listing.image_urls && listing.image_urls.length > 0
+            ? listing.image_urls
+            : [listing.thumbnail_url].filter(Boolean);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-background">
-
-            {/* Top Navigation Bar */}
-            <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 px-3 md:px-4 py-3">
-                <div className="max-w-6xl mx-auto flex justify-between items-center">
-                    <button
-                        onClick={() => navigate("/market")}
-                        aria-label="Go back"
-                        className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-gray-700 dark:text-gray-300 active:opacity-60 transition"
-                    >
-                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        aria-label="Save listing"
-                        className={`p-1.5 md:p-2 rounded-full transition ${saved ? "text-red-500" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-                    >
-                        <Heart size={20} className="md:w-6 md:h-6" fill={saved ? "currentColor" : "none"} />
-                    </button>
-                </div>
-            </div>
-
-            <div className="max-w-6xl mx-auto px-3 md:px-4 pt-3 md:pt-4">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-6">
-
-                    {/* LEFT COLUMN */}
-                    <div className="lg:col-span-7 space-y-3 md:space-y-4">
-                        {/* Main Image Gallery */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
-                            <div className="flex flex-col">
-                                <div className="relative w-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                                    <div className="w-full aspect-square md:aspect-[4/3]">
-                                        <img
-                                            src={activeImage || listing.thumbnail_url}
-                                            alt={listing.title}
-                                            onClick={() => setFullscreenImage(activeImage || listing.thumbnail_url)}
-                                            className="w-full h-full object-contain cursor-zoom-in transition-transform duration-500 hover:md:scale-105"
-                                        />
-                                    </div>
-                                    {listing.is_featured && (
-                                        <div className="absolute top-3 md:top-4 left-3 md:left-4 bg-yellow-400 text-black text-[8px] md:text-[10px]   px-2 md:px-3 py-0.5 md:py-1 rounded-lg uppercase z-10">
-                                            Featured
-                                        </div>
-                                    )}
-                                </div>
-
-                                {listing.image_urls && listing.image_urls.length > 1 && (
-                                    <div className="flex gap-1.5 md:gap-2 p-2 md:p-3 overflow-x-auto no-scrollbar">
-                                        {listing.image_urls.map((url, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setActiveImage(url)}
-                                                className={`relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg md:rounded-xl overflow-hidden transition-all ${activeImage === url
-                                                    ? "ring-2 ring-blue-500"
-                                                    : "opacity-70 hover:opacity-100"
-                                                    }`}
-                                            >
-                                                <img src={url} className="w-full h-full object-cover" alt={`Thumbnail ${idx + 1}`} />
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Description Box */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
-                            <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-white mb-2 md:mb-4">Description</h2>
-                            <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                                {listing.description}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* RIGHT COLUMN */}
-                    <div className="lg:col-span-5 space-y-3 md:space-y-4">
-
-                        {/* Price Card */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
-                            <div className="flex justify-between items-start mb-3 md:mb-4">
-                                <div>
-                                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                                        {listing.category}
-                                    </span>
-                                    <h1 className="text-xl md:text-3xl   text-gray-900 dark:text-white mt-0.5 md:mt-1 leading-tight">
-                                        {listing.title}
-                                    </h1>
-                                </div>
-                                <span className="px-2 md:px-3 py-0.5 md:py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] md:text-xs font-bold rounded-full shrink-0 ml-2">
-                                    {listing.condition}
-                                </span>
-                            </div>
-
-                            <div className="flex items-baseline gap-1.5 md:gap-2 mb-3 md:mb-4">
-                                <span className="text-2xl md:text-4xl   text-gray-900 dark:text-white">
-                                    {listing.currency} {Number(listing.price).toLocaleString()}
-                                </span>
-                                {listing.negotiable && (
-                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs md:text-sm flex items-center gap-0.5 md:gap-1">
-                                        <CheckCircle size={12} className="md:w-3.5 md:h-3.5" /> Negotiable
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col gap-1.5 md:gap-2">
-                                <button
-                                    onClick={handleContact}
-                                    className="w-full flex items-center justify-center gap-2 md:gap-3 bg-green-600 hover:bg-green-700 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-sm md:text-lg transition-all active:scale-[0.98]"
-                                >
-                                    <Phone size={16} className="md:w-5 md:h-5" />
-                                    Contact Seller
-                                </button>
-
-                                <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                                    <button
-                                        onClick={handleSave}
-                                        className={`flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold transition-all text-xs md:text-sm ${saved
-                                            ? "bg-gray-100 dark:bg-gray-800 text-gray-500"
-                                            : "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                                            }`}
-                                    >
-                                        <Heart size={14} className="md:w-[18px] md:h-[18px]" fill={saved ? "currentColor" : "none"} />
-                                        {saving ? "..." : saved ? "Saved" : "Save"}
-                                    </button>
-
-                                    <button
-                                        onClick={handleReport}
-                                        className={`flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold transition-all text-xs md:text-sm ${reported
-                                            ? "bg-red-50 text-red-400"
-                                            : "bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
-                                            }`}
-                                    >
-                                        <ShieldAlert size={14} className="md:w-[18px] md:h-[18px]" />
-                                        {reporting ? "..." : reported ? "Reported" : "Report"}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Seller Card */}
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-6">
-                            <h3 className="text-[10px] md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 md:mb-4">Seller Information</h3>
-                            <div className="flex items-center gap-3 md:gap-4">
-                                {listing.seller_avatar ? (
-                                    <img src={listing.seller_avatar} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover" alt={listing.seller_name} />
-                                ) : (
-                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-blue-600 flex items-center justify-center text-white text-base md:text-xl font-bold">
-                                        {listing.seller_name?.[0]}
-                                    </div>
-                                )}
-                                <div>
-                                    <div className="font-bold text-gray-900 dark:text-white text-base md:text-lg">{listing.seller_name}</div>
-                                    <div className="text-blue-600 dark:text-blue-400 text-xs md:text-sm font-medium">{listing.seller_role}</div>
-                                </div>
-                            </div>
-                            <div className="mt-3 md:mt-4 pt-3 md:pt-4 flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-gray-500">
-                                <Info size={12} className="md:w-3.5 md:h-3.5" />
-                                Verified Student / Nurse Professional
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="text-center py-4 md:py-6 px-4 md:px-0">
-                    <TermsButton />
-                </div>
-            </div>
-
-            {/* FULLSCREEN IMAGE MODAL */}
-            {fullscreenImage && (
-                <div
-                    className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 md:p-10"
-                    onClick={() => setFullscreenImage(null)}
+        <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+            {/* ── Header ──────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <button
+                    onClick={handleBack}
+                    aria-label="Back to dashboard"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5"
+                    style={{ touchAction: "manipulation" }}
                 >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate
+                                   text-slate-900 dark:text-white">
+                        {listing.title}
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate tabular-nums">
+                        {listing.currency} {Number(listing.price).toLocaleString()}
+                        {listing.negotiable && " · Negotiable"}
+                    </p>
+                </div>
+                <button
+                    onClick={handleSave}
+                    disabled={saving || saved}
+                    aria-label="Save listing"
+                    className={`h-10 w-10 rounded-full flex items-center justify-center
+                                active:scale-[0.92] transition-transform shrink-0
+                                ${saved
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-slate-600 dark:text-slate-300"}`}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Heart className="h-5 w-5" fill={saved ? "currentColor" : "none"} strokeWidth={2.25} />
+                </button>
+            </header>
+
+            {/* ── Body ────────────────────────────────────────── */}
+            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+                <div className="w-full max-w-3xl mx-auto px-4 py-4 pb-24 space-y-3 safe-bottom">
+                    {/* Image card */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+                        <button
+                            onClick={() => {
+                                tap();
+                                setFullscreenImage(activeImage || listing.thumbnail_url);
+                            }}
+                            className="relative w-full aspect-square
+                                       bg-slate-100 dark:bg-white/[0.03]
+                                       flex items-center justify-center"
+                            style={{ touchAction: "manipulation" }}
+                            aria-label="View full-size image"
+                        >
+                            <img
+                                src={activeImage || listing.thumbnail_url}
+                                alt={listing.title}
+                                className="w-full h-full object-contain"
+                            />
+
+                            {listing.is_featured && (
+                                <span className="absolute top-3 left-3
+                                                 bg-amber-500 text-white
+                                                 text-[9px] font-bold uppercase tracking-wider
+                                                 px-2 py-0.5 rounded-full">
+                                    Featured
+                                </span>
+                            )}
+                        </button>
+
+                        {allImages.length > 1 && (
+                            <div className="flex gap-1.5 p-2 overflow-x-auto no-scrollbar">
+                                {allImages.map((url, idx) => {
+                                    const active = activeImage === url;
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                tap();
+                                                setActiveImage(url);
+                                            }}
+                                            className={`relative flex-shrink-0 h-14 w-14 rounded-lg overflow-hidden
+                                                        transition-all
+                                                        ${active
+                                                    ? "ring-2 ring-blue-600 dark:ring-blue-400"
+                                                    : "opacity-70"}`}
+                                            style={{ touchAction: "manipulation" }}
+                                            aria-label={`View image ${idx + 1}`}
+                                        >
+                                            <img
+                                                src={url}
+                                                className="w-full h-full object-cover"
+                                                alt={`Image ${idx + 1}`}
+                                                loading="lazy"
+                                            />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Price card */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                              text-blue-600 dark:text-blue-400 leading-none mb-1">
+                                    {listing.category.replace(/_/g, " ")}
+                                </p>
+                                <h2 className="text-[16px] font-bold
+                                               text-slate-900 dark:text-white
+                                               leading-snug">
+                                    {listing.title}
+                                </h2>
+                            </div>
+                            <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider
+                                             bg-slate-100 dark:bg-white/[0.06]
+                                             text-slate-600 dark:text-slate-300
+                                             px-2 py-1 rounded-full">
+                                {listing.condition.replace(/_/g, " ")}
+                            </span>
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold
+                                             text-slate-900 dark:text-white tabular-nums">
+                                <span className="text-[11px] font-bold uppercase tracking-wider
+                                                 text-slate-500 dark:text-slate-400 mr-1">
+                                    {listing.currency}
+                                </span>
+                                {Number(listing.price).toLocaleString()}
+                            </span>
+                            {listing.negotiable && (
+                                <span className="inline-flex items-center gap-1
+                                                 text-[10px] font-bold uppercase tracking-wider
+                                                 text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Negotiable
+                                </span>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={handleContact}
+                            className="w-full h-11 rounded-xl
+                                       bg-emerald-600 text-white
+                                       text-sm font-bold
+                                       flex items-center justify-center gap-2
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <Phone className="h-4 w-4" />
+                            Contact seller
+                        </button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={handleSave}
+                                disabled={saving || saved}
+                                className={`h-10 rounded-xl
+                                            text-[12px] font-bold
+                                            flex items-center justify-center gap-1.5
+                                            active:scale-[0.97] transition-transform
+                                            disabled:cursor-default
+                                            ${saved
+                                        ? "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400"
+                                        : "bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200"}`}
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <Heart className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} strokeWidth={2.25} />
+                                {saving ? "Saving…" : saved ? "Saved" : "Save"}
+                            </button>
+
+                            <button
+                                onClick={handleReport}
+                                disabled={reporting || reported}
+                                className={`h-10 rounded-xl
+                                            text-[12px] font-bold
+                                            flex items-center justify-center gap-1.5
+                                            active:scale-[0.97] transition-transform
+                                            disabled:cursor-default
+                                            ${reported
+                                        ? "bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500"
+                                        : "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400"}`}
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <ShieldAlert className="h-3.5 w-3.5" />
+                                {reporting ? "…" : reported ? "Reported" : "Report"}
+                            </button>
+                        </div>
+                    </section>
+
+                    {/* Description */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                      text-slate-500 dark:text-slate-400">
+                            Description
+                        </p>
+                        <p className="text-[13px] text-slate-700 dark:text-slate-300
+                                      leading-relaxed whitespace-pre-wrap">
+                            {listing.description}
+                        </p>
+                    </section>
+
+                    {/* Seller */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                      text-slate-500 dark:text-slate-400">
+                            Seller
+                        </p>
+
+                        <div className="flex items-center gap-3">
+                            {listing.seller_avatar ? (
+                                <img
+                                    src={listing.seller_avatar}
+                                    className="h-12 w-12 rounded-xl object-cover shrink-0
+                                               ring-2 ring-slate-200 dark:ring-white/[0.08]"
+                                    alt={listing.seller_name}
+                                />
+                            ) : (
+                                <div className="h-12 w-12 rounded-xl
+                                                bg-blue-100 dark:bg-blue-400/10
+                                                flex items-center justify-center
+                                                text-blue-600 dark:text-blue-400
+                                                text-base font-bold shrink-0">
+                                    {listing.seller_name?.[0] || "?"}
+                                </div>
+                            )}
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                                    {listing.seller_name}
+                                </p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider
+                                              text-blue-600 dark:text-blue-400 truncate mt-0.5">
+                                    {listing.seller_role}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5
+                                        text-[10px] font-bold uppercase tracking-wider
+                                        text-slate-500 dark:text-slate-400">
+                            <Info className="h-3 w-3" />
+                            Verified student / nurse professional
+                        </div>
+                    </section>
+
+                    <div className="pt-2 flex justify-center">
+                        <TermsButton />
+                    </div>
+                </div>
+            </main>
+
+            {/* ── Fullscreen image viewer — CenteredModal ──────── */}
+            <CenteredModal
+                open={!!fullscreenImage}
+                onClose={() => setFullscreenImage(null)}
+                hideHeader
+                noScrollBody
+                maxWidthClass="max-w-2xl"
+                maxHeight="92dvh"
+                className="bg-black dark:bg-black"
+            >
+                <div className="relative flex-1 flex items-center justify-center p-2">
                     <button
-                        onClick={() => setFullscreenImage(null)}
+                        onClick={() => {
+                            tap();
+                            setFullscreenImage(null);
+                        }}
                         aria-label="Close image"
-                        className="absolute top-4 right-4 md:top-6 md:right-6 text-white/50 hover:text-white transition p-1.5 md:p-2 bg-white/10 rounded-full"
+                        className="absolute top-2 right-2 z-10
+                                   h-10 w-10 rounded-full
+                                   bg-white/[0.12] text-white
+                                   flex items-center justify-center
+                                   active:scale-[0.92] transition-transform"
+                        style={{ touchAction: "manipulation" }}
                     >
-                        <X size={24} className="md:w-8 md:h-8" />
+                        <X className="h-5 w-5" strokeWidth={2.5} />
                     </button>
 
-                    <img
-                        src={fullscreenImage}
-                        alt="Full Screen View"
-                        className="max-h-[90vh] md:max-h-full max-w-full object-contain rounded-lg transition-transform duration-300"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                    {fullscreenImage && (
+                        <img
+                            src={fullscreenImage}
+                            alt="Full size"
+                            className="max-w-full max-h-[85dvh] object-contain rounded-lg"
+                        />
+                    )}
                 </div>
-            )}
+            </CenteredModal>
         </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Header                                                            */
+/* ------------------------------------------------------------------ */
+
+function Header({
+    onBack,
+    title,
+    subtitle,
+}: {
+    onBack: () => void;
+    title: string;
+    subtitle: string;
+}) {
+    return (
+        <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           z-30 safe-top">
+            <button
+                onClick={onBack}
+                aria-label="Back to dashboard"
+                className="h-10 w-10 rounded-full flex items-center justify-center
+                           text-slate-700 dark:text-slate-200
+                           active:bg-slate-100 dark:active:bg-white/5"
+                style={{ touchAction: "manipulation" }}
+            >
+                <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+            <div className="flex-1 min-w-0">
+                <h1 className="text-base font-bold leading-tight truncate
+                               text-slate-900 dark:text-white">
+                    {title}
+                </h1>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                    {subtitle}
+                </p>
+            </div>
+        </header>
     );
 }

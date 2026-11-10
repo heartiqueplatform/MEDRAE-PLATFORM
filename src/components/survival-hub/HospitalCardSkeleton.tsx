@@ -1,61 +1,41 @@
-import React from 'react';
+import React from "react";
 
 export const HospitalCardSkeleton = () => {
     return (
-        <div className="rounded-2xl bg-white px-4 py-4 md:p-5 dark:bg-muted/30 md:shadow-sm animate-pulse">
-            <div className="flex gap-3 md:gap-4">
-                {/* Icon Skeleton */}
-                <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700">
-                    <div className="h-5 w-5 md:h-6 md:w-6 rounded bg-slate-300 dark:bg-slate-600" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    {/* Title Skeleton */}
-                    <div className="h-5 md:h-6 w-48 rounded bg-slate-200 dark:bg-slate-700 mb-1.5" />
-
-                    {/* Subtitle Skeleton */}
-                    <div className="h-3 w-32 rounded bg-slate-200 dark:bg-slate-700" />
-
-                    {/* Distance Skeleton */}
-                    <div className="mt-2 md:mt-3 flex items-center gap-1.5 md:gap-2">
-                        <div className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700" />
-                        <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-700" />
-                    </div>
-
-                    {/* Student Friendly Badge Skeleton */}
-                    <div className="mt-2 md:mt-3 flex items-center gap-1">
-                        <div className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700" />
-                        <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-700" />
-                    </div>
-
-                    {/* Buttons Skeleton */}
-                    <div className="mt-3 md:mt-4 flex gap-1.5 md:gap-2">
-                        <div className="flex-1 h-9 md:h-10 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-700" />
-                        <div className="h-9 md:h-10 w-9 md:w-10 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-700" />
-                    </div>
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2.5 animate-pulse">
+            {/* Header */}
+            <div className="flex items-start gap-2.5">
+                <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-white/[0.06] shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="h-4 w-3/4 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="h-2.5 w-1/3 rounded bg-slate-100 dark:bg-white/[0.06]" />
                 </div>
             </div>
 
-            {/* Departments Section Skeleton */}
-            <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 pt-3 md:pt-4">
-                {[...Array(3)].map((_, i) => (
-                    <div
-                        key={i}
-                        className="h-5 w-16 rounded-md bg-slate-200 dark:bg-slate-700"
-                    />
-                ))}
+            {/* Location + acceptance */}
+            <div className="flex items-center gap-3">
+                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                <div className="h-3 w-28 rounded bg-slate-100 dark:bg-white/[0.06]" />
             </div>
 
-            {/* Uploader Info Skeleton */}
-            <div className="mt-3 md:mt-4 pt-3 md:pt-4 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                    <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-slate-200 dark:bg-slate-700" />
-                    <div className="h-3 w-32 rounded bg-slate-200 dark:bg-slate-700" />
-                </div>
-                <div className="flex items-center gap-0.5 md:gap-1">
-                    <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700" />
-                    <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700" />
-                </div>
+            {/* Departments */}
+            <div className="flex gap-1.5">
+                <div className="h-5 w-14 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+                <div className="h-5 w-16 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+                <div className="h-5 w-12 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-1.5">
+                <div className="flex-1 h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+                <div className="h-9 w-9 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center gap-1.5 pt-1
+                            border-t border-slate-100 dark:border-white/[0.04]">
+                <div className="h-6 w-6 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
+                <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
             </div>
         </div>
     );

@@ -1,7 +1,16 @@
-import React from 'react';
-import { Hospital, MapPin, CheckCircle2, Phone, Edit2, Trash2, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthProvider';
+import React from "react";
+import {
+    Hospital,
+    MapPin,
+    CheckCircle2,
+    Phone,
+    Edit2,
+    Trash2,
+    User,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthProvider";
+import { playSound } from "@/lib/soundManager";
 
 interface HospitalCardProps {
     hospital: any;
@@ -9,98 +18,170 @@ interface HospitalCardProps {
     onDelete?: (id: string) => void;
 }
 
-export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) => {
-    const { user } = useAuth();
+const tap = () => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(12);
+    }
+};
 
+export const HospitalCard = ({
+    hospital,
+    onEdit,
+    onDelete,
+}: HospitalCardProps) => {
+    const { user } = useAuth();
     const isOwner = user?.id === hospital.created_by;
 
     return (
-        <div className="rounded-2xl bg-white px-4 py-4 md:p-5 dark:bg-muted/30 md:shadow-sm">
-            <div className="flex gap-3 md:gap-4">
-                <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-900/20">
-                    <Hospital size={20} className="md:w-6 md:h-6" />
+        <article className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2.5">
+            {/* Header row */}
+            <div className="flex items-start gap-2.5">
+                <div className="h-10 w-10 rounded-xl
+                                bg-rose-50 dark:bg-rose-400/10
+                                text-rose-600 dark:text-rose-400
+                                flex items-center justify-center shrink-0">
+                    <Hospital className="h-4 w-4" strokeWidth={2.25} />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-sm md:text-base font-bold text-slate-900 dark:text-white truncate">{hospital.hospital_name}</h3>
-                    <p className="text-[10px] md:text-xs font-medium text-slate-500 uppercase">{hospital.hospital_type}</p>
-
-                    <div className="mt-2 md:mt-3 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-slate-600 dark:text-slate-400">
-                        <MapPin size={12} className="md:w-3.5 md:h-3.5" />
-                        <span>{hospital.distance || 'Near center'}</span>
-                    </div>
-
-                    {hospital.student_acceptance && (
-                        <div className="mt-2 md:mt-3 flex items-center gap-1 text-[10px] md:text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5" />
-                            <span>Student Friendly</span>
-                        </div>
-                    )}
-
-                    <div className="mt-3 md:mt-4 flex gap-1.5 md:gap-2">
-                        <Link
-                            to={`/survival-hub/housing?hospitalId=${hospital.id}`}
-                            className="flex-1 rounded-lg md:rounded-xl bg-gray-200 dark:bg-gray-800 dark:text-white py-2 md:py-2.5 text-center text-[9px] md:text-xs font-bold uppercase tracking-wider text-black active:scale-95 transition-all"
-                        >
-                            Find Housing Nearby
-                        </Link>
-
-                        {hospital.contact && (
-                            <a
-                                href={`tel:${hospital.contact}`}
-                                className="rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 px-2.5 md:px-3 py-2 text-slate-600 dark:text-slate-400 active:scale-95 transition-transform"
-                            >
-                                <Phone size={14} className="md:w-4 md:h-4" />
-                            </a>
-                        )}
-                    </div>
+                    <h3 className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug truncate">
+                        {hospital.hospital_name}
+                    </h3>
+                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                  text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {hospital.hospital_type}
+                    </p>
                 </div>
             </div>
 
-            {/* Departments Section */}
+            {/* Location + acceptance */}
+            <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5
+                                text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                    <MapPin className="h-3 w-3 text-slate-400 dark:text-slate-500 shrink-0" />
+                    <span>{hospital.distance || "Near center"}</span>
+                </div>
+                {hospital.student_acceptance && (
+                    <div className="flex items-center gap-1
+                                    text-[10px] font-bold uppercase tracking-wider
+                                    text-emerald-700 dark:text-emerald-400">
+                        <CheckCircle2 className="h-3 w-3 shrink-0" />
+                        Student friendly
+                    </div>
+                )}
+            </div>
+
+            {/* Departments */}
             {hospital.department_availability && (
-                <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 pt-3 md:pt-4">
-                    {hospital.department_availability.split(',').map((dept: string) => (
-                        <span key={dept} className="rounded-md bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                            {dept.trim()}
-                        </span>
-                    ))}
+                <div className="flex flex-wrap gap-1.5">
+                    {hospital.department_availability
+                        .split(",")
+                        .map((dept: string) => (
+                            <span
+                                key={dept}
+                                className="rounded-lg bg-slate-100 dark:bg-white/[0.06]
+                                           text-slate-600 dark:text-slate-300
+                                           text-[10px] font-bold uppercase tracking-wider
+                                           px-2 py-0.5"
+                            >
+                                {dept.trim()}
+                            </span>
+                        ))}
                 </div>
             )}
 
-            {/* Uploader Info & Owner Actions */}
-            <div className="mt-3 md:mt-4 pt-3 md:pt-4 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                    <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+            {/* Action row */}
+            <div className="flex items-center gap-1.5">
+                <Link
+                    to={`/survival-hub/housing?hospitalId=${hospital.id}`}
+                    onClick={tap}
+                    className="flex-1 h-9 rounded-lg
+                               bg-slate-100 dark:bg-white/[0.06]
+                               text-slate-700 dark:text-slate-200
+                               text-[10px] font-bold uppercase tracking-wider
+                               flex items-center justify-center
+                               active:scale-[0.97] transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    Find housing nearby
+                </Link>
+                {hospital.contact && (
+                    <a
+                        href={`tel:${hospital.contact}`}
+                        onClick={tap}
+                        aria-label="Call hospital"
+                        className="h-9 w-9 rounded-lg
+                                   bg-slate-100 dark:bg-white/[0.06]
+                                   text-slate-600 dark:text-slate-300
+                                   flex items-center justify-center shrink-0
+                                   active:scale-[0.92] transition-transform"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <Phone className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    </a>
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-2 pt-1
+                            border-t border-slate-100 dark:border-white/[0.04]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="h-6 w-6 rounded-full
+                                    bg-slate-100 dark:bg-white/[0.06]
+                                    flex items-center justify-center overflow-hidden shrink-0">
                         {hospital.uploader?.avatar_url ? (
-                            <img src={hospital.uploader.avatar_url} alt="" className="h-full w-full object-cover" />
+                            <img
+                                src={hospital.uploader.avatar_url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                            />
                         ) : (
-                            <User size={10} className="md:w-3 md:h-3 text-slate-400" />
+                            <User className="h-3 w-3 text-slate-400 dark:text-slate-500" />
                         )}
                     </div>
-                    <p className="text-[8px] md:text-[10px] text-slate-500 font-medium tracking-tight">
-                        By <span className="text-rose-600 dark:text-rose-400">{hospital.uploader?.name || 'Student'}</span>
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+                        By{" "}
+                        <span className="text-rose-600 dark:text-rose-400">
+                            {hospital.uploader?.name || "Student"}
+                        </span>
                     </p>
                 </div>
 
                 {isOwner && (
-                    <div className="flex items-center gap-0.5 md:gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                         <button
-                            onClick={() => onEdit?.(hospital)}
-                            className="p-1.5 md:p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                            title="Edit"
+                            onClick={() => {
+                                tap();
+                                onEdit?.(hospital);
+                            }}
+                            aria-label="Edit hospital"
+                            className="h-7 w-7 rounded-lg
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-600 dark:text-slate-300
+                                       flex items-center justify-center
+                                       active:scale-[0.92] transition-transform"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <Edit2 size={12} className="md:w-3.5 md:h-3.5" />
+                            <Edit2 className="h-3 w-3" strokeWidth={2.25} />
                         </button>
                         <button
-                            onClick={() => onDelete?.(hospital.id)}
-                            className="p-1.5 md:p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-                            title="Delete"
+                            onClick={() => {
+                                tap();
+                                onDelete?.(hospital.id);
+                            }}
+                            aria-label="Delete hospital"
+                            className="h-7 w-7 rounded-lg
+                                       bg-rose-50 dark:bg-rose-400/10
+                                       text-rose-700 dark:text-rose-400
+                                       flex items-center justify-center
+                                       active:scale-[0.92] transition-transform"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <Trash2 size={12} className="md:w-3.5 md:h-3.5" />
+                            <Trash2 className="h-3 w-3" strokeWidth={2.25} />
                         </button>
                     </div>
                 )}
             </div>
-        </div>
+        </article>
     );
 };

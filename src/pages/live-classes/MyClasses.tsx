@@ -632,7 +632,7 @@ export const MyClasses = () => {
                             navigate("/live-classes/create");
                         }}
                         aria-label="Create class"
-                        className="fixed bottom-6 right-4 z-40
+                        className="fixed bottom-24 right-4 z-40
                                    h-14 w-14 rounded-full
                                    bg-blue-600 text-white
                                    flex items-center justify-center

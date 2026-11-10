@@ -65,7 +65,7 @@ import TutorLiveMonitor from "./pages/exam/tutor/LiveMonitor";
 import TutorResultsPage from "./pages/exam/tutor/ResultsPage";
 // After the existing imports, add these:
 // In your App.tsx, replace the import section with this:
-
+import SurvivalLayout from "./pages/survival-hub/SurvivalLayout";
 // After the existing imports, add these:
 import {
   AssessmentHome,
@@ -284,6 +284,8 @@ const BottomBarWrapper = () => {
     const location = useLocation();
     const FULLSCREEN = [
       "/medtube",
+      "/market",
+      "/survival-hub",
       "/quiz",
       "/Medrae-quizzes",
       "/subscription",
@@ -342,7 +344,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/resources",
   "/assessment-notes",
   "/exam",
-  "/simulation",
+  "/survival-hub",
   "/quiz-simulation",
   "/tutor/exams",
   "/cpd",
@@ -633,12 +635,7 @@ const AppContent = () => {
                           <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
                           {/* Market pages */}
-                          <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
-                          {user && profile && (
-                            <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
-                          )}
-                          <Route path="/market/my-listings" element={<MyListings />} />
-                          <Route path="/market/:id" element={<ListingDetail />} />
+
                           <Route path="/share" element={<LinkGenerator />} />
 
                           {/* Student Exam Flow */}
@@ -666,7 +663,7 @@ const AppContent = () => {
                           <Route path="/menu" element={null} />
                           {/* Core features */}
                           {/* Core features */}
-                          <Route path="/my-mistakes" element={null} />
+
                           <Route path="/ai-assistant" element={<AIAssistant />} />
                           <Route path="/calendar" element={<Calendar />} />
 
@@ -710,7 +707,7 @@ const AppContent = () => {
                           </Route>
                           {/* Quiz Simulation */}
                           <Route path="/simulation/candidate" element={<CandidateInfo />} />
-                          <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+
 
                           {/* ASSESSMENT ROUTES */}
                           <Route path="/assessments">
@@ -721,24 +718,35 @@ const AppContent = () => {
                             <Route path=":slug/results/:attemptId" element={<AssessmentResults />} />
                           </Route>
 
-                          {/* Survival Hub Module */}
-                          <Route path="/survival-hub" element={<SurvivalHubDashboard />} />
-                          <Route path="/survival-hub/exam-centers" element={<ExamCenters />} />
-                          <Route path="/survival-hub/housing" element={<HousingPage />} />
-                          <Route path="/survival-hub/hospitals" element={<HospitalsPage />} />
-                          <Route path="/survival-hub/placements" element={<PlacementsPage />} />
-                          <Route path="/survival-hub/add-housing" element={<AddHousingPage />} />
-                          <Route path="/survival-hub/reviews/:targetId" element={<ReviewsPage />} />
-                          <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
-                          <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
-                          <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
-                        </Route>
 
+                        </Route>
+                        <Route
+                          path="/survival-hub"
+                          element={<PrivateRoute><SurvivalLayout /></PrivateRoute>}
+                        >
+                          <Route index element={<SurvivalHubDashboard />} />
+                          <Route path="exam-centers" element={<ExamCenters />} />
+                          <Route path="housing" element={<HousingPage />} />
+                          <Route path="hospitals" element={<HospitalsPage />} />
+                          <Route path="placements" element={<PlacementsPage />} />
+                          <Route path="add-housing" element={<AddHousingPage />} />
+                          <Route path="reviews/:targetId" element={<ReviewsPage />} />
+                          <Route path="add-placement" element={<AddPlacementPage />} />
+                          <Route path="placements/:id" element={<PlacementDetailPage />} />
+                          <Route path="buddies" element={<ExamBuddiesPage />} />
+                        </Route>
                         {/* Full-screen / Independent Pages */}
                         <Route path="/medtube" element={<PrivateRoute><MedTube /></PrivateRoute>} />
                         <Route path="/quiz" element={<PrivateRoute><QuizPage /></PrivateRoute>} />
                         <Route path="/Medrae-quizzes" element={<PrivateRoute><MedraeQuizzes /></PrivateRoute>} />
                         <Route path="/progress" element={<StudyProgress />} />
+                        {/* Survival Hub — full-screen, no header */}
+
+                        {/* Market — full-screen, no header */}
+                        <Route path="/market" element={<PrivateRoute><MarketFeed user={user} profile={profile} /></PrivateRoute>} />
+                        <Route path="/market/create" element={<PrivateRoute><CreateListingPage user={user} profile={profile} /></PrivateRoute>} />
+                        <Route path="/market/my-listings" element={<PrivateRoute><MyListings /></PrivateRoute>} />
+                        <Route path="/market/:id" element={<PrivateRoute><ListingDetail /></PrivateRoute>} />
                         {/* NURSING CURRICULUM — full-screen, same treatment as /quiz */}
                         <Route path="/nursing" element={<PrivateRoute><NursingHome /></PrivateRoute>} />
                         <Route path="/nursing/:yearId" element={<PrivateRoute><NursingSemester /></PrivateRoute>} />
@@ -748,7 +756,8 @@ const AppContent = () => {
                         <Route path="/nursing/search" element={<PrivateRoute><TopicSearch /></PrivateRoute>} />
                         <Route path="/nursing/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
                         <Route path="/nursing/unit-search" element={<PrivateRoute><UnitSearch /></PrivateRoute>} />
-
+                        <Route path="/my-mistakes" element={<PrivateRoute><MyMistakes /></PrivateRoute>} />
+                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
                         <Route path="/subscription" element={<PrivateRoute><Subscription /></PrivateRoute>} />
                         <Route path="/feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
                         <Route path="/help" element={<PrivateRoute><HelpCenter /></PrivateRoute>} />

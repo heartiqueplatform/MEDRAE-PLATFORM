@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-    User, ShieldCheck, Wifi, Phone, School, Droplets, Star,
-    MessageSquare, Building2, Hospital, Briefcase, X, ChevronRight, ChevronLeft,
-    Trash2, Loader2
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+    User,
+    ShieldCheck,
+    Wifi,
+    Phone,
+    Droplets,
+    Star,
+    MessageSquare,
+    Building2,
+    Hospital,
+    Briefcase,
+    X,
+    ChevronRight,
+    ChevronLeft,
+    Trash2,
+    Loader2,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { toast } from 'sonner';
+import { toast } from "sonner";
+import { CenteredModal } from "@/components/ui/CenteredModal";
+import { playSound } from "@/lib/soundManager";
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        if (type === "success") navigator.vibrate([15, 30, 15]);
+        else if (type === "warning") navigator.vibrate(40);
+        else navigator.vibrate(12);
+    }
+};
 
 export const HousingCard = ({
     house,
     onDelete,
-    isDeleting = false
+    isDeleting = false,
 }: {
     house: any;
     onDelete?: (id: string) => void;
@@ -32,48 +55,48 @@ export const HousingCard = ({
         house.oriented_placement_sites?.hospital_name ||
         "Unknown Location";
 
-    const displayImage = images.length > 0
-        ? images[0]
-        : '/housing.png';
+    const displayImage = images.length > 0 ? images[0] : "/housing.png";
 
-    const LocationIcon = house.exam_center_id ? Building2 : house.nearby_hospital_id ? Hospital : Briefcase;
+    const LocationIcon = house.exam_center_id
+        ? Building2
+        : house.nearby_hospital_id
+            ? Hospital
+            : Briefcase;
     const safetyStars = house.safety_rating || 3;
 
-    const nextPhoto = (e: any) => {
+    const nextPhoto = (e: React.MouseEvent) => {
         e.stopPropagation();
+        if (images.length === 0) return;
+        tap();
         setCurrentPhotoIndex((prev) => (prev + 1) % images.length);
     };
 
-    const prevPhoto = (e: any) => {
+    const prevPhoto = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setCurrentPhotoIndex((prev) => (prev - 1 + images.length) % images.length);
+        if (images.length === 0) return;
+        tap();
+        setCurrentPhotoIndex(
+            (prev) => (prev - 1 + images.length) % images.length
+        );
     };
 
     const handleDelete = async () => {
         if (!house.is_owner) {
-            toast.error('You can only delete your own listings');
+            toast.error("You can only delete your own listings");
             return;
         }
-
-        const confirmDelete = window.confirm("Are you sure you want to delete this listing? This cannot be undone.");
-        if (!confirmDelete) return;
-
+        if (!window.confirm("Delete this listing? This cannot be undone.")) return;
+        tap("warning");
         setLocalDeleting(true);
 
         try {
             const { error } = await supabase
-                .from('oriented_student_housing')
+                .from("oriented_student_housing")
                 .delete()
-                .eq('id', house.id);
-
+                .eq("id", house.id);
             if (error) throw error;
-
-            toast.success('Housing listing deleted successfully!');
-
-            if (onDelete) {
-                onDelete(house.id);
-            }
-
+            toast.success("Housing listing deleted");
+            if (onDelete) onDelete(house.id);
         } catch (error: any) {
             console.error("Error deleting housing:", error);
             toast.error(error.message || "Failed to delete housing listing");
@@ -84,171 +107,269 @@ export const HousingCard = ({
     const showDeleting = isDeleting || localDeleting;
 
     return (
-        <div className={`group relative overflow-hidden rounded-2xl bg-white transition-all hover:md:shadow-lg dark:bg-muted/30 ${showDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
-
-            {/* Deleting Overlay */}
-            {showDeleting && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex flex-col items-center gap-2 text-white">
-                        <Loader2 className="h-8 w-8 md:h-10 md:w-10 animate-spin" />
-                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">Deleting...</span>
-                    </div>
-                </div>
-            )}
-
-            {/* 1. Photo Area (Clickable) */}
-            <div
-                className="relative h-48 md:h-56 w-full cursor-pointer overflow-hidden"
-                onClick={() => images.length > 0 && setIsFullscreen(true)}
+        <>
+            <article
+                className={`rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden
+                            ${showDeleting ? "opacity-50 pointer-events-none" : ""}`}
             >
-                <img
-                    src={displayImage}
-                    alt={house.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:md:scale-110"
-                    onError={(e) => {
-                        e.currentTarget.src = "/housing.png";
-                    }}
-                />
-
-                {images.length > 1 && (
-                    <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[8px] md:text-[10px] font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full">
-                        {currentPhotoIndex + 1} / {images.length} Photos
-                    </span>
-                )}
-            </div>
-
-            <div className="p-4 md:p-5">
-                {/* 2. TAGGED LOCATION BADGE */}
-                <div className="flex items-center justify-between gap-1 bg-slate-50 px-3 md:px-4 py-1.5 md:py-2 dark:bg-slate-800/50 -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-3 md:mb-4">
-                    <div className="flex items-center gap-1 md:gap-1.5 min-w-0 flex-1">
-                        <LocationIcon size={10} className="md:w-3 md:h-3 text-blue-500 shrink-0" />
-                        <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-tight truncate">
-                            Near {linkedLocation}
-                        </span>
-                    </div>
-
-                    {house.is_owner && !showDeleting && (
-                        <button
-                            onClick={handleDelete}
-                            className="flex items-center gap-0.5 md:gap-1 rounded-lg bg-red-50 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-red-600 hover:bg-red-100 transition-colors dark:bg-red-900/20 dark:text-red-400 shrink-0"
-                            title="Delete listing"
-                        >
-                            <Trash2 size={10} className="md:w-3 md:h-3" />
-                            <span className="hidden xs:inline">Delete</span>
-                        </button>
-                    )}
-                </div>
-
-                {/* 3. Title & Verification */}
-                <div className="flex justify-between items-start mb-1">
-                    <h3 className="text-base md:text-lg font-extrabold text-slate-900 dark:text-white group-hover:md:text-emerald-600 transition-colors truncate">
-                        {house.name}
-                    </h3>
-                    {house.verified && (
-                        <div className="flex items-center gap-0.5 md:gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[8px] md:text-[9px]   px-1.5 md:px-2 py-0.5 md:py-1 rounded-full uppercase tracking-tighter shrink-0 ml-2">
-                            <ShieldCheck size={8} className="md:w-2.5 md:h-2.5" />
-                            Verified
+                {/* Deleting overlay */}
+                {showDeleting && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center
+                                    bg-black/50 rounded-2xl">
+                        <div className="flex flex-col items-center gap-2 text-white">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                                Deleting…
+                            </span>
                         </div>
-                    )}
-                </div>
-
-                {/* 4. Distance & Safety */}
-                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                    <p className="text-[10px] md:text-xs text-slate-500 font-medium">{house.distance_to_center} from center</p>
-                    <div className="flex items-center gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                            <Star
-                                key={i}
-                                size={8} className={`md:w-2.5 md:h-2.5 ${i < safetyStars ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700"}`}
-                            />
-                        ))}
                     </div>
-                </div>
+                )}
 
-                {/* 5. Amenities & Price */}
-                <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl">
-                    <div>
-                        <p className="text-[8px] md:text-[9px] uppercase text-slate-400   tracking-widest">Price / Night</p>
-                        <p className="text-base md:text-xl   text-emerald-600 dark:text-emerald-400">
-                            KSh {house.price_per_night?.toLocaleString() || 0}
-                        </p>
-                    </div>
-
-                    <div className="flex gap-2 md:gap-3">
-                        {house.has_wifi && <Wifi size={14} className="md:w-4 md:h-4 text-blue-500" />}
-                        {house.has_water && <Droplets size={14} className="md:w-4 md:h-4 text-cyan-500" />}
-                        {house.has_security && <ShieldCheck size={14} className="md:w-4 md:h-4 text-indigo-500" />}
-                    </div>
-                </div>
-
-                {/* 6. Quick Actions */}
-                <div className="grid grid-cols-2 gap-1.5 md:gap-2 mt-3 md:mt-4">
-                    <a
-                        href={`tel:${house.contact_phone}`}
-                        className="flex items-center justify-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-slate-200 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-black hover:md:bg-slate-300 transition-all active:scale-95 dark:bg-gray-800 dark:text-white dark:hover:md:bg-gray-700"
-                    >
-                        <Phone size={12} className="md:w-3.5 md:h-3.5" />
-                        Call Host
-                    </a>
-                    <button
-                        onClick={() => navigate(`/survival-hub/reviews/${house.id}?type=housing`)}
-                        className="flex items-center justify-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-slate-50 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-slate-600 hover:md:bg-slate-100 transition-all active:scale-95 dark:bg-slate-800 dark:text-slate-400 dark:hover:md:bg-slate-700"
-                    >
-                        <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />
-                        Reviews
-                    </button>
-                </div>
-            </div>
-
-            {/* 7. Contributor Profile Bar */}
-            <div className="flex items-center justify-between bg-slate-50/30 p-3 md:p-4 dark:bg-slate-800/30">
+                {/* Photo */}
                 <button
-                    onClick={() => navigate(`/profile/${contributor?.username || house.created_by}`)}
-                    className="flex items-center gap-2 md:gap-2.5 text-left flex-1 min-w-0"
+                    onClick={() => {
+                        if (images.length > 0) {
+                            tap();
+                            setIsFullscreen(true);
+                        }
+                    }}
+                    className="relative block w-full aspect-[4/3] overflow-hidden
+                               bg-slate-100 dark:bg-white/[0.06]"
+                    style={{ touchAction: "manipulation" }}
+                    aria-label="View photos"
                 >
-                    <div className="h-7 w-7 md:h-9 md:w-9 overflow-hidden rounded-full border-2 border-white bg-slate-200 dark:border-slate-700 shrink-0">
-                        {contributor?.avatar_url ? (
-                            <img src={contributor.avatar_url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                            <div className="flex h-full w-full items-center justify-center text-slate-400">
-                                <User size={12} className="md:w-4 md:h-4" />
-                            </div>
+                    <img
+                        src={displayImage}
+                        alt={house.name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                            e.currentTarget.src = "/housing.png";
+                        }}
+                    />
+                    {images.length > 1 && (
+                        <span className="absolute bottom-2 right-2
+                                         bg-black/60 backdrop-blur-md text-white
+                                         text-[9px] font-bold uppercase tracking-wider
+                                         px-2 py-0.5 rounded-full tabular-nums">
+                            {currentPhotoIndex + 1} / {images.length}
+                        </span>
+                    )}
+                </button>
+
+                <div className="p-3 space-y-2.5">
+                    {/* Location + delete */}
+                    <div className="flex items-center justify-between gap-2
+                                    rounded-lg bg-slate-50 dark:bg-[#0d1117] px-2.5 py-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <LocationIcon className="h-3 w-3 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider
+                                             text-slate-500 dark:text-slate-400 truncate">
+                                Near {linkedLocation}
+                            </span>
+                        </div>
+                        {house.is_owner && !showDeleting && (
+                            <button
+                                onClick={handleDelete}
+                                aria-label="Delete listing"
+                                className="shrink-0 h-6 px-2 rounded-md
+                                           bg-rose-50 dark:bg-rose-400/10
+                                           text-rose-700 dark:text-rose-400
+                                           text-[9px] font-bold uppercase tracking-wider
+                                           flex items-center gap-1
+                                           active:scale-[0.92] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <Trash2 className="h-2.5 w-2.5" />
+                                Delete
+                            </button>
                         )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-[10px] md:text-xs font-extrabold text-slate-800 dark:text-slate-200 leading-none truncate">
-                            {contributor?.name || 'Verified Student'}
-                        </p>
-                        <p className="text-[8px] md:text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-                            {house.is_owner ? 'You' : 'Contributor'}
-                        </p>
-                    </div>
-                </button>
-            </div>
 
-            {/* FULLSCREEN VIEWPORT MODAL */}
-            {isFullscreen && (
-                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl p-4">
+                    {/* Title + verified */}
+                    <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-[14px] font-bold
+                                       text-slate-900 dark:text-white
+                                       leading-snug line-clamp-2 min-w-0 flex-1">
+                            {house.name}
+                        </h3>
+                        {house.verified && (
+                            <span className="shrink-0 inline-flex items-center gap-1
+                                             bg-emerald-50 dark:bg-emerald-400/10
+                                             text-emerald-700 dark:text-emerald-400
+                                             text-[9px] font-bold uppercase tracking-wider
+                                             px-1.5 py-0.5 rounded-full">
+                                <ShieldCheck className="h-2.5 w-2.5" />
+                                Verified
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Distance + safety */}
+                    <div className="flex items-center gap-2.5 flex-wrap
+                                    text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        <span>{house.distance_to_center} from center</span>
+                        <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                                <Star
+                                    key={i}
+                                    className={`h-2.5 w-2.5 ${i < safetyStars
+                                        ? "fill-amber-400 text-amber-400"
+                                        : "text-slate-200 dark:text-white/[0.1]"
+                                        }`}
+                                    strokeWidth={1.75}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Price + amenities */}
+                    <div className="flex items-center justify-between gap-2
+                                    rounded-xl bg-slate-50 dark:bg-[#0d1117] p-2.5">
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-wider
+                                          text-slate-500 dark:text-slate-400 leading-none mb-1">
+                                Price / night
+                            </p>
+                            <p className="text-[15px] font-bold tabular-nums
+                                          text-emerald-600 dark:text-emerald-400 leading-none">
+                                KSh {house.price_per_night?.toLocaleString() || 0}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            {house.has_wifi && (
+                                <Wifi className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            )}
+                            {house.has_water && (
+                                <Droplets className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                            )}
+                            {house.has_security && (
+                                <ShieldCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                        <a
+                            href={`tel:${house.contact_phone}`}
+                            onClick={() => tap()}
+                            className="h-9 rounded-lg
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-700 dark:text-slate-200
+                                       text-[11px] font-bold
+                                       flex items-center justify-center gap-1.5
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <Phone className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            Call host
+                        </a>
+                        <button
+                            onClick={() => {
+                                tap();
+                                navigate(`/survival-hub/reviews/${house.id}?type=housing`);
+                            }}
+                            className="h-9 rounded-lg
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-700 dark:text-slate-200
+                                       text-[11px] font-bold
+                                       flex items-center justify-center gap-1.5
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <MessageSquare className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            Reviews
+                        </button>
+                    </div>
+                </div>
+
+                {/* Contributor bar */}
+                <div className="flex items-center justify-between gap-2
+                                bg-slate-50 dark:bg-[#0d1117] px-3 py-2
+                                border-t border-slate-100 dark:border-white/[0.04]">
                     <button
-                        onClick={() => setIsFullscreen(false)}
-                        className="absolute top-4 right-4 md:top-6 md:right-6 z-[110] rounded-full bg-white/10 p-2 md:p-3 text-white hover:bg-white/20 transition-colors"
+                        onClick={() => {
+                            tap();
+                            navigate(
+                                `/profile/${contributor?.username || house.created_by}`
+                            );
+                        }}
+                        className="flex items-center gap-2 text-left flex-1 min-w-0"
+                        style={{ touchAction: "manipulation" }}
                     >
-                        <X size={20} className="md:w-6 md:h-6" />
+                        <div className="h-7 w-7 rounded-full overflow-hidden shrink-0
+                                        bg-slate-100 dark:bg-white/[0.06]
+                                        flex items-center justify-center">
+                            {contributor?.avatar_url ? (
+                                <img
+                                    src={contributor.avatar_url}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <User className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                            )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold
+                                          text-slate-900 dark:text-white truncate leading-tight">
+                                {contributor?.name || "Verified Student"}
+                            </p>
+                            <p className="text-[9px] font-bold uppercase tracking-wider
+                                          text-slate-500 dark:text-slate-400 leading-none mt-0.5">
+                                {house.is_owner ? "You" : "Contributor"}
+                            </p>
+                        </div>
+                    </button>
+                </div>
+            </article>
+
+            {/* Fullscreen viewer */}
+            <CenteredModal
+                open={isFullscreen}
+                onClose={() => setIsFullscreen(false)}
+                hideHeader
+                noScrollBody
+                maxWidthClass="max-w-2xl"
+                maxHeight="92dvh"
+                className="bg-black dark:bg-black"
+            >
+                <div className="relative flex-1 flex items-center justify-center p-2">
+                    <button
+                        onClick={() => {
+                            tap();
+                            setIsFullscreen(false);
+                        }}
+                        aria-label="Close image"
+                        className="absolute top-2 right-2 z-10
+                                   h-10 w-10 rounded-full
+                                   bg-white/[0.12] text-white
+                                   flex items-center justify-center
+                                   active:scale-[0.92] transition-transform"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <X className="h-5 w-5" strokeWidth={2.5} />
                     </button>
 
-                    <div className="relative flex w-full max-w-4xl items-center justify-center">
+                    <div className="relative w-full flex items-center justify-center">
                         {images.length > 1 && (
                             <button
                                 onClick={prevPhoto}
-                                className="absolute left-0 z-[110] rounded-full bg-black/50 p-2 md:p-3 text-white hover:bg-black transition-colors"
+                                aria-label="Previous photo"
+                                className="absolute left-2 z-10
+                                           h-10 w-10 rounded-full
+                                           bg-white/[0.12] text-white
+                                           flex items-center justify-center
+                                           active:scale-[0.92] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
-                                <ChevronLeft size={24} className="md:w-8 md:h-8" />
+                                <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                             </button>
                         )}
 
                         <img
-                            src={images[currentPhotoIndex]}
-                            className="max-h-[70vh] md:max-h-[80vh] w-full rounded-xl md:rounded-2xl object-contain shadow-2xl"
+                            src={images[currentPhotoIndex] || displayImage}
+                            className="max-h-[70dvh] w-full object-contain rounded-xl"
                             alt="Housing view"
                             onError={(e) => {
                                 e.currentTarget.src = "/housing.png";
@@ -258,21 +379,29 @@ export const HousingCard = ({
                         {images.length > 1 && (
                             <button
                                 onClick={nextPhoto}
-                                className="absolute right-0 z-[110] rounded-full bg-black/50 p-2 md:p-3 text-white hover:bg-black transition-colors"
+                                aria-label="Next photo"
+                                className="absolute right-2 z-10
+                                           h-10 w-10 rounded-full
+                                           bg-white/[0.12] text-white
+                                           flex items-center justify-center
+                                           active:scale-[0.92] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
-                                <ChevronRight size={24} className="md:w-8 md:h-8" />
+                                <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
                             </button>
                         )}
                     </div>
 
-                    <p className="mt-4 md:mt-6 text-xs md:text-sm font-bold text-white tracking-widest uppercase">
-                        Photo {currentPhotoIndex + 1} of {images.length}
-                    </p>
-                    <p className="mt-1 md:mt-2 text-slate-400 text-[10px] md:text-xs font-medium italic text-center px-4">
-                        {house.name} • {linkedLocation}
-                    </p>
+                    <div className="absolute bottom-3 left-0 right-0 text-center px-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 tabular-nums">
+                            Photo {currentPhotoIndex + 1} of {images.length}
+                        </p>
+                        <p className="text-[10px] text-white/60 mt-0.5 truncate">
+                            {house.name} · {linkedLocation}
+                        </p>
+                    </div>
                 </div>
-            )}
-        </div>
+            </CenteredModal>
+        </>
     );
 };

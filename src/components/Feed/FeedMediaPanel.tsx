@@ -1310,46 +1310,52 @@ export default function FeedMediaPanel({
                     </div>
 
                     {/* Related toggle */}
+                    {/* Related toggle */}
                     {uploadFiles.length > 1 && (
                         <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isRelated}
                             onClick={() => {
                                 tap();
                                 setIsRelated((v) => !v);
                             }}
                             className={`w-full flex items-center justify-between gap-3
-                        p-3 rounded-xl transition-colors
-                        ${isRelated
+            p-3 rounded-xl transition-colors
+            ${isRelated
                                     ? "bg-blue-50 dark:bg-blue-400/10"
                                     : "bg-slate-50 dark:bg-[#0d1117]"
                                 }`}
                             style={{ touchAction: "manipulation" }}
                         >
-                            <div className="text-left min-w-0">
+                            <div className="text-left min-w-0 flex-1">
                                 <p
-                                    className={`text-[12px] font-bold ${isRelated
+                                    className={`text-[12px] font-bold leading-tight ${isRelated
                                         ? "text-blue-700 dark:text-blue-300"
                                         : "text-slate-900 dark:text-white"
                                         }`}
                                 >
                                     Related post
                                 </p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                                     Show as one carousel post
                                 </p>
                             </div>
+
+                            {/* Track */}
                             <span
-                                className={`relative h-6 w-11 rounded-full shrink-0 transition-colors ${isRelated
-                                    ? "bg-blue-600"
-                                    : "bg-slate-200 dark:bg-white/[0.12]"
+                                className={`relative inline-flex shrink-0 items-center
+                h-6 w-11 rounded-full transition-colors
+                ${isRelated
+                                        ? "bg-blue-600"
+                                        : "bg-slate-200 dark:bg-white/[0.12]"
                                     }`}
                             >
+                                {/* Thumb */}
                                 <span
-                                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white
-                                transition-transform
-                                ${isRelated
-                                            ? "translate-x-5"
-                                            : "translate-x-0.5"
-                                        }`}
+                                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm
+                    transform transition-transform duration-200 ease-out
+                    ${isRelated ? "translate-x-[22px]" : "translate-x-[2px]"}`}
                                 />
                             </span>
                         </button>

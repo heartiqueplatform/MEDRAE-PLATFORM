@@ -1,70 +1,48 @@
-import React from 'react';
+import React from "react";
 
 export const HousingCardSkeleton = () => {
     return (
-        <div className="group relative overflow-hidden rounded-2xl bg-white dark:bg-muted/30 animate-pulse">
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden animate-pulse">
+            {/* Photo */}
+            <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-white/[0.06]" />
 
-            {/* Photo Area Skeleton */}
-            <div className="relative h-48 md:h-56 w-full bg-slate-200 dark:bg-slate-700">
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-12 w-12 rounded-full bg-slate-300 dark:bg-slate-600" />
-                </div>
-            </div>
+            <div className="p-3 space-y-2.5">
+                {/* Location row */}
+                <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
 
-            <div className="p-4 md:p-5">
-                {/* Location Badge Skeleton */}
-                <div className="flex items-center justify-between gap-1 bg-slate-50 dark:bg-slate-800/50 px-3 md:px-4 py-1.5 md:py-2 -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-3 md:mb-4">
-                    <div className="flex items-center gap-1 md:gap-1.5 min-w-0 flex-1">
-                        <div className="h-2.5 w-2.5 rounded bg-slate-200 dark:bg-slate-600" />
-                        <div className="h-2.5 w-32 rounded bg-slate-200 dark:bg-slate-600" />
-                    </div>
-                    <div className="h-5 w-14 rounded bg-slate-200 dark:bg-slate-600" />
-                </div>
+                {/* Title */}
+                <div className="h-4 w-3/4 rounded bg-slate-100 dark:bg-white/[0.06]" />
 
-                {/* Title Skeleton */}
-                <div className="flex justify-between items-start mb-1">
-                    <div className="h-6 w-40 rounded bg-slate-200 dark:bg-slate-600" />
-                    <div className="h-5 w-16 rounded-full bg-slate-200 dark:bg-slate-600" />
-                </div>
-
-                {/* Distance & Safety Skeleton */}
-                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                    <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-600" />
-                    <div className="flex items-center gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                            <div key={i} className="h-2 w-2 rounded bg-slate-200 dark:bg-slate-600" />
+                {/* Distance + stars */}
+                <div className="flex items-center gap-2.5">
+                    <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                                key={i}
+                                className="h-2.5 w-2.5 rounded bg-slate-100 dark:bg-white/[0.06]"
+                            />
                         ))}
                     </div>
                 </div>
 
-                {/* Amenities & Price Skeleton */}
-                <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl">
-                    <div>
-                        <div className="h-2 w-16 rounded bg-slate-200 dark:bg-slate-600 mb-1" />
-                        <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-600" />
-                    </div>
-                    <div className="flex gap-2 md:gap-3">
-                        {[...Array(3)].map((_, i) => (
-                            <div key={i} className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-600" />
-                        ))}
-                    </div>
-                </div>
+                {/* Price row */}
+                <div className="h-14 rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
 
-                {/* Quick Actions Skeleton */}
-                <div className="grid grid-cols-2 gap-1.5 md:gap-2 mt-3 md:mt-4">
-                    <div className="h-9 md:h-10 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-600" />
-                    <div className="h-9 md:h-10 rounded-lg md:rounded-xl bg-slate-200 dark:bg-slate-600" />
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-1.5">
+                    <div className="h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06]" />
                 </div>
             </div>
 
-            {/* Contributor Profile Bar Skeleton */}
-            <div className="flex items-center justify-between bg-slate-50/30 p-3 md:p-4 dark:bg-slate-800/30">
-                <div className="flex items-center gap-2 md:gap-2.5 flex-1 min-w-0">
-                    <div className="h-7 w-7 md:h-9 md:w-9 rounded-full bg-slate-200 dark:bg-slate-600 border-2 border-white dark:border-slate-700" />
-                    <div className="min-w-0 flex-1">
-                        <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-600 mb-1" />
-                        <div className="h-2 w-16 rounded bg-slate-200 dark:bg-slate-600" />
-                    </div>
+            {/* Contributor */}
+            <div className="flex items-center gap-2 px-3 py-2
+                            border-t border-slate-100 dark:border-white/[0.04]">
+                <div className="h-7 w-7 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
+                <div className="space-y-1">
+                    <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                    <div className="h-2 w-16 rounded bg-slate-100 dark:bg-white/[0.06]" />
                 </div>
             </div>
         </div>

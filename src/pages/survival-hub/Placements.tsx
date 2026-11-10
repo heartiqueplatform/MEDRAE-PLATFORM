@@ -1,16 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { survivalApi } from '../../lib/survivalApi';
-import { PlacementCard } from '../../components/survival-hub/PlacementCard';
-import { PlacementCardSkeleton } from '../../components/survival-hub/PlacementCardSkeleton';
-import { Search, Briefcase, ChevronLeft, Loader2, Info, Plus } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { survivalApi } from "../../lib/survivalApi";
+import { PlacementCard } from "../../components/survival-hub/PlacementCard";
+import { PlacementCardSkeleton } from "../../components/survival-hub/PlacementCardSkeleton";
+import { Search, Briefcase, ChevronLeft, Info, Plus } from "lucide-react";
+import { playSound } from "@/lib/soundManager";
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        if (type === "success") navigator.vibrate([15, 30, 15]);
+        else if (type === "warning") navigator.vibrate(40);
+        else navigator.vibrate(12);
+    }
+};
+
+const GRID_CLASSES =
+    "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3";
 
 const PlacementsPage = () => {
     const navigate = useNavigate();
-    const [sites, setSites] = useState([]);
+    const [sites, setSites] = useState<any[]>([]);
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(true);
-    const [placements, setPlacements] = useState([]);
 
     useEffect(() => {
         async function loadPlacements() {
@@ -27,113 +39,163 @@ const PlacementsPage = () => {
         loadPlacements();
     }, []);
 
-    const handleSilentDelete = (deletedId) => {
-        setSites(prev => prev.filter(item => item.id !== deletedId));
+    const handleSilentDelete = (deletedId: string) => {
+        setSites((prev) => prev.filter((item) => item.id !== deletedId));
     };
 
-    const filtered = sites.filter(s =>
-        s.hospital_name.toLowerCase().includes(query.toLowerCase()) ||
-        s.ward_specialties?.toLowerCase().includes(query.toLowerCase()) ||
-        s.county?.toLowerCase().includes(query.toLowerCase())
+    const handleBack = () => {
+        tap();
+        navigate("/survival-hub", { replace: true });
+    };
+
+    const filtered = sites.filter(
+        (s) =>
+            s.hospital_name?.toLowerCase().includes(query.toLowerCase()) ||
+            s.ward_specialties?.toLowerCase().includes(query.toLowerCase()) ||
+            s.county?.toLowerCase().includes(query.toLowerCase())
     );
 
-    const renderSkeletons = () => {
-        return Array(6).fill(0).map((_, index) => (
-            <PlacementCardSkeleton key={`skeleton-${index}`} />
-        ));
-    };
-
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-background">
-
-            {/* 1. Header */}
-            <div className="sticky -top-4 z-20 bg-white dark:bg-muted/100">
-                <div className="flex items-center justify-between gap-3 px-3 py-3 md:px-6 md:py-4">
-                    <div className="flex items-center gap-3 md:gap-4">
-                        {/* Back button — icon only */}
-                        <button
-                            onClick={() => navigate('/survival-hub')}
-                            aria-label="Go back"
-                            className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
-                        >
-                            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
-                        </button>
-                        <div>
-                            <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white leading-none">Clinical Placements</h1>
-                            <p className="text-[10px] font-bold text-amber-600  mt-0.5 md:mt-1 tracking-widest">
-                                {loading ? 'Loading...' : `${filtered.length} Official NCK Rotation Sites`}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Add button — flat */}
-                    <button
-                        onClick={() => navigate('/survival-hub/add-placement')}
-                        className="flex items-center gap-1 md:gap-2 bg-amber-600 hover:bg-amber-700 text-white px-2.5 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all"
-                    >
-                        <Plus size={14} className="md:w-4 md:h-4" />
-                        <span className="hidden md:inline">Add Site</span>
-                        <span className="md:hidden">Add</span>
-                    </button>
-                </div>
-
-                {/* 2. Search Bar */}
-                <div className="px-3 pb-3 md:px-6 md:pb-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search hospital, county or specialty..."
-                            className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 dark:bg-muted/30 py-2.5 md:py-3 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-800 dark:text-white transition-all"
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* 3. Results Counter */}
-            {!loading && (
-                <div className="px-3 md:px-6 py-2 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {filtered.length} sites found
-                    </span>
-                </div>
-            )}
-
-            {/* 4. Main List Area */}
-            <div className="px-3 md:px-4 lg:px-6 py-3 md:py-4">
-                {loading ? (
-                    <div className="grid gap-3 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                        {renderSkeletons()}
-                    </div>
-                ) : filtered.length > 0 ? (
-                    <div className="grid gap-3 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                        {filtered.map((site) => (
-                            <PlacementCard
-                                key={site.id}
-                                site={site}
-                                onDelete={handleSilentDelete}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-16 md:py-20 bg-white dark:bg-muted/30 rounded-2xl mx-0">
-                        <Briefcase size={36} className="md:w-10 md:h-10 mx-auto text-slate-200 mb-2" />
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">No sites found</h3>
-                        <p className="text-sm text-slate-500">Try searching for a county like "Kiambu".</p>
-                    </div>
-                )}
-            </div>
-
-            {/* 5. Helpful Insight Tip */}
-            {!loading && (
-                <div className="mx-3 md:mx-4 lg:mx-6 mt-4 md:mt-6 py-3 md:py-4 px-3 md:px-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl flex gap-3">
-                    <Info size={18} className="md:w-5 md:h-5 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700/80 dark:text-amber-400/70 leading-relaxed">
-                        <span className="font-bold">Clinical Tip:</span> Make sure to confirm the intake capacity with the hospital supervisor before traveling for a self-placement.
+        <div className="h-full w-full flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+            {/* ── Header ──────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <button
+                    onClick={handleBack}
+                    aria-label="Back to survival hub"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate
+                                   text-slate-900 dark:text-white">
+                        Clinical placements
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate tabular-nums">
+                        {loading
+                            ? "Loading…"
+                            : `${filtered.length} rotation site${filtered.length === 1 ? "" : "s"}`}
                     </p>
                 </div>
-            )}
+            </header>
+
+            {/* ── Body ────────────────────────────────────────── */}
+            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+                <div className="w-full max-w-7xl mx-auto px-4 py-4 pb-32 space-y-3 safe-bottom">
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2
+                                          h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search hospital, county or specialty…"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            className="w-full h-11 rounded-xl border-0 outline-none
+                                       bg-white dark:bg-[#161b22]
+                                       pl-10 pr-3.5 text-sm
+                                       text-slate-900 dark:text-white
+                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                       focus:ring-2 focus:ring-amber-500/40"
+                            style={{ touchAction: "manipulation" }}
+                        />
+                    </div>
+
+                    {/* Results */}
+                    {loading ? (
+                        <div className={GRID_CLASSES}>
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <PlacementCardSkeleton key={i} />
+                            ))}
+                        </div>
+                    ) : filtered.length > 0 ? (
+                        <div className={GRID_CLASSES}>
+                            {filtered.map((site: any) => (
+                                <PlacementCard
+                                    key={site.id}
+                                    site={site}
+                                    onDelete={handleSilentDelete}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-8 text-center space-y-3">
+                            <div className="h-14 w-14 rounded-full
+                                            bg-amber-50 dark:bg-amber-400/10
+                                            flex items-center justify-center mx-auto">
+                                <Briefcase className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                    {query ? "No matches" : "No placements yet"}
+                                </p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[260px] mx-auto leading-snug">
+                                    {query
+                                        ? `Nothing matches "${query}"`
+                                        : "Be the first to add a clinical placement site."}
+                                </p>
+                            </div>
+                            {!query && (
+                                <button
+                                    onClick={() => {
+                                        tap("success");
+                                        navigate("/survival-hub/add-placement");
+                                    }}
+                                    className="h-10 px-4 rounded-xl
+                                               bg-amber-500 text-white
+                                               text-[12px] font-bold
+                                               inline-flex items-center gap-1.5
+                                               active:scale-[0.97] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                    Add site
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Clinical tip */}
+                    <div className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-3
+                                    flex items-start gap-2">
+                        <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400
+                                          shrink-0 mt-0.5" strokeWidth={2.25} />
+                        <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80 leading-snug">
+                            <strong className="text-amber-800 dark:text-amber-300">
+                                Clinical tip:
+                            </strong>{" "}
+                            Confirm intake capacity with the hospital supervisor
+                            before traveling for a self-placement.
+                        </p>
+                    </div>
+                </div>
+            </main>
+
+            {/* ── Floating add FAB ────────────────────────────── */}
+            <button
+                onClick={() => {
+                    tap("success");
+                    navigate("/survival-hub/add-placement");
+                }}
+                aria-label="Add placement site"
+                className="fixed bottom-24 right-5 z-40
+                           h-14 w-14 rounded-full
+                           bg-amber-500 text-white
+                           flex items-center justify-center
+                           active:scale-[0.92] transition-transform"
+                style={{
+                    touchAction: "manipulation",
+                    boxShadow: "0 8px 24px rgba(245,158,11,0.35)",
+                }}
+            >
+                <Plus className="h-6 w-6" strokeWidth={2.5} />
+            </button>
         </div>
     );
 };

@@ -1,5 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Hospital as HospitalIcon, MapPin, Phone, Building2, Clock, Stethoscope, MessageSquare, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+    Save,
+    Hospital as HospitalIcon,
+    MapPin,
+    Phone,
+    Building2,
+    Clock,
+    Stethoscope,
+    MessageSquare,
+    CheckCircle2,
+} from "lucide-react";
+import { CenteredModal } from "@/components/ui/CenteredModal";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { playSound } from "@/lib/soundManager";
+
+const tap = () => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(12);
+    }
+};
 
 interface AddHospitalModalProps {
     isOpen: boolean;
@@ -8,215 +34,388 @@ interface AddHospitalModalProps {
     centerId: string | null;
 }
 
-export const AddHospitalModal = ({ isOpen, onClose, onSubmit, centerId }: AddHospitalModalProps) => {
-    const [formData, setFormData] = useState({
-        hospital_name: '',
-        location: '',
-        distance: '',
-        hospital_type: 'Public',
-        department_availability: '',
-        student_acceptance: true,
-        contact: '',
-        notes: ''
-    });
+const EMPTY_FORM = {
+    hospital_name: "",
+    location: "",
+    distance: "",
+    hospital_type: "Public",
+    department_availability: "",
+    student_acceptance: true,
+    contact: "",
+    notes: "",
+};
+
+export const AddHospitalModal = ({
+    isOpen,
+    onClose,
+    onSubmit,
+    centerId,
+}: AddHospitalModalProps) => {
+    const [formData, setFormData] = useState(EMPTY_FORM);
 
     useEffect(() => {
-        const appRoot = document.getElementById("root");
-
-        if (isOpen) {
-            document.body.style.overflow = "hidden";
-            document.documentElement.style.overflow = "hidden";
-            appRoot?.classList.add("overflow-hidden");
-        } else {
-            document.body.style.overflow = "";
-            document.documentElement.style.overflow = "";
-            appRoot?.classList.remove("overflow-hidden");
-        }
-
-        return () => {
-            document.body.style.overflow = "";
-            document.documentElement.style.overflow = "";
-            appRoot?.classList.remove("overflow-hidden");
-        };
+        if (isOpen) setFormData(EMPTY_FORM);
     }, [isOpen]);
-
-    if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        tap();
         onSubmit({ ...formData, exam_center_id: centerId });
     };
 
+    const isValid = formData.hospital_name.trim().length > 0;
+
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col bg-white dark:bg-slate-900">
-
-            {/* ============ STICKY HEADER — sits on top, no border ============ */}
-            <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 px-4 py-3 md:px-6 md:py-4 shrink-0">
-                <div className="flex justify-between items-center max-w-xl mx-auto">
-                    <div className="flex items-center gap-2.5 md:gap-3">
-                        <div className="p-1.5 md:p-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg md:rounded-xl">
-                            <HospitalIcon className="text-rose-600 md:w-6 md:h-6" size={20} />
-                        </div>
-                        <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">Add Hospital</h2>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        aria-label="Close"
-                        className="inline-flex w-fit items-center justify-center p-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
-                    >
-                        <X className="md:w-6 md:h-6" size={20} strokeWidth={2.5} />
-                    </button>
-                </div>
-            </div>
-
-            {/* ============ SCROLLABLE FORM AREA ============ */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 md:pb-8 custom-scrollbar">
-                <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-3 md:space-y-4 pt-3 md:pt-4">
-
-                    {/* Hospital Name */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl space-y-3">
-                        <div>
-                            <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Hospital Name *</label>
-                            <div className="relative">
-                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 md:w-[18px] md:h-[18px]" size={16} />
-                                <input
-                                    required
-                                    type="text"
-                                    className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 pl-9 md:pl-10 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white"
-                                    placeholder="e.g. Mater Hospital"
-                                    value={formData.hospital_name}
-                                    onChange={(e) => setFormData({ ...formData, hospital_name: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Location & Distance Grid */}
-                        <div className="grid grid-cols-2 gap-2.5 md:gap-4">
-                            <div>
-                                <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Location</label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 md:w-4 md:h-4" size={14} />
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 pl-8 md:pl-9 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white"
-                                        placeholder="Area/Street"
-                                        value={formData.location}
-                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Distance</label>
-                                <div className="relative">
-                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 md:w-4 md:h-4" size={14} />
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 pl-8 md:pl-9 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white"
-                                        placeholder="e.g. 5 mins walk"
-                                        value={formData.distance}
-                                        onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Type & Contact Grid */}
-                    <div className="grid grid-cols-2 gap-2.5 md:gap-4">
-                        <div>
-                            <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Category</label>
-                            <select
-                                className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white appearance-none"
-                                value={formData.hospital_type}
-                                onChange={(e) => setFormData({ ...formData, hospital_type: e.target.value })}
-                            >
-                                <option value="Public">Public</option>
-                                <option value="Private">Private</option>
-                                <option value="Mission">Mission</option>
-                                <option value="Clinic">Clinic</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Phone</label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 md:w-4 md:h-4" size={14} />
-                                <input
-                                    type="text"
-                                    className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 pl-8 md:pl-9 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white"
-                                    placeholder="07..."
-                                    value={formData.contact}
-                                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Departments */}
-                    <div>
-                        <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Available Departments</label>
-                        <div className="relative">
-                            <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 md:w-[18px] md:h-[18px]" size={16} />
-                            <input
-                                type="text"
-                                className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 pl-9 md:pl-10 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white"
-                                placeholder="e.g. Maternity, OPD, Pediatrics"
-                                value={formData.department_availability}
-                                onChange={(e) => setFormData({ ...formData, department_availability: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Student Acceptance Toggle */}
-                    <div
-                        onClick={() => setFormData({ ...formData, student_acceptance: !formData.student_acceptance })}
-                        className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center justify-between cursor-pointer transition-all ${formData.student_acceptance
-                            ? 'bg-emerald-50 dark:bg-emerald-900/10'
-                            : 'bg-slate-50 dark:bg-slate-800'
-                            }`}
-                    >
-                        <div className="flex items-center gap-2.5 md:gap-3">
-                            <CheckCircle2 className={formData.student_acceptance ? 'text-emerald-500 md:w-5 md:h-5' : 'text-slate-400 md:w-5 md:h-5'} size={18} />
-                            <div>
-                                <p className="text-xs md:text-sm font-bold dark:text-white">Student Friendly?</p>
-                                <p className="text-[9px] md:text-[10px] text-slate-500">Facility accepts nursing students</p>
-                            </div>
-                        </div>
-                        <div className={`w-9 md:w-10 h-5 md:h-6 rounded-full p-0.5 md:p-1 transition-colors ${formData.student_acceptance ? 'bg-emerald-500' : 'bg-slate-300'
-                            }`}>
-                            <div className={`bg-white w-4 h-4 rounded-full transition-transform ${formData.student_acceptance ? 'translate-x-4' : 'translate-x-0'
-                                }`} />
-                        </div>
-                    </div>
-
-                    {/* Notes */}
-                    <div>
-                        <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 block px-1">Additional Notes</label>
-                        <div className="relative">
-                            <MessageSquare className="absolute left-3 top-2.5 md:top-3 text-slate-400 md:w-[18px] md:h-[18px]" size={16} />
-                            <textarea
-                                rows={3}
-                                className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 pl-9 md:pl-10 rounded-xl md:rounded-2xl text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:text-white resize-none"
-                                placeholder="e.g. Very fast service, expensive, good for skills..."
-                                value={formData.notes}
-                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Submit Button */}
+        <CenteredModal
+            open={isOpen}
+            onClose={onClose}
+            title="Add hospital"
+            subtitle="Help students find care facilities"
+            maxWidthClass="max-w-md"
+            maxHeight="92dvh"
+            footer={
+                <div className="px-4 py-3">
                     <button
                         type="submit"
-                        className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 md:py-4 rounded-xl md:rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 text-sm md:text-base"
+                        form="add-hospital-form"
+                        disabled={!isValid}
+                        className={`w-full h-11 rounded-xl
+                                    text-sm font-bold
+                                    flex items-center justify-center gap-2
+                                    transition-transform
+                                    ${isValid
+                                ? "bg-rose-600 text-white active:scale-[0.97]"
+                                : "bg-slate-200 dark:bg-white/[0.08] text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                            }`}
+                        style={{ touchAction: "manipulation" }}
                     >
-                        <Save className="md:w-5 md:h-5" size={18} />
-                        Save Facility Details
+                        <Save className="h-4 w-4" />
+                        Save facility
                     </button>
+                </div>
+            }
+        >
+            <form
+                id="add-hospital-form"
+                onSubmit={handleSubmit}
+                className="px-4 py-4 space-y-3"
+            >
+                {/* Hospital name */}
+                <Field label="Hospital name" required>
+                    <div className="relative">
+                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2
+                                              h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <input
+                            required
+                            type="text"
+                            placeholder="e.g. Mater Hospital"
+                            value={formData.hospital_name}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    hospital_name: e.target.value,
+                                })
+                            }
+                            className="w-full h-11 rounded-xl border-0 outline-none
+                                       bg-slate-50 dark:bg-[#0d1117]
+                                       pl-10 pr-3.5 text-sm
+                                       text-slate-900 dark:text-white
+                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                       focus:ring-2 focus:ring-rose-500/40"
+                            style={{ touchAction: "manipulation" }}
+                        />
+                    </div>
+                </Field>
 
-                    <p className="text-[9px] md:text-[10px] text-center text-slate-400 pb-2">
-                        By saving, you are helping fellow students in this region.
-                    </p>
-                </form>
-            </div>
-        </div>
+                {/* Location + Distance */}
+                <div className="grid grid-cols-2 gap-2">
+                    <Field label="Location">
+                        <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2
+                                              h-3.5 w-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Area/street"
+                                value={formData.location}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        location: e.target.value,
+                                    })
+                                }
+                                className="w-full h-11 rounded-xl border-0 outline-none
+                                           bg-slate-50 dark:bg-[#0d1117]
+                                           pl-9 pr-3 text-sm
+                                           text-slate-900 dark:text-white
+                                           placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                           focus:ring-2 focus:ring-rose-500/40"
+                                style={{ touchAction: "manipulation" }}
+                            />
+                        </div>
+                    </Field>
+
+                    <Field label="Distance">
+                        <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2
+                                             h-3.5 w-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="e.g. 5 mins"
+                                value={formData.distance}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        distance: e.target.value,
+                                    })
+                                }
+                                className="w-full h-11 rounded-xl border-0 outline-none
+                                           bg-slate-50 dark:bg-[#0d1117]
+                                           pl-9 pr-3 text-sm
+                                           text-slate-900 dark:text-white
+                                           placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                           focus:ring-2 focus:ring-rose-500/40"
+                                style={{ touchAction: "manipulation" }}
+                            />
+                        </div>
+                    </Field>
+                </div>
+
+                {/* Category + Phone */}
+                <div className="grid grid-cols-2 gap-2">
+                    <Field label="Category">
+                        <Select
+                            value={formData.hospital_type}
+                            onValueChange={(v) => {
+                                tap();
+                                setFormData({ ...formData, hospital_type: v });
+                            }}
+                        >
+                            <SelectTrigger
+                                className="h-11 rounded-xl border-0
+                                           bg-slate-50 dark:bg-[#0d1117]
+                                           text-sm font-semibold
+                                           text-slate-900 dark:text-white
+                                           px-3
+                                           focus:ring-2 focus:ring-rose-500/40"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent
+                                className="rounded-xl
+                                           bg-white dark:bg-[#161b22]
+                                           border-slate-200/70 dark:border-white/[0.06]"
+                            >
+                                <SelectItem
+                                    value="Public"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Public
+                                </SelectItem>
+                                <SelectItem
+                                    value="Private"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Private
+                                </SelectItem>
+                                <SelectItem
+                                    value="Mission"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Mission
+                                </SelectItem>
+                                <SelectItem
+                                    value="Clinic"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Clinic
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field label="Phone">
+                        <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2
+                                             h-3.5 w-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                            <input
+                                type="tel"
+                                inputMode="tel"
+                                placeholder="0712…"
+                                value={formData.contact}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        contact: e.target.value,
+                                    })
+                                }
+                                className="w-full h-11 rounded-xl border-0 outline-none
+                                           bg-slate-50 dark:bg-[#0d1117]
+                                           pl-9 pr-3 text-sm tabular-nums
+                                           text-slate-900 dark:text-white
+                                           placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                           focus:ring-2 focus:ring-rose-500/40"
+                                style={{ touchAction: "manipulation" }}
+                            />
+                        </div>
+                    </Field>
+                </div>
+
+                {/* Departments */}
+                <Field
+                    label="Available departments"
+                    hint="Comma-separated"
+                >
+                    <div className="relative">
+                        <Stethoscope className="absolute left-3.5 top-1/2 -translate-y-1/2
+                                               h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="e.g. Maternity, OPD, Pediatrics"
+                            value={formData.department_availability}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    department_availability: e.target.value,
+                                })
+                            }
+                            className="w-full h-11 rounded-xl border-0 outline-none
+                                       bg-slate-50 dark:bg-[#0d1117]
+                                       pl-10 pr-3.5 text-sm
+                                       text-slate-900 dark:text-white
+                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                       focus:ring-2 focus:ring-rose-500/40"
+                            style={{ touchAction: "manipulation" }}
+                        />
+                    </div>
+                </Field>
+
+                {/* Student acceptance toggle */}
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.student_acceptance}
+                    onClick={() => {
+                        tap();
+                        setFormData({
+                            ...formData,
+                            student_acceptance: !formData.student_acceptance,
+                        });
+                    }}
+                    className={`w-full flex items-center justify-between gap-3
+                                p-2.5 rounded-xl
+                                transition-colors
+                                ${formData.student_acceptance
+                            ? "bg-emerald-50 dark:bg-emerald-400/10"
+                            : "bg-slate-50 dark:bg-[#0d1117]"
+                        }`}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                        <CheckCircle2
+                            className={`h-4 w-4 shrink-0 ${formData.student_acceptance
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-slate-400 dark:text-slate-500"
+                                }`}
+                            strokeWidth={2.25}
+                        />
+                        <div className="min-w-0">
+                            <p
+                                className={`text-[12px] font-bold leading-tight ${formData.student_acceptance
+                                    ? "text-emerald-700 dark:text-emerald-400"
+                                    : "text-slate-900 dark:text-white"
+                                    }`}
+                            >
+                                Student friendly
+                            </p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                Facility accepts nursing students
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Toggle — same pattern as composer */}
+                    <span
+                        className={`relative inline-flex shrink-0 items-center
+                                    h-6 w-11 rounded-full transition-colors
+                                    ${formData.student_acceptance
+                                ? "bg-emerald-600"
+                                : "bg-slate-200 dark:bg-white/[0.12]"
+                            }`}
+                    >
+                        <span
+                            className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm
+                                        transform transition-transform duration-200 ease-out
+                                        ${formData.student_acceptance
+                                    ? "translate-x-[22px]"
+                                    : "translate-x-[2px]"
+                                }`}
+                        />
+                    </span>
+                </button>
+
+                {/* Notes */}
+                <Field label="Additional notes">
+                    <div className="relative">
+                        <MessageSquare className="absolute left-3.5 top-2.5
+                                                 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <textarea
+                            rows={3}
+                            placeholder="e.g. Fast service, expensive, great for skills practice…"
+                            value={formData.notes}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    notes: e.target.value,
+                                })
+                            }
+                            className="w-full rounded-xl border-0 outline-none resize-none
+                                       bg-slate-50 dark:bg-[#0d1117]
+                                       pl-10 pr-3.5 py-2.5 text-sm
+                                       text-slate-900 dark:text-white
+                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                       focus:ring-2 focus:ring-rose-500/40"
+                            style={{ touchAction: "manipulation" }}
+                        />
+                    </div>
+                </Field>
+            </form>
+        </CenteredModal>
     );
 };
+
+/* ------------------------------------------------------------------ */
+/*  Field                                                             */
+/* ------------------------------------------------------------------ */
+
+function Field({
+    label,
+    required,
+    hint,
+    children,
+}: {
+    label: string;
+    required?: boolean;
+    hint?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="space-y-1.5">
+            <label className="flex items-center gap-1
+                              text-[10px] font-bold uppercase tracking-wider
+                              text-slate-500 dark:text-slate-400">
+                {label}
+                {required && (
+                    <span className="text-rose-500 dark:text-rose-400 normal-case tracking-normal">
+                        *
+                    </span>
+                )}
+            </label>
+            {children}
+            {hint && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
+                    {hint}
+                </p>
+            )}
+        </div>
+    );
+}

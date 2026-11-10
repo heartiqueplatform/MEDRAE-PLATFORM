@@ -1,6 +1,7 @@
-import React from 'react';
-import { LucideIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { LucideIcon, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { playSound } from "@/lib/soundManager";
 
 interface HubCardProps {
     title: string;
@@ -12,38 +13,37 @@ interface HubCardProps {
     loading?: boolean;
 }
 
-export const HubCard = ({ title, description, icon: Icon, href, color, count, loading = false }: HubCardProps) => {
-    // If loading, show skeleton
+const tap = () => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(12);
+    }
+};
+
+export const HubCard = ({
+    title,
+    description,
+    icon: Icon,
+    href,
+    color,
+    count,
+    loading = false,
+}: HubCardProps) => {
+    /* ── Skeleton ─────────────────────────────────────── */
     if (loading) {
         return (
-            <div className="group relative flex flex-col items-start gap-3 md:gap-4 rounded-2xl bg-white px-4 py-5 md:p-6 transition-all md:shadow-sm dark:bg-muted/30 animate-pulse">
-
-                {/* Icon Skeleton */}
-                <div className="rounded-xl md:rounded-2xl bg-slate-200 dark:bg-slate-700 p-2.5 md:p-3">
-                    <div className="h-5 w-5 md:h-6 md:w-6 rounded bg-slate-300 dark:bg-slate-600" />
-                </div>
-
-                {/* Title Skeleton */}
-                <div className="w-full">
-                    <div className="flex items-center justify-between">
-                        <div className="h-5 md:h-6 w-32 rounded bg-slate-200 dark:bg-slate-700" />
-                        {count !== undefined && (
-                            <div className="h-5 w-8 rounded-full bg-slate-200 dark:bg-slate-700" />
-                        )}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-white/[0.06] shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                        <div className="h-4 w-3/4 rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-3 w-full rounded bg-slate-100 dark:bg-white/[0.06]" />
+                        <div className="h-3 w-4/5 rounded bg-slate-100 dark:bg-white/[0.06]" />
                     </div>
                 </div>
-
-                {/* Description Skeleton */}
-                <div className="space-y-1.5 w-full">
-                    <div className="h-3 w-full rounded bg-slate-200 dark:bg-slate-700" />
-                    <div className="h-3 w-5/6 rounded bg-slate-200 dark:bg-slate-700" />
-                </div>
-
-                {/* Count Indicator Skeleton */}
                 {count !== undefined && (
-                    <div className="mt-2 md:mt-3 flex items-center gap-2 w-full">
-                        <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
-                        <div className="h-3 w-3 rounded-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="mt-2 pl-[52px]">
+                        <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-white/[0.06]" />
                     </div>
                 )}
             </div>
@@ -53,25 +53,49 @@ export const HubCard = ({ title, description, icon: Icon, href, color, count, lo
     return (
         <Link
             to={href}
-            className="group relative overflow-hidden rounded-2xl bg-white px-4 py-5 md:p-6 md:shadow-sm transition-all hover:md:shadow-md dark:bg-slate-900 active:scale-[0.98] md:active:scale-100"
+            onClick={tap}
+            className="group rounded-2xl bg-white dark:bg-[#161b22] p-3
+                       flex items-center gap-3
+                       active:scale-[0.98] transition-transform"
+            style={{ touchAction: "manipulation" }}
         >
-            <div className="flex items-center gap-3 md:block md:gap-0">
-                <div className={`${color} inline-flex rounded-lg p-2.5 md:p-3 text-white shrink-0`}>
-                    <Icon size={20} className="md:w-6 md:h-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white truncate">{title}</h3>
-                    <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 md:line-clamp-none">{description}</p>
-                </div>
+            {/* Icon chip */}
+            <div
+                className={`${color} h-10 w-10 rounded-xl
+                            flex items-center justify-center
+                            text-white shrink-0`}
+            >
+                <Icon size={18} strokeWidth={2.25} />
             </div>
 
-            {count !== undefined && (
-                <div className="mt-3 md:mt-4">
-                    <span className="inline-block text-[10px] md:text-xs font-medium text-blue-600 dark:text-blue-400">
-                        {count} locations listed →
-                    </span>
+            {/* Text */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate">
+                        {title}
+                    </h3>
+                    {count !== undefined && (
+                        <span className="shrink-0 text-[10px] font-bold tabular-nums
+                                         text-slate-500 dark:text-slate-400
+                                         bg-slate-100 dark:bg-white/[0.06]
+                                         px-1.5 py-0.5 rounded-full">
+                            {count}
+                        </span>
+                    )}
                 </div>
-            )}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400
+                              leading-snug mt-0.5 line-clamp-2">
+                    {description}
+                </p>
+                {count !== undefined && (
+                    <span className="inline-flex items-center gap-1 mt-1
+                                     text-[10px] font-bold uppercase tracking-wider
+                                     text-blue-600 dark:text-blue-400">
+                        {count} listed
+                        <ArrowRight className="h-2.5 w-2.5" strokeWidth={2.5} />
+                    </span>
+                )}
+            </div>
         </Link>
     );
 };
