@@ -643,13 +643,6 @@ export default function Feed() {
       {/* Sticky header — TABS ONLY (no FeedControls) */}
       <div className="sticky top-0 z-40 w-full bg-white dark:bg-[#0d1117]">
         <div className="w-full max-w-4xl mx-auto flex items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex-shrink-0 pl-2 pr-0.5 py-2.5 text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-[#e6edf3] active:scale-95 transition"
-            aria-label="Go back"
-          >
-            <ChevronLeft size={22} strokeWidth={2.2} />
-          </button>
 
           <div className="flex-1 min-w-0">
             <FeedTabs

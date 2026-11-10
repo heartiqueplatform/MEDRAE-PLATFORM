@@ -1,23 +1,8 @@
 "use client";
-import { GlobalLoader } from "@/components/GlobalLoader";
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import {
   TrendingUp,
   Search,
@@ -27,35 +12,31 @@ import {
   BookOpen,
   Clock,
   Award,
-  Heart,
   RefreshCw,
   Check,
   Activity,
-  X,
+  ChevronLeft,
 } from "lucide-react";
 import { playSound } from "@/lib/soundManager";
 import { motion, AnimatePresence } from "framer-motion";
-import { allUnits } from "@/constants/units";
 import { TermsButton } from "@/components/ui/TermsButton";
 import { useSession } from "@supabase/auth-helpers-react";
-import { TriagePopup, TriageLevel } from "@/components/progress/TriagePopup";
+import { TriagePopup } from "@/components/progress/TriagePopup";
 import { TRIAGE_LEVELS, getTriageCode } from "@/components/progress/triageConfig";
 
-// ============ CACHE HELPERS ============
+/* ------------------------------------------------------------------ */
+/*  Cache                                                             */
+/* ------------------------------------------------------------------ */
+
 const progressCache = new Map();
 const profileCache = new Map();
-const simResultsCache = new Map();
-const triviaResultsCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const streakCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000;
 
-// Average time per question in minutes (NCK-style MCQ pace)
 const MINUTES_PER_QUESTION = 1.0;
-
-// Bumped v2 → v3 to invalidate stale "hours" values from the old formula
 const LOCAL_STORAGE_KEY = "study_progress_cache_v3";
 const TRIAGE_POPUP_KEY = "triage_popup_shown";
 
-// One-time cleanup of the old v2 key so nothing reads stale data
 if (typeof window !== "undefined") {
   try {
     localStorage.removeItem("study_progress_cache_v2");
@@ -84,16 +65,131 @@ function loadFromLocalStorage(userId: string) {
       return parsed;
     }
     return null;
-  } catch (e) {
-    console.error("Error reading from localStorage:", e);
+  } catch {
     return null;
   }
 }
 
-function isEqualData(a: any[], b: any[]) {
-  return JSON.stringify(a) === JSON.stringify(b);
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (p: number | number[] = 15) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
+};
+
+const tap = () => {
+  playSound("ui-tap");
+  vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Unit row — image avatar                                           */
+/* ------------------------------------------------------------------ */
+
+function UnitRow({ subject, onOpen }: { subject: any; onOpen: () => void }) {
+  const unitTriage = getTriageCode(subject.progress, true);
+  const barColor =
+    unitTriage.code === "GREEN"
+      ? "bg-emerald-600 dark:bg-emerald-400"
+      : unitTriage.code === "YELLOW"
+        ? "bg-amber-500 dark:bg-amber-400"
+        : unitTriage.code === "RED"
+          ? "bg-rose-600 dark:bg-rose-400"
+          : "bg-slate-400 dark:bg-slate-500";
+
+  const [imgError, setImgError] = useState(false);
+  const initial = (subject.name || "?")
+    .split(" ")
+    .map((w: string) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return (
+    <button
+      onClick={() => {
+        tap();
+        onOpen();
+      }}
+      className="w-full flex items-center gap-3 p-3 text-left
+                 active:bg-slate-50 dark:active:bg-white/[0.04]
+                 transition-colors"
+      style={{ touchAction: "manipulation" }}
+    >
+      <div className="h-16 w-16 rounded-full overflow-hidden shrink-0
+                      bg-slate-100 dark:bg-white/[0.06]
+                      flex items-center justify-center relative">
+        {subject.imageUrl && !imgError ? (
+          <img
+            src={subject.imageUrl}
+            alt={subject.name}
+            className="h-full w-full object-cover"
+            onError={() => setImgError(true)}
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+            {initial}
+          </span>
+        )}
+        <span
+          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full
+                      ring-2 ring-white dark:ring-[#161b22] ${barColor}`}
+        />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[13px] font-bold text-slate-900 dark:text-white truncate flex-1">
+            {subject.name}
+          </h3>
+          <span className="shrink-0 inline-flex items-center gap-0.5
+                           text-[10px] font-bold tabular-nums
+                           text-amber-600 dark:text-amber-400">
+            <Star className="h-2.5 w-2.5 fill-current" />
+            {subject.rating}
+          </span>
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-2">
+          <div className="flex-1 h-1 rounded-full overflow-hidden
+                          bg-slate-100 dark:bg-white/[0.06]">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${subject.progress}%` }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className={`h-full rounded-full ${barColor}`}
+            />
+          </div>
+          <span className="shrink-0 text-[10px] font-bold tabular-nums
+                           text-slate-600 dark:text-slate-300 w-7 text-right">
+            {subject.progress}%
+          </span>
+        </div>
+
+        <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
+          {subject.topicsCompleted} attempt{subject.topicsCompleted === 1 ? "" : "s"}
+          <span className="mx-1 opacity-60">·</span>
+          {subject.hoursStudied}h studied
+          {subject.progress >= 80 && (
+            <>
+              <span className="mx-1 opacity-60">·</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                Mastered
+              </span>
+            </>
+          )}
+        </p>
+      </div>
+    </button>
+  );
 }
-// 🚨 TRIAGE BANNER — Hero card style
+
+/* ------------------------------------------------------------------ */
+/*  Triage banner                                                     */
+/* ------------------------------------------------------------------ */
+
 function TriageBanner({
   overallProgress,
   hasData,
@@ -107,128 +203,253 @@ function TriageBanner({
 }) {
   const navigate = useNavigate();
   const triage = getTriageCode(overallProgress, hasData);
-
-  // Solid color derived from triage's own text color (works for any code)
   const solidBg =
     (triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400";
-  const solidText =
-    (triage.color || "").split(" ")[0] || "text-slate-500";
+  const solidText = (triage.color || "").split(" ")[0] || "text-slate-500";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -12 }}
+      initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, type: "spring" }}
-      className={`relative overflow-hidden rounded-2xl md:rounded-3xl ${triage.bgColor} p-4 md:p-5`}
+      transition={{ duration: 0.35 }}
+      className={`rounded-2xl p-4 ${triage.bgColor}`}
     >
-      {/* Ambient glow blob */}
-      <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full ${solidBg} opacity-20 blur-3xl pointer-events-none`} />
-
-      <div className="relative flex items-center gap-4 md:gap-5">
-        {/* Left: Big code chip — no ring, soft shadow only */}
-        <div className="shrink-0">
-          <div
-            className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex flex-col items-center justify-center
-                       bg-white dark:bg-slate-900/60
-                       shadow-sm"
-          >
-            <span className={`text-[9px] md:text-[10px] font-bold tracking-widest uppercase ${solidText}`}>
-              Code
-            </span>
-            <span className={`text-lg md:text-2xl   leading-none ${solidText} mt-0.5`}>
-              {triage.code}
-            </span>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="h-14 w-14 rounded-2xl bg-white dark:bg-[#161b22]
+                        flex flex-col items-center justify-center shrink-0">
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${solidText}`}>
+            Code
+          </span>
+          <span className={`text-base font-bold leading-none mt-0.5 ${solidText}`}>
+            {triage.code}
+          </span>
         </div>
 
-        {/* Middle: Label + description + metric pills */}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 mb-1">
-            <h2 className={`text-lg md:text-xl   tracking-tight ${solidText}`}>
+            <h2 className={`text-sm font-bold tracking-tight ${solidText}`}>
               {triage.label}
             </h2>
-            <span className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase text-slate-400">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Status
             </span>
           </div>
 
-          <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-snug line-clamp-2 md:line-clamp-3 mb-2">
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug line-clamp-2">
             {triage.description}
           </p>
 
           {hasData && (
-            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[10px] md:text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                <Activity className="w-2.5 h-2.5 md:w-3 md:h-3" />
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <Chip icon={<Activity className="h-2.5 w-2.5" />}>
                 {overallProgress}%
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[10px] md:text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                <Star className="w-2.5 h-2.5 md:w-3 md:h-3 text-amber-500 fill-amber-500" />
+              </Chip>
+              <Chip icon={<Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}>
                 {totalStars}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[10px] md:text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                <BookOpen className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                {totalUnits}
-              </span>
+              </Chip>
+              <Chip icon={<BookOpen className="h-2.5 w-2.5" />}>{totalUnits}</Chip>
             </div>
           )}
         </div>
-
-        {/* Right: Action button (desktop inline) */}
-        <button
-          onClick={() => navigate(triage.actionLink)}
-          className={`hidden md:inline-flex shrink-0 items-center justify-center
-                      px-4 h-10 rounded-xl ${solidBg} text-white
-                      text-xs font-bold tracking-wide
-                      transition-all hover:scale-[1.03] active:scale-95 shadow-lg`}
-        >
-          {triage.actionText}
-        </button>
       </div>
 
-      {/* Mobile-only centered pill button (not edge-to-edge) */}
-      <div className="md:hidden mt-3 flex justify-center">
-        <button
-          onClick={() => navigate(triage.actionLink)}
-          className={`inline-flex items-center justify-center
-                      px-5 h-10 rounded-full ${solidBg} text-white
-                      text-xs font-bold tracking-wide
-                      transition-all active:scale-95 shadow-md`}
-        >
-          {triage.actionText}
-        </button>
-      </div>
+      <button
+        onClick={() => {
+          tap();
+          navigate(triage.actionLink);
+        }}
+        className={`mt-3 w-full h-10 rounded-xl ${solidBg} text-white
+                    text-[12px] font-bold
+                    active:scale-[0.97] transition-transform`}
+        style={{ touchAction: "manipulation" }}
+      >
+        {triage.actionText}
+      </button>
     </motion.div>
   );
 }
-// 🚨 UNIT TRIAGE BADGE
-// 🚨 UNIT TRIAGE BADGE (compact single-line summary)
-function UnitTriageBadge({ subject }: { subject: any }) {
-  const triage = getTriageCode(subject.progress, true);
 
+function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className={`flex items-center justify-between px-3 py-2 md:rounded-xl ${triage.bgColor}`}>
-      {/* Left: dot + code + label */}
-      <div className="flex items-center gap-2 min-w-0">
-        <span
-          className={`shrink-0 w-2.5 h-2.5 rounded-full ${(triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400"
-            }`}
-        />
-        <span className={`text-sm font-normal truncate ${triage.textColor}`}>
-          Code {triage.code}
-        </span>
-        <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
+    <span className="inline-flex items-center gap-1
+                     bg-white/70 dark:bg-white/[0.08]
+                     text-slate-700 dark:text-slate-200
+                     text-[10px] font-bold
+                     px-2 py-0.5 rounded-full tabular-nums">
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Stats grid                                                        */
+/* ------------------------------------------------------------------ */
+
+function StatsGrid({
+  triage,
+  stats,
+}: {
+  triage: any;
+  stats: {
+    totalHours: number;
+    totalStars: number;
+    totalProgress: number;
+  };
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className={`rounded-2xl p-3 ${triage.bgColor}`}>
+        <p className={`text-[10px] font-bold uppercase tracking-wider ${triage.textColor}`}>
+          Triage
+        </p>
+        <p className={`text-2xl font-bold leading-none mt-1 tabular-nums ${triage.textColor}`}>
+          {triage.code}
+        </p>
+        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">
           {triage.label}
-        </span>
+        </p>
       </div>
 
-      {/* Right: subject name */}
-      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate ml-2 max-w-[40%]">
-        {subject.name}
-      </span>
+      <div className="rounded-2xl p-3 bg-blue-50 dark:bg-blue-400/10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+          Progress
+        </p>
+        <p className="text-2xl font-bold leading-none mt-1 tabular-nums
+                      text-slate-900 dark:text-white">
+          {Math.round(stats.totalProgress)}
+          <span className="text-sm font-bold text-slate-400 dark:text-slate-500">%</span>
+        </p>
+        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
+          Overall mastery
+        </p>
+      </div>
+
+      <div className="rounded-2xl p-3 bg-violet-50 dark:bg-violet-400/10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-400">
+          Hours
+        </p>
+        <p className="text-2xl font-bold leading-none mt-1 tabular-nums
+                      text-slate-900 dark:text-white">
+          {stats.totalHours.toFixed(1)}
+          <span className="text-sm font-bold text-slate-400 dark:text-slate-500">h</span>
+        </p>
+        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
+          Time invested
+        </p>
+      </div>
+
+      <div className="rounded-2xl p-3 bg-amber-50 dark:bg-amber-400/10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+          Stars
+        </p>
+        <p className="text-2xl font-bold leading-none mt-1 tabular-nums
+                      text-slate-900 dark:text-white">
+          {stats.totalStars}
+        </p>
+        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
+          Units earned
+        </p>
+      </div>
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Metric guide                                                      */
+/* ------------------------------------------------------------------ */
+
+function MetricGuide({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider
+                      text-slate-500 dark:text-slate-400">
+          Metric guide
+        </p>
+        <button
+          onClick={() => {
+            tap();
+            onToggle();
+          }}
+          className="text-[10px] font-bold uppercase tracking-wider
+                     bg-blue-50 dark:bg-blue-400/10
+                     text-blue-700 dark:text-blue-400
+                     px-2 py-1 rounded-full
+                     active:scale-[0.97] transition-transform"
+          style={{ touchAction: "manipulation" }}
+        >
+          {open ? "Close" : "How?"}
+        </button>
+      </div>
+
+      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+        Track your journey through core nursing units. Activity is measured across
+        three indicators.
+      </p>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-2 mt-1 border-t border-slate-100 dark:border-white/[0.04] space-y-2">
+              <GuideRow
+                chip="%"
+                chipClass="bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400"
+                label="Progress"
+                body="Highest quiz score achieved per unit."
+              />
+              <GuideRow
+                chip="★"
+                chipClass="bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400"
+                label="Stars"
+                body="5 stars awarded per unit, scaled by best score."
+              />
+              <GuideRow
+                chip="h"
+                chipClass="bg-violet-50 dark:bg-violet-400/10 text-violet-700 dark:text-violet-400"
+                label="Hours"
+                body={`Estimated at ${MINUTES_PER_QUESTION} min per question answered.`}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function GuideRow({
+  chip,
+  chipClass,
+  label,
+  body,
+}: {
+  chip: string;
+  chipClass: string;
+  label: string;
+  body: string;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <div className={`h-6 w-6 rounded-lg flex items-center justify-center
+                       text-[11px] font-bold shrink-0 ${chipClass}`}>
+        {chip}
+      </div>
+      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+        <strong className="text-slate-900 dark:text-white">{label}:</strong> {body}
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main page                                                         */
+/* ------------------------------------------------------------------ */
 
 export function StudyProgress() {
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -241,153 +462,185 @@ export function StudyProgress() {
   const [showTriagePopup, setShowTriagePopup] = useState(false);
   const session = useSession();
   const user = session?.user || null;
+  const navigate = useNavigate();
 
+  const handleBack = useCallback(() => {
+    tap();
+    navigate("/dashboard/student", { replace: true });
+  }, [navigate]);
   const isMounted = useRef(true);
   const isFetchingProgress = useRef(false);
-  const channelRef = useRef<any>(null);
   const lastFetchTime = useRef(0);
 
-  const fetchProgress = useCallback(async (showLoader = true) => {
-    if (!user || isFetchingProgress.current) return;
+  const fetchProgress = useCallback(
+    async (showLoader = true) => {
+      if (!user || isFetchingProgress.current) return;
 
-    const now = Date.now();
-    // ✅ v3 key forces a clean cache miss after the formula change
-    const cacheKey = `progress_v3_${user.id}`;
+      const now = Date.now();
+      const cacheKey = `progress_v3_${user.id}`;
 
-    if (progressCache.has(cacheKey)) {
-      const cached = progressCache.get(cacheKey);
-      if (now - cached.timestamp < CACHE_DURATION && isMounted.current) {
+      if (progressCache.has(cacheKey)) {
+        const cached = progressCache.get(cacheKey);
+        if (now - cached.timestamp < CACHE_DURATION && isMounted.current) {
+          setSubjects(cached.subjects || []);
+          setTotalStarsEarned(cached.totalStarsEarned || 0);
+          setUnitsWithStats(cached.subjects || []);
+          setTotalTopicsInApp(cached.totalTopicsInApp || 0);
+          setHasAnyData(cached.hasAnyData || false);
+          if (showLoader) setLoading(false);
+          setTimeout(() => setShowTriagePopup(true), 500);
+          return;
+        }
+      }
+
+      const cached = loadFromLocalStorage(user.id);
+      if (cached && isMounted.current) {
         setSubjects(cached.subjects || []);
         setTotalStarsEarned(cached.totalStarsEarned || 0);
         setUnitsWithStats(cached.subjects || []);
         setTotalTopicsInApp(cached.totalTopicsInApp || 0);
         setHasAnyData(cached.hasAnyData || false);
+        progressCache.set(cacheKey, {
+          subjects: cached.subjects,
+          totalStarsEarned: cached.totalStarsEarned,
+          totalTopicsInApp: cached.totalTopicsInApp,
+          hasAnyData: cached.hasAnyData || false,
+          timestamp: cached.timestamp,
+        });
         if (showLoader) setLoading(false);
         setTimeout(() => setShowTriagePopup(true), 500);
-        return;
       }
-    }
 
-    const cached = loadFromLocalStorage(user.id);
-    if (cached && isMounted.current) {
-      setSubjects(cached.subjects || []);
-      setTotalStarsEarned(cached.totalStarsEarned || 0);
-      setUnitsWithStats(cached.subjects || []);
-      setTotalTopicsInApp(cached.totalTopicsInApp || 0);
-      setHasAnyData(cached.hasAnyData || false);
-      progressCache.set(cacheKey, {
-        subjects: cached.subjects,
-        totalStarsEarned: cached.totalStarsEarned,
-        totalTopicsInApp: cached.totalTopicsInApp,
-        hasAnyData: cached.hasAnyData || false,
-        timestamp: cached.timestamp
-      });
-      if (showLoader) setLoading(false);
-      setTimeout(() => setShowTriagePopup(true), 500);
-    }
+      if (showLoader && isMounted.current) setLoading(true);
+      isFetchingProgress.current = true;
+      lastFetchTime.current = now;
 
-    if (showLoader && isMounted.current) setLoading(true);
-    isFetchingProgress.current = true;
-    lastFetchTime.current = now;
+      try {
+        const { data, error } = await supabase
+          .from("quiz_results")
+          .select("unit, score, total_questions, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
-    try {
-      const { data, error } = await supabase
-        .from("quiz_results")
-        .select("unit, score, total_questions, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        if (error) throw error;
 
-      if (error) throw error;
+        const { data: allQuizzes, error: quizError } = await supabase
+          .from("quizzes")
+          .select("unit, id, image_url");
 
-      const { data: allQuizzes, error: quizError } = await supabase
-        .from("quizzes")
-        .select("unit, id");
+        if (quizError) throw quizError;
 
-      if (quizError) throw quizError;
+        // ✅ Build image lookup per unit (first quiz with an image wins)
+        const unitImageMap = new Map<string, string>();
+        (allQuizzes || []).forEach((q) => {
+          const key = q.unit || "Unknown";
+          if (q.image_url && !unitImageMap.has(key)) {
+            unitImageMap.set(key, q.image_url);
+          }
+        });
 
-      const totalTopicsInAppCount = allQuizzes?.length || 0;
-      const hasData = data && data.length > 0;
+        const totalTopicsInAppCount = allQuizzes?.length || 0;
+        const hasData = data && data.length > 0;
 
-      // ✅ Accumulate attempts AND total questions per unit.
-      //    Each quiz_results row = one full quiz (e.g. 10 questions).
-      const grouped: Record<
-        string,
-        { highestProgress: number; attempts: number; totalQuestions: number }
-      > = {};
+        const grouped: Record<
+          string,
+          { highestProgress: number; attempts: number; totalQuestions: number }
+        > = {};
 
-      data?.forEach((res) => {
-        const key = res.unit || "Unknown";
-        const percent = res.total_questions > 0 ? (res.score / res.total_questions) * 100 : 0;
-        const qCount = res.total_questions || 0;
+        data?.forEach((res) => {
+          const key = res.unit || "Unknown";
+          const percent =
+            res.total_questions > 0
+              ? (res.score / res.total_questions) * 100
+              : 0;
+          const qCount = res.total_questions || 0;
 
-        if (!grouped[key]) {
-          grouped[key] = { highestProgress: percent, attempts: 1, totalQuestions: qCount };
-        } else {
-          grouped[key].highestProgress = Math.max(grouped[key].highestProgress, percent);
-          grouped[key].attempts += 1;
-          grouped[key].totalQuestions += qCount;
+          if (!grouped[key]) {
+            grouped[key] = {
+              highestProgress: percent,
+              attempts: 1,
+              totalQuestions: qCount,
+            };
+          } else {
+            grouped[key].highestProgress = Math.max(
+              grouped[key].highestProgress,
+              percent
+            );
+            grouped[key].attempts += 1;
+            grouped[key].totalQuestions += qCount;
+          }
+        });
+
+        const computedUnits = Object.keys(grouped).map((unitName) => {
+          const stats = grouped[unitName];
+          const bestPercent = stats.highestProgress;
+
+          let rating = 0;
+          if (bestPercent >= 90) rating = 5;
+          else if (bestPercent >= 75) rating = 4;
+          else if (bestPercent >= 60) rating = 3;
+          else if (bestPercent >= 45) rating = 2;
+          else if (bestPercent >= 30) rating = 1;
+
+          return {
+            id: unitName,
+            name: unitName,
+            imageUrl: unitImageMap.get(unitName) || null,
+            progress: Math.round(stats.highestProgress),
+            hoursStudied: +(
+              (stats.totalQuestions * MINUTES_PER_QUESTION) /
+              60
+            ).toFixed(1),
+            topicsCompleted: stats.attempts,
+            totalTopics:
+              allQuizzes?.filter((q) => q.unit === unitName).length ||
+              stats.attempts,
+            rating,
+          };
+        });
+
+        // Sort highest progress first
+        computedUnits.sort((a, b) => b.progress - a.progress);
+
+        const totalStars = computedUnits.reduce((acc, s) => acc + s.rating, 0);
+
+        if (isMounted.current) {
+          setUnitsWithStats(computedUnits);
+          setSubjects(computedUnits);
+          setTotalStarsEarned(totalStars);
+          setTotalTopicsInApp(totalTopicsInAppCount);
+          setHasAnyData(hasData);
+
+          const newState = {
+            subjects: computedUnits,
+            totalStarsEarned: totalStars,
+            totalTopicsInApp: totalTopicsInAppCount,
+            hasAnyData: hasData,
+          };
+
+          saveToLocalStorage(user.id, newState);
+          progressCache.set(cacheKey, { ...newState, timestamp: now });
+
+          setTimeout(() => setShowTriagePopup(true), 500);
         }
-      });
-
-      const computedUnits = Object.keys(grouped).map((unitName) => {
-        const stats = grouped[unitName];
-        const bestPercent = stats.highestProgress;
-
-        let rating = 0;
-        if (bestPercent >= 90) rating = 5;
-        else if (bestPercent >= 75) rating = 4;
-        else if (bestPercent >= 60) rating = 3;
-        else if (bestPercent >= 45) rating = 2;
-        else if (bestPercent >= 30) rating = 1;
-
-        return {
-          id: unitName,
-          name: unitName,
-          progress: Math.round(stats.highestProgress),
-          // ✅ Hours = total questions answered × minutes-per-question ÷ 60
-          //    Example: 30 questions × 1 min ÷ 60 = 0.5h
-          hoursStudied: +((stats.totalQuestions * MINUTES_PER_QUESTION) / 60).toFixed(1),
-          topicsCompleted: stats.attempts,
-          totalTopics: allQuizzes?.filter((q) => q.unit === unitName).length || stats.attempts,
-          rating: rating,
-        };
-      });
-
-      const totalStars = computedUnits.reduce((acc, s) => acc + s.rating, 0);
-
-      if (isMounted.current) {
-        setUnitsWithStats(computedUnits);
-        setSubjects(computedUnits);
-        setTotalStarsEarned(totalStars);
-        setTotalTopicsInApp(totalTopicsInAppCount);
-        setHasAnyData(hasData);
-
-        const newState = {
-          subjects: computedUnits,
-          totalStarsEarned: totalStars,
-          totalTopicsInApp: totalTopicsInAppCount,
-          hasAnyData: hasData,
-        };
-
-        saveToLocalStorage(user.id, newState);
-        progressCache.set(cacheKey, { ...newState, timestamp: now });
-
-        setTimeout(() => setShowTriagePopup(true), 500);
+      } catch (err) {
+        console.error("Error fetching progress:", err);
+      } finally {
+        if (isMounted.current) {
+          if (showLoader) setLoading(false);
+        }
+        isFetchingProgress.current = false;
       }
-    } catch (err) {
-      console.error("Error fetching progress:", err);
-    } finally {
-      if (isMounted.current) {
-        if (showLoader) setLoading(false);
-      }
-      isFetchingProgress.current = false;
-    }
-  }, [user]);
+    },
+    [user]
+  );
 
   useEffect(() => {
     isMounted.current = true;
     fetchProgress(true);
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+    };
   }, [fetchProgress]);
 
   useEffect(() => {
@@ -400,15 +653,13 @@ export function StudyProgress() {
         const now = Date.now();
         if (now - lastFocusRefresh < 30000) return;
         lastFocusRefresh = now;
-        if (user && isMounted.current) {
-          fetchProgress(false);
-        }
+        if (user && isMounted.current) fetchProgress(false);
       }, 500);
     };
 
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
       if (focusTimer) clearTimeout(focusTimer);
     };
   }, [user, fetchProgress]);
@@ -417,19 +668,17 @@ export function StudyProgress() {
     totalHours: unitsWithStats.reduce((acc, s) => acc + s.hoursStudied, 0),
     totalStars: unitsWithStats.reduce((acc, s) => acc + s.rating, 0),
     totalProgress: unitsWithStats.length
-      ? Math.round(unitsWithStats.reduce((acc, s) => acc + s.progress, 0) / unitsWithStats.length)
+      ? Math.round(
+        unitsWithStats.reduce((acc, s) => acc + s.progress, 0) /
+        unitsWithStats.length
+      )
       : 0,
-    completedTopics: unitsWithStats.reduce((acc, s) => acc + s.topicsCompleted, 0),
+    completedTopics: unitsWithStats.reduce(
+      (acc, s) => acc + s.topicsCompleted,
+      0
+    ),
     totalTopics: totalTopicsInApp,
   };
-
-  const renderStars = (rating: number) =>
-    Array.from({ length: 5 }).map((_, i) => (
-      <Star
-        key={i}
-        className={`h-4 w-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-      />
-    ));
 
   const triage = getTriageCode(overallStats.totalProgress, hasAnyData);
 
@@ -439,377 +688,195 @@ export function StudyProgress() {
   };
 
   return (
-    <div className="min-h-screen w-full flex mt-0 flex-col items-center pb-20 md:pb-6">
-      {/* 🚨 TRIAGE POPUP / OVERLAY */}
+    <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
       <AnimatePresence>
         {showTriagePopup && (
           <TriagePopup triage={triage} onClose={handleClosePopup} />
         )}
       </AnimatePresence>
 
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-2 px-1 md:px-6 -pt-4 md:-pt-4">
-        {/* Main Card - full width on mobile, no rounded corners */}
-        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 ">
-          <div className="absolute top-0 left-0 w-full h-1" />
+      {/* ── Header ─────────────────────────────────────── */}
+      <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                       bg-white dark:bg-[#0d1117]
+                       border-b border-slate-200/70 dark:border-white/[0.06]
+                       z-30 safe-top">
+        <button
+          onClick={handleBack}
+          aria-label="Go back"
+          className="h-10 w-10 rounded-full flex items-center justify-center
+                   text-slate-700 dark:text-slate-200
+                   active:bg-slate-100 dark:active:bg-white/5"
+          style={{ touchAction: "manipulation" }}
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold leading-tight truncate
+                       text-slate-900 dark:text-white">
+            Study progress
+          </h1>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate tabular-nums">
+            {subjects.length} unit{subjects.length === 1 ? "" : "s"} ·{" "}
+            {overallStats.totalStars} star{overallStats.totalStars === 1 ? "" : "s"} ·{" "}
+            {overallStats.totalHours.toFixed(1)}h
+          </p>
+        </div>
+        {triage && (
+          <span
+            className={`shrink-0 inline-flex items-center gap-1
+                      text-[10px] font-bold uppercase tracking-wider
+                      px-2 py-1 rounded-full tabular-nums ${triage.bgColor} ${triage.textColor}`}
+          >
+            {triage.code}
+          </span>
+        )}
+      </header>
 
+      <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+        <div className="w-full max-w-3xl mx-auto px-4 py-4 pb-24 safe-bottom space-y-3">
+          <StatsGrid triage={triage} stats={overallStats} />
 
-          <CardContent className="space-y-2 md:space-y-2 px-2 md:px-6 pb-4 md:pb-6">
+          <TriageBanner
+            overallProgress={overallStats.totalProgress}
+            hasData={hasAnyData}
+            totalStars={overallStats.totalStars}
+            totalUnits={unitsWithStats.length}
+          />
 
-            {/* 🎨 STORY-STYLE STATS ROW */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 pt-3 gap-2 md:gap-3">
+          <MetricGuide
+            open={showProgressDescription}
+            onToggle={() => setShowProgressDescription((v) => !v)}
+          />
 
-              {/* Triage Code Tile */}
-              <div className={`relative overflow-hidden rounded-2xl ${triage.bgColor} p-3 md:p-4`}>
-                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/40 dark:bg-white/5 blur-2xl pointer-events-none" />
-                <div className="relative flex items-start justify-between mb-2">
-                  <span className={`text-[9px] md:text-[10px] font-bold tracking-widest uppercase ${triage.textColor}`}>
-                    Triage
-                  </span>
-                  <span className={`w-2.5 h-2.5 rounded-full mt-1 ${(triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400"}`} />
-                </div>
-                <div className="relative">
-                  <p className={`text-xl md:text-2xl lg:text-3xl   leading-none ${triage.textColor} tracking-tight`}>
-                    {triage.code}
-                  </p>
-                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">
-                    {triage.label}
-                  </p>
-                </div>
-              </div>
+          <SimulationAndTriviaSummary user={user} />
 
-              {/* Progress Tile */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/5 p-3 md:p-4">
-                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-blue-400/20 blur-2xl pointer-events-none" />
-                <div className="relative flex items-start justify-between mb-2">
-                  <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-blue-600 dark:text-blue-400">
-                    Progress
-                  </span>
-                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
-                </div>
-                <div className="relative">
-                  <p className="text-xl md:text-2xl lg:text-3xl   leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
-                    {Math.round(overallStats.totalProgress)}<span className="text-sm font-bold text-slate-400 dark:text-slate-500">%</span>
-                  </p>
-                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    Overall mastery
-                  </p>
-                </div>
-              </div>
-
-              {/* Hours Tile */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/5 p-3 md:p-4">
-                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-violet-400/20 blur-2xl pointer-events-none" />
-                <div className="relative flex items-start justify-between mb-2">
-                  <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-violet-600 dark:text-violet-400">
-                    Hours
-                  </span>
-                  <Clock className="w-3.5 h-3.5 text-violet-500" />
-                </div>
-                <div className="relative">
-                  <p className="text-xl md:text-2xl lg:text-3xl   leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
-                    {overallStats.totalHours.toFixed(1)}<span className="text-sm font-bold text-slate-400 dark:text-slate-500">h</span>
-                  </p>
-                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    Time invested
-                  </p>
-                </div>
-              </div>
-
-              {/* Stars Tile */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/5 p-3 md:p-4">
-                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-amber-400/25 blur-2xl pointer-events-none" />
-                <div className="relative flex items-start justify-between mb-2">
-                  <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-amber-600 dark:text-amber-400">
-                    Stars
-                  </span>
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                </div>
-                <div className="relative">
-                  <p className="text-xl md:text-2xl lg:text-3xl   leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
-                    {overallStats.totalStars}
-                  </p>
-                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    Units earned
-                  </p>
-                </div>
-              </div>
-
+          {/* Units section */}
+          <div className="flex items-center justify-between px-1 pt-1">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider
+                            text-slate-500 dark:text-slate-400">
+                By unit
+              </p>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                {subjects.length} tracked unit{subjects.length === 1 ? "" : "s"}
+              </h2>
             </div>
-            <TriageBanner
-              overallProgress={overallStats.totalProgress}
-              hasData={hasAnyData}
-              totalStars={overallStats.totalStars}
-              totalUnits={unitsWithStats.length}
-            />
+            {totalTopicsInApp > 0 && (
+              <span className="text-[10px] font-bold uppercase tracking-wider
+                               bg-slate-100 dark:bg-white/[0.06]
+                               text-slate-500 dark:text-slate-400
+                               px-2 py-1 rounded-full tabular-nums">
+                {totalTopicsInApp} total
+              </span>
+            )}
+          </div>
 
-            {/* Metric Explanation Section */}
-            <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-2xl md:rounded-3xl p-4 md:p-5 border-0">
-              <motion.div layout>
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <h3 className="text-[10px] md:text-xs font-bold tracking-widest text-gray-500">Metric Guide</h3>
-                  <button
-                    onClick={() => setShowProgressDescription(!showProgressDescription)}
-                    className="text-[9px] md:text-[10px] font-bold text-blue-600 hover:underline px-1.5 md:px-2 py-0.5 md:py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
-                  >
-                    {showProgressDescription ? "Close Info" : "How is this calculated?"}
-                  </button>
-                </div>
-
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
-                  Track your journey through core nursing units. Your activity is measured across three key performance indicators.
-                </p>
-
-                <AnimatePresence>
-                  {showProgressDescription && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-2 pt-3 md:pt-4 mt-3 md:mt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex gap-2 md:gap-3">
-                          <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 font-bold text-[10px] md:text-xs">%</div>
-                          <p className="text-[10px] md:text-[11px] text-gray-500 leading-snug"><strong>Progress:</strong> Highest quiz score achieved per unit.</p>
-                        </div>
-                        <div className="flex gap-2 md:gap-3">
-                          <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg flex items-center justify-center text-yellow-600 font-bold text-[10px] md:text-xs">★</div>
-                          <p className="text-[10px] md:text-[11px] text-gray-500 leading-snug"><strong>Stars:</strong> 5 Stars awarded for every unit attempted.</p>
-                        </div>
-                        <div className="flex gap-2 md:gap-3">
-                          <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-[10px] md:text-xs">H</div>
-                          {/* ✅ Corrected description to match new formula */}
-                          <p className="text-[10px] md:text-[11px] text-gray-500 leading-snug"><strong>Hours:</strong> Estimated at {MINUTES_PER_QUESTION} min per question answered.</p>
-                        </div>
-                      </div>
-                      <p className="mt-3 md:mt-4 text-[9px] md:text-[10px] italic text-gray-400 border-l-2 border-blue-500 pl-3">
-                        Submit your quizzes in the App to sync results here automatically.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+          {/* Triage legend */}
+          {subjects.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5
+                            px-3 py-2 rounded-xl
+                            bg-white dark:bg-[#161b22]">
+              <span className="text-[9px] font-bold uppercase tracking-wider
+                               text-slate-400 dark:text-slate-500">
+                Key
+              </span>
+              {TRIAGE_LEVELS.map((level) => {
+                const dotClass =
+                  (level.color || "").split(" ")[0]?.replace(/^text-/, "bg-") ||
+                  "bg-slate-400";
+                return (
+                  <div key={level.code} className="flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                      {level.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <SimulationAndTriviaSummary user={user} />
-          </CardContent>
+          )}
 
+          {/* Units list */}
+          <section className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+            {subjects.length === 0 && loading ? (
+              <UnitListSkeleton />
+            ) : subjects.length === 0 ? (
+              <EmptyUnits />
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+                {subjects.map((subject) => (
+                  <UnitRow
+                    key={subject.id}
+                    subject={subject}
+                    onOpen={() =>
+                      navigate(`/unit/${encodeURIComponent(subject.id)}`)
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </section>
 
-
-          <Tabs defaultValue="subjects" className="space-y-2">
-            <div className="flex justify-center">
-              <TabsList className="bg-gray-100 dark:bg-gray-900 p-1 rounded-2xl h-12 inline-flex border-0">
-                <TabsTrigger value="subjects" className="rounded-xl px-6 font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all">
-                  By Unit
-                </TabsTrigger>
-                <TabsTrigger value="timeline" className="rounded-xl px-6 font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all">
-                  Timeline View
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="subjects" className="space-y-2 outline-none">
-              {subjects.length === 0 && loading ? (
-                <div className="flex flex-col justify-center items-center py-20 space-y-4">
-                  <GlobalLoader />
-                  <p className="text-sm font-medium text-gray-400 animate-pulse">Analysing your data...</p>
-                </div>
-              ) : (
-                <>
-                  {/* 🚨 UNIT TRIAGE SUMMARY */}
-                  {subjects.length > 0 && (
-                    <div className="mb-3 space-y-2">
-
-                      {/* ✅ LEGEND — shows all 4 codes always (GREEN / YELLOW / RED / BLACK) */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-2 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
-                        <span className="text-[10px] font-bold tracking-widest text-slate-400">
-                          KEY
-                        </span>
-                        {TRIAGE_LEVELS.map((level) => {
-                          const dotClass =
-                            (level.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400";
-                          return (
-                            <div key={level.code} className="flex items-center gap-1.5">
-                              <span className={`w-2 h-2 rounded-full ${dotClass}`} />
-                              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                                {level.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Top 3 units */}
-                      <div className="grid grid-cols-1 gap-2">
-                        {subjects.slice(0, 3).map((subject) => (
-                          <UnitTriageBadge key={subject.id} subject={subject} />
-                        ))}
-                        {subjects.length > 3 && (
-                          <p className="text-center text-xs text-gray-400 font-medium">
-                            +{subjects.length - 3} more units
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col w-full">
-                    {subjects.map((subject) => {
-                      const unitTriage = getTriageCode(subject.progress, true);
-
-                      // Triage dot colors (matches your existing triage code system)
-                      const dotColor =
-                        unitTriage.code === "GREEN" ? "bg-emerald-500" :
-                          unitTriage.code === "YELLOW" ? "bg-amber-500" :
-                            unitTriage.code === "RED" ? "bg-rose-500" :
-                              "bg-slate-400";
-
-                      const barColor =
-                        unitTriage.code === "GREEN" ? "bg-emerald-500" :
-                          unitTriage.code === "YELLOW" ? "bg-amber-500" :
-                            unitTriage.code === "RED" ? "bg-rose-500" :
-                              "bg-slate-400";
-
-                      return (
-                        <button
-                          key={subject.id}
-                          type="button"
-                          onClick={() => navigate(`/unit/${encodeURIComponent(subject.id)}`)}
-                          className="group w-full text-left px-3 py-3
-                   flex items-start gap-3
-                   transition-colors duration-150
-                   hover:bg-slate-50 dark:hover:bg-white/5
-                   active:bg-slate-100 dark:active:bg-white/10
-                   rounded-xl"
-                          style={{ touchAction: 'manipulation' }}
-                        >
-                          {/* Left: triage dot + rating */}
-                          <div className="shrink-0 pt-0.5">
-                            <div className="relative w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center">
-                              <span className="text-sm   text-slate-700 dark:text-slate-300 leading-none">
-                                {subject.rating}
-                              </span>
-                              <span className={`absolute top-0 right-0 w-3 h-3 rounded-full ${dotColor} ring-2 ring-white dark:ring-slate-950`} />
-                            </div>
-                          </div>
-
-                          {/* Middle: title + progress + meta */}
-                          <div className="flex-1 min-w-0">
-                            {/* Row 1: Name + hours pill */}
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight flex-1">
-                                {subject.name}
-                              </h3>
-                              <span className="shrink-0 text-[10px] font-bold text-slate-400 tabular-nums">
-                                {subject.hoursStudied}h
-                              </span>
-                            </div>
-
-                            {/* Row 2: Progress bar */}
-                            <div className="mt-1.5 flex items-center gap-2">
-                              <div className="relative flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${subject.progress}%` }}
-                                  transition={{ duration: 0.4, ease: "easeOut" }}
-                                  className={`absolute top-0 left-0 h-full rounded-full ${barColor}`}
-                                />
-                              </div>
-                              <span className="shrink-0 text-[11px] font-bold text-slate-600 dark:text-slate-300 tabular-nums w-9 text-right">
-                                {subject.progress}%
-                              </span>
-                            </div>
-
-                            {/* Row 3: Meta */}
-                            <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
-                              <span>{subject.topicsCompleted} {subject.topicsCompleted === 1 ? "attempt" : "attempts"}</span>
-                              <span className="text-slate-300 dark:text-slate-700">•</span>
-                              <span className="flex items-center gap-0.5">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`h-2.5 w-2.5 ${i < subject.rating
-                                      ? "text-amber-400 fill-amber-400"
-                                      : "text-slate-200 dark:text-slate-700"}`}
-                                  />
-                                ))}
-                              </span>
-                              {subject.progress >= 80 && (
-                                <>
-                                  <span className="text-slate-300 dark:text-slate-700">•</span>
-                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Mastered</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Right: chevron (implicit "tap to open") */}
-                          <div className="shrink-0 pt-2.5 text-slate-300 dark:text-slate-700 group-hover:text-slate-400 dark:group-hover:text-slate-500 transition-colors">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M9 18l6-6-6-6" />
-                            </svg>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </TabsContent>
-
-            <TabsContent value="timeline" className="outline-none">
-              <Card className="rounded-xl border-0 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-                <CardHeader className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl">
-                      <Award className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-bold tracking-tight">Learning Journey</CardTitle>
-                      <CardDescription className="text-xs italic">A history of your academic breakthroughs</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-8">
-                  <div className="relative border-l-2 border-dashed border-gray-200 dark:border-gray-800 ml-4 space-y-12">
-                    <div className="relative pl-8">
-                      <div className="absolute -left-[9px] top-0 w-4 h-4 bg-blue-500 rounded-full ring-4 ring-blue-100 dark:ring-blue-900/30 shadow-[0_0_15px_rgba(59,130,246,0.6)]" />
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-blue-600 text-[10px] font-bold">LATEST ACTIVITY</Badge>
-                          <span className="text-[10px] font-bold text-gray-400">Just Now</span>
-                        </div>
-                        <p className="text-base font-bold text-gray-900 dark:text-white">Completed Unit Assessment</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-md">
-                          Your performance has been synced to the cloud. You've earned new stars for this session!
-                        </p>
-                      </div>
-                    </div>
-                    <div className="relative pl-8 opacity-40">
-                      <div className="absolute -left-[9px] top-0 w-4 h-4 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                      <p className="text-sm font-bold text-gray-400 italic">Previous activity details will appear as you study...</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <div className="pt-2 flex justify-center">
             <TermsButton />
-          </Tabs>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
 
-// ============ SIMULATION + TRIVIA SUMMARY ============
-function SimulationAndTriviaSummary({ user }) {
-  const [profile, setProfile] = useState(null);
+/* ------------------------------------------------------------------ */
+/*  Placeholder sub-components                                        */
+/* ------------------------------------------------------------------ */
+
+function UnitListSkeleton() {
+  return (
+    <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+          <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-2/3 rounded bg-slate-100 dark:bg-white/[0.06]" />
+            <div className="h-1 w-full rounded bg-slate-100 dark:bg-white/[0.06]" />
+            <div className="h-2 w-1/2 rounded bg-slate-100 dark:bg-white/[0.06]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyUnits() {
+  return (
+    <div className="p-8 text-center space-y-3">
+      <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-white/[0.06]
+                      flex items-center justify-center mx-auto">
+        <BookOpen className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+      </div>
+      <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+        No units tracked yet
+      </p>
+      <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[260px] mx-auto leading-relaxed">
+        Complete a quiz to start tracking your progress here.
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Simulation + trivia summary                                      */
+/* ------------------------------------------------------------------ */
+
+function SimulationAndTriviaSummary({ user }: { user: any }) {
+  const [profile, setProfile] = useState<any>(null);
   const [streak, setStreak] = useState(0);
-  const [simSummary, setSimSummary] = useState(null);
-  const [triviaSummary, setTriviaSummary] = useState(null);
+  const [simSummary, setSimSummary] = useState<any>(null);
+  const [triviaSummary, setTriviaSummary] = useState<any>(null);
   const [targetInput, setTargetInput] = useState(50);
   const [savingTarget, setSavingTarget] = useState(false);
-  const [isBelowTarget, setIsBelowTarget] = useState(false);
-  const [simLow, setSimLow] = useState(false);
-  const [triviaLow, setTriviaLow] = useState(false);
+  const [simLow] = useState(false);
+  const [triviaLow] = useState(false);
 
   const isMounted = useRef(true);
   const isFetching = useRef(false);
@@ -824,7 +891,9 @@ function SimulationAndTriviaSummary({ user }) {
 
     loadProfile();
 
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -844,7 +913,6 @@ function SimulationAndTriviaSummary({ user }) {
       setTargetInput(50);
       return;
     }
-
     const cacheKey = `profile_summary_${user.id}`;
     if (profileCache.has(cacheKey)) {
       const cached = profileCache.get(cacheKey);
@@ -854,7 +922,6 @@ function SimulationAndTriviaSummary({ user }) {
         return;
       }
     }
-
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -867,12 +934,10 @@ function SimulationAndTriviaSummary({ user }) {
         setTargetInput(50);
         return;
       }
-
       setProfile(data);
       setTargetInput(data.target_score ?? 50);
       profileCache.set(cacheKey, { data, timestamp: Date.now() });
-    } catch (err) {
-      console.error("Error loading profile:", err);
+    } catch {
       setProfile({ name: "Guest", avatar_url: null, target_score: 50 });
       setTargetInput(50);
     }
@@ -881,8 +946,7 @@ function SimulationAndTriviaSummary({ user }) {
   async function saveTarget() {
     if (!profile || !user) return;
     setSavingTarget(true);
-    playSound("tap", false);
-
+    tap();
     const { error } = await supabase
       .from("profiles")
       .update({ target_score: targetInput })
@@ -890,24 +954,13 @@ function SimulationAndTriviaSummary({ user }) {
 
     if (!error && isMounted.current) {
       setProfile({ ...profile, target_score: targetInput });
-      const cacheKey = `profile_summary_${user.id}`;
-      profileCache.delete(cacheKey);
-
-      const popup = document.createElement("div");
-      popup.className = `fixed inset-0 flex items-center justify-center bg-black/20 dark:bg-black/30 z-50`;
-      const inner = document.createElement("div");
-      inner.innerHTML = `<strong>New target saved: ${targetInput}%!</strong><br />Advancing nursing education and student success.`;
-      inner.className = `px-6 py-4 rounded-xl shadow-lg text-center bg-white dark:bg-gray-800 text-lg font-bold zoom-popup`;
-      popup.appendChild(inner);
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 3500);
+      profileCache.delete(`profile_summary_${user.id}`);
     }
     setSavingTarget(false);
   }
 
   async function calculateStreak() {
     if (!user) return;
-
     const cacheKey = `streak_${user.id}`;
     if (streakCache.has(cacheKey)) {
       const cached = streakCache.get(cacheKey);
@@ -916,10 +969,9 @@ function SimulationAndTriviaSummary({ user }) {
         return;
       }
     }
-
     const today = new Date();
     const day = today.getDay();
-    const diff = (day === 0 ? -6 : 1 - day);
+    const diff = day === 0 ? -6 : 1 - day;
     const monday = new Date(today);
     monday.setDate(today.getDate() + diff);
     monday.setHours(0, 0, 0, 0);
@@ -928,7 +980,6 @@ function SimulationAndTriviaSummary({ user }) {
       .from("simulation_results")
       .select("submitted_at")
       .eq("user_id", user.id);
-
     const { data: trivia } = await supabase
       .from("daily_trivia_results")
       .select("created_at")
@@ -936,12 +987,10 @@ function SimulationAndTriviaSummary({ user }) {
 
     const allDates = [...(sim || []), ...(trivia || [])]
       .map((x) => new Date(x.submitted_at || x.created_at))
-      .map(d => d.toDateString())
-      .filter(dStr => new Date(dStr) >= monday);
+      .map((d) => d.toDateString())
+      .filter((dStr) => new Date(dStr) >= monday);
 
-    const uniqueDays = new Set(allDates);
-    const streakCount = uniqueDays.size;
-
+    const streakCount = new Set(allDates).size;
     setStreak(streakCount);
     streakCache.set(cacheKey, { data: streakCount, timestamp: Date.now() });
   }
@@ -949,7 +998,6 @@ function SimulationAndTriviaSummary({ user }) {
   async function fetchSummary() {
     if (!user || isFetching.current) return;
     isFetching.current = true;
-
     const now = Date.now();
     if (now - lastFetchTime.current < 30000) {
       isFetching.current = false;
@@ -958,17 +1006,17 @@ function SimulationAndTriviaSummary({ user }) {
     lastFetchTime.current = now;
 
     try {
-      const { data: sim, error: simError } = await supabase
+      const { data: sim } = await supabase
         .from("simulation_results")
         .select("score, total_questions")
         .eq("user_id", user.id)
         .order("submitted_at", { ascending: false })
         .limit(50);
 
-      if (simError) throw simError;
-
-      if (sim?.length > 0 && isMounted.current) {
-        const scores = sim.map((r) => Math.round((r.score / r.total_questions) * 100));
+      if (sim && sim.length > 0 && isMounted.current) {
+        const scores = sim.map((r: any) =>
+          Math.round((r.score / r.total_questions) * 100)
+        );
         const summary = {
           attempts: sim.length,
           best: Math.max(...scores),
@@ -987,9 +1035,11 @@ function SimulationAndTriviaSummary({ user }) {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (trivia?.length > 0 && isMounted.current) {
-        const TOTAL_TRIVIA_QUESTIONS = 15;
-        const scores = trivia.map((t) => Math.round((t.score / TOTAL_TRIVIA_QUESTIONS) * 100));
+      if (trivia && trivia.length > 0 && isMounted.current) {
+        const TOTAL_TRIVIA = 15;
+        const scores = trivia.map((t: any) =>
+          Math.round((t.score / TOTAL_TRIVIA) * 100)
+        );
         const summary = {
           attempts: trivia.length,
           best: Math.max(...scores),
@@ -1009,239 +1059,310 @@ function SimulationAndTriviaSummary({ user }) {
     }
   }
 
-  const getMessage = (summary, belowTarget) => {
+  const getMessage = (summary: any, belowTarget: boolean) => {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
     const target = profile?.target_score ?? 50;
 
     if (belowTarget)
       return {
-        text: `Heads up! Your latest score (${latest}%) is below your target of ${target}%. Don't be discouraged every attempt is a chance to learn and improve. Take a moment to review the questions you missed, focus on your weak areas, and try again. You've got this! Keep pushing and you'll reach your goal.`,
+        text: `Heads up — latest score (${latest}%) is below your target of ${target}%. Review what you missed and try again. You've got this.`,
         warning: true,
       };
     if (latest > average)
       return {
-        text: `Nice job! Your latest score (${latest}%) is above your average (${average}%). 🎉 You're improving steadily and on the right track toward your target of ${target}%. Keep this momentum going! 💪`,
-        warning: false
+        text: `Nice — latest score (${latest}%) beat your average (${average}%). You're on track toward ${target}%. Keep the momentum.`,
+        warning: false,
       };
     return {
-      text: `Keep going! Your latest score (${latest}%) is a step in your learning journey. Focus, review, and aim for your target of ${target}%. Every attempt gets you closer — you're capable of reaching it! 🌟`,
-      warning: false
+      text: `Keep going — latest score (${latest}%) is a step toward your ${target}% target. Every attempt gets you closer.`,
+      warning: false,
     };
   };
 
-  const ProgressRing = ({ value }) => {
-    const radius = 45;
-    const circumference = 2 * Math.PI * radius;
-    const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
-    const offset = circumference - (safeValue / 100) * circumference;
-
-    return (
-      <div className="flex justify-center mb-3">
-        <svg width="120" height="120">
-          <circle stroke="#e5e7eb" fill="transparent" strokeWidth="10" r={radius} cx="60" cy="60" />
-          <circle
-            stroke={isBelowTarget ? "#ef4444" : "#3b82f6"}
-            fill="transparent"
-            strokeWidth="10"
-            r={radius}
-            cx="60"
-            cy="60"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 1s ease" }}
-          />
-          <text x="50%" y="52%" dominantBaseline="middle" textAnchor="middle" className="text-xl font-bold" style={{ fill: "currentColor" }}>
-            {safeValue}%
-          </text>
-        </svg>
-      </div>
-    );
-  };
-
   return (
-    <div className="space-y-3 animate-in fade-in duration-500">
-      <div className="flex flex-col lg:flex-row gap-2 items-stretch">
-        <div className="flex-1 flex items-center gap-2 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 shadow-sm">
-          <div className="relative">
+    <div className="space-y-3">
+      {/* Profile + streak row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <div className="flex items-center gap-3 p-3 rounded-2xl
+                        bg-white dark:bg-[#161b22]">
+          <div className="relative shrink-0">
             <img
               src={profile?.avatar_url || "/UsersAvatar.jpg"}
               alt="avatar"
-              className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500/20 p-0.5"
+              className="h-16 w-16 rounded-full object-cover
+                         ring-2 ring-slate-200 dark:ring-white/[0.08]"
               loading="lazy"
             />
-            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-950 rounded-full"></div>
+            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full
+                             bg-emerald-500 ring-2 ring-white dark:ring-[#161b22]" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
-              {profile?.name ? `Hi, ${profile.name.split(' ')[0]}!` : "Welcome back!"}
-            </h1>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Ready for today's challenge?</p>
-          </div>
-        </div>
-
-        <div className="flex-[1.5] flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-blue-600 dark:bg-blue-700 text-white shadow-lg shadow-blue-200 dark:shadow-none">
-          <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/10">
-            <Target className="w-5 h-5 text-blue-100" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold tracking-widest opacity-80">Daily Goal</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={targetInput}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setTargetInput(val > 100 ? 100 : val < 1 ? 1 : val);
-                  }}
-                  className="w-12 bg-transparent border-b border-white/40 focus:border-white outline-none text-sm font-bold text-center"
-                />
-                <span className="text-xs font-bold">%</span>
-                <button
-                  onClick={saveTarget}
-                  disabled={savingTarget}
-                  className="ml-1 p-1 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition active:scale-90"
-                >
-                  {savingTarget ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <span className="text-2xl font-bold">{streak}</span>
-                <Flame className="w-6 h-6 text-orange-400 fill-orange-400 animate-bounce" />
-              </div>
-              <p className="text-[10px] font-bold tracking-tight opacity-80">Day Streak</p>
-            </div>
-            <div className="hidden sm:block w-px h-10 bg-white/20" />
-            <p className="hidden sm:block max-w-[140px] text-[10px] leading-tight opacity-90 font-medium">
-              Don't break the chain! Complete 1 test today.
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
+              {profile?.name ? `Hi, ${profile.name.split(" ")[0]}` : "Welcome"}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+              Ready for today's challenge?
             </p>
           </div>
         </div>
+
+        <div className="rounded-2xl p-3 bg-blue-600 text-white">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Target className="h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider opacity-80">
+                  Daily goal
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={targetInput}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setTargetInput(v > 100 ? 100 : v < 1 ? 1 : v);
+                    }}
+                    className="w-10 bg-transparent border-b border-white/40
+                               focus:border-white outline-none
+                               text-sm font-bold text-center tabular-nums"
+                  />
+                  <span className="text-[11px] font-bold">%</span>
+                  <button
+                    onClick={saveTarget}
+                    disabled={savingTarget}
+                    className="h-6 w-6 rounded-md bg-white text-blue-600
+                               flex items-center justify-center
+                               active:scale-[0.92] transition-transform
+                               disabled:opacity-60"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    {savingTarget ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right shrink-0">
+              <div className="flex items-center justify-end gap-1">
+                <span className="text-xl font-bold tabular-nums">{streak}</span>
+                <Flame className="h-4 w-4 text-orange-300 fill-orange-300" />
+              </div>
+              <p className="text-[9px] font-bold uppercase tracking-wider opacity-80">
+                Day streak
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Summary cards */}
       <div className="grid gap-2 md:grid-cols-2">
-        <Card className="rounded-xl border-0 shadow-xl shadow-gray-200/50 dark:shadow-none bg-white dark:bg-gray-800 overflow-hidden group">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                <Award className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-bold tracking-tight">Mock Simulations</CardTitle>
-                <CardDescription className="text-xs">Full-length NCK/NCLEX Exams</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-4">
-            {!simSummary || simSummary === "empty" ? (
-              <div className="py-10 text-center space-y-3">
-                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-full mx-auto flex items-center justify-center">
-                  <Search className="w-5 h-5 text-gray-300" />
-                </div>
-                <p className="text-sm text-gray-400 font-medium italic">No simulation data yet.</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-center transform group-hover:scale-105 transition-transform duration-500">
-                  <ProgressRing value={simSummary.latest} />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <StatPill label="Best" value={`${simSummary.best}%`} color="text-green-600" />
-                  <StatPill label="Worst" value={`${simSummary.worst}%`} color="text-red-500" />
-                  <StatPill label="Avg" value={`${simSummary.average}%`} color="text-blue-600" />
-                  <StatPill label="Tries" value={simSummary.attempts} color="text-gray-900 dark:text-white" />
-                </div>
-                <div className={`p-4 rounded-2xl text-center text-xs font-bold leading-relaxed border
-                  ${getMessage(simSummary, simLow).warning
-                    ? "bg-red-50 border-red-100 text-red-600 dark:bg-red-900/10 dark:border-red-900/30"
-                    : "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/10 dark:border-blue-900/30"}`}
-                >
-                  {getMessage(simSummary, simLow).text}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border-0 shadow-xl shadow-gray-200/50 dark:shadow-none bg-white dark:bg-gray-800 overflow-hidden group">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-2xl">
-                <Star className="h-6 w-6 text-amber-500 fill-amber-500" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Daily Trivia</CardTitle>
-                <CardDescription className="text-xs">Quick concept check tests</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-4">
-            {!triviaSummary || triviaSummary === "empty" ? (
-              <div className="py-10 text-center space-y-3">
-                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-full mx-auto flex items-center justify-center">
-                  <Search className="w-5 h-5 text-gray-300" />
-                </div>
-                <p className="text-sm text-gray-400 font-medium italic">No trivia attempts yet.</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-center transform group-hover:scale-105 transition-transform duration-500">
-                  <ProgressRing value={triviaSummary.latest} />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <StatPill label="Best" value={`${triviaSummary.best}%`} color="text-green-600" />
-                  <StatPill label="Worst" value={`${triviaSummary.worst}%`} color="text-red-500" />
-                  <StatPill label="Avg" value={`${triviaSummary.average}%`} color="text-blue-600" />
-                  <StatPill label="Tries" value={triviaSummary.attempts} color="text-gray-900 dark:text-white" />
-                </div>
-                <div className={`p-4 rounded-2xl text-center text-xs font-bold border
-                  ${getMessage(triviaSummary, triviaLow).warning
-                    ? "bg-red-50 border-red-100 text-red-600 dark:bg-red-900/10 dark:border-red-900/30"
-                    : "bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-900/10 dark:border-amber-900/30"}`}
-                >
-                  {getMessage(triviaSummary, triviaLow).text}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <SummaryCard
+          tone="blue"
+          icon={<Award className="h-4 w-4" />}
+          title="Mock simulations"
+          subtitle="NCK / NCLEX exams"
+          summary={simSummary}
+          empty="No simulation data yet"
+          emptyBody="Complete a full-length mock to see stats."
+          getMessage={(s) => getMessage(s, simLow)}
+        />
+        <SummaryCard
+          tone="amber"
+          icon={<Star className="h-4 w-4 fill-current" />}
+          title="Daily trivia"
+          subtitle="Quick concept checks"
+          summary={triviaSummary}
+          empty="No trivia attempts yet"
+          emptyBody="Try a 15-question trivia round to start."
+          getMessage={(s) => getMessage(s, triviaLow)}
+        />
       </div>
     </div>
   );
 }
 
-const streakCache = new Map();
+/* ------------------------------------------------------------------ */
+/*  Summary card                                                      */
+/* ------------------------------------------------------------------ */
 
-function StatPill({ label, value, color }: { label: string, value: string | number, color: string }) {
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border-0 text-center">
-      <span className="block text-[9px] font-bold text-gray-400 tracking-tighter">{label}</span>
-      <span className={`text-xs font-bold ${color}`}>{value}</span>
-    </div>
-  );
-}
+function SummaryCard({
+  tone,
+  icon,
+  title,
+  subtitle,
+  summary,
+  empty,
+  emptyBody,
+  getMessage,
+}: {
+  tone: "blue" | "amber";
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  summary: any;
+  empty: string;
+  emptyBody: string;
+  getMessage: (s: any) => { text: string; warning: boolean };
+}) {
+  const tones = {
+    blue: {
+      chip: "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400",
+      ring: "stroke-blue-600 dark:stroke-blue-400",
+      track: "stroke-slate-200 dark:stroke-white/[0.06]",
+    },
+    amber: {
+      chip: "bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400",
+      ring: "stroke-amber-500 dark:stroke-amber-400",
+      track: "stroke-slate-200 dark:stroke-white/[0.06]",
+    },
+  } as const;
+  const t = tones[tone];
 
-function StatCard({ icon, value, label, color, bgColor }: any) {
   return (
-    <Card className="border-0 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
-      <CardContent className="p-4 sm:p-5 flex flex-col items-center text-center">
-        <div className={`p-3 rounded-xl ${bgColor} ${color} mb-3`}>
+    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${t.chip}`}>
           {icon}
         </div>
-        <h4 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-none">
-          {value}
-        </h4>
-        <p className="text-[10px] sm:text-xs font-bold text-gray-400 tracking-tight mt-2">
-          {label}
-        </p>
-      </CardContent>
-    </Card>
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-none mb-1">
+            {subtitle}
+          </p>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
+            {title}
+          </h3>
+        </div>
+      </div>
+
+      {!summary || summary === "empty" ? (
+        <div className="py-6 text-center">
+          <div className="h-10 w-10 rounded-full mx-auto mb-2
+                          bg-slate-100 dark:bg-white/[0.06]
+                          flex items-center justify-center">
+            <Search className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+          </div>
+          <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            {empty}
+          </p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-[220px] mx-auto leading-snug">
+            {emptyBody}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex justify-center">
+            <Ring
+              value={summary.latest}
+              ringClass={t.ring}
+              trackClass={t.track}
+            />
+          </div>
+
+          <div className="grid grid-cols-4 gap-1.5">
+            <Mini label="Best" value={`${summary.best}%`} tone="emerald" />
+            <Mini label="Worst" value={`${summary.worst}%`} tone="rose" />
+            <Mini label="Avg" value={`${summary.average}%`} tone="blue" />
+            <Mini label="Tries" value={summary.attempts} tone="neutral" />
+          </div>
+
+          <div
+            className={`rounded-xl p-3 text-[11px] font-medium leading-relaxed
+              ${getMessage(summary).warning
+                ? "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-300"
+                : "bg-slate-50 dark:bg-[#0d1117] text-slate-600 dark:text-slate-400"
+              }`}
+          >
+            {getMessage(summary).text}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function Ring({
+  value,
+  ringClass,
+  trackClass,
+}: {
+  value: number;
+  ringClass: string;
+  trackClass: string;
+}) {
+  const radius = 45;
+  const circumference = 2 * Math.PI * radius;
+  const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
+  const offset = circumference - (safeValue / 100) * circumference;
+
+  return (
+    <svg width="120" height="120" viewBox="0 0 120 120">
+      <circle
+        className={trackClass}
+        fill="transparent"
+        strokeWidth="10"
+        r={radius}
+        cx="60"
+        cy="60"
+      />
+      <circle
+        className={ringClass}
+        fill="transparent"
+        strokeWidth="10"
+        r={radius}
+        cx="60"
+        cy="60"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform="rotate(-90 60 60)"
+        style={{ transition: "stroke-dashoffset 1s ease" }}
+      />
+      <text
+        x="60"
+        y="66"
+        textAnchor="middle"
+        fontSize="20"
+        fontWeight="700"
+        className="fill-slate-900 dark:fill-white"
+      >
+        {safeValue}%
+      </text>
+    </svg>
+  );
+}
+
+function Mini({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  tone: "emerald" | "rose" | "blue" | "neutral";
+}) {
+  const tones = {
+    emerald: "text-emerald-600 dark:text-emerald-400",
+    rose: "text-rose-600 dark:text-rose-400",
+    blue: "text-blue-600 dark:text-blue-400",
+    neutral: "text-slate-900 dark:text-white",
+  } as const;
+  return (
+    <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-2 text-center">
+      <p className="text-[9px] font-bold uppercase tracking-wider
+                    text-slate-500 dark:text-slate-400 leading-none mb-1">
+        {label}
+      </p>
+      <p className={`text-[11px] font-bold tabular-nums ${tones[tone]}`}>
+        {value}
+      </p>
+    </div>
   );
 }

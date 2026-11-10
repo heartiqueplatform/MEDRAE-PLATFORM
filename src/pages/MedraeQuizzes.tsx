@@ -34,6 +34,7 @@ import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
 import { FloatingCategoryButton } from "@/components/MedraeQuizzes/FloatingCategoryButton";
 import { EmptyState } from "@/components/MedraeQuizzes/EmptyState";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
@@ -581,7 +582,7 @@ export function MedraeQuizzes() {
           onClick={handleBack}
           aria-label="Go back"
           className="flex items-center justify-center h-10 w-10 rounded-full
-        bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+        bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border-none font-bold hover:bg-gray-200 dark:hover:bg-gray-700
         active:scale-95 transition-all touch-manipulation"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -595,8 +596,8 @@ export function MedraeQuizzes() {
       <div
         ref={contentRef}
         className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-        custom-scrollbar overscroll-contain
-        px-0 sm:px-6 md:px-4 lg:px-6"
+          no-scrollbar overscroll-contain
+        px-2 sm:px-6 md:px-4 lg:px-6"
       >
         <div className="w-full max-w-full space-y-2 pb-24 safe-bottom">
           <AnimatePresence>
@@ -860,7 +861,7 @@ export function MedraeQuizzes() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 px-2.5 md:px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                        <div className="flex-shrink-0 px-2.5 md:px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border-none font-bold">
                           <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">
                             {paper.total_questions} Questions
                           </span>
@@ -890,7 +891,12 @@ export function MedraeQuizzes() {
                           return (
                             <React.Fragment key={unit.code}>
                               <Card
-                                className={`group relative overflow-hidden transition-all duration-300 rounded-xl sm:rounded-xl border-0 hover:border-${paper.color}-400 dark:hover:border-${paper.color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer p-0`}
+                                className="group relative overflow-hidden transition-all duration-300
+           rounded-2xl border-0
+           bg-white dark:bg-[#161b22]
+           shadow-sm
+           cursor-pointer p-0
+           active:scale-[0.995]"
 
                                 onClick={() => setSelectedUnit(unit)}
                               >
@@ -902,11 +908,7 @@ export function MedraeQuizzes() {
                                       loading="lazy"
                                       onError={(e) => {
                                         e.currentTarget.style.display = "none";
-                                        e.currentTarget.parentElement?.classList.add(
-                                          "bg-gradient-to-br",
-                                          "from-blue-500",
-                                          "to-blue-700"
-                                        );
+
                                       }}
                                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
@@ -944,7 +946,11 @@ export function MedraeQuizzes() {
                                         <BookOpen className="w-3 h-3" /> READ
                                       </div>
                                     ) : isPremium ? (
-                                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
+                                      <div className="flex items-center gap-1 text-[10px] font-bold
+                px-2 py-1 rounded-lg
+                bg-white/90 dark:bg-[#0d1117]/90
+                backdrop-blur-md
+                text-emerald-700 dark:text-emerald-400">
                                         <CheckCircle2 className="w-3 h-3" /> UNLOCKED
                                       </div>
                                     ) : isUnitFree ? (
@@ -1018,7 +1024,10 @@ export function MedraeQuizzes() {
                                           setBubbleKey(`bd:${unit.code}:hot`);
                                           if (navigator.vibrate) navigator.vibrate(15);
                                         }}
-                                        className="relative inline-flex items-center gap-0.5 text-[10px]   text-orange-600 dark:text-orange-400 px-1.5 py-0.5 -mx-1.5 -my-0.5 rounded-md hover:bg-orange-50 dark:hover:bg-orange-950/30 active:scale-95 transition-all touch-manipulation"
+                                        className="relative inline-flex items-center gap-0.5 text-[10px] font-bold
+           text-orange-600 dark:text-orange-400
+           px-1.5 py-0.5 -mx-1.5 -my-0.5 rounded-md
+           active:scale-95 transition-transform touch-manipulation"
                                         title={`${stats?.recentStarts24h ?? 0} students started this in the last 24h`}
                                         aria-label="Trending hot right now"
                                       >
@@ -1044,7 +1053,7 @@ export function MedraeQuizzes() {
                                     )}
                                     <div className="flex items-center gap-2 flex-wrap">
                                       {!isHelpUnit && (
-                                        <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
+                                        <Badge variant="secondary" className="bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border-none font-bold text-gray-600 dark:text-gray-300 border-none font-bold">
                                           {questionCount} Questions
                                         </Badge>
                                       )}
@@ -1053,7 +1062,7 @@ export function MedraeQuizzes() {
                                           {unit.quiz_type.toUpperCase()}
                                         </span>
                                       )}
-                                      <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold text-[8px] px-1.5 py-0 leading-none h-4">
+                                      <Badge variant="secondary" className="bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border-none font-bold text-gray-600 dark:text-gray-300 border-none font-bold text-[8px] px-1.5 py-0 leading-none h-4">
                                         {unit.code}
                                       </Badge>
                                       <Badge variant={getLevelVariant(unit.level)} className="font-bold border-none">
@@ -1147,95 +1156,76 @@ export function MedraeQuizzes() {
                                       </Button>
                                     )}
                                   </div>
-                                  {/* ✅ ACTION ROW — stars on their own row, then bookmark + share together */}
-                                  <div className="pt-3 mt-1 border-t border-gray-100 dark:border-gray-800">
-                                    {/* RATING ROW — full width, stars centered */}
-                                    <div className="flex flex-col items-center gap-1 mb-3">
-                                      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center">
-                                        {myState?.rating
-                                          ? `You rated this ${myState.rating} ${myState.rating === 1 ? "star" : "stars"} · tap again to clear`
-                                          : "Tap a star to rate this quiz"}
-                                      </p>
-                                      <div className="flex items-center justify-center gap-0.5">
-                                        {[1, 2, 3, 4, 5].map((n) => {
-                                          const filled = (myState?.rating ?? 0) >= n;
-                                          return (
-                                            <button
-                                              key={n}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (!unit.id) return;
 
-                                                const current = withLocal(unit.id).rating ?? 0;
-                                                const nextRating = current === n ? 0 : n;
+                                  {/* ACTIONS ROW — bookmark left, share right, with labels */}
+                                  <div className="flex items-center gap-2 pt-5 mt-1">
+                                    {/* Bookmark */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!unit.id) return;
+                                        setBubbleKey(`bm:${unit.code}`);
+                                        const nextBookmarked = !withLocal(unit.id).bookmarked;
+                                        patchMirror(unit.id, { bookmarked: nextBookmarked });
+                                        toggleBookmark(unit.id);
+                                        if (navigator.vibrate) navigator.vibrate(30);
+                                      }}
+                                      className={`relative flex-1 flex items-center justify-center gap-1.5
+                h-10 rounded-xl
+                text-[11px] font-bold
+                transition-colors
+                active:scale-[0.97]
+                touch-manipulation
+                ${myState?.bookmarked
+                                          ? "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
+                                          : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                                        }`}
+                                      title={myState?.bookmarked ? "Remove bookmark" : "Save for later"}
+                                      aria-label={myState?.bookmarked ? "Remove bookmark" : "Bookmark this quiz"}
+                                    >
+                                      {bubbleKey === `bm:${unit.code}` && (
+                                        <BubblePop color="#10B981" emoji="🔖" />
+                                      )}
+                                      <Bookmark
+                                        size={14}
+                                        fill={myState?.bookmarked ? "currentColor" : "none"}
+                                        className="relative z-10 shrink-0"
+                                      />
+                                      <span className="relative z-10">
+                                        {myState?.bookmarked ? "Saved" : "Save"}
+                                      </span>
+                                    </button>
 
-                                                setBubbleKey(`rt:${unit.code}:${n}`);
-                                                patchMirror(unit.id, { rating: nextRating === 0 ? undefined : nextRating });
-                                                rateQuiz(unit.id, nextRating);
-                                                if (navigator.vibrate) navigator.vibrate(20);
-                                              }}
-                                              className="relative flex items-center justify-center h-9 w-9 rounded-md transition-transform hover:scale-110 active:scale-95 touch-manipulation"
-                                              aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
-                                            >
-                                              {bubbleKey === `rt:${unit.code}:${n}` && <BubblePop color="#F59E0B" emoji="⭐" />}
-                                              <Star
-                                                size={20}
-                                                fill={filled ? "currentColor" : "none"}
-                                                strokeWidth={1.75}
-                                                className={`relative z-10 transition-colors ${filled ? "text-amber-500" : "text-gray-300 dark:text-gray-600"
-                                                  }`}
-                                              />
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-
-                                    {/* ACTIONS ROW — bookmark left, share right */}
-                                    <div className="flex items-center justify-between gap-2">
-                                      {/* Bookmark */}
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (!unit.id) return;
-                                          setBubbleKey(`bm:${unit.code}`);
-                                          const nextBookmarked = !(withLocal(unit.id).bookmarked);
-                                          patchMirror(unit.id, { bookmarked: nextBookmarked });
-                                          toggleBookmark(unit.id);
-                                          if (navigator.vibrate) navigator.vibrate(30);
-                                        }}
-                                        className={`relative flex items-center justify-center h-10 w-10 rounded-xl transition-colors touch-manipulation active:scale-95 ${myState?.bookmarked
-                                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
-                                          : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                          }`}
-                                        title={myState?.bookmarked ? "Bookmarked — tap to remove" : "Save for later"}
-                                        aria-label={myState?.bookmarked ? "Remove bookmark" : "Bookmark this quiz"}
-                                      >
-                                        {bubbleKey === `bm:${unit.code}` && <BubblePop color="#10B981" emoji="🔖" />}
-                                        <Bookmark size={20} fill={myState?.bookmarked ? "currentColor" : "none"} className="relative z-10" />
-                                      </button>
-
-                                      {/* Share */}
-                                      <button
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          const url = `${window.location.origin}/quiz?unit=${encodeURIComponent(unit.title)}`;
-                                          try {
-                                            if (navigator.share) {
-                                              await navigator.share({ title: unit.title, url });
-                                            } else {
-                                              await navigator.clipboard.writeText(url);
-                                            }
-                                            if (unit.id) reportShare(unit.id);
-                                          } catch { /* user cancelled */ }
-                                        }}
-                                        className="relative flex items-center justify-center h-10 w-10 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors touch-manipulation active:scale-95"
-                                        title="Share this unit"
-                                        aria-label="Share this quiz"
-                                      >
-                                        <Share2 size={20} />
-                                      </button>
-                                    </div>
+                                    {/* Share */}
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const url = `${window.location.origin}/quiz?unit=${encodeURIComponent(unit.title)}`;
+                                        try {
+                                          if (navigator.share) {
+                                            await navigator.share({ title: unit.title, url });
+                                          } else {
+                                            await navigator.clipboard.writeText(url);
+                                          }
+                                          if (unit.id) reportShare(unit.id);
+                                        } catch {
+                                          /* user cancelled */
+                                        }
+                                      }}
+                                      className="flex-1 flex items-center justify-center gap-1.5
+               h-10 rounded-xl
+               text-[11px] font-bold
+               bg-slate-100 dark:bg-white/[0.06]
+               text-slate-600 dark:text-slate-300
+               active:scale-[0.97]
+               transition-transform
+               touch-manipulation"
+                                      title="Share this unit"
+                                      aria-label="Share this quiz"
+                                    >
+                                      <Share2 size={14} className="shrink-0" />
+                                      <span>Share</span>
+                                    </button>
                                   </div>
                                 </CardContent>
                               </Card>
@@ -1299,233 +1289,229 @@ export function MedraeQuizzes() {
               </div>
             </CardContent>
           </Card>
-
-          {/* DETAILS MODAL */}
-          <AnimatePresence>
+          {/* DETAILS MODAL — CenteredModal */}
+          <CenteredModal
+            open={!!selectedUnit}
+            onClose={() => setSelectedUnit(null)}
+            title={selectedUnit?.title ?? "Unit details"}
+            maxWidthClass="max-w-md"
+            maxHeight="90vh"
+          >
             {selectedUnit && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[999999999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
-                onClick={() => setSelectedUnit(null)}
-              >
-                <motion.div
-                  initial={{ y: 100, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 100, opacity: 0 }}
-                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                  className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="relative h-44 w-full overflow-hidden flex-shrink-0">
-                    {selectedUnit.image_url ? (
-                      <img
-                        src={selectedUnit.image_url}
-                        alt={selectedUnit.image_alt ?? selectedUnit.title}
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className={`h-full w-full bg-gradient-to-br ${getAccentGradient(selectedUnit.accent_color)} flex items-center justify-center`}>
-                        <BookOpen className="w-16 h-16 text-white/60" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="px-4 pb-4 space-y-3">
 
-                    <button
-                      onClick={() => setSelectedUnit(null)}
-                      className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full transition-colors"
-                    >
-                      <X className="w-5 h-5 text-white" />
-                    </button>
-
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">
-                        {selectedUnit.code}
-                      </p>
-                      <h3 className="text-lg font-bold text-white leading-tight">
-                        {selectedUnit.title}
-                      </h3>
-                    </div>
+                {/* Description */}
+                {selectedUnit.description && (
+                  <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {selectedUnit.description}
+                    </p>
                   </div>
+                )}
 
-                  <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-                    {selectedUnit.description && (
-                      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {selectedUnit.description}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                        <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
-                        Details
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedUnit.topic && (
-                          <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-2.5">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-800/30 flex items-center justify-center flex-shrink-0">
-                              <Tag className="w-4 h-4 text-blue-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-medium text-gray-400 uppercase">Topic</p>
-                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{selectedUnit.topic}</p>
-                            </div>
-                          </div>
-                        )}
-                        {selectedUnit.course && (
-                          <div className="flex items-center gap-3 bg-green-50 dark:bg-green-900/20 rounded-xl px-3 py-2.5">
-                            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/30 flex items-center justify-center flex-shrink-0">
-                              <BookMarked className="w-4 h-4 text-green-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-medium text-gray-400 uppercase">Course</p>
-                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{selectedUnit.course}</p>
-                            </div>
-                          </div>
-                        )}
-                        {selectedUnit.block && (
-                          <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl px-3 py-2.5">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-800/30 flex items-center justify-center flex-shrink-0">
-                              <Layers className="w-4 h-4 text-purple-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-medium text-gray-400 uppercase">Block</p>
-                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Block {selectedUnit.block}</p>
-                            </div>
-                          </div>
-                        )}
-                        {selectedUnit.unit && (
-                          <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2.5">
-                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-800/30 flex items-center justify-center flex-shrink-0">
-                              <BookOpen className="w-4 h-4 text-amber-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-medium text-gray-400 uppercase">Unit</p>
-                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Unit {selectedUnit.unit}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 pt-2">
-                        <Badge variant={getLevelVariant(selectedUnit.level)} className="font-bold px-3 py-1.5 text-xs">
-                          {selectedUnit.level}
-                        </Badge>
-                        {selectedUnit.paperNumber !== 6 && (
-                          <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold px-3 py-1.5 text-xs">
-                            {getQuestionCount(selectedUnit.code)} Questions
-                          </Badge>
-                        )}
-                        {selectedUnit.quiz_type && (
-                          <Badge className={`${getQuizTypeColor(selectedUnit.quiz_type)} font-bold px-3 py-1.5 text-xs`}>
-                            {selectedUnit.quiz_type.toUpperCase()}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {selectedUnit.id && (
-                        <div className="pt-2">
-                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-                            How hard was this?
-                          </p>
-                          <div className="flex gap-2">
-                            {[
-                              { key: "easy" as const, label: "Too Easy", emoji: "😌", color: "#10B981" },
-                              { key: "ok" as const, label: "Just Right", emoji: "🎯", color: "#3B82F6" },
-                              { key: "hard" as const, label: "Tough", emoji: "🔥", color: "#EA580C" },
-                            ].map(({ key, label, emoji, color }) => {
-                              const selected = withLocal(selectedUnit.id!).difficultyVote === key;
-                              const isBubbling = difficultyBubble === key;
-
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => {
-                                    // haptic: stronger for a "commit" gesture
-                                    if (navigator.vibrate) navigator.vibrate([20, 30, 40]);
-                                    setDifficultyBubble(key);
-                                    patchMirror(selectedUnit.id!, { difficultyVote: key });
-                                    voteDifficulty(selectedUnit.id!, key);
-                                  }}
-                                  className={`relative flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-2 overflow-visible active:scale-95 ${selected
-                                    ? "bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-700 dark:text-blue-300"
-                                    : "bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700"
-                                    }`}
-                                >
-                                  {isBubbling && <BubblePop color={color} emoji={emoji} />}
-
-                                  <motion.span
-                                    key={selected ? "on" : "off"}
-                                    initial={{ scale: 1 }}
-                                    animate={isBubbling ? { scale: [1, 1.35, 1] } : { scale: 1 }}
-                                    transition={{ duration: 0.35 }}
-                                    className="relative z-10 block text-base mb-0.5"
-                                  >
-                                    {emoji}
-                                  </motion.span>
-
-                                  <span className="relative z-10">{label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                {/* Details grid */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedUnit.topic && (
+                      <div className="flex items-center gap-2.5 rounded-xl bg-blue-50 dark:bg-blue-400/10 px-3 py-2.5">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-400/[0.12] flex items-center justify-center shrink-0">
+                          <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </div>
-                      )}
-                    </div>
-
-                    {selectedUnit.paperNumber === 6 ? (
-                      <button
-                        onClick={() => {
-                          setSelectedUnit(null);
-                          playSound("tap");
-                          if (navigator.vibrate) navigator.vibrate(50);
-                          navigate(`/guide?unit=${encodeURIComponent(selectedUnit.code)}`);
-                        }}
-                        className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30"
-                      >
-                        <BookOpen className="w-4 h-4" />
-                        Read Guide
-                      </button>
-                    ) : (isPremium || freeUnits.includes(selectedUnit.code?.trim() || "") || selectedUnit.is_free) ? (
-                      <button
-                        onClick={() => {
-                          setSelectedUnit(null);
-                          markUnitStarted(selectedUnit.code);
-                          playSound("start");
-                          if (navigator.vibrate) navigator.vibrate(50);
-                          navigate(`/quiz?unit=${encodeURIComponent(selectedUnit.title)}`);
-                        }}
-                        className={`w-full py-3.5 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg
-                      ${selectedUnit.paperNumber === 1.5
-                            ? "bg-sky-500 hover:bg-sky-600 shadow-sky-500/30"
-                            : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-blue-500/30"
-                          }`}
-                      >
-                        {selectedUnit.paperNumber === 1.5
-                          ? <Sparkles className="w-4 h-4" />
-                          : <Play className="w-4 h-4 fill-current" />}
-                        {selectedUnit.paperNumber === 1.5 ? "Take a Break" : "Start Quiz"}
-                      </button>
-                    ) : (
-                      <button
-                        className="w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
-                        disabled
-                      >
-                        <Lock className="w-4 h-4" />
-                        Premium Content
-                      </button>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Topic
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {selectedUnit.topic}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedUnit.course && (
+                      <div className="flex items-center gap-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-400/10 px-3 py-2.5">
+                        <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-400/[0.12] flex items-center justify-center shrink-0">
+                          <BookMarked className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Course
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {selectedUnit.course}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedUnit.block && (
+                      <div className="flex items-center gap-2.5 rounded-xl bg-violet-50 dark:bg-violet-400/10 px-3 py-2.5">
+                        <div className="h-8 w-8 rounded-full bg-violet-100 dark:bg-violet-400/[0.12] flex items-center justify-center shrink-0">
+                          <Layers className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Block
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 dark:text-white">
+                            Block {selectedUnit.block}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedUnit.unit && (
+                      <div className="flex items-center gap-2.5 rounded-xl bg-amber-50 dark:bg-amber-400/10 px-3 py-2.5">
+                        <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-400/[0.12] flex items-center justify-center shrink-0">
+                          <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Unit
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 dark:text-white">
+                            Unit {selectedUnit.unit}
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+
+                {/* Badges row */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant={getLevelVariant(selectedUnit.level)} className="font-bold">
+                    {selectedUnit.level}
+                  </Badge>
+                  {selectedUnit.paperNumber !== 6 && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border-none font-bold"
+                    >
+                      {getQuestionCount(selectedUnit.code)} Questions
+                    </Badge>
+                  )}
+                  {selectedUnit.quiz_type && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getQuizTypeColor(selectedUnit.quiz_type)}`}
+                    >
+                      {selectedUnit.quiz_type.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {/* Difficulty vote */}
+                {selectedUnit.id && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                      How hard was this?
+                    </p>
+                    <div className="flex gap-2">
+                      {[
+                        { key: "easy" as const, label: "Too Easy", emoji: "😌", color: "#10B981" },
+                        { key: "ok" as const, label: "Just Right", emoji: "🎯", color: "#3B82F6" },
+                        { key: "hard" as const, label: "Tough", emoji: "🔥", color: "#EA580C" },
+                      ].map(({ key, label, emoji, color }) => {
+                        const selected =
+                          withLocal(selectedUnit.id!).difficultyVote === key;
+                        const isBubbling = difficultyBubble === key;
+
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              if (navigator.vibrate) navigator.vibrate([20, 30, 40]);
+                              setDifficultyBubble(key);
+                              patchMirror(selectedUnit.id!, { difficultyVote: key });
+                              voteDifficulty(selectedUnit.id!, key);
+                            }}
+                            className={`relative flex-1 py-2.5 rounded-xl text-xs font-bold transition-all overflow-visible active:scale-[0.97] ${selected
+                              ? "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-300"
+                              : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                              }`}
+                            style={{ touchAction: "manipulation" }}
+                          >
+                            {isBubbling && <BubblePop color={color} emoji={emoji} />}
+                            <motion.span
+                              key={selected ? "on" : "off"}
+                              initial={{ scale: 1 }}
+                              animate={
+                                isBubbling ? { scale: [1, 1.35, 1] } : { scale: 1 }
+                              }
+                              transition={{ duration: 0.35 }}
+                              className="relative z-10 block text-base mb-0.5"
+                            >
+                              {emoji}
+                            </motion.span>
+                            <span className="relative z-10">{label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* CTA */}
+                {selectedUnit.paperNumber === 6 ? (
+                  <button
+                    onClick={() => {
+                      setSelectedUnit(null);
+                      playSound("tap");
+                      if (navigator.vibrate) navigator.vibrate(50);
+                      navigate(`/guide?unit=${encodeURIComponent(selectedUnit.code)}`);
+                    }}
+                    className="w-full h-11 rounded-xl bg-amber-500 text-white
+                     text-sm font-bold
+                     active:scale-[0.97] transition-transform
+                     flex items-center justify-center gap-2"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Read guide
+                  </button>
+                ) : isPremium ||
+                  freeUnits.includes(selectedUnit.code?.trim() || "") ||
+                  selectedUnit.is_free ? (
+                  <button
+                    onClick={() => {
+                      setSelectedUnit(null);
+                      markUnitStarted(selectedUnit.code);
+                      playSound("start");
+                      if (navigator.vibrate) navigator.vibrate(50);
+                      navigate(`/quiz?unit=${encodeURIComponent(selectedUnit.title)}`);
+                    }}
+                    className={`w-full h-11 rounded-xl text-white
+                     text-sm font-bold
+                     active:scale-[0.97] transition-transform
+                     flex items-center justify-center gap-2
+                     ${selectedUnit.paperNumber === 1.5
+                        ? "bg-sky-600"
+                        : "bg-blue-600"
+                      }`}
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    {selectedUnit.paperNumber === 1.5 ? (
+                      <Sparkles className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4 fill-current" />
+                    )}
+                    {selectedUnit.paperNumber === 1.5 ? "Take a break" : "Start quiz"}
+                  </button>
+                ) : (
+                  <button
+                    className="w-full h-11 rounded-xl bg-slate-100 dark:bg-white/[0.06]
+                     text-slate-400 dark:text-slate-500
+                     text-sm font-bold cursor-not-allowed
+                     flex items-center justify-center gap-2"
+                    disabled
+                  >
+                    <Lock className="h-4 w-4" />
+                    Premium content
+                  </button>
+                )}
+              </div>
             )}
-          </AnimatePresence>
+          </CenteredModal>
 
           <div className="pt-2 px-4 md:px-0 flex justify-center">
             <TermsButton className="w-full" />

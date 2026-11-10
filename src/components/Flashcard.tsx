@@ -169,8 +169,8 @@ function fireCounterRpc(rpcName: string, cardId: string): void {
 // ============================================================
 // SUBCOMPONENTS
 // ============================================================
-const FlashcardFooter = memo(function FlashcardFooter({
-    views, likes, saves, saved, liked, reported, isMobile, theme,
+const FlashcardFooterNew = memo(function FlashcardFooterNew({
+    views, likes, saves, saved, liked, reported, themePrimary,
     onSave, onLike, onReport,
 }: {
     views: number;
@@ -179,41 +179,35 @@ const FlashcardFooter = memo(function FlashcardFooter({
     saved: boolean;
     liked: boolean;
     reported: boolean;
-    isMobile: boolean;
-    theme: CardTheme;
+    themePrimary: string;
     onSave: () => void;
     onLike: () => void;
     onReport: () => void;
 }) {
-    // Each action is a compact pill: icon + count, like MicroCaseCard.
-    // Two visual states:
-    //   - INACTIVE: translucent dark pill, white icon + white count
-    //   - ACTIVE:   solid theme-colored pill (or amber/rose for save/report)
-    const pillBase =
-        "flex items-center justify-center gap-1 sm:gap-1.5 " +
-        "h-9 sm:h-10 px-2 sm:px-3 rounded-full " +
-        "text-[11px] sm:text-xs font-bold whitespace-nowrap " +
-        "transition-all active:scale-95 " +
-        "border border-white/25 shadow-sm backdrop-blur-sm " +
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
-    const idleBg = "rgba(0,0,0,0.38)";
-    const iconSize = isMobile ? 14 : 16;
+    const base =
+        "flex items-center justify-center gap-1.5 " +
+        "h-9 px-3 rounded-full " +
+        "text-[11px] font-bold whitespace-nowrap " +
+        "transition-transform active:scale-[0.97] " +
+        "focus-visible:outline-none";
+
+    const idleBg = "bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200";
 
     return (
-        <div className="flex items-center justify-between gap-1.5 sm:gap-3 w-full">
-            {/* Left group — Like · Save · Report, each with its count */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2 w-full">
+            <div className="flex items-center gap-1.5">
                 <button
                     onClick={onLike}
-                    className={pillBase}
-                    style={{
-                        background: liked ? theme.primary : idleBg,
-                        color: "#fff",
-                    }}
+                    className={`${base} ${liked ? "" : idleBg}`}
+                    style={
+                        liked
+                            ? { background: themePrimary, color: "#fff" }
+                            : undefined
+                    }
                     aria-label="Like"
                 >
                     <ThumbsUp
-                        size={iconSize}
+                        size={14}
                         fill={liked ? "currentColor" : "none"}
                     />
                     <span className="tabular-nums">{likes}</span>
@@ -221,15 +215,16 @@ const FlashcardFooter = memo(function FlashcardFooter({
 
                 <button
                     onClick={onSave}
-                    className={pillBase}
-                    style={{
-                        background: saved ? "#f59e0b" : idleBg,
-                        color: "#fff",
-                    }}
+                    className={`${base} ${saved ? "" : idleBg}`}
+                    style={
+                        saved
+                            ? { background: "#f59e0b", color: "#fff" }
+                            : undefined
+                    }
                     aria-label="Save"
                 >
                     <Bookmark
-                        size={iconSize}
+                        size={14}
                         fill={saved ? "currentColor" : "none"}
                     />
                     <span className="tabular-nums">{saves}</span>
@@ -237,27 +232,28 @@ const FlashcardFooter = memo(function FlashcardFooter({
 
                 <button
                     onClick={onReport}
-                    className={pillBase}
-                    style={{
-                        background: reported ? "#e11d48" : idleBg,
-                        color: "#fff",
-                    }}
+                    className={`${base} ${reported ? "" : idleBg}`}
+                    style={
+                        reported
+                            ? { background: "#e11d48", color: "#fff" }
+                            : undefined
+                    }
                     aria-label="Report"
                 >
                     <Flag
-                        size={iconSize}
+                        size={14}
                         fill={reported ? "currentColor" : "none"}
                     />
                 </button>
             </div>
 
-            {/* Right side — view count only */}
             <div
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-9 sm:h-10 rounded-full flex-shrink-0 border border-white/25 shadow-sm backdrop-blur-sm"
-                style={{ background: idleBg, color: "#fff" }}
+                className="flex items-center gap-1.5 px-3 h-9 rounded-full
+                           bg-slate-100 dark:bg-white/[0.06]
+                           text-slate-700 dark:text-slate-200"
             >
-                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="text-[11px] sm:text-xs font-bold tabular-nums">
+                <Eye className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold tabular-nums">
                     {views}
                 </span>
             </div>
@@ -438,7 +434,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
     // ── Skeleton — neutral, no theme color ─────────────────
     const LoadingSkeleton = useMemo(
         () => (
-            <div className="w-full min-h-[400px] rounded-2xl overflow-hidden shadow-lg bg-card border border-border animate-pulse">
+            <div className="w-full min-h-[400px] rounded-none overflow-hidden shadow-lg bg-card border border-border animate-pulse">
                 <div className="h-1.5 w-full bg-muted" />
                 <div className="pt-5 pb-3">
                     <div className="flex items-center gap-3 mb-3 px-4">
@@ -589,7 +585,7 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
 
     if (noCard || !card) {
         return (
-            <div className="w-full py-10 rounded-2xl bg-muted border border-border">
+            <div className="w-full py-10 rounded-none bg-muted border border-border">
                 <p className="text-center text-muted-foreground font-semibold">
                     {noCard ? "You've reviewed every flashcard — more coming soon!" : "No flashcard available"}
                 </p>
@@ -600,66 +596,73 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
     return (
         <>
             {/* 🔥 Shell — per-unit gradient */}
-            <article className="w-full relative rounded-2xl overflow-hidden shadow-xl"
-                style={{ background: theme.gradient }}>
-                <div className="absolute inset-0 opacity-[0.07] pointer-events-none"
-                    style={{
-                        backgroundImage: `radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)`,
-                        backgroundSize: "18px 18px",
-                    }} />
-                <div className="h-1.5 w-full relative z-10" style={{ background: theme.deep }} />
-
-                <header className="pt-5 pb-3 relative z-10">
-                    <div className="flex items-start gap-3 px-4">
-                        <div className="p-2.5 rounded-xl flex-shrink-0 shadow-sm"
-                            style={{ background: "rgba(255,255,255,0.22)", color: "#fff" }}>
-                            <UnitIcon className="w-5 h-5" />
+            <article
+                className="w-full relative rounded-none overflow-hidden
+                           bg-white dark:bg-[#161b22]
+                           shadow-sm"
+            >
+                {/* Header */}
+                <header className="pt-4 pb-3 px-4 border-b border-slate-100 dark:border-white/[0.04]">
+                    <div className="flex items-start gap-3">
+                        {/* Unit icon chip — carries the color identity */}
+                        <div
+                            className="p-2 rounded-xl flex-shrink-0"
+                            style={{
+                                background: `${theme.primary}1a`,
+                                color: theme.primary,
+                            }}
+                        >
+                            <UnitIcon className="w-4 h-4" />
                         </div>
+
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-[10px]   uppercase tracking-[0.25em] text-white/80 leading-none mb-1.5">
-                                {card.related_unit || theme.name} · {card.type.replace(/_/g, " ")}
-                            </h2>
+                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                          text-slate-500 dark:text-slate-400 leading-none mb-1">
+                                {card.related_unit || theme.name} ·{" "}
+                                {card.type.replace(/_/g, " ")}
+                            </p>
                             {card.title && (
-                                <h3 className="text-lg sm:text-xl font-extrabold text-white leading-snug drop-shadow-sm">
+                                <h3 className="text-base sm:text-lg font-bold
+                                               text-slate-900 dark:text-white leading-snug">
                                     {card.title}
                                 </h3>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mt-3 px-4">
+                    {/* Difficulty + unit badges */}
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                         {card.difficulty && (
-                            <span className={`text-[9px] uppercase   px-2 py-0.5 rounded-md backdrop-blur-sm
-                                ${card.difficulty.toLowerCase() === "hard"
-                                    ? "bg-red-500/40 text-red-50"
-                                    : card.difficulty.toLowerCase() === "medium"
-                                        ? "bg-amber-400/40 text-amber-50"
-                                        : "bg-green-500/40 text-green-50"}`}>
+                            <span
+                                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                                    ${card.difficulty.toLowerCase() === "hard"
+                                        ? "bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300"
+                                        : card.difficulty.toLowerCase() === "medium"
+                                            ? "bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300"
+                                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                                    }`}
+                            >
                                 {card.difficulty}
                             </span>
                         )}
-                        <span className="bg-white/20 backdrop-blur-sm text-white font-bold text-[10px] px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                                         bg-slate-100 text-slate-600
+                                         dark:bg-white/[0.06] dark:text-slate-300">
                             {card.related_unit || "General"}
                         </span>
                     </div>
                 </header>
 
-                {/* 🔥 Body — themed paper panel with colored spine */}
-                <div className="relative z-10 mx-3 mb-3 rounded-xl overflow-hidden shadow-inner"
-                    style={{ background: paperBg }}>
-                    <div className="flex">
-                        <div className="w-1.5 flex-shrink-0" style={{ background: theme.primary }} />
-                        <div className="flex-1 px-4 py-4 space-y-1">
-                            {renderStyledText(card.text)}
-                        </div>
-                    </div>
+                {/* Body — flat inner panel, no paper, no spine */}
+                <div className="px-4 py-4">
+                    <div className="space-y-1">{renderStyledText(card.text)}</div>
 
                     {card.image_url && (
-                        <div className="w-full border-t" style={{ borderColor: `${theme.primary}22` }}>
+                        <div className="mt-4 rounded-xl overflow-hidden border border-slate-100 dark:border-white/[0.04]">
                             <img
                                 src={card.image_url}
                                 alt="Study reference"
-                                className="w-full h-auto max-h-80 object-contain bg-white dark:bg-gray-900"
+                                className="w-full h-auto max-h-80 object-contain bg-slate-50 dark:bg-[#0d1117]"
                                 loading="lazy"
                                 decoding="async"
                             />
@@ -667,29 +670,44 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                     )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-px mx-3 mb-3 rounded-lg overflow-hidden relative z-10"
-                    style={{ background: "rgba(255,255,255,0.12)" }}>
-                    <div className="flex items-center gap-2 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
-                        <Activity className="w-4 h-4 text-white/80 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                            <p className="text-[8px] uppercase   text-white/60">Exam Priority</p>
-                            <p className="text-[11px] font-bold text-white truncate">{card.exam_relevance || "Standard"}</p>
+                {/* Meta row — 2 columns, neutral, no dark cells */}
+                <div className="grid grid-cols-2 gap-2 mx-4 mb-3">
+                    <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-2.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <Activity className="w-3 h-3 text-slate-400" />
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                Exam priority
+                            </p>
                         </div>
+                        <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                            {card.exam_relevance || "Standard"}
+                        </p>
                     </div>
-                    <div className="flex items-center gap-2 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
-                        <ImageIcon className="w-4 h-4 text-white/80 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                            <p className="text-[8px] uppercase   text-white/60">Reference</p>
-                            <p className="text-[11px] font-bold text-white truncate">{card.source || "Verified"}</p>
+                    <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-2.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <ImageIcon className="w-3 h-3 text-slate-400" />
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                Reference
+                            </p>
                         </div>
+                        <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                            {card.source || "Verified"}
+                        </p>
                     </div>
                 </div>
 
+                {/* Tags */}
                 {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 px-4 pb-2 relative z-10">
+                    <div className="flex flex-wrap gap-1.5 px-4 pb-3">
                         {tags.map((tag) => (
-                            <span key={tag}
-                                className="flex items-center gap-1 text-[10px] font-bold text-white bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full uppercase">
+                            <span
+                                key={tag}
+                                className="inline-flex items-center gap-1
+                                           text-[10px] font-bold uppercase tracking-wider
+                                           px-2 py-0.5 rounded-full
+                                           bg-slate-100 text-slate-600
+                                           dark:bg-white/[0.06] dark:text-slate-300"
+                            >
                                 <Hash className="w-2.5 h-2.5" />
                                 {tag.trim()}
                             </span>
@@ -697,30 +715,24 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                     </div>
                 )}
 
-                {/* Footer with dark scrim */}
-                <footer className="py-3 mt-1 relative z-10"
-                    style={{
-                        background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 100%)",
-                    }}>
-                    <div className="px-4">
-                        <FlashcardFooter
-                            views={card.views_count}
-                            likes={card.likes_count}
-                            saves={card.saves_count}
-                            saved={saved}
-                            liked={liked}
-                            reported={reported}
-                            isMobile={isMobile}
-                            theme={theme}
-                            onSave={handleSave}
-                            onLike={handleLike}
-                            onReport={() =>
-                                reported
-                                    ? fetchAndViewReportReason()
-                                    : setShowReportDialog(true)
-                            }
-                        />
-                    </div>
+                {/* Footer — flat, no scrim, no colored pills */}
+                <footer className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.04]">
+                    <FlashcardFooterNew
+                        views={card.views_count}
+                        likes={card.likes_count}
+                        saves={card.saves_count}
+                        saved={saved}
+                        liked={liked}
+                        reported={reported}
+                        themePrimary={theme.primary}
+                        onSave={handleSave}
+                        onLike={handleLike}
+                        onReport={() =>
+                            reported
+                                ? fetchAndViewReportReason()
+                                : setShowReportDialog(true)
+                        }
+                    />
                 </footer>
             </article>
 

@@ -4,7 +4,7 @@ import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { Toaster } from "@/components/ui/toaster";
 import { Outlet } from "react-router-dom";
-import { MedicalDoodles } from "@/components/MedicalDoodles";
+
 import { useEffect, useState, useRef, useCallback, memo, lazy, Suspense } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -111,7 +111,6 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
   }, []);
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-full overflow-hidden bg-background selection:bg-primary/30">
-      <MedicalDoodles className="-z-10 pointer-events-none" />
 
       <div className="relative z-10 flex w-full h-full">
         <AppSidebar userRole={role} className="flex-shrink-0" />
@@ -125,7 +124,9 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
             className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar outline-none"
           >
             <div className="flex flex-col min-h-full">
-              <div className="flex-1 pt-4 px-0 md:px-4 lg:px-6">
+              {/* 🍼 PHONE: zero top gap, zero side padding (native WhatsApp feel).
+    DESKTOP: keep the breathing room. */}
+              <div className="flex-1 pt-0 md:pt-4 px-0 md:px-4 lg:px-6">
                 <TabStack />
               </div>
               {/* Only reserve footer space when the footer actually shows */}

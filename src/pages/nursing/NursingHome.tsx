@@ -1,24 +1,33 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     BookOpen,
     GraduationCap,
     HeartPulse,
     ChevronRight,
+    ChevronLeft,
     Sparkles,
     Stethoscope,
     Zap,
     BarChart3,
-    TrendingUp,
-    Trophy,
-    Clock,
-    Target,
+    Search,
 } from "lucide-react";
-import { getYears } from "@/lib/nursingQueries";
+import { getYears, getUserYearProgress, UserYearProgress } from "@/lib/nursingQueries";
 import { useSession } from "@supabase/auth-helpers-react";
 import { academicProgress } from "@/lib/academicProgress";
-import { playSound } from "@/lib/soundManager"; // Import sound manager
-import { TermsButton } from "@/components/ui/TermsButton";
+import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  GitHub dark palette constants                                      */
+/* ------------------------------------------------------------------ */
+const GH_PAGE = "#0d1117";
+const GH_CARD = "#161b22";
+const GH_BORDER = "rgba(255,255,255,0.06)";
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
 const withTimeout = <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
     let settled = false;
     return new Promise<T>((resolve, reject) => {
@@ -43,41 +52,116 @@ const withTimeout = <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
     });
 };
 
-const vibrate = (pattern: number | number[] = 35) => {
+const vibrate = (pattern: number | number[] = 20) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(pattern);
     }
 };
 
-// Tap feedback with sound + vibration
-const tapFeedback = (type: "light" | "success" | "warning" = "light") => {
+const tap = (type: "light" | "success" = "light") => {
     playSound("ui-tap");
-    if (type === "success") {
-        vibrate([30, 40, 30]);
-    } else if (type === "warning") {
-        vibrate(100);
-    } else {
-        vibrate(35);
-    }
+    vibrate(type === "success" ? [20, 30, 20] : 15);
 };
+
+function formatNumberWithImpact(num: number): string {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "k";
+    return num.toString();
+}
+
+/* ------------------------------------------------------------------ */
+/*  MiniPie — real progress donut                                      */
+/*  Fills as user answers questions in that year.                      */
+/* ------------------------------------------------------------------ */
+
+function MiniPie({
+    answered,
+    total,
+    size = 44,
+    stroke = 5,
+}: {
+    answered: number;
+    total: number;
+    size?: number;
+    stroke?: number;
+}) {
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+
+    const safeTotal = total > 0 ? total : 1;
+    const pct = Math.min(1, Math.max(0, answered / safeTotal));
+    const dash = pct * circumference;
+
+    const label =
+        answered >= 1000000
+            ? `${(answered / 1000000).toFixed(0)}M`
+            : answered >= 1000
+                ? `${(answered / 1000).toFixed(0)}k`
+                : `${answered}`;
+
+    const ringColorClass =
+        answered === 0
+            ? "stroke-slate-300 dark:stroke-white/[0.15]"
+            : "stroke-emerald-500";
+
+    return (
+        <div className="relative shrink-0" style={{ width: size, height: size }}>
+            <svg
+                width={size}
+                height={size}
+                viewBox={`0 0 ${size} ${size}`}
+                className="-rotate-90"
+                aria-hidden="true"
+            >
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    fill="none"
+                    strokeWidth={stroke}
+                    className="stroke-slate-200 dark:stroke-white/[0.08]"
+                />
+                {answered > 0 && (
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        strokeWidth={stroke}
+                        strokeLinecap="round"
+                        strokeDasharray={`${dash} ${circumference}`}
+                        className={`${ringColorClass} transition-[stroke-dasharray] duration-500`}
+                    />
+                )}
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+                <span
+                    className={`text-[9px] font-bold tabular-nums leading-none ${answered === 0
+                        ? "text-slate-400 dark:text-slate-500"
+                        : "text-slate-900 dark:text-white"
+                        }`}
+                >
+                    {label}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Skeletons                                                          */
+/* ------------------------------------------------------------------ */
 
 function YearCardSkeleton() {
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur dark:bg-muted/30">
-            <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
-            <div className="relative flex items-start justify-between gap-3 md:gap-4">
-                <div>
-                    <div className="mb-3 md:mb-4 h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                    <div className="h-6 md:h-7 w-28 md:w-32 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse mb-1.5 md:mb-2" />
-                    <div className="space-y-1.5 md:space-y-2">
-                        <div className="h-3.5 md:h-4 w-36 md:w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                        <div className="h-3.5 md:h-4 w-44 md:w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                    </div>
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#161b22] p-4">
+            <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-slate-200 dark:bg-white/[0.06] animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                    <div className="h-3 w-32 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
                 </div>
-                <div className="mt-1 h-8 w-8 md:h-9 md:w-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            </div>
-            <div className="relative mt-4 md:mt-5 h-1.5 md:h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div className="h-full rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse" style={{ width: "60%" }} />
+                <div className="h-11 w-11 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse shrink-0" />
             </div>
         </div>
     );
@@ -85,26 +169,23 @@ function YearCardSkeleton() {
 
 function StatsSkeleton() {
     return (
-        <div className="flex items-center gap-1 md:gap-1.5 bg-white/70 p-1 md:p-1.5 rounded-lg md:rounded-2xl backdrop-blur dark:bg-white/5">
+        <div className="grid grid-cols-3 gap-2">
             {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-1 md:gap-1.5 rounded-lg bg-slate-50/80 px-1.5 md:px-2 py-0.5 md:py-1 dark:bg-white/5">
-                    <div className="h-2.5 w-2.5 md:h-3 md:w-3 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                    <div className="h-2 w-6 md:h-2.5 md:w-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div
+                    key={i}
+                    className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center animate-pulse"
+                >
+                    <div className="mx-auto mb-1 h-4 w-4 rounded bg-slate-200 dark:bg-white/[0.06]" />
+                    <div className="mx-auto h-2.5 w-10 rounded bg-slate-200 dark:bg-white/[0.06]" />
                 </div>
             ))}
         </div>
     );
 }
 
-function formatNumberWithImpact(num: number): string {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
-}
+/* ------------------------------------------------------------------ */
+/*  Progress Card                                                      */
+/* ------------------------------------------------------------------ */
 
 function ProgressCard() {
     const navigate = useNavigate();
@@ -113,15 +194,10 @@ function ProgressCard() {
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const isMounted = useRef(true);
-    const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastFetchRef = useRef(0);
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
     const CACHE_KEY = `progress_summary_${userId}`;
 
-    // Load from cache on mount
-    // Load from cache on mount — works even before userId resolves
     useEffect(() => {
-        // 1. Try cache FIRST regardless of userId (cache key already includes userId)
         const cached = localStorage.getItem(CACHE_KEY);
         let paintedFromCache = false;
 
@@ -135,207 +211,123 @@ function ProgressCard() {
                     }
                     paintedFromCache = true;
                 }
-            } catch (e) {
+            } catch {
                 localStorage.removeItem(CACHE_KEY);
             }
         }
 
-        // 2. Only fetch if we have a user
         if (userId) {
-            loadProgressSummary(paintedFromCache); // pass silent flag = paintedFromCache
+            loadProgressSummary(paintedFromCache);
         } else if (!paintedFromCache) {
-            // No user AND no cache — we can stop loading
             if (isMounted.current) setLoading(false);
         }
 
         return () => {
-            if (fetchTimeoutRef.current) {
-                clearTimeout(fetchTimeoutRef.current);
-            }
+            isMounted.current = false;
         };
-    }, [userId]);
-
-    // Background refresh when tab becomes visible
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (!document.hidden && userId) {
-                const cached = localStorage.getItem(CACHE_KEY);
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
-                        if (Date.now() - parsed.timestamp < CACHE_DURATION) {
-                            return; // Cache is fresh, skip
-                        }
-                    } catch (e) { }
-                }
-                // Cache is stale or missing, refresh in background
-                if (fetchTimeoutRef.current) {
-                    clearTimeout(fetchTimeoutRef.current);
-                }
-                fetchTimeoutRef.current = setTimeout(() => {
-                    loadProgressSummary(true);
-                }, 500);
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            if (fetchTimeoutRef.current) {
-                clearTimeout(fetchTimeoutRef.current);
-            }
-        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
     const loadProgressSummary = async (silent = false) => {
         if (!userId || !isMounted.current) return;
-
-        // Rate limiting
         const now = Date.now();
-        if (now - lastFetchRef.current < 10000) return; // 10 seconds between fetches
+        if (now - lastFetchRef.current < 10000) return;
         lastFetchRef.current = now;
-
-        if (!silent) {
-            setLoading(true);
-        }
-
+        if (!silent) setLoading(true);
         try {
             const data = await withTimeout(
                 academicProgress.getProgressSummary(userId),
                 12000
             );
             if (isMounted.current) {
-                // Only overwrite if we actually got data — never wipe a painted cache
                 if (data) {
                     setSummary(data);
-                    localStorage.setItem(CACHE_KEY, JSON.stringify({
-                        data: data,
-                        timestamp: Date.now()
-                    }));
+                    localStorage.setItem(
+                        CACHE_KEY,
+                        JSON.stringify({ data, timestamp: Date.now() })
+                    );
                 }
                 setLoading(false);
             }
-        } catch (error) {
-            console.error("Error loading progress:", error);
-            // ✅ DO NOT clear summary — keep whatever cache painted
-            if (isMounted.current) {
-                setLoading(false);
-            }
+        } catch {
+            if (isMounted.current) setLoading(false);
         }
-    };
-
-    // Manual refresh with tap feedback
-    const handleRefresh = async () => {
-        tapFeedback("light");
-        await loadProgressSummary(false);
     };
 
     if (!loading && !summary) return null;
 
-    const totalAttempted = (summary?.correct_answers || 0) + (summary?.incorrect_answers || 0) + (summary?.skipped_questions || 0);
+    const totalAttempted =
+        (summary?.correct_answers || 0) +
+        (summary?.incorrect_answers || 0) +
+        (summary?.skipped_questions || 0);
     const accuracy = summary?.overall_accuracy || 0;
-    const mastered = summary?.questions_mastered || 0;
 
     return (
-        <div className="w-full bg-white dark:bg-muted/30 rounded-xl shadow-sm p-4 md:p-5">
-            <div className="flex items-center justify-between mb-4">
+        <button
+            onClick={() => {
+                tap("success");
+                navigate("/nursing/progress");
+            }}
+            className="w-full text-left rounded-2xl bg-white dark:bg-[#161b22]
+                       p-4 active:scale-[0.99] transition-transform"
+            style={{ touchAction: "manipulation" }}
+        >
+            <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
                         <BarChart3 className="h-4 w-4" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Progress Dashboard</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {loading ? "Loading..." : totalAttempted > 0 ? `${totalAttempted} questions answered` : "Start your journey"}
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Your Progress
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {loading
+                                ? "Loading..."
+                                : totalAttempted > 0
+                                    ? `${totalAttempted} answered · ${Math.round(accuracy)}% accuracy`
+                                    : "Start your journey"}
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    {/* Silent refresh button - only shows if not loading */}
-                    {!loading && totalAttempted > 0 && (
-                        <button
-                            onClick={handleRefresh}
-                            className="p-1.5 text-gray-400 hover:text-emerald-600 dark:text-gray-500 dark:hover:text-emerald-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                            title="Refresh progress"
-                        >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                        </button>
-                    )}
-                    <button
-                        onClick={() => {
-                            tapFeedback("success");
-                            navigate("/nursing/progress");
-                        }}
-                        className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                    >
-                        View All
-                    </button>
-                </div>
+                <ChevronRight className="h-4 w-4 text-slate-400" />
             </div>
 
             {loading ? (
-                <div className="space-y-3">
-                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-1.5 w-full bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+                    <div className="h-full w-1/2 bg-slate-300 dark:bg-white/[0.12] animate-pulse" />
                 </div>
             ) : totalAttempted > 0 ? (
-                <>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 text-center">
-                            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{summary?.correct_answers || 0}</p>
-                            <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Correct</p>
-                        </div>
-                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 text-center">
-                            <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{summary?.incorrect_answers || 0}</p>
-                            <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Incorrect</p>
-                        </div>
-                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 text-center">
-                            <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{summary?.skipped_questions || 0}</p>
-                            <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Skipped</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-4">
-                            <span className="text-gray-600 dark:text-gray-300">Accuracy: <span className="font-bold text-gray-900 dark:text-white">{Math.round(accuracy)}%</span></span>
-                            <span className="text-gray-600 dark:text-gray-300">Mastered: <span className="font-bold text-gray-900 dark:text-white">{mastered}</span></span>
-                        </div>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{Math.min(100, Math.round((totalAttempted / 100) * 100))}%</span>
-                    </div>
-
-                    <div className="relative mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round((totalAttempted / 100) * 100))}%` }} />
-                    </div>
-                </>
-            ) : (
-                <div className="py-4 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {typeof navigator !== "undefined" && !navigator.onLine
-                            ? "You're offline — cached progress will show when available."
-                            : "No questions attempted yet. Start a quiz to see your progress."}
-                    </p>
-                    <button
-                        onClick={() => navigate("/Medrae-quizzes")}
-                        className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                    >
-                        Start practicing →
-                    </button>
+                <div className="h-1.5 w-full bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+                    <div
+                        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.round(accuracy))}%` }}
+                    />
                 </div>
+            ) : (
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Take a quiz to start tracking.
+                </p>
             )}
-        </div>
+        </button>
     );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Main Page                                                          */
+/* ------------------------------------------------------------------ */
+
 export default function NursingHome() {
+    const session = useSession();
+    const userId = session?.user?.id;
     const [years, setYears] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [yearProgress, setYearProgress] = useState<Record<string, UserYearProgress>>({});
     const navigate = useNavigate();
+
     useEffect(() => {
         let cancelled = false;
 
-        // Paint cache instantly
         const cached = localStorage.getItem("nursing_years_cache");
         if (cached) {
             try {
@@ -344,7 +336,7 @@ export default function NursingHome() {
                     setYears(parsed.data);
                     setLoading(false);
                 }
-            } catch { }
+            } catch { /* ignore */ }
         }
 
         withTimeout(getYears(), 12000)
@@ -363,202 +355,294 @@ export default function NursingHome() {
                 if (!cancelled) setLoading(false);
             });
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
-    const totalQuestions = years.reduce((sum, y) => sum + (y.total_questions || 0), 0);
+    /* 🍼 Load real per-year progress when we have a user */
+    useEffect(() => {
+        if (!userId) return;
+        let cancelled = false;
+
+        getUserYearProgress(userId)
+            .then((progressMap) => {
+                if (!cancelled) setYearProgress(progressMap);
+            })
+            .catch(() => { });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [userId]);
+
+    const totalQuestions = years.reduce(
+        (sum, y) => sum + (y.total_questions || 0),
+        0
+    );
+
+    const handleBack = useCallback(() => {
+        tap();
+        navigate("/dashboard/student", { replace: false });
+    }, [navigate]);
+
+    const openYear = useCallback(
+        (yearId: string) => {
+            tap();
+            navigate(`/nursing/${yearId}`);
+        },
+        [navigate]
+    );
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-transparent dark:text-white pb-20 md:pb-6">
-            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-8 px-0 md:px-4 py-4 md:py-6 lg:px-8">
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+            {/* ── HEADER ── */}
+            <header
+                className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           z-30"
+            >
+                <button
+                    onClick={handleBack}
+                    aria-label="Back to dashboard"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
 
-                {/* Hero Section - full width on mobile */}
-                <div className="relative overflow-hidden md:rounded-2xl p-5 md:p-6 text-white md:shadow-xl sm:p-8 rounded-none">
-                    <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/high3.png')" }} />
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-emerald-950/55 to-cyan-900/45" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate">
+                        Nursing Curriculum
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        KRCHN · {years.length} year{years.length === 1 ? "" : "s"}
+                    </p>
+                </div>
 
-                    <div className="relative flex flex-col gap-4 md:gap-6 md:flex-row md:items-end md:justify-between">
-                        <div className="max-w-2xl">
-                            <div className="mb-3 md:mb-4 inline-flex items-center gap-1.5 md:gap-2 rounded-full bg-white/15 px-2.5 md:px-3 py-0.5 md:py-1 text-xs md:text-sm font-medium ring-1 ring-white/20 backdrop-blur">
-                                <HeartPulse className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                KRCHN Nursing Curriculum
+                <button
+                    onClick={() => {
+                        tap();
+                        navigate("/nursing/unit-search");
+                    }}
+                    aria-label="Search units"
+                    className="h-9 w-9 rounded-full flex items-center justify-center shrink-0
+                               active:bg-slate-100 dark:active:bg-white/5 transition-colors"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Search className="h-4 w-4" />
+                </button>
+
+                <div className="flex items-center gap-1 shrink-0 pr-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full
+                                    bg-emerald-100 text-emerald-700
+                                    dark:bg-emerald-400/10 dark:text-emerald-300">
+                        {loading ? "…" : formatNumberWithImpact(totalQuestions)} Qs
+                    </div>
+                </div>
+            </header>
+
+            {/* ── SCROLLABLE BODY ── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar"
+                style={{ WebkitOverflowScrolling: "touch" }}
+            >
+                <div className="w-full max-w-[880px] mx-auto pb-16">
+                    {/* Hero */}
+                    <section className="px-4 pt-5 pb-4">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="h-10 w-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shrink-0">
+                                <HeartPulse className="h-5 w-5" />
                             </div>
-
-                            <h1 className="text-2xl md:text-3xl lg:text-5xl   tracking-tight">
-                                Choose your nursing year
-                            </h1>
-
-                            <p className="mt-2 md:mt-3 max-w-xl text-xs md:text-sm lg:text-base leading-6 text-emerald-50">
-                                Study smarter, move through the curriculum with confidence, and keep every unit feeling clear, organized, and achievable.
-                            </p>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                    KRCHN Curriculum
+                                </p>
+                                <h2 className="text-lg font-bold leading-tight">
+                                    Choose your year
+                                </h2>
+                            </div>
                         </div>
+                        <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+                            Study smarter. Move through the curriculum one unit at a time.
+                        </p>
+                    </section>
 
+                    {/* Stats strip */}
+                    <section className="px-4 mb-5">
                         {loading ? (
                             <StatsSkeleton />
                         ) : (
-                            <div className="grid grid-cols-3 gap-2 md:gap-3 md:rounded-2xl md:border-0 bg-white/70 p-2 md:p-3 md:shadow-sm backdrop-blur dark:border-slate-800 dark:bg-white/5 rounded-lg md:rounded-2xl">
-                                <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-white/5">
-                                    <BookOpen className="mx-auto mb-0.5 md:mb-1 h-4 w-4 md:h-5 md:w-5 text-sky-600 dark:text-sky-300" />
-                                    <p className="text-[10px] md:text-xs font-semibold text-slate-600 dark:text-slate-300">{formatNumberWithImpact(years.length)} Years</p>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
+                                    <BookOpen className="mx-auto mb-1 h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                    <p className="text-[11px] font-bold tabular-nums text-slate-900 dark:text-white">
+                                        {years.length}
+                                    </p>
+                                    <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        Years
+                                    </p>
                                 </div>
-                                <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-white/5">
-                                    <Stethoscope className="mx-auto mb-0.5 md:mb-1 h-4 w-4 md:h-5 md:w-5 text-rose-600 dark:text-rose-300" />
-                                    <p className="text-[10px] md:text-xs font-semibold text-slate-600 dark:text-slate-300">80 Units</p>
+                                <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
+                                    <Stethoscope className="mx-auto mb-1 h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                    <p className="text-[11px] font-bold tabular-nums text-slate-900 dark:text-white">
+                                        80
+                                    </p>
+                                    <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        Units
+                                    </p>
                                 </div>
-                                <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-white/5">
-                                    <GraduationCap className="mx-auto mb-0.5 md:mb-1 h-4 w-4 md:h-5 md:w-5 text-emerald-600 dark:text-emerald-300" />
-                                    <p className="text-[10px] md:text-xs font-semibold text-slate-600 dark:text-slate-300">{formatNumberWithImpact(totalQuestions)} Qs</p>
+                                <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
+                                    <GraduationCap className="mx-auto mb-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                    <p className="text-[11px] font-bold tabular-nums text-slate-900 dark:text-white">
+                                        {formatNumberWithImpact(totalQuestions)}
+                                    </p>
+                                    <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        Questions
+                                    </p>
                                 </div>
                             </div>
                         )}
-                    </div>
-                </div>
+                    </section>
 
+                    {/* Progress */}
+                    <section className="px-4 mb-6">
+                        <ProgressCard />
+                    </section>
 
-
-                {/* Progress Card */}
-                <div className="px-3 md:px-0">
-                    <ProgressCard />
-                </div>
-
-                {/* Quick Practice Button */}
-                {/* Quick Action Cards */}
-                {!loading && (
-                    <div className="px-3 md:px-0 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-
-                        {/* Quick Practice */}
-                        <button
-                            onClick={() => {
-                                tapFeedback("success");
-                                navigate("/nursing/search");
-                            }}
-                            className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-purple-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-purple-500/60 dark:hover:bg-slate-900"
-                        >
-                            <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-purple-50 transition group-hover:bg-purple-100 dark:bg-purple-400/10 dark:group-hover:bg-purple-400/20" />
-
-                            <div className="relative flex flex-col items-center text-center gap-2 md:gap-3">
-                                <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-purple-600 text-white shadow-lg shadow-purple-600/20">
-                                    <Zap className="h-5 w-5 md:h-6 md:w-6" />
-                                </div>
-
-                                <div>
-                                    <h3 className="text-base md:text-lg font-bold text-slate-950 dark:text-white">
-                                        Quick Practice
-                                    </h3>
-                                    <p className="mt-1 text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                        Jump to any topic in any year
-                                    </p>
-                                </div>
-
-                                <div className="mt-1 inline-flex items-center gap-1 text-xs md:text-sm font-semibold text-purple-600 dark:text-purple-300 transition group-hover:gap-2">
-                                    Start now
-                                    <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                </div>
-                            </div>
-                        </button>
-
-                        {/* Full Progress */}
-                        <button
-                            onClick={() => {
-                                tapFeedback("success");
-                                navigate("/nursing/progress");
-                            }}
-                            className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-emerald-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
-                        >
-                            <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-emerald-50 transition group-hover:bg-emerald-100 dark:bg-emerald-400/10 dark:group-hover:bg-emerald-400/20" />
-
-                            <div className="relative flex flex-col items-center text-center gap-2 md:gap-3">
-                                <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-                                    <BarChart3 className="h-5 w-5 md:h-6 md:w-6" />
-                                </div>
-
-                                <div>
-                                    <h3 className="text-base md:text-lg font-bold text-slate-950 dark:text-white">
-                                        Full Progress
-                                    </h3>
-                                    <p className="mt-1 text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                        Deep dive into your analytics
-                                    </p>
-                                </div>
-
-                                <div className="mt-1 inline-flex items-center gap-1 text-xs md:text-sm font-semibold text-emerald-600 dark:text-emerald-300 transition group-hover:gap-2">
-                                    View dashboard
-                                    <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-                )}
-                {/* Year Cards Section */}
-                <div>
-                    <div className="mb-3 md:mb-4 flex items-center justify-between gap-2 md:gap-3 px-3 md:px-0">
-                        <div>
-                            <h2 className="text-lg md:text-xl font-bold">Your learning path</h2>
-                            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Pick a year to view its units and learning materials.</p>
-                        </div>
-                        <div className="hidden items-center gap-1.5 md:gap-2 rounded-full bg-emerald-100 px-2.5 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300 sm:flex">
-                            <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                            Keep going
-                        </div>
-                    </div>
-
-                    <div className="grid gap-3 md:gap-4 sm:grid-cols-3 px-3 md:px-0">
-                        {loading ? (
-                            <><YearCardSkeleton /><YearCardSkeleton /><YearCardSkeleton /><YearCardSkeleton /></>
-                        ) : (
-                            years.map((year, index) => (
+                    {/* Quick actions */}
+                    {!loading && (
+                        <section className="px-4 mb-6">
+                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                Quick actions
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2">
                                 <button
-                                    key={year.id}
                                     onClick={() => {
-                                        tapFeedback("light");
-                                        navigate(`/nursing/${year.id}`);
+                                        tap("success");
+                                        navigate("/nursing/search");
                                     }}
-                                    className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-emerald-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
+                                    className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-left
+                                               active:scale-[0.98] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
                                 >
-                                    <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-emerald-50 transition group-hover:bg-emerald-100 dark:bg-emerald-400/10 dark:group-hover:bg-emerald-400/20" />
+                                    <div className="h-9 w-9 rounded-xl bg-purple-600 text-white flex items-center justify-center mb-2">
+                                        <Zap className="h-4 w-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Quick Practice
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        Jump to any topic
+                                    </p>
+                                </button>
 
-                                    <div className="relative flex items-start justify-between gap-3 md:gap-4">
-                                        <div>
-                                            <div className="mb-3 md:mb-4 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-                                                <span className="text-base md:text-lg  ">{index + 1}</span>
+                                <button
+                                    onClick={() => {
+                                        tap("success");
+                                        navigate("/nursing/progress");
+                                    }}
+                                    className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-left
+                                               active:scale-[0.98] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    <div className="h-9 w-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-2">
+                                        <BarChart3 className="h-4 w-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Full Progress
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        Deep analytics
+                                    </p>
+                                </button>
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Year list */}
+                    <section className="px-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                Your learning path
+                            </h3>
+                            <div className="inline-flex items-center gap-1 rounded-full
+                                            bg-emerald-100 dark:bg-emerald-400/10 px-2 py-0.5">
+                                <Sparkles className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+                                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                                    Keep going
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2.5 sm:grid-cols-2">
+                            {loading ? (
+                                <>
+                                    <YearCardSkeleton />
+                                    <YearCardSkeleton />
+                                    <YearCardSkeleton />
+                                </>
+                            ) : (
+                                years.map((year, index) => {
+                                    const qTotal = year.total_questions || 0;
+                                    const prog = yearProgress[year.id];
+                                    const answered = prog?.answered_questions || 0;
+
+                                    return (
+                                        <button
+                                            key={year.id}
+                                            onClick={() => openYear(year.id)}
+                                            className="group relative rounded-2xl bg-white dark:bg-[#161b22]
+                                                       p-4 text-left active:scale-[0.98] transition-transform
+                                                       overflow-hidden flex items-center gap-3"
+                                            style={{ touchAction: "manipulation" }}
+                                        >
+                                            {/* Left: number badge */}
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-xl
+                                                            bg-emerald-600 text-white font-bold text-sm shrink-0">
+                                                {index + 1}
                                             </div>
 
-                                            <h3 className="text-base md:text-lg   text-slate-950 dark:text-white">{year.year_name}</h3>
+                                            {/* Middle: title + subtitle */}
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="text-base font-bold text-slate-900 dark:text-white leading-tight truncate">
+                                                    {year.year_name}
+                                                </h4>
+                                                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-snug truncate">
+                                                    {answered > 0
+                                                        ? `${formatNumberWithImpact(answered)} / ${formatNumberWithImpact(qTotal)} answered`
+                                                        : `${formatNumberWithImpact(qTotal)} questions`}
+                                                </p>
+                                            </div>
 
-                                            <p className="mt-1.5 md:mt-2 text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                                {formatNumberWithImpact(year.total_questions || 0)} questions · Open units, notes, clinical topics, and revision content for this stage.
-                                            </p>
-                                        </div>
-
-                                        <div className="mt-1 rounded-full bg-slate-100 p-1.5 md:p-2 text-slate-500 transition group-hover:bg-emerald-600 group-hover:text-white dark:bg-slate-800 dark:text-slate-300">
-                                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
-                                        </div>
-                                    </div>
-
-                                    <div className="relative mt-4 md:mt-5 h-1.5 md:h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500" style={{ width: `${Math.min(35 + index * 18, 95)}%` }} />
-                                    </div>
-                                </button>
-                            ))
-                        )}
-                    </div>
-
-                    {!loading && years.length === 0 && (
-                        <div className="mx-3 md:mx-0 md:rounded-2xl md:border md:border-dashed md:border-slate-300 bg-white p-6 md:p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-                            <BookOpen className="mx-auto mb-2 md:mb-3 h-7 w-7 md:h-8 md:w-8 text-slate-400" />
-                            <p className="font-semibold text-sm md:text-base">No curriculum years available</p>
-                            <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-slate-500">Please check back later.</p>
+                                            {/* Right: real progress donut */}
+                                            <MiniPie answered={answered} total={qTotal} />
+                                        </button>
+                                    );
+                                })
+                            )}
                         </div>
-                    )}
+
+                        {!loading && years.length === 0 && (
+                            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center">
+                                <BookOpen className="mx-auto mb-2 h-7 w-7 text-slate-400" />
+                                <p className="font-semibold text-sm">
+                                    No curriculum years available
+                                </p>
+                                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    Please check back later.
+                                </p>
+                            </div>
+                        )}
+                    </section>
                 </div>
-            </section>
-
-            <TermsButton />
-
+            </main>
         </div>
-
-
-
     );
 }

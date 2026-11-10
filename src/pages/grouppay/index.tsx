@@ -23,9 +23,26 @@ import { toast } from 'sonner';
 import { playSound } from '@/lib/soundManager';
 import { useHomeRoute } from '@/hooks/useHomeRoute';
 
-// ─────────────────────────────────────────────────────────────
-// Hero slides
-// ─────────────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: 'light' | 'success' = 'light') => {
+    playSound('ui-tap');
+    if (type === 'success') vibrate([15, 30, 15]);
+    else vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Hero slides                                                       */
+/* ------------------------------------------------------------------ */
+
 const HERO_SLIDES = [
     {
         image:
@@ -59,17 +76,11 @@ export default function GroupPayHome() {
     const navigate = useNavigate();
     const home = useHomeRoute();
     const { user } = useAuth();
-    const {
-        groups,
-        loading,
-        filters,
-        joinGroup,
-        updateFilters,
-    } = useGroupPay();
+    const { groups, loading, filters, joinGroup, updateFilters } = useGroupPay();
 
     const contentRef = useRef<HTMLDivElement | null>(null);
 
-    // ── Header glass intensity on scroll ─────────────────────
+    /* Header glass on scroll */
     const [scrolled, setScrolled] = useState(false);
     useEffect(() => {
         const el = contentRef.current;
@@ -80,7 +91,7 @@ export default function GroupPayHome() {
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
-    // ── Carousel state ───────────────────────────────────────
+    /* Carousel state */
     const [slide, setSlide] = useState(0);
     const [paused, setPaused] = useState(false);
     const trackRef = useRef<HTMLDivElement | null>(null);
@@ -93,14 +104,12 @@ export default function GroupPayHome() {
         setSlide(idx);
     }, []);
 
-    // Autoplay
     useEffect(() => {
         if (paused) return;
         const t = setInterval(() => goToSlide(slide + 1), AUTOPLAY_MS);
         return () => clearInterval(t);
     }, [slide, paused, goToSlide]);
 
-    // Sync index on manual swipe
     const onTrackScroll = useCallback(() => {
         const track = trackRef.current;
         if (!track) return;
@@ -108,10 +117,9 @@ export default function GroupPayHome() {
         if (idx !== slide) setSlide(idx);
     }, [slide]);
 
-    // ── Back handler ─────────────────────────────────────────
+    /* Back */
     const handleBack = useCallback(() => {
-        playSound('tap');
-        if (navigator.vibrate) navigator.vibrate(20);
+        tap();
         navigate(home, { replace: true });
     }, [navigate, home]);
 
@@ -128,12 +136,15 @@ export default function GroupPayHome() {
     };
 
     const handleCreateGroup = () => {
-        playSound('tap');
+        tap('success');
         navigate('/grouppay/create');
     };
 
     const handleBrowseGroups = () => {
-        document.getElementById('groups-section')?.scrollIntoView({ behavior: 'smooth' });
+        tap();
+        document
+            .getElementById('groups-section')
+            ?.scrollIntoView({ behavior: 'smooth' });
     };
 
     const isUserMember = (group: any) => {
@@ -154,41 +165,38 @@ export default function GroupPayHome() {
     const showSkeleton = loading && groups.length === 0;
 
     return (
-        <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
-            {/* ── Floating glass header (no border, no shadow) ──── */}
+        <div className="h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-[#0d1117] overflow-hidden">
+            {/* ── Header (no gradient, no Create button) ───────── */}
             <header
                 className={`
-                    flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
-                    z-30 safe-top transition-all duration-300
+                    flex-shrink-0 w-full flex items-center gap-2 px-2 h-14
+                    z-30 safe-top transition-colors duration-200
+                    border-b border-slate-200/70 dark:border-white/[0.06]
                     ${scrolled
-                        ? 'bg-background/80 backdrop-blur-xl'
-                        : 'bg-transparent'}
+                        ? 'bg-white/90 dark:bg-[#0d1117]/90 backdrop-blur-xl'
+                        : 'bg-white dark:bg-[#0d1117]'
+                    }
                 `}
             >
                 <button
                     onClick={handleBack}
                     aria-label="Go back"
                     className="flex items-center justify-center h-10 w-10 rounded-full
-                        bg-white/70 dark:bg-white/10 backdrop-blur-md
-                        hover:bg-white dark:hover:bg-white/20
-                        active:scale-95 transition-all touch-manipulation"
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors"
+                    style={{ touchAction: 'manipulation' }}
                 >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
                 </button>
-                <h1 className="text-base sm:text-lg font-semibold tracking-tight
-                    text-gray-900 dark:text-white truncate">
-                    GroupPay
-                </h1>
-                <div className="ml-auto">
-                    <button
-                        onClick={handleCreateGroup}
-                        aria-label="Create group"
-                        className="flex items-center justify-center h-10 w-10 rounded-full
-                            bg-gradient-to-br from-green-600 to-blue-600 text-white
-                            active:scale-95 transition-all touch-manipulation"
-                    >
-                        <Plus className="w-5 h-5" />
-                    </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate
+                                   text-slate-900 dark:text-white">
+                        GroupPay
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        Study together, pay less
+                    </p>
                 </div>
             </header>
 
@@ -196,19 +204,16 @@ export default function GroupPayHome() {
             <div
                 ref={contentRef}
                 className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-                    custom-scrollbar overscroll-contain
-                    [-webkit-overflow-scrolling:touch]"
+                           no-scrollbar overscroll-contain
+                           [-webkit-overflow-scrolling:touch]"
             >
                 {showSkeleton ? (
                     <SkeletonLayout />
                 ) : (
-                    <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-24 safe-bottom">
-
-                        {/* ═══════════════════════════════════════════ */}
-                        {/* HERO CAROUSEL                              */}
-                        {/* ═══════════════════════════════════════════ */}
+                    <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-32 safe-bottom">
+                        {/* ── HERO CAROUSEL ──────────────────────── */}
                         <section
-                            className="relative -mx-0 md:rounded-[28px] md:overflow-hidden"
+                            className="relative -mx-0 md:rounded-2xl md:overflow-hidden"
                             onMouseEnter={() => setPaused(true)}
                             onMouseLeave={() => setPaused(false)}
                             onTouchStart={() => setPaused(true)}
@@ -218,45 +223,39 @@ export default function GroupPayHome() {
                                 ref={trackRef}
                                 onScroll={onTrackScroll}
                                 className="flex overflow-x-auto snap-x snap-mandatory
-                                    scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]
-                                    [&::-webkit-scrollbar]:hidden"
+                                           scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]
+                                           [&::-webkit-scrollbar]:hidden"
                             >
                                 {HERO_SLIDES.map((s, i) => (
                                     <div
                                         key={i}
-                                        className="relative min-w-full h-[68vh] md:h-[560px]
-                                            snap-center snap-always shrink-0 overflow-hidden"
+                                        className="relative min-w-full h-[58vh] md:h-[440px]
+                                                   snap-center snap-always shrink-0 overflow-hidden"
                                     >
-                                        {/* Background image */}
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center scale-105
-                                                transition-transform duration-[8000ms] ease-out"
+                                            className="absolute inset-0 bg-cover bg-center"
                                             style={{ backgroundImage: `url(${s.image})` }}
                                         />
-                                        {/* Gradient overlays for legibility */}
                                         <div className="absolute inset-0 bg-gradient-to-t
-                                            from-black/85 via-black/40 to-black/20" />
-                                        <div className="absolute inset-0 bg-gradient-to-br
-                                            from-green-900/30 via-transparent to-blue-900/30 mix-blend-multiply" />
+                                                        from-black/85 via-black/40 to-black/20" />
 
-                                        {/* Slide content */}
                                         <div className="relative z-10 h-full flex flex-col justify-end
-                                            px-6 pb-16 md:pb-20 pt-24 max-w-3xl">
+                                                        px-5 pb-14 md:pb-16 pt-24 max-w-3xl">
                                             <span className="inline-flex items-center gap-1.5 self-start
-                                                px-3 py-1.5 rounded-full mb-4
-                                                bg-white/15 backdrop-blur-md
-                                                text-[11px] md:text-xs font-semibold uppercase tracking-wider
-                                                text-white/95">
-                                                <Sparkles className="w-3.5 h-3.5" />
+                                                             px-2.5 py-1 rounded-full mb-3
+                                                             bg-white/[0.18] backdrop-blur-md
+                                                             text-[10px] font-bold uppercase tracking-wider
+                                                             text-white/95">
+                                                <Sparkles className="w-3 h-3" />
                                                 {s.eyebrow}
                                             </span>
-                                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold
-                                                leading-[1.03] tracking-tight text-white
-                                                whitespace-pre-line">
+                                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold
+                                                           leading-[1.05] tracking-tight text-white
+                                                           whitespace-pre-line">
                                                 {s.title}
                                             </h1>
-                                            <p className="mt-4 text-sm md:text-lg text-white/85
-                                                max-w-xl leading-relaxed">
+                                            <p className="mt-3 text-[13px] md:text-base text-white/85
+                                                          max-w-xl leading-relaxed">
                                                 {s.subtitle}
                                             </p>
                                         </div>
@@ -265,105 +264,97 @@ export default function GroupPayHome() {
                             </div>
 
                             {/* Dots */}
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20
-                                flex items-center gap-2">
+                            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20
+                                            flex items-center gap-1.5">
                                 {HERO_SLIDES.map((_, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => goToSlide(i)}
+                                        onClick={() => {
+                                            tap();
+                                            goToSlide(i);
+                                        }}
                                         aria-label={`Slide ${i + 1}`}
                                         className={`transition-all duration-300 rounded-full
                                             ${i === slide
-                                                ? 'w-7 h-2 bg-white'
-                                                : 'w-2 h-2 bg-white/50 hover:bg-white/80'}`}
+                                                ? 'w-6 h-1.5 bg-white'
+                                                : 'w-1.5 h-1.5 bg-white/50'
+                                            }`}
+                                        style={{ touchAction: 'manipulation' }}
                                     />
                                 ))}
                             </div>
 
-                            {/* Arrows (desktop) */}
+                            {/* Arrows */}
                             <button
-                                onClick={() => goToSlide(slide - 1)}
+                                onClick={() => {
+                                    tap();
+                                    goToSlide(slide - 1);
+                                }}
                                 aria-label="Previous slide"
-                                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20
-                                    h-11 w-11 items-center justify-center rounded-full
-                                    bg-white/15 hover:bg-white/30 backdrop-blur-md
-                                    text-white transition-all active:scale-95"
+                                className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-20
+                                           h-10 w-10 items-center justify-center rounded-full
+                                           bg-black/40 text-white
+                                           active:scale-[0.92] transition-transform"
+                                style={{ touchAction: 'manipulation' }}
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
                             <button
-                                onClick={() => goToSlide(slide + 1)}
+                                onClick={() => {
+                                    tap();
+                                    goToSlide(slide + 1);
+                                }}
                                 aria-label="Next slide"
-                                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20
-                                    h-11 w-11 items-center justify-center rounded-full
-                                    bg-white/15 hover:bg-white/30 backdrop-blur-md
-                                    text-white transition-all active:scale-95"
+                                className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-20
+                                           h-10 w-10 items-center justify-center rounded-full
+                                           bg-black/40 text-white
+                                           active:scale-[0.92] transition-transform"
+                                style={{ touchAction: 'manipulation' }}
                             >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </section>
 
-                        {/* ═══════════════════════════════════════════ */}
-                        {/* FLOATING CTA DOCK (no border, no shadow)   */}
-                        {/* ═══════════════════════════════════════════ */}
-                        <section className="relative z-10 -mt-8 px-4 md:px-0">
+                        {/* ── HERO CTA — Browse Groups ONLY ──────── */}
+                        <section className="relative z-10 -mt-6 px-4 md:px-0">
                             <div className="mx-auto max-w-2xl rounded-2xl
-                                bg-background/80 backdrop-blur-xl p-3">
-                                <div className="flex flex-col sm:flex-row gap-2.5">
-                                    <Button
-                                        size="lg"
-                                        onClick={handleCreateGroup}
-                                        className="flex-1 gap-2 h-12 rounded-xl border-0
-                                            bg-gradient-to-r from-green-600 to-blue-600
-                                            hover:from-green-700 hover:to-blue-700
-                                            text-white font-semibold text-[15px]
-                                            active:scale-[0.98]
-                                            transition-all duration-200"
-                                    >
-                                        <Plus className="w-5 h-5" />
-                                        Create Group
-                                    </Button>
-                                    <Button
-                                        size="lg"
-                                        variant="outline"
-                                        onClick={handleBrowseGroups}
-                                        className="flex-1 gap-2 h-12 rounded-xl
-                                            border-0
-                                            bg-white/60 dark:bg-white/[0.04]
-                                            hover:bg-white dark:hover:bg-white/10
-                                            text-slate-900 dark:text-white font-medium
-                                            active:scale-[0.98] transition-all duration-200"
-                                    >
-                                        <Users className="w-5 h-5" />
-                                        Browse Groups
-                                    </Button>
-                                </div>
+                                            bg-white dark:bg-[#161b22]
+                                            p-2">
+                                <Button
+                                    onClick={handleBrowseGroups}
+                                    className="w-full h-11 rounded-xl
+                                               bg-slate-100 dark:bg-white/[0.06]
+                                               text-slate-900 dark:text-white
+                                               font-bold text-sm
+                                               active:scale-[0.97] transition-transform
+                                               gap-2"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Users className="w-4 h-4" />
+                                    Browse groups
+                                </Button>
                             </div>
                         </section>
 
-                        {/* ═══════════════════════════════════════════ */}
-                        {/* SOLO NUDGE                                 */}
-                        {/* ═══════════════════════════════════════════ */}
+                        {/* ── SOLO NUDGE ─────────────────────────── */}
                         {!userIsInAnyGroup && (
-                            <section className="px-4 md:px-0 pt-6 pb-4 md:pb-6 reveal">
+                            <section className="px-4 md:px-0 pt-5 pb-3 md:pb-5">
                                 <SoloSubscriptionCard role={user?.role ?? null} />
                             </section>
                         )}
 
-                        {/* ═══════════════════════════════════════════ */}
-                        {/* SEARCH                                     */}
-                        {/* ═══════════════════════════════════════════ */}
+                        {/* ── SEARCH ─────────────────────────────── */}
                         <section
                             id="groups-section"
-                            className="px-4 md:px-0 pt-6 pb-4 md:pb-6 reveal"
+                            className="px-4 md:px-0 pt-5 pb-3 md:pb-5"
                         >
-                            <div className="flex items-end justify-between mb-3 px-1">
+                            <div className="flex items-end justify-between mb-2 px-1">
                                 <div>
-                                    <h2 className="text-[22px] md:text-2xl font-bold tracking-tight
-                                        text-slate-900 dark:text-white">
+                                    <h2 className="text-base md:text-lg font-bold tracking-tight
+                                                   text-slate-900 dark:text-white">
                                         Find a group
                                     </h2>
-                                    <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                                    <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                         Search by school, course, or group name
                                     </p>
                                 </div>
@@ -373,50 +364,41 @@ export default function GroupPayHome() {
                                 school={filters.school}
                                 course={filters.course}
                                 sort={filters.sort}
-                                onSearchChange={(value) => updateFilters({ search: value })}
-                                onSchoolChange={(value) => updateFilters({ school: value })}
-                                onCourseChange={(value) => updateFilters({ course: value })}
-                                onSortChange={(value) => updateFilters({ sort: value })}
+                                onSearchChange={(v) => updateFilters({ search: v })}
+                                onSchoolChange={(v) => updateFilters({ school: v })}
+                                onCourseChange={(v) => updateFilters({ course: v })}
+                                onSortChange={(v) => updateFilters({ sort: v })}
                             />
                         </section>
 
-                        {/* ═══════════════════════════════════════════ */}
-                        {/* GROUPS GRID                                */}
-                        {/* ═══════════════════════════════════════════ */}
-                        <section className="px-4 md:px-0 pb-8 reveal">
+                        {/* ── GROUPS GRID ────────────────────────── */}
+                        <section className="px-4 md:px-0 pb-8">
                             {groups.length === 0 ? (
                                 <EmptyState
-                                    hasFilters={!!(filters.search || filters.school || filters.course)}
+                                    hasFilters={
+                                        !!(filters.search || filters.school || filters.course)
+                                    }
                                     onCreate={handleCreateGroup}
                                 />
                             ) : (
                                 <>
                                     <div className="flex items-center justify-between mb-3 md:mb-4 px-1">
                                         <div className="flex items-center gap-2">
-                                            <h2 className="text-[22px] md:text-2xl font-bold tracking-tight
-                                                text-slate-900 dark:text-white">
-                                                Active Groups
+                                            <h2 className="text-base md:text-lg font-bold tracking-tight
+                                                           text-slate-900 dark:text-white">
+                                                Active groups
                                             </h2>
-                                            <Badge className="border-0 bg-slate-100 dark:bg-slate-800
-                                                text-slate-600 dark:text-slate-300
-                                                text-[11px] font-semibold rounded-full px-2.5">
+                                            <span className="inline-flex items-center
+                                                             h-5 px-2 rounded-full
+                                                             bg-slate-100 dark:bg-white/[0.06]
+                                                             text-slate-600 dark:text-slate-300
+                                                             text-[10px] font-bold tabular-nums">
                                                 {groups.length}
-                                            </Badge>
+                                            </span>
                                         </div>
-                                        <button
-                                            onClick={handleCreateGroup}
-                                            className="text-xs md:text-sm font-semibold
-                                                text-green-600 dark:text-green-400
-                                                hover:text-green-700 dark:hover:text-green-300
-                                                transition-colors flex items-center gap-1
-                                                active:scale-95"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            New Group
-                                        </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                                         {groups.map((group) => (
                                             <GroupCard
                                                 key={group.id}
@@ -435,18 +417,23 @@ export default function GroupPayHome() {
                 )}
             </div>
 
-            {/* Local styles for reveal + no-scrollbar */}
+            {/* ── Floating Create FAB (WhatsApp style) ─────────── */}
+            <button
+                onClick={handleCreateGroup}
+                aria-label="Create group"
+                className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+20px)] right-5 z-40
+                           h-14 w-14 rounded-full
+                           bg-emerald-600 text-white
+                           shadow-sm
+                           flex items-center justify-center
+                           active:scale-[0.92] transition-transform"
+                style={{ touchAction: 'manipulation' }}
+            >
+                <Plus className="h-6 w-6" strokeWidth={2.75} />
+            </button>
+
+            {/* Local styles */}
             <style>{`
-                .reveal {
-                    animation: revealUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-                }
-                @keyframes revealUp {
-                    from { opacity: 0; transform: translateY(14px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                @media (prefers-reduced-motion: reduce) {
-                    .reveal { animation: none; }
-                }
                 .scrollbar-none::-webkit-scrollbar { display: none; }
                 .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
                 .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
@@ -456,7 +443,7 @@ export default function GroupPayHome() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Empty state (no border, no shadow)
+   Empty state — token palette
    ───────────────────────────────────────────────────────────── */
 function EmptyState({
     hasFilters,
@@ -466,35 +453,38 @@ function EmptyState({
     onCreate: () => void;
 }) {
     return (
-        <Card className="rounded-3xl bg-white dark:bg-muted/20 shadow-none border-0">
-            <CardContent className="flex flex-col items-center justify-center py-16 md:py-20 px-6">
-                <div className="w-16 h-16 rounded-2xl
-                    bg-gradient-to-br from-green-100 to-blue-100
-                    dark:from-green-950/40 dark:to-blue-950/40
-                    flex items-center justify-center mb-5">
-                    <Search className="w-7 h-7 text-green-600 dark:text-green-400" />
+        <Card className="rounded-2xl bg-white dark:bg-[#161b22] shadow-none border-0">
+            <CardContent className="flex flex-col items-center justify-center py-14 px-5">
+                <div className="h-14 w-14 rounded-2xl
+                                bg-slate-100 dark:bg-white/[0.06]
+                                flex items-center justify-center mb-4">
+                    <Search className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                 </div>
-                <h3 className="text-lg md:text-xl font-bold tracking-tight
-                    text-slate-900 dark:text-white mb-2 text-center text-balance">
-                    {hasFilters ? 'No groups match your filters' : 'Be the first to start a group'}
+                <h3 className="text-base font-bold tracking-tight
+                               text-slate-900 dark:text-white mb-1.5 text-center text-balance">
+                    {hasFilters
+                        ? 'No groups match your filters'
+                        : 'Be the first to start a group'}
                 </h3>
-                <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed text-balance">
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center
+                              max-w-sm leading-relaxed text-balance">
                     {hasFilters
                         ? 'Try adjusting your search or clear the filters to see every group.'
                         : 'Create a group with your classmates and split the cost of premium access. The more join, the cheaper it gets for everyone.'}
                 </p>
                 {!hasFilters && (
-                    <Button
+                    <button
                         onClick={onCreate}
-                        className="mt-6 gap-2 h-11 px-5 rounded-xl border-0
-                            bg-gradient-to-r from-green-600 to-blue-600
-                            hover:from-green-700 hover:to-blue-700
-                            text-white font-semibold
-                            active:scale-[0.98] transition-all"
+                        className="mt-5 h-10 px-4 rounded-xl
+                                   bg-emerald-600 text-white
+                                   text-sm font-bold
+                                   flex items-center gap-1.5
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: 'manipulation' }}
                     >
-                        <Plus className="w-4 h-4" />
-                        Create the First Group
-                    </Button>
+                        <Plus className="h-4 w-4" />
+                        Create the first group
+                    </button>
                 )}
             </CardContent>
         </Card>
@@ -502,43 +492,36 @@ function EmptyState({
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Skeleton — mirrors the new layout (no borders/shadows)
+   Skeleton
    ───────────────────────────────────────────────────────────── */
 function SkeletonLayout() {
     return (
-        <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-24 safe-bottom">
-            {/* Carousel skeleton */}
-            <Skeleton className="h-[68vh] md:h-[560px] md:rounded-[28px] border-0" />
+        <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-32 safe-bottom">
+            <Skeleton className="h-[58vh] md:h-[440px] md:rounded-2xl border-0" />
 
-            {/* CTA skeleton */}
-            <div className="relative z-10 -mt-8 px-4 md:px-0">
-                <div className="mx-auto max-w-2xl rounded-2xl p-3
-                    bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl">
-                    <div className="flex flex-col sm:flex-row gap-2.5">
-                        <Skeleton className="flex-1 h-12 rounded-xl border-0" />
-                        <Skeleton className="flex-1 h-12 rounded-xl border-0" />
-                    </div>
+            <div className="relative z-10 -mt-6 px-4 md:px-0">
+                <div className="mx-auto max-w-2xl rounded-2xl p-2
+                                bg-white dark:bg-[#161b22]">
+                    <Skeleton className="h-11 w-full rounded-xl border-0" />
                 </div>
             </div>
 
-            {/* Search skeleton */}
-            <section className="px-4 md:px-0 pt-6 pb-4">
-                <Skeleton className="h-6 w-40 mb-3 rounded-lg border-0" />
-                <Skeleton className="h-12 w-full rounded-xl border-0" />
+            <section className="px-4 md:px-0 pt-5 pb-3">
+                <Skeleton className="h-5 w-40 mb-3 rounded-lg border-0" />
+                <Skeleton className="h-11 w-full rounded-xl border-0" />
             </section>
 
-            {/* Grid skeleton */}
             <section className="px-4 md:px-0 pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                         <Card
                             key={i}
-                            className="p-4 rounded-2xl bg-white dark:bg-muted/30 shadow-none border-0"
+                            className="p-4 rounded-2xl bg-white dark:bg-[#161b22] shadow-none border-0"
                         >
-                            <Skeleton className="h-6 w-3/4 mb-3 rounded-lg border-0" />
-                            <Skeleton className="h-4 w-1/2 mb-5 rounded-lg border-0" />
-                            <Skeleton className="h-4 w-full mb-2 rounded-lg border-0" />
-                            <Skeleton className="h-4 w-2/3 rounded-lg border-0" />
+                            <Skeleton className="h-5 w-3/4 mb-3 rounded-lg border-0" />
+                            <Skeleton className="h-3.5 w-1/2 mb-4 rounded-lg border-0" />
+                            <Skeleton className="h-3.5 w-full mb-2 rounded-lg border-0" />
+                            <Skeleton className="h-3.5 w-2/3 rounded-lg border-0" />
                         </Card>
                     ))}
                 </div>

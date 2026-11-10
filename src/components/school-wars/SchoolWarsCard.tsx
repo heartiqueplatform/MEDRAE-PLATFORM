@@ -360,25 +360,26 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
 
     const RankBadge = ({ rank }: { rank: number }) => {
         if (rank === 1)
-            return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500 text-white text-sm font-bold tabular-nums shrink-0">1</div>;
+            return <div className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-500 text-white text-[13px] font-bold tabular-nums shrink-0">1</div>;
         if (rank === 2)
-            return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-400 text-white text-sm font-bold tabular-nums shrink-0">2</div>;
+            return <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-400 text-white text-[13px] font-bold tabular-nums shrink-0">2</div>;
         if (rank === 3)
-            return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-500 text-white text-sm font-bold tabular-nums shrink-0">3</div>;
-        return <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 text-sm font-bold tabular-nums shrink-0">{rank}</div>;
+            return <div className="w-8 h-8 rounded-full flex items-center justify-center bg-orange-500 text-white text-[13px] font-bold tabular-nums shrink-0">3</div>;
+        return <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 text-[13px] font-bold tabular-nums shrink-0">{rank}</div>;
     };
     return (
         <>
-            <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+            <div className="rounded-none bg-white dark:bg-[#161b22] overflow-hidden border-0">
                 {/* ── HEADER (slim, no image) ── */}
-                <div className="px-4 py-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-[#0d1117] dark:via-[#161b22] dark:to-[#0d1117]">
+                {/* ── HEADER (slim, no image) ── */}
+                <div className="px-4 py-3 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-[#0d1117] dark:via-[#161b22] dark:to-[#0d1117] border-b border-slate-200/70 dark:border-white/[0.04]">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                            <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-                            <h3 className="text-sm font-bold text-white tracking-tight truncate">
+                            <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">
                                 School Wars
                             </h3>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
                                 · This week
                             </span>
                         </div>
@@ -387,7 +388,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                             <div className="relative shrink-0">
                                 <button
                                     onClick={() => setInviteMenuOpen((v) => !v)}
-                                    className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 active:bg-white/20 text-white text-[11px] font-bold transition-colors"
+                                    className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-900 active:bg-black text-white dark:bg-white/10 dark:hover:bg-white/15 dark:active:bg-white/20 text-[11px] font-bold transition-colors"
                                 >
                                     <Share2 className="w-3 h-3" />
                                     Invite
@@ -478,7 +479,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                             <li key={row.institution}>
                                 <button
                                     onClick={() => setStudentsSheet({ open: true, school: row })}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${isMine
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${isMine
                                         ? "bg-blue-50/60 dark:bg-blue-950/15"
                                         : "hover:bg-slate-50 dark:hover:bg-white/[0.03] active:bg-slate-100 dark:active:bg-white/[0.06]"
                                         }`}

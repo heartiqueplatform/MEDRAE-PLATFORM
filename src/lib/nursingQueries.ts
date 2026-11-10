@@ -681,3 +681,44 @@ export async function getAllTopicsForSearch() {
     setCache("all_topics_search", topics);
     return topics;
 }
+// ============================================
+// User progress per year (real counts)
+// ============================================
+export interface UserYearProgress {
+    year_id: string;
+    year_name: string;
+    year_number: number;
+    total_questions: number;
+    answered_questions: number;
+    correct_answers: number;
+    mastered_questions: number;
+}
+
+export async function getUserYearProgress(
+    userId: string
+): Promise<Record<string, UserYearProgress>> {
+    if (!userId) return {};
+
+    const { data, error } = await supabase.rpc("get_user_year_progress", {
+        p_user_id: userId,
+    });
+
+    if (error || !data) {
+        console.warn("[getUserYearProgress] failed:", error);
+        return {};
+    }
+
+    const map: Record<string, UserYearProgress> = {};
+    for (const row of data as UserYearProgress[]) {
+        map[row.year_id] = {
+            year_id: row.year_id,
+            year_name: row.year_name,
+            year_number: row.year_number,
+            total_questions: Number(row.total_questions) || 0,
+            answered_questions: Number(row.answered_questions) || 0,
+            correct_answers: Number(row.correct_answers) || 0,
+            mastered_questions: Number(row.mastered_questions) || 0,
+        };
+    }
+    return map;
+}

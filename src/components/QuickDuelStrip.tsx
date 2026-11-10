@@ -557,21 +557,25 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
     return (
         <>
             <section
-                className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 font-sans"
+                /* 🍼 PHONE: no rounding, no top padding, full-bleed.
+                   DESKTOP (md+): rounded card with padding, like before. */
+                className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl
+               rounded-none md:rounded-2xl
+               px-0 pt-0 pb-5 md:p-5
+               font-sans"
                 style={{ contain: "layout paint" }}
             >
                 {/* ── Players row header — one pill-shaped search bar ── */}
-                {/* ── Players row header — edge-to-edge search bar on phone ── */}
                 <button
                     onClick={goToChallengePage}
                     className="flex items-center gap-2 h-11 px-4 mb-3
-               -mx-5 md:mx-0
-               rounded-none md:rounded-xl
+               mx-4 md:mx-0
+               rounded-xl
                bg-slate-100 dark:bg-white/[0.06]
                text-slate-500 dark:text-slate-400
                hover:bg-slate-200/70 dark:hover:bg-white/[0.1]
                active:scale-[0.99] transition-all
-               w-[calc(100%+2.5rem)] md:w-full"
+               w-[calc(100%-2rem)] md:w-full"
                     style={{ touchAction: "manipulation" }}
                     aria-label="Search sparring partners"
                 >
@@ -585,7 +589,7 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                 {sortedPlayers.length > 0 ? (
                     <div
                         className="flex gap-5 overflow-x-auto pb-2 pt-1
-                                   -mx-5 px-5       /* kills outer p-5 on phone */
+                                   -mx-5 px-2       /* kills outer p-5 on phone */
                                    md:mx-0 md:px-0" /* restores on desktop */
                         style={{
                             scrollbarWidth: "none",
@@ -723,10 +727,9 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                 {/* ── Last battle card — edge-to-edge on phone too ── */}
                 {lastDuel && (
                     <div
-                        className={`mt-4 flex items-center gap-3 p-3 rounded-2xl
-                                    -mx-5 px-5 py-3  /* edge-to-edge on phone */
-                                    md:mx-0 md:px-3  /* restored inside on desktop */
-                                    ${lastDuel.won
+                        className={`mt-4 mx-4 flex items-center gap-3 p-3 rounded-2xl
+                md:mx-0 md:px-3
+                ${lastDuel.won
                                 ? "bg-emerald-500/5"
                                 : "bg-rose-500/5"
                             }`}
@@ -945,8 +948,8 @@ function ChallengeOverlay({
 
 function StripSkeleton() {
     return (
-        <section
-            className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-5 font-sans"
+        // AFTER
+        <section className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-none md:rounded-2xl px-0 pt-0 pb-5 md:p-5 space-y-5 font-sans"
             style={{ contain: "layout paint" }}
         >
             <div className="flex gap-5 -mx-5 px-5 md:mx-0 md:px-0">

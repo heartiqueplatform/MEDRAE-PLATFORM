@@ -124,6 +124,7 @@ export default function QuizPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [pendingBack, setPendingBack] = useState(false);
+  const [leavingQuiz, setLeavingQuiz] = useState(false); // 🍼 new — "Not today" spinner
   const [selectedCourse, setSelectedCourse] = useState<string>("All");
   const courseOptions = ["All", "BSN", "KRCHN", "KRN",];
   const [loading, setLoading] = useState(true);
@@ -1121,15 +1122,15 @@ Please provide a detailed discussion and guidance.`;
       />
 
       {/* ─── Body: one scroll container ─── */}
-      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-        <div className="w-full px-2 md:px-2 lg:px-6 py-3 md:py-5">
+      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar no-scrollbar">
+        <div className="w-full px-0 md:px-2 lg:px-6 py-3 md:py-5">
           <div className="flex flex-col items-center">
             <div
               ref={questionTopRef}
               className="w-full min-h-[500px] relative px-0"
             >
               {/* Course Filter Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-4 mt-2 scrollbar-hide">
+              <div className="flex items-center gap-2 overflow-x-auto pb-3 mt-1 scrollbar-hide px-3 md:px-0">
                 <Filter className="w-4 h-4 text-slate-500 shrink-0" />
                 {courseOptions.map((course) => (
                   <button
@@ -1139,11 +1140,12 @@ Please provide a detailed discussion and guidance.`;
                       setCurrentQuestionIndex(0);
                     }}
                     className={cn(
-                      "px-4 py-1.5 rounded-xl whitespace-nowrap transition-all border",
+                      "px-3 py-1.5 rounded-full whitespace-nowrap transition-all text-[12px] font-bold",
                       selectedCourse === course
-                        ? "bg-indigo-600 border-0 text-white shadow-md"
-                        : "bg-white dark:bg-muted/30 border-0 text-slate-600 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
                     )}
+                    style={{ touchAction: "manipulation" }}
                   >
                     {course}
                   </button>
@@ -1163,7 +1165,10 @@ Please provide a detailed discussion and guidance.`;
 
                   if (isLocked) {
                     return (
-                      <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-muted/30 rounded-2xl border-0 shadow-xl text-center">
+                      <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16
+                                     bg-white dark:bg-[#161b22]
+                                     rounded-none md:rounded-2xl
+                                     text-center">
                         <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-6">
                           <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
                         </div>
@@ -1192,12 +1197,13 @@ Please provide a detailed discussion and guidance.`;
                       {/* ─── LEFT: question card ─── */}
                       <div
                         className={cn(
-                          "flex flex-col px-2 py-3 md:py-4 transition-all rounded-xl duration-300 h-full",
+                          "flex flex-col px-4 md:px-4 py-4 md:py-5 transition-colors duration-300 h-full",
+                          "rounded-none md:rounded-2xl",
                           understood[q.id]
-                            ? "bg-emerald-50/40 dark:bg-emerald-500/10"
+                            ? "bg-emerald-50/60 dark:bg-emerald-400/[0.06]"
                             : notUnderstood[q.id]
-                              ? "bg-rose-50/40 dark:bg-rose-500/10"
-                              : "bg-white dark:bg-muted/40",
+                              ? "bg-rose-50/60 dark:bg-rose-400/[0.06]"
+                              : "bg-white dark:bg-[#161b22]",
                           "text-slate-900 dark:text-slate-100"
                         )}>
                         <div className="flex items-start justify-between gap-2 mb-3 md:mb-4">
@@ -1205,7 +1211,10 @@ Please provide a detailed discussion and guidance.`;
                             Q{i + 1}: {q.question_text}
                           </p>
                           {selectedAnswer && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                     bg-slate-100 dark:bg-white/[0.06]
+                     text-slate-500 dark:text-slate-400
+                     shrink-0 mt-0.5">
                               Answered
                             </span>
                           )}
@@ -1293,13 +1302,13 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                                   className={`
     flex justify-between items-center gap-2
     min-h-[48px] md:min-h-[52px]
-    py-2 px-3 md:px-4 rounded-lg transition-all duration-200
+    py-2 px-3 md:px-4 rounded-lg transition-colors duration-200
     ${!selectedAnswer
-                                      ? "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60"
-                                      : "bg-white dark:bg-slate-800"
+                                      ? "bg-slate-50 dark:bg-white/[0.04] active:bg-slate-100 dark:active:bg-white/[0.08]"
+                                      : "bg-slate-50 dark:bg-white/[0.04]"
                                     }
     ${selectedAnswer && q.correct_answer !== letter && selectedAnswer !== letter ? "opacity-50" : "opacity-100"}
-  `}
+`}
                                 >
                                   <div className="flex items-center gap-2 md:gap-3">
                                     <span className={`text-xs font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-md border transition-colors duration-300 ${selectedAnswer && q.correct_answer === letter
@@ -1515,8 +1524,8 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           </div>
                         </div>
 
-                        <div className="mt-2 flex flex-col items-center gap-3 w-full">
-                          <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        <div className="mt-3 flex flex-col items-center gap-3 w-full">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Question {currentQuestionIndex + 1} of {filteredQuestions.length}
                           </span>
                         </div>
@@ -1583,7 +1592,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                   );
                 })
               ) : (
-                <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-0">
+                <div className="text-center py-16 px-4 bg-white dark:bg-[#161b22] rounded-none md:rounded-2xl mx-0 md:mx-0">
                   <AlertTriangle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-600 dark:text-slate-400">No questions found for <b>{selectedCourse}</b> in this unit.</p>
                   <button onClick={() => setSelectedCourse("All")} className="mt-4 text-indigo-600 font-bold">View All Questions</button>
@@ -1879,18 +1888,53 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                 <button
                   onClick={() => {
-                    setPendingBack(false);
-                    navigate(-1);
+                    if (leavingQuiz) return;
+                    setLeavingQuiz(true);
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    // 🍼 Let the spinner paint BEFORE we close the modal + navigate.
+                    // 150ms is enough for the frame to render — feels instant, not laggy.
+                    setTimeout(() => {
+                      setPendingBack(false);
+                      navigate(-1);
+                    }, 150);
                   }}
+                  disabled={leavingQuiz}
                   className="w-full h-9 rounded-xl text-sm
-                       bg-rose-50 dark:bg-rose-500/10
-                       text-rose-600 dark:text-rose-400
-                       hover:bg-rose-100 dark:hover:bg-rose-500/20
-                       active:scale-[0.98]
-                       border border-rose-200/60 dark:border-rose-500/20
-                       transition-all"
+       bg-rose-50 dark:bg-rose-500/10
+       text-rose-600 dark:text-rose-400
+       hover:bg-rose-100 dark:hover:bg-rose-500/20
+       active:scale-[0.98]
+       disabled:opacity-70 disabled:cursor-not-allowed
+       transition-all
+       flex items-center justify-center gap-2"
                 >
-                  {motivation.leaveLabel}
+                  {leavingQuiz ? (
+                    <>
+                      <svg
+                        className="animate-spin h-3.5 w-3.5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        />
+                      </svg>
+                      <span>Going…</span>
+                    </>
+                  ) : (
+                    motivation.leaveLabel
+                  )}
                 </button>
               </div>
 

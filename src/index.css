@@ -789,3 +789,19 @@ pre {
     transform: translateX(200%);
   }
 }
+
+/* 🍼 Fully hidden scrollbar — scrolls but shows nothing.
+   Applied to full-screen native pages. */
+.no-scrollbar {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* old Edge / IE */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Android WebView, iOS */
+  width: 0;
+  height: 0;
+}

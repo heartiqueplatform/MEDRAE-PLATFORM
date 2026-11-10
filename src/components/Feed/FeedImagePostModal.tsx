@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import FeedMediaPanel from "@/components/Feed/FeedMediaPanel";
+import { playSound } from "@/lib/soundManager";
 
 interface Props {
     open: boolean;
@@ -32,6 +33,13 @@ interface Props {
     setImageDescription: React.Dispatch<React.SetStateAction<string>>;
 }
 
+const tap = () => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(12);
+    }
+};
+
 export default function FeedImagePostModal({
     open,
     groupKey,
@@ -39,7 +47,6 @@ export default function FeedImagePostModal({
     onClose,
     ...panelProps
 }: Props) {
-    // Lock body scroll
     useEffect(() => {
         if (!open) return;
         const prev = document.body.style.overflow;
@@ -64,33 +71,47 @@ export default function FeedImagePostModal({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.18 }}
-                    className="fixed inset-0 z-[2147483647] bg-black/90 backdrop-blur-sm flex items-center justify-center p-0 md:p-6"
+                    className="fixed inset-0 z-[2147483647] bg-black/70
+                               flex items-end sm:items-center justify-center sm:p-6"
                     onClick={onClose}
                 >
-                    {/* Close button — top right, always visible */}
+                    {/* Close button — always visible, tap-safe */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
+                            tap();
                             onClose();
                         }}
-                        className="absolute top-4 right-4 z-20 bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-full transition-colors"
+                        className="absolute top-3 right-3 z-20
+                                   h-10 w-10 rounded-full
+                                   bg-white/[0.12] text-white
+                                   flex items-center justify-center
+                                   active:scale-[0.92] transition-transform
+                                   backdrop-blur-sm"
+                        style={{ touchAction: "manipulation" }}
                         aria-label="Close"
                     >
-                        <X size={22} />
+                        <X size={20} strokeWidth={2.5} />
                     </button>
 
-                    {/* The panel itself, centered, with a max width */}
+                    {/* Post card — panel with composer disabled */}
                     <motion.div
-                        initial={{ scale: 0.94, y: 20 }}
-                        animate={{ scale: 1, y: 0 }}
-                        exit={{ scale: 0.94, y: 20 }}
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 30, opacity: 0 }}
                         transition={{
                             type: "spring",
-                            stiffness: 300,
-                            damping: 26,
+                            stiffness: 320,
+                            damping: 30,
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full max-w-md md:max-w-lg max-h-[92vh] overflow-y-auto  custom-scrollbar bg-white dark:bg-zinc-900 rounded-none md:rounded-2xl"
+                        className="w-full sm:max-w-lg
+                                   max-h-[92dvh] sm:max-h-[90vh]
+                                   overflow-y-auto no-scrollbar overscroll-contain
+                                   bg-white dark:bg-[#161b22]
+                                   rounded-t-2xl sm:rounded-2xl
+                                   pb-[env(safe-area-inset-bottom)] sm:pb-0"
+                        style={{ WebkitOverflowScrolling: "touch" }}
                     >
                         <FeedMediaPanel
                             index={0}

@@ -717,7 +717,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   sticky top-0 z-50 w-full h-16 sm:h-20
   bg-white/95 dark:bg-muted/30 backdrop-blur-xl
   border-0
-  rounded-b-xl sm:rounded-b-xl
+
   shadow-none
   flex items-center justify-between xl:justify-evenly
   px-4 sm:px-8

@@ -1,7 +1,29 @@
 "use client";
 
-import React, { useCallback, useMemo } from 'react';
-import { X } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { CheckCircle, XCircle, X } from "lucide-react";
+import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  Tap helpers — same as TutorsList                                  */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    playSound("ui-tap");
+    if (type === "success") vibrate([20, 30, 20]);
+    else if (type === "warning") vibrate(60);
+    else vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
 
 type QuizProgressOverlayProps = {
     progressOpen: boolean;
@@ -12,6 +34,10 @@ type QuizProgressOverlayProps = {
     setCurrentQuestionIndex: (index: number) => void;
 };
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                         */
+/* ------------------------------------------------------------------ */
+
 export function QuizProgressOverlay({
     progressOpen,
     setProgressOpen,
@@ -20,112 +46,154 @@ export function QuizProgressOverlay({
     circleRefs,
     setCurrentQuestionIndex,
 }: QuizProgressOverlayProps) {
-
-    // Memoize calculations to prevent re-renders
-    const { answeredCount, progressPercentage } = useMemo(() => {
+    const { answeredCount, progressPercentage, correctCount } = useMemo(() => {
         const answered = Object.keys(answers).length;
-        const percentage = Math.round((answered / questions.length) * 100);
-        return { answeredCount: answered, progressPercentage: percentage };
-    }, [answers, questions.length]);
+        const correct = questions.filter(
+            (q) => answers[q.id] !== undefined && answers[q.id] === q.correct_answer
+        ).length;
+        const percentage = questions.length
+            ? Math.round((answered / questions.length) * 100)
+            : 0;
+        return {
+            answeredCount: answered,
+            progressPercentage: percentage,
+            correctCount: correct,
+        };
+    }, [answers, questions]);
 
-    // Optimized click handler
-    const handleQuestionClick = useCallback((index: number) => {
-        // Light tap feedback with vibration check
-        if (navigator.vibrate) {
-            navigator.vibrate(30);
-        }
+    const handleClose = useCallback(() => {
+        tap();
+        setProgressOpen(false);
+    }, [setProgressOpen]);
 
-        // Switch question
-        setCurrentQuestionIndex(index);
-
-        // Smooth scroll with requestAnimationFrame for better performance
-        requestAnimationFrame(() => {
-            const element = circleRefs.current[index];
-            if (element) {
-                element.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                    inline: "center",
-                });
-            }
-
-            // Close overlay
-            setTimeout(() => {
-                setProgressOpen(false);
-            }, 120);
-        });
-    }, [setCurrentQuestionIndex, setProgressOpen, circleRefs]);
+    const handleQuestionClick = useCallback(
+        (index: number) => {
+            tap();
+            setCurrentQuestionIndex(index);
+            requestAnimationFrame(() => {
+                const el = circleRefs.current[index];
+                if (el) {
+                    el.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                        inline: "center",
+                    });
+                }
+                setTimeout(() => setProgressOpen(false), 120);
+            });
+        },
+        [setCurrentQuestionIndex, setProgressOpen, circleRefs]
+    );
 
     if (!progressOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
-            {/* Backdrop with optimized blur */}
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-6">
+            {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200"
-                onClick={() => setProgressOpen(false)}
+                className="absolute inset-0 bg-black/50"
+                onClick={handleClose}
+                style={{ touchAction: "manipulation" }}
             />
 
-            {/* Floating Card - Optimized animations */}
-            <div className="relative w-full max-w-2xl bg-white dark:bg-muted/100 rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-0 will-change-transform">
-
-                {/* Header Section - Fixed padding and spacing */}
-                <div className="flex-none px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1 min-w-0">
-                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
-                                Quiz Progress
-                            </h2>
-
-                        </div>
-                        <button
-                            onClick={() => setProgressOpen(false)}
-                            className="flex-shrink-0 p-2 ml-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
-                            aria-label="Close progress"
+            {/* Modal shell — flex-col with pinned header/footer, scrollable body */}
+            <div
+                className="relative w-full sm:max-w-md
+                           bg-white dark:bg-[#161b22]
+                           rounded-t-2xl sm:rounded-2xl
+                           shadow-sm
+                           flex flex-col
+                           max-h-[92dvh] sm:max-h-[85vh]
+                           overflow-hidden"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="quiz-progress-title"
+            >
+                {/* ── Header (pinned) ───────────────────────────── */}
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   border-b border-slate-200/70 dark:border-white/[0.06]">
+                    <button
+                        onClick={handleClose}
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5"
+                        style={{ touchAction: "manipulation" }}
+                        aria-label="Close progress"
+                    >
+                        <X className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1
+                            id="quiz-progress-title"
+                            className="text-base font-bold leading-tight truncate"
                         >
-                            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
+                            Quiz progress
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate tabular-nums">
+                            {answeredCount} of {questions.length} answered
+                        </p>
                     </div>
+                </header>
 
-                    {/* Progress Stats Row - Better responsive grid */}
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                        <StatCard
-                            label="Progress"
-                            value={`${progressPercentage}%`}
-                            color="blue"
-                        />
-                        <StatCard
-                            label="Answered"
-                            value={answeredCount.toString()}
-                            color="green"
-                        />
-                        <StatCard
-                            label="Remaining"
-                            value={(questions.length - answeredCount).toString()}
-                            color="gray"
-                        />
+                {/* ── Stats (pinned) ────────────────────────────── */}
+                <div className="shrink-0 px-4 pt-3 pb-3 grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                            Progress
+                        </p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
+                            {progressPercentage}%
+                        </p>
+                    </div>
+                    <div className="rounded-xl bg-emerald-50 dark:bg-emerald-400/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                            Answered
+                        </p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
+                            {answeredCount}
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                                /{questions.length}
+                            </span>
+                        </p>
+                    </div>
+                    <div className="rounded-xl bg-violet-50 dark:bg-violet-400/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                            Correct
+                        </p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
+                            {correctCount}
+                        </p>
                     </div>
                 </div>
 
-                {/* Grid Content - Optimized scrolling */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 hide-scrollbar">
-                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-3">
+                {/* ── Scrollable grid body ──────────────────────── */}
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-4">
+                    <div className="flex items-center justify-between px-1 mb-2">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Questions
+                        </h4>
+                        <span className="text-[10px] text-slate-400 tabular-nums">
+                            {questions.length} total
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-2">
                         {questions.map((q, index) => {
                             const userAnswer = answers[q.id];
                             const isAnswered = userAnswer !== undefined;
-                            const isCorrect = isAnswered && userAnswer === q.correct_answer;
+                            const isCorrect =
+                                isAnswered && userAnswer === q.correct_answer;
 
-                            let statusClass = "bg-gray-100 dark:bg-gray-800 text-gray-400";
-                            let statusShadow = "";
-
-                            if (isAnswered) {
-                                if (isCorrect) {
-                                    statusClass = "bg-green-500 text-white";
-                                    statusShadow = "shadow-lg shadow-green-200 dark:shadow-none";
-                                } else {
-                                    statusClass = "bg-red-500 text-white";
-                                    statusShadow = "shadow-lg shadow-red-200 dark:shadow-none";
-                                }
+                            let stateClass = "";
+                            if (!isAnswered) {
+                                stateClass =
+                                    "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400";
+                            } else if (isCorrect) {
+                                stateClass =
+                                    "bg-emerald-600 dark:bg-emerald-400/10 text-white dark:text-emerald-400";
+                            } else {
+                                stateClass =
+                                    "bg-rose-600 dark:bg-rose-400/10 text-white dark:text-rose-400";
                             }
 
                             return (
@@ -135,85 +203,90 @@ export function QuizProgressOverlay({
                                         circleRefs.current[index] = el;
                                     }}
                                     onClick={() => handleQuestionClick(index)}
-                                    className={`
-                                        relative aspect-square flex items-center justify-center
-                                        rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold
-                                        transition-all duration-150 cursor-pointer
-                                        hover:scale-105 active:scale-95
-                                        ${statusClass} ${statusShadow}
-                                    `}
+                                    className={`relative aspect-square flex items-center justify-center
+                                                rounded-xl text-[13px] font-bold tabular-nums
+                                                active:scale-[0.97] transition-transform
+                                                ${stateClass}`}
+                                    style={{ touchAction: "manipulation" }}
                                     aria-label={`Question ${index + 1}`}
-                                    title={`Question ${index + 1}`}
                                 >
                                     <span className="relative z-10">{index + 1}</span>
-
-                                    {/* Status indicator dot - prevents text bleed */}
                                     {isAnswered && (
-                                        <span className={`
-                                            absolute -top-1 -right-1 w-2 h-2 rounded-full
-                                            ${isCorrect ? 'bg-green-300' : 'bg-red-300'}
-                                        `} />
+                                        <span className="absolute -top-1 -right-1">
+                                            {isCorrect ? (
+                                                <CheckCircle
+                                                    className="h-3 w-3 text-emerald-500"
+                                                    strokeWidth={3}
+                                                />
+                                            ) : (
+                                                <XCircle
+                                                    className="h-3 w-3 text-rose-500"
+                                                    strokeWidth={3}
+                                                />
+                                            )}
+                                        </span>
                                     )}
                                 </button>
                             );
                         })}
                     </div>
-                </div>
 
-                {/* Footer - Fixed layout */}
-                <div className="flex-none px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
-                    <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-4">
-                        <LegendItem color="bg-green-500" label="Correct" />
-                        <LegendItem color="bg-red-500" label="Incorrect" />
-                        <LegendItem color="bg-gray-200 dark:bg-gray-700" label="Unanswered" />
+                    {/* Legend lives at the end of scroll content */}
+                    <div className="flex items-center justify-center gap-4 mt-4 pt-3
+                                    border-t border-slate-100 dark:border-white/[0.04]">
+                        <LegendDot tone="emerald" label="Correct" />
+                        <LegendDot tone="rose" label="Incorrect" />
+                        <LegendDot tone="neutral" label="Unanswered" />
                     </div>
+                </main>
 
+                {/* ── Footer (pinned) ───────────────────────────── */}
+                <footer className="shrink-0 px-4 py-3 flex gap-2
+                                   border-t border-slate-200/70 dark:border-white/[0.06]
+                                   bg-white dark:bg-[#161b22]">
                     <button
-                        onClick={() => setProgressOpen(false)}
-                        className="w-full py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-500
-                                 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl
-                                 font-bold text-xs sm:text-sm transition-all
-                                 active:scale-[0.98] shadow-lg"
+                        onClick={handleClose}
+                        className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06]
+                                   text-slate-700 dark:text-slate-200
+                                   text-sm font-bold
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: "manipulation" }}
                     >
-                        CONTINUE QUIZ
+                        Close
                     </button>
-                </div>
+                    <button
+                        onClick={handleClose}
+                        className="flex-[2] h-10 rounded-xl bg-blue-600 text-white
+                                   text-sm font-bold
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        Continue quiz
+                    </button>
+                </footer>
             </div>
         </div>
     );
 }
 
-// Extracted components for better performance
-const StatCard = ({ label, value, color }: { label: string; value: string; color: 'blue' | 'green' | 'gray' }) => {
-    const colorClasses = {
-        blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30 text-blue-600 dark:text-blue-400',
-        green: 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/30 text-green-600 dark:text-green-400',
-        gray: 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-    };
+/* ------------------------------------------------------------------ */
+/*  Legend dot                                                        */
+/* ------------------------------------------------------------------ */
 
-    const valueColorClasses = {
-        blue: 'text-blue-700 dark:text-blue-300',
-        green: 'text-green-700 dark:text-green-300',
-        gray: 'text-gray-700 dark:text-gray-300'
-    };
+type Tone = "emerald" | "rose" | "neutral";
 
+function LegendDot({ tone, label }: { tone: Tone; label: string }) {
+    const dot: Record<Tone, string> = {
+        emerald: "bg-emerald-500",
+        rose: "bg-rose-500",
+        neutral: "bg-slate-300 dark:bg-white/[0.15]",
+    };
     return (
-        <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-center ${colorClasses[color]}`}>
-            <span className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+        <div className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${dot[tone]}`} aria-hidden />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {label}
-            </span>
-            <span className={`block text-lg sm:text-xl font-bold ${valueColorClasses[color]}`}>
-                {value}
             </span>
         </div>
     );
-};
-
-const LegendItem = ({ color, label }: { color: string; label: string }) => (
-    <div className="flex items-center gap-2">
-        <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${color}`} />
-        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {label}
-        </span>
-    </div>
-);
+}

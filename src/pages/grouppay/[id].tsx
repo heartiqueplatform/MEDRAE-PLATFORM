@@ -14,18 +14,16 @@ import {
     getSavingsPerMember,
 } from '@/types/grouppay';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -72,6 +70,23 @@ import confetti from 'canvas-confetti';
 import { AddMember } from '@/components/grouppay/AddMember';
 import { playSound } from '@/lib/soundManager';
 
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: 'light' | 'success' | 'warning' = 'light') => {
+    playSound('ui-tap');
+    if (type === 'success') vibrate([15, 30, 15]);
+    else if (type === 'warning') vibrate(60);
+    else vibrate(15);
+};
+
 export default function GroupDetailsPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -79,8 +94,7 @@ export default function GroupDetailsPage() {
     const contentRef = useRef<HTMLDivElement | null>(null);
 
     const handleBack = useCallback(() => {
-        playSound('tap');
-        if (navigator.vibrate) navigator.vibrate(20);
+        tap();
         navigate('/grouppay', { replace: true });
     }, [navigate]);
 
@@ -111,32 +125,25 @@ export default function GroupDetailsPage() {
             }
             audioRef.current.currentTime = 0;
             audioRef.current.play().catch(() => { });
-        } catch (error) { }
+        } catch {
+            /* ignore */
+        }
     }, []);
 
     const triggerConfetti = useCallback(() => {
         try {
-            const duration = 3000;
-            const end = Date.now() + duration;
-            const colors = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899'];
-
+            const end = Date.now() + 3000;
+            const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#e11d48', '#ec4899'];
             (function frame() {
                 confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
                 confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
                 if (Date.now() < end) requestAnimationFrame(frame);
             })();
-
-            setTimeout(() => {
-                confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors });
-            }, 100);
-            setTimeout(() => {
-                confetti({ particleCount: 100, spread: 80, origin: { y: 0.5, x: 0.3 }, colors });
-            }, 300);
-            setTimeout(() => {
-                confetti({ particleCount: 100, spread: 80, origin: { y: 0.5, x: 0.7 }, colors });
-            }, 500);
-        } catch (error) {
-            console.error('Confetti error:', error);
+            setTimeout(() => confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors }), 100);
+            setTimeout(() => confetti({ particleCount: 100, spread: 80, origin: { y: 0.5, x: 0.3 }, colors }), 300);
+            setTimeout(() => confetti({ particleCount: 100, spread: 80, origin: { y: 0.5, x: 0.7 }, colors }), 500);
+        } catch {
+            /* ignore */
         }
     }, []);
 
@@ -266,9 +273,16 @@ export default function GroupDetailsPage() {
     };
 
     const handleJoinGroup = async () => {
-        if (!user) { toast.error('Please log in to join this group'); return; }
+        if (!user) {
+            toast.error('Please log in to join this group');
+            return;
+        }
         if (!group) return;
-        if (isFull) { toast.error('This group is full'); return; }
+        if (isFull) {
+            toast.error('This group is full');
+            return;
+        }
+        tap('success');
         setJoining(true);
         try {
             await grouppayService.addMemberToGroup(group.id, user.id);
@@ -283,6 +297,7 @@ export default function GroupDetailsPage() {
 
     const handleLeaveGroup = async () => {
         if (!user || !group) return;
+        tap('warning');
         setLeaving(true);
         try {
             await grouppayService.removeMemberFromGroup(group.id, user.id);
@@ -298,6 +313,7 @@ export default function GroupDetailsPage() {
 
     const handleDeleteGroup = async () => {
         if (!user || !group) return;
+        tap('warning');
         setDeleting(true);
         try {
             await grouppayService.deleteGroup(group.id, user.id);
@@ -313,32 +329,37 @@ export default function GroupDetailsPage() {
 
     const handleCopyInviteCode = () => {
         if (!group) return;
+        tap();
         navigator.clipboard.writeText(group.group_code);
         toast.success('Invite code copied to clipboard!');
     };
 
     const handleShareGroup = async () => {
         if (!group) return;
+        tap();
         try {
             await navigator.share({
                 title: `Join ${group.group_name} on Medrae GroupPay`,
                 text: `Join our study group "${group.group_name}" using code: ${group.group_code}`,
                 url: window.location.href,
             });
-        } catch (error) { }
+        } catch {
+            /* cancelled */
+        }
     };
 
     const handleInitiatePayment = async () => {
-        if (!user) { toast.error('Please log in to make payment'); return; }
-        if (!group) { toast.error('Group data not loaded'); return; }
-        if (!phoneNumber || phoneNumber.length < 10) { toast.error('Please enter a valid phone number'); return; }
+        if (!user) return toast.error('Please log in to make payment');
+        if (!group) return toast.error('Group data not loaded');
+        if (!phoneNumber || phoneNumber.length < 10) return toast.error('Please enter a valid phone number');
         if (!hasMinimumMembers) {
-            toast.error(`Group needs ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''} to activate`);
+            toast.error(
+                `Group needs ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''} to activate`
+            );
             return;
         }
-        if (!user.id) { toast.error('User ID not found. Please log out and log in again.'); return; }
-        if (!group.id) { toast.error('Group ID not found'); return; }
 
+        tap('success');
         setProcessingPayment(true);
         setPaymentStep('processing');
 
@@ -365,7 +386,6 @@ export default function GroupDetailsPage() {
                     console.error('Error polling payment status:', pollError);
                 }
             }, 3000);
-
             setTimeout(() => clearInterval(interval), 180000);
         } catch (error: any) {
             console.error('Payment error:', error);
@@ -378,6 +398,7 @@ export default function GroupDetailsPage() {
 
     const handleRetryPayment = async () => {
         if (!user || !group) return;
+        tap();
         try {
             await grouppayService.retryGroupPayment(group.id, user.id);
             toast.success('Payment retry initiated');
@@ -390,777 +411,1337 @@ export default function GroupDetailsPage() {
     const durationLabel = durationType === '1-month' ? '1 Month' : '2 Months';
 
     return (
-        <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
-            {/* ── Sticky top bar with back arrow ─────────────────── */}
-            <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
-                border-b border-gray-100 dark:border-gray-800
-                bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
-                z-30 safe-top">
+        <div className="h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-[#0d1117] overflow-hidden">
+            {/* ── Header ─────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
                 <button
                     onClick={handleBack}
                     aria-label="Go back"
-                    className="flex items-center justify-center h-10 w-10 rounded-full
-                        bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
-                        active:scale-95 transition-all touch-manipulation"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5"
+                    style={{ touchAction: 'manipulation' }}
                 >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                 </button>
-                <div className="min-w-0 flex-1">
-                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate
+                                   text-slate-900 dark:text-white">
                         {loading ? 'Loading group…' : group?.group_name ?? 'Group'}
                     </h1>
-                    <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
                         {loading
                             ? 'Please wait'
                             : group
-                                ? `${currentMemberCount}/${maxMembers} members · ${group.status === 'active' ? 'Active' : 'Open'}`
+                                ? `${currentMemberCount}/${maxMembers} members · ${group.status === 'active' ? 'Active' : 'Open'
+                                }`
                                 : 'Not found'}
                     </p>
                 </div>
             </header>
 
-            {/* ── Internally-scrolling content ───────────────────── */}
-            <div
+            {/* ── Body ───────────────────────────────────────── */}
+            <main
                 ref={contentRef}
-                className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-                    custom-scrollbar overscroll-contain"
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
             >
-                <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
+                <div className="w-full max-w-3xl mx-auto px-4 py-4 pb-24 safe-bottom space-y-3">
 
-                    {/* ── LOADING SKELETON ─────────────────────── */}
-                    {loading && (
-                        <div className="animate-pulse space-y-4">
-                            <div className="h-48 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
-                            <div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
-                            <div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
-                        </div>
-                    )}
+                    {loading && <LoadingSkeleton />}
 
-                    {/* ── NOT FOUND ────────────────────────────── */}
                     {!loading && !group && (
-                        <div className="text-center max-w-sm mx-auto py-12">
-                            <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-                                <AlertCircle className="w-8 h-8 text-slate-400" />
+                        <div className="text-center max-w-sm mx-auto py-14">
+                            <div className="h-14 w-14 rounded-full
+                                            bg-slate-100 dark:bg-white/[0.06]
+                                            flex items-center justify-center mx-auto mb-4">
+                                <AlertCircle className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                             </div>
-                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Group Not Found</h2>
-                            <p className="text-sm text-muted-foreground mt-2">
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                                Group not found
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                                 The group you're looking for doesn't exist or has been deleted.
                             </p>
-                            <Button
-                                onClick={() => navigate('/grouppay')}
-                                className="mt-5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-0"
+                            <button
+                                onClick={() => {
+                                    tap();
+                                    navigate('/grouppay');
+                                }}
+                                className="mt-5 h-10 px-4 rounded-xl
+                                           bg-blue-600 text-white
+                                           text-sm font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: 'manipulation' }}
                             >
-                                Browse Groups
-                            </Button>
+                                Browse groups
+                            </button>
                         </div>
                     )}
 
-                    {/* ── GROUP CONTENT ────────────────────────── */}
                     {!loading && group && (
                         <>
-                            {/* ============================================ */}
-                            {/* CELEBRATION OVERLAYS */}
-                            {/* ============================================ */}
+                            {/* CELEBRATION OVERLAY */}
                             {showCelebration && (
-                                <div className="fixed inset-0 z-[9998] pointer-events-none">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-green-500/10 via-transparent to-transparent animate-pulse" />
-                                </div>
+                                <div className="fixed inset-0 z-[9998] pointer-events-none" />
                             )}
 
                             {showCelebrationModal && (
-                                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 p-4">
-                                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-green-500/10 rounded-full blur-3xl animate-pulse" />
-                                        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-300" />
-                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-700" />
+                                <CelebrationModal
+                                    currentMemberCount={currentMemberCount}
+                                    pricePerMember={pricePerMember}
+                                    totalAmount={totalAmount}
+                                    totalSavings={totalSavings}
+                                    durationLabel={durationLabel}
+                                    onClose={() => {
+                                        tap();
+                                        setShowCelebrationModal(false);
+                                        setShowCelebration(false);
+                                    }}
+                                    onBrowse={() => {
+                                        tap();
+                                        setShowCelebrationModal(false);
+                                        setShowCelebration(false);
+                                        navigate('/grouppay');
+                                    }}
+                                />
+                            )}
+
+                            {/* ── HERO HEADER CARD ─────────────── */}
+                            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="h-10 w-10 rounded-xl
+                                                    bg-emerald-400/10
+                                                    flex items-center justify-center shrink-0">
+                                        <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                                     </div>
-
-                                    <div className="max-w-lg w-full mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border-0 p-8 text-center animate-in zoom-in-95 duration-500 relative z-10">
-                                        <div className="relative w-28 h-28 mx-auto mb-6">
-                                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 dark:from-green-900/40 dark:via-blue-900/40 dark:to-purple-900/40 animate-pulse" />
-                                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-500/20 via-blue-500/20 to-purple-500/20 blur-xl" />
-                                            <div className="relative w-full h-full rounded-full bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30 flex items-center justify-center shadow-xl shadow-green-500/30">
-                                                <PartyPopper className="w-14 h-14 text-green-600 dark:text-green-400" />
-                                            </div>
-                                            <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-pulse" />
-                                            <Sparkles className="absolute -bottom-2 -left-2 w-4 h-4 text-blue-400 animate-pulse delay-200" />
-                                        </div>
-
-                                        <h3 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white mb-2">
-                                            Group Activated
-                                        </h3>
-
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                                            {durationLabel} premium access unlocked for all {currentMemberCount} members
-                                        </p>
-
-                                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 mb-6 border-0">
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="text-center">
-                                                    <p className="text-2xl font-semibold text-green-600 dark:text-green-400 tabular-nums">{currentMemberCount}</p>
-                                                    <p className="text-[10px] text-muted-foreground">Members</p>
-                                                </div>
-                                                <div className="text-center border-l border-slate-200 dark:border-slate-700">
-                                                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {pricePerMember}</p>
-                                                    <p className="text-[10px] text-muted-foreground">Per Member</p>
-                                                </div>
-                                                <div className="text-center border-l border-slate-200 dark:border-slate-700">
-                                                    <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400 tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalAmount}</p>
-                                                    <p className="text-[10px] text-muted-foreground">Total Paid</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-green-50 dark:bg-green-950/30 rounded-xl border-0">
-                                            <Rocket className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                            <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                                                Saved {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()} vs {durationLabel} individual plans
-                                            </p>
-                                        </div>
-
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <Button
-                                                onClick={() => {
-                                                    setShowCelebrationModal(false);
-                                                    setShowCelebration(false);
-                                                }}
-                                                className="flex-1 border-0 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-bold h-12 rounded-2xl"
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                            {isCreator && (
+                                                <span className="inline-flex items-center gap-1
+                                                                 text-[10px] font-bold uppercase tracking-wider
+                                                                 bg-amber-50 dark:bg-amber-400/10
+                                                                 text-amber-700 dark:text-amber-400
+                                                                 px-1.5 py-0.5 rounded-full">
+                                                    <Crown className="h-2.5 w-2.5" />
+                                                    Leader
+                                                </span>
+                                            )}
+                                            {group.status === 'active' && (
+                                                <span className="inline-flex items-center gap-1
+                                                                 text-[10px] font-bold uppercase tracking-wider
+                                                                 bg-emerald-50 dark:bg-emerald-400/10
+                                                                 text-emerald-700 dark:text-emerald-400
+                                                                 px-1.5 py-0.5 rounded-full">
+                                                    <CheckCircle className="h-2.5 w-2.5" />
+                                                    Active
+                                                </span>
+                                            )}
+                                            <span
+                                                className={`inline-flex items-center gap-1
+                                                             text-[10px] font-bold uppercase tracking-wider
+                                                             px-1.5 py-0.5 rounded-full
+                                                             ${group.is_locked
+                                                        ? 'bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'
+                                                    }`}
                                             >
-                                                <CheckCircle className="w-5 h-5 mr-2" />
-                                                Awesome! Let's Go
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => {
-                                                    setShowCelebrationModal(false);
-                                                    setShowCelebration(false);
-                                                    navigate('/grouppay');
-                                                }}
-                                                className="flex-1 border-0 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium h-12 rounded-2xl"
-                                            >
-                                                <Users className="w-5 h-5 mr-2" />
-                                                Browse Groups
-                                            </Button>
+                                                {group.is_locked ? (
+                                                    <Lock className="h-2.5 w-2.5" />
+                                                ) : (
+                                                    <Unlock className="h-2.5 w-2.5" />
+                                                )}
+                                                {group.is_locked ? 'Locked' : 'Open'}
+                                            </span>
                                         </div>
-
-                                        <p className="text-[10px] text-muted-foreground mt-4 flex items-center justify-center gap-1">
-                                            <CheckCircle className="w-3 h-3 text-green-500" />
-                                            All members upgraded to premium automatically
+                                        <h2 className="text-base font-bold leading-tight
+                                                       text-slate-900 dark:text-white truncate">
+                                            {group.group_name}
+                                        </h2>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                            {group.school}
                                         </p>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* ============================================ */}
-                            {/* MAIN GROUP CARD */}
-                            {/* ============================================ */}
-                            <Card className="border border-slate-100 dark:border-gray-800 rounded-2xl shadow-sm bg-white dark:bg-muted/30 overflow-hidden mb-3 md:mb-6">
-                                <CardHeader className="pb-4 px-4 md:px-6 pt-5 md:pt-6">
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0">
-                                            <CardTitle className="text-xl md:text-3xl flex items-center flex-wrap gap-2 leading-tight">
-                                                <span className="truncate">{group.group_name}</span>
-                                                {isCreator && (
-                                                    <Badge className="border-0 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-[10px] font-normal">
-                                                        <Crown className="w-3 h-3 mr-1" />
-                                                        Leader
-                                                    </Badge>
-                                                )}
-                                                {group.status === 'active' && (
-                                                    <Badge className="border-0 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-normal">
-                                                        <CheckCircle className="w-3 h-3 mr-1" />
-                                                        Active
-                                                    </Badge>
-                                                )}
-                                            </CardTitle>
-                                            <CardDescription className="text-xs md:text-sm mt-1">
-                                                {group.school}
-                                            </CardDescription>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="inline-flex items-center
+                                                     text-[10px] font-bold uppercase tracking-wider
+                                                     bg-violet-50 dark:bg-violet-400/10
+                                                     text-violet-700 dark:text-violet-400
+                                                     px-2 py-0.5 rounded-full">
+                                        {durationLabel}
+                                    </span>
+                                    <span className="inline-flex items-center
+                                                     text-[10px] font-bold uppercase tracking-wider
+                                                     bg-emerald-50 dark:bg-emerald-400/10
+                                                     text-emerald-700 dark:text-emerald-400
+                                                     px-2 py-0.5 rounded-full">
+                                        Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}/person
+                                    </span>
+                                </div>
 
-                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                <Badge className="border-0 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-semibold">
-                                                    {durationLabel} Plan
-                                                </Badge>
-                                                <Badge className="border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] font-semibold">
-                                                    Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}/person
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                            <Badge
-                                                className={`text-[10px] font-normal border-0 px-2 py-0.5 ${group.is_locked
-                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                                    }`}
-                                            >
-                                                {group.is_locked ? <Lock className="w-3 h-3 mr-1" /> : <Unlock className="w-3 h-3 mr-1" />}
-                                                {group.is_locked ? 'Locked' : 'Open'}
-                                            </Badge>
-                                            <Badge
-                                                className={`text-[10px] font-normal border-0 px-2 py-0.5 ${group.status === 'active'
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                    : group.status === 'payment_pending'
-                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                        : group.status === 'closed'
-                                                            ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                    }`}
-                                            >
-                                                {group.status === 'active' && <CheckCircle className="w-3 h-3 mr-1" />}
-                                                {group.status === 'payment_pending' && <Clock className="w-3 h-3 mr-1" />}
-                                                {group.status === 'closed' && <AlertCircle className="w-3 h-3 mr-1" />}
-                                                {group.status.replace('_', ' ')}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-
-                                <CardContent className="space-y-5 px-4 md:px-6 pb-6">
-                                    {/* Creator + Date */}
-                                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                        <div className="flex items-center gap-1.5">
-                                            <User className="w-3.5 h-3.5" />
-                                            <span>Created by {group.creator?.name || 'Unknown'}</span>
+                                {/* Meta */}
+                                <div className="flex flex-wrap items-center gap-3
+                                                text-[11px] text-slate-500 dark:text-slate-400">
+                                    <div className="flex items-center gap-1.5">
+                                        <User className="h-3 w-3" />
+                                        <span>
+                                            {group.creator?.name || 'Unknown'}
                                             {isCreator && (
-                                                <span className="text-[10px] text-slate-500 dark:text-slate-400">(You)</span>
+                                                <span className="ml-1 opacity-70">(You)</span>
                                             )}
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            <span>{formatDistanceToNow(new Date(group.created_at), { addSuffix: true })}</span>
-                                        </div>
+                                        </span>
                                     </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>
+                                            {formatDistanceToNow(new Date(group.created_at), {
+                                                addSuffix: true,
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
 
-                                    {/* Description */}
-                                    {group.description && (
-                                        <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0">
-                                            <p className="text-xs md:text-sm leading-relaxed">{group.description}</p>
-                                        </div>
-                                    )}
+                                {/* Description */}
+                                {group.description && (
+                                    <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                                            {group.description}
+                                        </p>
+                                    </div>
+                                )}
+                            </section>
 
-                                    {/* Contact Information */}
-                                    {(group.leader_phone || group.leader_whatsapp || group.leader_email) && (
-                                        <div className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0 space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <Phone className="w-4 h-4 text-green-600" />
-                                                <h4 className="font-medium text-sm">Group Leader Contact</h4>
-                                                <span className="text-[10px] text-muted-foreground">For Contributions</span>
+                            {/* ── CONTACT ──────────────────────── */}
+                            {(group.leader_phone ||
+                                group.leader_whatsapp ||
+                                group.leader_email) && (
+                                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-8 w-8 rounded-lg
+                                                        bg-blue-400/10
+                                                        flex items-center justify-center shrink-0">
+                                                <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                Send your contribution ({GROUPPAY_CONFIG.CURRENCY} {pricePerMember}) to the group leader
-                                            </p>
-                                            <div className="space-y-2">
-                                                {group.leader_phone && (
-                                                    <div className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800 rounded-xl border-0">
-                                                        <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                                        <span className="font-mono text-sm flex-1 tabular-nums">{group.leader_phone}</span>
-                                                        <div className="flex gap-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-8 px-2 text-xs border-0"
-                                                                onClick={() => handlePhoneClick(group.leader_phone || '')}
-                                                            >
-                                                                <Phone className="w-3.5 h-3.5" />
-                                                                <span className="sr-only md:not-sr-only md:ml-1">Call</span>
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-8 px-2 text-xs border-0"
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-blue-600 dark:text-blue-400 leading-none mb-1">
+                                                    Contributions
+                                                </p>
+                                                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                                                    Group leader contact
+                                                </h3>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                            Send your contribution ({GROUPPAY_CONFIG.CURRENCY}{' '}
+                                            {pricePerMember}) directly to the leader.
+                                        </p>
+
+                                        <div className="space-y-2">
+                                            {group.leader_phone && (
+                                                <ContactRow
+                                                    icon={<Phone className="h-3.5 w-3.5" />}
+                                                    label="Phone"
+                                                    value={group.leader_phone}
+                                                    actions={
+                                                        <>
+                                                            <MiniBtn
+                                                                icon={<Phone className="h-3.5 w-3.5" />}
+                                                                label="Call"
+                                                                onClick={() =>
+                                                                    handlePhoneClick(group.leader_phone || '')
+                                                                }
+                                                            />
+                                                            <MiniBtn
+                                                                icon={<Copy className="h-3.5 w-3.5" />}
+                                                                label="Copy"
                                                                 onClick={() => {
-                                                                    navigator.clipboard.writeText(group.leader_phone || '');
+                                                                    tap();
+                                                                    navigator.clipboard.writeText(
+                                                                        group.leader_phone || ''
+                                                                    );
                                                                     toast.success('Phone number copied!');
                                                                 }}
-                                                            >
-                                                                <Copy className="w-3.5 h-3.5" />
-                                                                <span className="sr-only md:not-sr-only md:ml-1">Copy</span>
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {group.leader_whatsapp && (
-                                                    <div className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800 rounded-xl border-0">
-                                                        <MessageCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                                        <span className="font-mono text-sm flex-1 tabular-nums">{group.leader_whatsapp}</span>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-8 px-2 text-xs border-0"
-                                                            onClick={() => handleWhatsAppClick(group.leader_whatsapp || '')}
-                                                        >
-                                                            <MessageCircle className="w-3.5 h-3.5" />
-                                                            <span className="sr-only md:not-sr-only md:ml-1">Chat</span>
-                                                            <ExternalLink className="w-3 h-3 ml-1" />
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                                {group.leader_email && (
-                                                    <div className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800 rounded-xl border-0">
-                                                        <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                        <span className="text-sm flex-1 truncate">{group.leader_email}</span>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-8 px-2 text-xs border-0"
-                                                            onClick={() => handleEmailClick(group.leader_email || '')}
-                                                        >
-                                                            <Mail className="w-3.5 h-3.5" />
-                                                            <span className="sr-only md:not-sr-only md:ml-1">Email</span>
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-0">
-                                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-                                                <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed">
-                                                    Only send money to group leaders you know personally.
-                                                    Medrae does not handle individual contributions.
-                                                </p>
-                                            </div>
+                                                            />
+                                                        </>
+                                                    }
+                                                />
+                                            )}
+                                            {group.leader_whatsapp && (
+                                                <ContactRow
+                                                    icon={<MessageCircle className="h-3.5 w-3.5" />}
+                                                    label="WhatsApp"
+                                                    value={group.leader_whatsapp}
+                                                    actions={
+                                                        <MiniBtn
+                                                            icon={<ExternalLink className="h-3.5 w-3.5" />}
+                                                            label="Chat"
+                                                            onClick={() =>
+                                                                handleWhatsAppClick(group.leader_whatsapp || '')
+                                                            }
+                                                        />
+                                                    }
+                                                />
+                                            )}
+                                            {group.leader_email && (
+                                                <ContactRow
+                                                    icon={<Mail className="h-3.5 w-3.5" />}
+                                                    label="Email"
+                                                    value={group.leader_email}
+                                                    actions={
+                                                        <MiniBtn
+                                                            icon={<Mail className="h-3.5 w-3.5" />}
+                                                            label="Email"
+                                                            onClick={() =>
+                                                                handleEmailClick(group.leader_email || '')
+                                                            }
+                                                        />
+                                                    }
+                                                />
+                                            )}
+                                        </div>
+
+                                        <InfoCallout
+                                            tone="amber"
+                                            icon={<AlertTriangle className="h-3.5 w-3.5" />}
+                                            body="Only send money to group leaders you know personally. Medrae does not handle individual contributions."
+                                        />
+                                    </section>
+                                )}
+
+                            {/* ── PROGRESS ─────────────────────── */}
+                            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Users className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                                        <span className="text-[11px] font-bold uppercase tracking-wider
+                                                         text-slate-500 dark:text-slate-400">
+                                            Members
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-slate-900 dark:text-white tabular-nums">
+                                        {currentMemberCount}/{maxMembers}
+                                    </span>
+                                </div>
+
+                                <Progress value={Math.min(progress, 100)} className="h-1.5" />
+
+                                <div
+                                    className={`flex items-start gap-1.5 text-[11px] leading-snug ${hasMinimumMembers
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-amber-600 dark:text-amber-400'
+                                        }`}
+                                >
+                                    {hasMinimumMembers ? (
+                                        <CheckCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                    ) : (
+                                        <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                    )}
+                                    <span>
+                                        {hasMinimumMembers
+                                            ? 'Ready — group is full, activate any time'
+                                            : `Need ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''
+                                            } to fill the group`}
+                                    </span>
+                                </div>
+
+                                {/* Pricing 3-up */}
+                                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                                    <MiniStat
+                                        label="Per member"
+                                        value={`${GROUPPAY_CONFIG.CURRENCY} ${pricePerMember}`}
+                                        sub={`${GROUPPAY_CONFIG.CURRENCY} ${individualPrice} solo`}
+                                    />
+                                    <MiniStat
+                                        label="Members"
+                                        value={`${currentMemberCount}`}
+                                    />
+                                    <MiniStat
+                                        label="Total"
+                                        value={`${GROUPPAY_CONFIG.CURRENCY} ${totalAmount}`}
+                                        tone="emerald"
+                                        sub={`Save ${GROUPPAY_CONFIG.CURRENCY} ${totalSavings.toLocaleString()}`}
+                                    />
+                                </div>
+                            </section>
+
+                            {/* ── PAYMENT STATUS ──────────────── */}
+                            {paymentStatus && (
+                                <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider
+                                                      text-slate-500 dark:text-slate-400">
+                                            Payment status
+                                        </p>
+                                        <PaymentBadge status={paymentStatus} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Total amount
+                                        </span>
+                                        <span className="text-[11px] font-bold text-slate-900 dark:text-white tabular-nums">
+                                            {GROUPPAY_CONFIG.CURRENCY} {paymentStatus.total_amount}
+                                        </span>
+                                    </div>
+
+                                    {paymentStatus.mpesa_receipt && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                Receipt
+                                            </span>
+                                            <code className="text-[11px] font-mono tabular-nums
+                                                             bg-slate-100 dark:bg-white/[0.06]
+                                                             px-1.5 py-0.5 rounded">
+                                                {paymentStatus.mpesa_receipt}
+                                            </code>
                                         </div>
                                     )}
 
-                                    {/* Members Progress */}
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="flex items-center gap-2">
-                                                <Users className="w-4 h-4" />
-                                                {currentMemberCount} / {maxMembers} Members
-                                            </span>
-                                            <span className="text-xs text-muted-foreground tabular-nums">{Math.round(progress)}% full</span>
-                                        </div>
-                                        <Progress value={Math.min(progress, 100)} className="h-2" />
-                                        <div className={`flex items-center gap-2 text-xs ${hasMinimumMembers ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                                            {hasMinimumMembers ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                                            <span>
-                                                {hasMinimumMembers
-                                                    ? `Ready! Group is full — you can activate it`
-                                                    : `Need ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''} to fill the group (${currentMemberCount}/${maxMembers})`}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Contribution Info */}
-                                    <div className="grid grid-cols-3 gap-2 p-3.5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0">
-                                        <div className="text-center">
-                                            <p className="text-[10px] text-muted-foreground">Per Member</p>
-                                            <p className="text-base md:text-lg font-semibold tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {pricePerMember}</p>
-                                            <p className="text-[9px] text-muted-foreground line-through opacity-60">
-                                                {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
-                                            </p>
-                                        </div>
-                                        <div className="text-center border-l border-slate-200 dark:border-slate-700">
-                                            <p className="text-[10px] text-muted-foreground">Members</p>
-                                            <p className="text-base md:text-lg font-semibold tabular-nums">{currentMemberCount}</p>
-                                        </div>
-                                        <div className="text-center border-l border-slate-200 dark:border-slate-700">
-                                            <p className="text-[10px] text-muted-foreground">Total</p>
-                                            <p className="text-base md:text-lg font-semibold text-green-600 dark:text-green-400 tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalAmount}</p>
-                                            <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">
-                                                Save {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Payment Status */}
-                                    {paymentStatus && (
-                                        <div className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">Payment Status</span>
-                                                <Badge
-                                                    className={`text-[10px] font-normal border-0 px-2 py-0.5 ${paymentStatus.is_successful
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                        : paymentStatus.status === 'pending'
-                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                                        }`}
-                                                >
-                                                    {paymentStatus.is_successful ? <CheckCircle className="w-3 h-3 mr-1" /> : paymentStatus.status === 'pending' ? <Clock className="w-3 h-3 mr-1" /> : <AlertCircle className="w-3 h-3 mr-1" />}
-                                                    {paymentStatus.status}
-                                                </Badge>
+                                    {paymentStatus.result_desc &&
+                                        paymentStatus.status === 'failed' && (
+                                            <div className="flex items-start gap-1.5 p-2 rounded-lg
+                                                            bg-rose-50 dark:bg-rose-400/10
+                                                            text-[11px] text-rose-700 dark:text-rose-400 leading-snug">
+                                                <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
+                                                <span>{paymentStatus.result_desc}</span>
                                             </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Total Amount</span>
-                                                <span className="font-medium tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {paymentStatus.total_amount}</span>
-                                            </div>
-                                            {paymentStatus.mpesa_receipt && (
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-muted-foreground">M-Pesa Receipt</span>
-                                                    <span className="font-mono text-xs">{paymentStatus.mpesa_receipt}</span>
-                                                </div>
-                                            )}
-                                            {paymentStatus.result_desc && paymentStatus.status === 'failed' && (
-                                                <div className="flex items-center gap-2 text-sm text-red-500">
-                                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                                    <span>{paymentStatus.result_desc}</span>
-                                                </div>
-                                            )}
-                                            {paymentStatus.status === 'failed' && isCreator && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={handleRetryPayment}
-                                                    className="w-full gap-2 text-sm border-0 bg-white dark:bg-slate-800"
-                                                >
-                                                    <RefreshCw className="w-4 h-4" />
-                                                    Retry Payment
-                                                </Button>
-                                            )}
-                                        </div>
+                                        )}
+
+                                    {paymentStatus.status === 'failed' && isCreator && (
+                                        <button
+                                            onClick={handleRetryPayment}
+                                            className="w-full h-9 rounded-xl
+                                                       bg-slate-100 dark:bg-white/[0.06]
+                                                       text-slate-700 dark:text-slate-200
+                                                       text-[12px] font-bold
+                                                       flex items-center justify-center gap-1.5
+                                                       active:scale-[0.97] transition-transform"
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            <RefreshCw className="h-3.5 w-3.5" />
+                                            Retry payment
+                                        </button>
                                     )}
+                                </section>
+                            )}
 
-                                    {/* Group Code */}
-                                    <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0">
-                                        <span className="text-sm font-medium">Group Code:</span>
-                                        <code className="px-2.5 py-1 bg-white dark:bg-slate-800 rounded-lg font-mono text-sm font-semibold tabular-nums">
+                            {/* ── CODE / SHARE ────────────────── */}
+                            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                                      text-slate-500 dark:text-slate-400 leading-none mb-1">
+                                            Invite code
+                                        </p>
+                                        <code className="text-lg font-bold tabular-nums tracking-widest
+                                                         text-slate-900 dark:text-white">
                                             {group.group_code}
                                         </code>
-                                        <Button variant="ghost" size="sm" onClick={handleCopyInviteCode} className="gap-1 text-xs border-0 ml-auto">
-                                            <Copy className="w-3.5 h-3.5" />
-                                            Copy
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={handleShareGroup} className="gap-1 text-xs border-0">
-                                            <Share2 className="w-3.5 h-3.5" />
-                                            Share
-                                        </Button>
                                     </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-wrap gap-2 pt-1">
-                                        {!isMember && !isFull && group.status !== 'closed' && !group.is_locked && (
-                                            <Button
-                                                onClick={handleJoinGroup}
-                                                disabled={joining}
-                                                className="flex-1 gap-2 text-sm border-0 h-11 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 font-normal"
-                                            >
-                                                <UserPlus className="w-4 h-4" />
-                                                {joining ? 'Joining...' : 'Join Group'}
-                                            </Button>
-                                        )}
-                                        {isMember && !isCreator && (
-                                            <>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setShowLeaveDialog(true)}
-                                                    className="gap-2 text-sm border-0 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                                    disabled={leaving}
-                                                >
-                                                    <UserMinus className="w-4 h-4" />
-                                                    Leave Group
-                                                </Button>
-                                                <Button
-                                                    className="flex-1 gap-2 h-11 rounded-xl border-0 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-normal text-sm"
-                                                    onClick={() => setShowPaymentDialog(true)}
-                                                    disabled={group.status === 'active' || !hasMinimumMembers}
-                                                    title={!hasMinimumMembers ? `Group must fill up first — ${membersNeeded} more needed` : ''}
-                                                >
-                                                    <DollarSign className="w-4 h-4" />
-                                                    {group.status === 'active' ? 'Group Active' : 'Pay for Group'}
-                                                </Button>
-                                            </>
-                                        )}
-                                        {isCreator && (
-                                            <>
-                                                <Button
-                                                    onClick={() => setShowDeleteDialog(true)}
-                                                    className="gap-2 text-sm border-0 h-11 rounded-xl bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 font-normal"
-                                                    disabled={deleting}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete
-                                                </Button>
-
-                                                {group.status === 'open' && !group.is_locked && !isFull && (
-                                                    <AddMember
-                                                        groupId={group.id}
-                                                        existingMemberIds={(group.members ?? []).map((m) => m.user_id)}
-                                                        currentMemberCount={currentMemberCount}
-                                                        maxMembers={maxMembers}
-                                                        onMemberAdded={async () => {
-                                                            await loadGroup();
-                                                        }}
-                                                    />
-                                                )}
-
-                                                <Button
-                                                    className="flex-1 gap-2 h-11 rounded-xl border-0 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-normal text-sm"
-                                                    onClick={() => setShowPaymentDialog(true)}
-                                                    disabled={group.status === 'active' || !hasMinimumMembers}
-                                                    title={!hasMinimumMembers ? `Need ${membersNeeded} more members` : ''}
-                                                >
-                                                    <DollarSign className="w-4 h-4" />
-                                                    {group.status === 'active' ? 'Group Active' : 'Pay for Group'}
-                                                </Button>
-                                            </>
-                                        )}
-                                        {isFull && !isMember && (
-                                            <Badge className="text-sm px-3 py-1.5 border-0 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-normal">
-                                                Group Full
-                                            </Badge>
-                                        )}
-                                        {group.is_locked && !isMember && (
-                                            <Badge className="text-sm px-3 py-1.5 border-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-normal">
-                                                Locked
-                                            </Badge>
-                                        )}
-                                        {group.status === 'closed' && !isMember && (
-                                            <Badge className="text-sm px-3 py-1.5 border-0 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-normal">
-                                                Closed
-                                            </Badge>
-                                        )}
+                                    <div className="flex items-center gap-1.5">
+                                        <IconBtn
+                                            icon={<Copy className="h-4 w-4" />}
+                                            label="Copy"
+                                            onClick={handleCopyInviteCode}
+                                        />
+                                        <IconBtn
+                                            icon={<Share2 className="h-4 w-4" />}
+                                            label="Share"
+                                            onClick={handleShareGroup}
+                                        />
                                     </div>
+                                </div>
+                            </section>
 
-                                    {/* Fill-Up Warning */}
-                                    {isCreator && !hasMinimumMembers && group.status !== 'active' && (
-                                        <div className="flex items-start gap-2 p-3.5 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-0">
-                                            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                                            <div className="text-xs text-amber-700 dark:text-amber-300">
-                                                <p className="font-medium">
-                                                    Need {membersNeeded} more member{membersNeeded > 1 ? 's' : ''} to fill the group
-                                                </p>
-                                                <p className="text-amber-600/80 dark:text-amber-400/80 mt-0.5 leading-relaxed">
-                                                    Your group activates once all {maxMembers} slots are filled ({currentMemberCount}/{maxMembers}).
-                                                    Share your group code with friends!
-                                                </p>
-                                            </div>
-                                        </div>
+                            {/* ── ACTIONS ──────────────────────── */}
+                            <section className="space-y-2">
+                                {!isMember && !isFull && group.status !== 'closed' && !group.is_locked && (
+                                    <button
+                                        onClick={handleJoinGroup}
+                                        disabled={joining}
+                                        className="w-full h-11 rounded-xl
+                                                   bg-blue-600 text-white
+                                                   text-sm font-bold
+                                                   flex items-center justify-center gap-2
+                                                   active:scale-[0.97] transition-transform
+                                                   disabled:opacity-60"
+                                        style={{ touchAction: 'manipulation' }}
+                                    >
+                                        <UserPlus className="h-4 w-4" />
+                                        {joining ? 'Joining…' : 'Join group'}
+                                    </button>
+                                )}
+
+                                {isMember && !isCreator && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => {
+                                                tap('warning');
+                                                setShowLeaveDialog(true);
+                                            }}
+                                            disabled={leaving}
+                                            className="h-11 rounded-xl
+                                                       bg-slate-100 dark:bg-white/[0.06]
+                                                       text-slate-700 dark:text-slate-200
+                                                       text-sm font-bold
+                                                       flex items-center justify-center gap-1.5
+                                                       active:scale-[0.97] transition-transform"
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            <UserMinus className="h-4 w-4" />
+                                            Leave
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                tap();
+                                                setShowPaymentDialog(true);
+                                            }}
+                                            disabled={
+                                                group.status === 'active' || !hasMinimumMembers
+                                            }
+                                            className={`h-11 rounded-xl text-white
+                                                        text-sm font-bold
+                                                        flex items-center justify-center gap-1.5
+                                                        transition-transform
+                                                        ${group.status === 'active' ||
+                                                    !hasMinimumMembers
+                                                    ? 'bg-slate-200 dark:bg-white/[0.08] text-slate-400 cursor-not-allowed'
+                                                    : 'bg-emerald-600 active:scale-[0.97]'
+                                                }`}
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            <DollarSign className="h-4 w-4" />
+                                            {group.status === 'active' ? 'Active' : 'Pay'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {isCreator && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => {
+                                                tap('warning');
+                                                setShowDeleteDialog(true);
+                                            }}
+                                            disabled={deleting}
+                                            className="h-11 rounded-xl
+                                                       bg-rose-50 dark:bg-rose-400/10
+                                                       text-rose-700 dark:text-rose-400
+                                                       text-sm font-bold
+                                                       flex items-center justify-center gap-1.5
+                                                       active:scale-[0.97] transition-transform"
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                tap();
+                                                setShowPaymentDialog(true);
+                                            }}
+                                            disabled={
+                                                group.status === 'active' || !hasMinimumMembers
+                                            }
+                                            className={`h-11 rounded-xl text-white
+                                                        text-sm font-bold
+                                                        flex items-center justify-center gap-1.5
+                                                        transition-transform
+                                                        ${group.status === 'active' ||
+                                                    !hasMinimumMembers
+                                                    ? 'bg-slate-200 dark:bg-white/[0.08] text-slate-400 cursor-not-allowed'
+                                                    : 'bg-emerald-600 active:scale-[0.97]'
+                                                }`}
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            <DollarSign className="h-4 w-4" />
+                                            {group.status === 'active' ? 'Active' : 'Pay'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {isCreator &&
+                                    group.status === 'open' &&
+                                    !group.is_locked &&
+                                    !isFull && (
+                                        <AddMember
+                                            groupId={group.id}
+                                            existingMemberIds={(group.members ?? []).map(
+                                                (m) => m.user_id
+                                            )}
+                                            currentMemberCount={currentMemberCount}
+                                            maxMembers={maxMembers}
+                                            onMemberAdded={loadGroup}
+                                        />
                                     )}
-                                </CardContent>
-                            </Card>
 
-                            {/* ============================================ */}
-                            {/* MEMBERS LIST */}
-                            {/* ============================================ */}
-                            <Card className="border border-slate-100 dark:border-gray-800 rounded-2xl shadow-sm bg-white dark:bg-muted/30 overflow-hidden mb-3 md:mb-6">
-                                <CardHeader className="pb-3 px-4 md:px-6 pt-5 md:pt-6">
-                                    <CardTitle className="flex items-center gap-2 text-base font-medium">
-                                        <Users className="w-4 h-4" />
-                                        Members ({currentMemberCount}/{maxMembers})
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="px-4 md:px-6 pb-6">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {group.members?.map((member) => {
-                                            const isLeader = member.role === 'leader';
-                                            const isCurrentUser = member.user_id === user?.id;
-
-                                            return (
-                                                <div key={member.id} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                                                    <Avatar className="h-8 w-8 flex-shrink-0">
-                                                        <AvatarImage src={member.profile?.avatar_url} />
-                                                        <AvatarFallback className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                                            {member.profile?.name?.charAt(0) || 'U'}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium flex items-center gap-1.5 truncate">
-                                                            <span className="truncate">{member.profile?.name || 'Unknown'}</span>
-                                                            {isLeader && <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" />}
-                                                            {isCurrentUser && <span className="text-[10px] text-slate-500 dark:text-slate-400 flex-shrink-0">(You)</span>}
-                                                        </p>
-                                                        {isLeader && (
-                                                            <p className="text-[10px] text-muted-foreground">Leader</p>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                                                        {formatDistanceToNow(new Date(member.joined_at), { addSuffix: true })}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
+                                {isFull && !isMember && (
+                                    <div className="rounded-xl bg-slate-100 dark:bg-white/[0.06] p-3 text-center
+                                                    text-[11px] font-bold uppercase tracking-wider
+                                                    text-slate-500 dark:text-slate-400">
+                                        Group full
                                     </div>
-                                </CardContent>
-                            </Card>
+                                )}
+                                {group.is_locked && !isMember && (
+                                    <div className="rounded-xl bg-rose-50 dark:bg-rose-400/10 p-3 text-center
+                                                    text-[11px] font-bold uppercase tracking-wider
+                                                    text-rose-700 dark:text-rose-400">
+                                        Locked
+                                    </div>
+                                )}
+                                {group.status === 'closed' && !isMember && (
+                                    <div className="rounded-xl bg-slate-100 dark:bg-white/[0.06] p-3 text-center
+                                                    text-[11px] font-bold uppercase tracking-wider
+                                                    text-slate-500 dark:text-slate-400">
+                                        Closed
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* Fill-up warning */}
+                            {isCreator &&
+                                !hasMinimumMembers &&
+                                group.status !== 'active' && (
+                                    <InfoCallout
+                                        tone="amber"
+                                        icon={<Info className="h-3.5 w-3.5" />}
+                                        title={`Need ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''
+                                            }`}
+                                        body={`Your group activates once all ${maxMembers} slots are filled. Share the code with friends.`}
+                                    />
+                                )}
+
+                            {/* ── MEMBERS LIST ─────────────────── */}
+                            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-8 w-8 rounded-lg
+                                                        bg-violet-400/10
+                                                        flex items-center justify-center shrink-0">
+                                            <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-violet-600 dark:text-violet-400 leading-none mb-1">
+                                                Members
+                                            </p>
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                                                {currentMemberCount}/{maxMembers}
+                                            </h3>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    {group.members?.map((member) => {
+                                        const isLeader = member.role === 'leader';
+                                        const isCurrentUser = member.user_id === user?.id;
+                                        return (
+                                            <div
+                                                key={member.id}
+                                                className="flex items-center gap-2.5 p-2 rounded-xl
+                                                           bg-slate-50 dark:bg-[#0d1117]"
+                                            >
+                                                <Avatar className="h-8 w-8 shrink-0">
+                                                    <AvatarImage src={member.profile?.avatar_url} />
+                                                    <AvatarFallback className="text-[11px] font-bold
+                                                                             bg-slate-200 dark:bg-white/[0.1]
+                                                                             text-slate-600 dark:text-slate-300">
+                                                        {member.profile?.name?.charAt(0) || 'U'}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[12px] font-bold flex items-center gap-1.5 truncate
+                                                                  text-slate-900 dark:text-white">
+                                                        <span className="truncate">
+                                                            {member.profile?.name || 'Unknown'}
+                                                        </span>
+                                                        {isLeader && (
+                                                            <Crown className="h-3 w-3 text-amber-500 shrink-0" />
+                                                        )}
+                                                        {isCurrentUser && (
+                                                            <span className="text-[9px] font-bold uppercase tracking-wider
+                                                                             text-slate-400 dark:text-slate-500 shrink-0">
+                                                                You
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                    {isLeader && (
+                                                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                                                      text-amber-600 dark:text-amber-400 mt-0.5">
+                                                            Leader
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                                                    {formatDistanceToNow(
+                                                        new Date(member.joined_at),
+                                                        { addSuffix: true }
+                                                    )}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
                         </>
                     )}
                 </div>
-            </div>
+            </main>
 
-            {/* ============================================ */}
-            {/* DIALOGS — outside the scroll container */}
-            {/* ============================================ */}
+            {/* ── DIALOGS ─────────────────────────────────────── */}
             {group && (
                 <>
-                    <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-                        <AlertDialogContent className="border-0 rounded-2xl">
+                    <AlertDialog
+                        open={showLeaveDialog}
+                        onOpenChange={setShowLeaveDialog}
+                    >
+                        <AlertDialogContent className="border-0 rounded-2xl
+                                                       bg-white dark:bg-[#161b22]">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Leave Group?</AlertDialogTitle>
+                                <AlertDialogTitle>Leave group?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Are you sure you want to leave "{group.group_name}"? You can always rejoin if the group is open.
+                                    Leave "{group.group_name}"? You can rejoin if the group is
+                                    still open.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel className="border-0 bg-slate-100 dark:bg-slate-800">Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleLeaveGroup} className="bg-red-600 hover:bg-red-700 text-white border-0">
-                                    Leave Group
+                                <AlertDialogCancel
+                                    className="h-10 rounded-xl border-0
+                                               bg-slate-100 dark:bg-white/[0.06]
+                                               text-slate-700 dark:text-slate-200 text-sm font-bold"
+                                >
+                                    Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleLeaveGroup}
+                                    className="h-10 rounded-xl border-0
+                                               bg-rose-600 text-white text-sm font-bold"
+                                >
+                                    Leave group
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
 
-                    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                        <AlertDialogContent className="border-0 rounded-2xl">
+                    <AlertDialog
+                        open={showDeleteDialog}
+                        onOpenChange={setShowDeleteDialog}
+                    >
+                        <AlertDialogContent className="border-0 rounded-2xl
+                                                       bg-white dark:bg-[#161b22]">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Group?</AlertDialogTitle>
+                                <AlertDialogTitle>Delete group?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Are you sure you want to delete "{group.group_name}"? This action cannot be undone.
+                                    Delete "{group.group_name}"? This cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel className="border-0 bg-slate-100 dark:bg-slate-800">Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteGroup} className="bg-red-600 hover:bg-red-700 text-white border-0">
-                                    {deleting ? 'Deleting...' : 'Delete Group'}
+                                <AlertDialogCancel
+                                    className="h-10 rounded-xl border-0
+                                               bg-slate-100 dark:bg-white/[0.06]
+                                               text-slate-700 dark:text-slate-200 text-sm font-bold"
+                                >
+                                    Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleDeleteGroup}
+                                    className="h-10 rounded-xl border-0
+                                               bg-rose-600 text-white text-sm font-bold"
+                                >
+                                    {deleting ? 'Deleting…' : 'Delete group'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
 
-                    <Dialog open={showPaymentDialog} onOpenChange={(open) => {
-                        setShowPaymentDialog(open);
-                        if (!open) {
-                            setPaymentStep('form');
-                            setPhoneNumber('');
-                        }
-                    }}>
-                        <DialogContent className="sm:max-w-md border-0 rounded-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-                            <DialogHeader className="px-5 pt-5 pb-3 border-0">
-                                <DialogTitle>Group Payment</DialogTitle>
-                                <DialogDescription>
-                                    Pay to activate <span className="font-semibold">{durationLabel}</span> premium access for all {currentMemberCount} members
-                                </DialogDescription>
-                            </DialogHeader>
+                    {/* Payment dialog — fixed footer */}
+                    {showPaymentDialog && (
+                        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-6">
+                            <div
+                                className="absolute inset-0 bg-black/60"
+                                onClick={() => {
+                                    if (processingPayment) return;
+                                    setShowPaymentDialog(false);
+                                    setPaymentStep('form');
+                                    setPhoneNumber('');
+                                }}
+                                style={{ touchAction: 'manipulation' }}
+                            />
+                            <div className="relative w-full sm:max-w-md
+                                            bg-white dark:bg-[#161b22]
+                                            rounded-t-2xl sm:rounded-2xl
+                                            flex flex-col
+                                            max-h-[92dvh] sm:max-h-[85vh]
+                                            overflow-hidden
+                                            pb-[env(safe-area-inset-bottom)] sm:pb-0">
+                                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                                   border-b border-slate-200/70 dark:border-white/[0.06]">
+                                    <button
+                                        onClick={() => {
+                                            if (processingPayment) return;
+                                            tap();
+                                            setShowPaymentDialog(false);
+                                            setPaymentStep('form');
+                                            setPhoneNumber('');
+                                        }}
+                                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                                   text-slate-700 dark:text-slate-200
+                                                   active:bg-slate-100 dark:active:bg-white/5"
+                                        style={{ touchAction: 'manipulation' }}
+                                        aria-label="Close"
+                                    >
+                                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                        <h1 className="text-base font-bold leading-tight truncate">
+                                            Group payment
+                                        </h1>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                                            {durationLabel} for {currentMemberCount} members
+                                        </p>
+                                    </div>
+                                </header>
 
-                            <div className="overflow-y-auto flex-1 px-5 pb-5">
-                                {paymentStep === 'form' && (
-                                    <div className="space-y-4 py-2">
-                                        <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0">
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Plan duration</span>
-                                                <span className="font-medium">{durationLabel}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Members</span>
-                                                <span className="font-medium tabular-nums">{currentMemberCount}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Contribution per member</span>
-                                                <span className="font-medium tabular-nums">
-                                                    {GROUPPAY_CONFIG.CURRENCY} {pricePerMember}
-                                                    <span className="text-[10px] text-muted-foreground line-through ml-1.5 opacity-60">
-                                                        {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
+                                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-4 space-y-3">
+                                    {paymentStep === 'form' && (
+                                        <>
+                                            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
+                                                <SummaryRow
+                                                    label="Plan"
+                                                    value={durationLabel}
+                                                />
+                                                <SummaryRow
+                                                    label="Members"
+                                                    value={String(currentMemberCount)}
+                                                />
+                                                <SummaryRow
+                                                    label="Per member"
+                                                    value={`${GROUPPAY_CONFIG.CURRENCY} ${pricePerMember}`}
+                                                    strike={`${GROUPPAY_CONFIG.CURRENCY} ${individualPrice}`}
+                                                />
+                                                <div className="h-px bg-slate-200/60 dark:bg-white/[0.06] my-1" />
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                                        Total
                                                     </span>
-                                                </span>
-                                            </div>
-                                            <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
-                                            <div className="flex justify-between text-base font-bold">
-                                                <span>Total Amount</span>
-                                                <span className="text-green-600 dark:text-green-400 tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalAmount}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-xs text-green-600 dark:text-green-400">
-                                                <span>You save</span>
-                                                <span className="font-bold tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()}</span>
-                                            </div>
-                                            {!hasMinimumMembers && (
-                                                <div className="flex items-center gap-2 text-xs text-amber-600">
-                                                    <AlertCircle className="w-3.5 h-3.5" />
-                                                    <span>
-                                                        Need {membersNeeded} more member{membersNeeded > 1 ? 's' : ''} to activate
-                                                        {' '}({currentMemberCount}/{maxMembers})
+                                                    <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                                        {GROUPPAY_CONFIG.CURRENCY} {totalAmount}
                                                     </span>
                                                 </div>
-                                            )}
-                                        </div>
+                                                <div className="flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400">
+                                                    <span>You save</span>
+                                                    <span className="font-bold tabular-nums">
+                                                        {GROUPPAY_CONFIG.CURRENCY}{' '}
+                                                        {totalSavings.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                                        <div className="space-y-2">
-                                            <Label htmlFor="phone" className="flex items-center gap-2 text-sm">
-                                                <Phone className="w-4 h-4" />
-                                                M-Pesa Phone Number
-                                            </Label>
-                                            <Input
-                                                id="phone"
-                                                type="tel"
-                                                inputMode="numeric"
-                                                placeholder="0712345678"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                                                className="text-base h-11 rounded-xl border-0 bg-slate-50 dark:bg-slate-900/50 focus-visible:ring-2 focus-visible:ring-green-500/40"
-                                                maxLength={12}
-                                            />
-                                            <p className="text-xs text-muted-foreground">
-                                                You will receive an STK push on this number
+                                            <div className="space-y-2">
+                                                <Label
+                                                    htmlFor="phone"
+                                                    className="text-[11px] font-bold uppercase tracking-wider
+                                                               text-slate-500 dark:text-slate-400
+                                                               flex items-center gap-1.5"
+                                                >
+                                                    <Phone className="h-3 w-3" />
+                                                    M-Pesa phone number
+                                                </Label>
+                                                <Input
+                                                    id="phone"
+                                                    type="tel"
+                                                    inputMode="numeric"
+                                                    placeholder="0712345678"
+                                                    value={phoneNumber}
+                                                    onChange={(e) =>
+                                                        setPhoneNumber(
+                                                            e.target.value.replace(/\D/g, '')
+                                                        )
+                                                    }
+                                                    className="text-base h-11 rounded-xl border-0
+                                                               bg-slate-50 dark:bg-[#0d1117]
+                                                               focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                                                    maxLength={12}
+                                                />
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                                    You will receive an STK push on this number.
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {paymentStep === 'processing' && (
+                                        <div className="py-8 text-center space-y-3">
+                                            <Loader2 className="h-10 w-10 animate-spin text-emerald-500 mx-auto" />
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                Processing payment
+                                            </h3>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                                Check your phone for the M-Pesa prompt.
                                             </p>
                                         </div>
+                                    )}
 
-                                        <Button
+                                    {paymentStep === 'success' && (
+                                        <div className="py-8 text-center space-y-3">
+                                            <div className="h-14 w-14 rounded-full
+                                                            bg-emerald-50 dark:bg-emerald-400/10
+                                                            flex items-center justify-center mx-auto">
+                                                <CheckCircle className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                Payment initiated
+                                            </h3>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                                All {currentMemberCount} members will be upgraded
+                                                automatically once M-Pesa confirms.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {paymentStep === 'failed' && (
+                                        <div className="py-8 text-center space-y-3">
+                                            <div className="h-14 w-14 rounded-full
+                                                            bg-rose-50 dark:bg-rose-400/10
+                                                            flex items-center justify-center mx-auto">
+                                                <AlertCircle className="h-7 w-7 text-rose-600 dark:text-rose-400" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                Payment failed
+                                            </h3>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                                Something went wrong. Please try again.
+                                            </p>
+                                        </div>
+                                    )}
+                                </main>
+
+                                <footer className="shrink-0 px-4 py-3
+                                                   border-t border-slate-200/70 dark:border-white/[0.06]">
+                                    {paymentStep === 'form' && (
+                                        <button
                                             onClick={handleInitiatePayment}
-                                            disabled={processingPayment || !phoneNumber || !hasMinimumMembers}
-                                            className="w-full border-0 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-bold h-12 rounded-xl"
+                                            disabled={
+                                                processingPayment ||
+                                                !phoneNumber ||
+                                                !hasMinimumMembers
+                                            }
+                                            className={`w-full h-11 rounded-xl text-white
+                                                        text-sm font-bold
+                                                        flex items-center justify-center gap-2
+                                                        transition-transform
+                                                        ${processingPayment ||
+                                                    !phoneNumber ||
+                                                    !hasMinimumMembers
+                                                    ? 'bg-slate-200 dark:bg-white/[0.08] text-slate-400 cursor-not-allowed'
+                                                    : 'bg-emerald-600 active:scale-[0.97]'
+                                                }`}
+                                            style={{ touchAction: 'manipulation' }}
                                         >
-                                            {processingPayment ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Phone className="w-4 h-4 mr-2" />
-                                                    Pay {GROUPPAY_CONFIG.CURRENCY} {totalAmount} via M-Pesa
-                                                </>
-                                            )}
-                                        </Button>
-
-                                        <p className="text-xs text-center text-muted-foreground">
-                                            All {currentMemberCount} members will get {durationLabel} premium access after payment
-                                        </p>
-                                    </div>
-                                )}
-
-                                {paymentStep === 'processing' && (
-                                    <div className="py-8 text-center">
-                                        <Loader2 className="w-12 h-12 animate-spin text-green-500 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold">Processing Payment</h3>
-                                        <p className="text-muted-foreground text-sm mt-2">
-                                            Please check your phone for the M-Pesa prompt
-                                        </p>
-                                    </div>
-                                )}
-
-                                {paymentStep === 'success' && (
-                                    <div className="py-8 text-center">
-                                        <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-4">
-                                            <CheckCircle className="w-8 h-8 text-green-500" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold">Payment Initiated!</h3>
-                                        <p className="text-muted-foreground text-sm mt-2">
-                                            You will receive an M-Pesa prompt shortly.
-                                            All group members will be upgraded to {durationLabel} premium automatically.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {paymentStep === 'failed' && (
-                                    <div className="py-8 text-center">
-                                        <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
-                                            <AlertCircle className="w-8 h-8 text-red-500" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold">Payment Failed</h3>
-                                        <p className="text-muted-foreground text-sm mt-2">
-                                            There was an error processing your payment. Please try again.
-                                        </p>
-                                        <Button
-                                            onClick={() => setPaymentStep('form')}
-                                            className="mt-4 border-0 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl"
+                                            <Phone className="h-4 w-4" />
+                                            Pay {GROUPPAY_CONFIG.CURRENCY} {totalAmount}
+                                        </button>
+                                    )}
+                                    {paymentStep === 'processing' && (
+                                        <button
+                                            disabled
+                                            className="w-full h-11 rounded-xl
+                                                       bg-slate-100 dark:bg-white/[0.06]
+                                                       text-slate-500 dark:text-slate-400
+                                                       text-sm font-bold"
                                         >
-                                            Try Again
-                                        </Button>
-                                    </div>
-                                )}
+                                            Waiting for M-Pesa…
+                                        </button>
+                                    )}
+                                    {paymentStep === 'success' && (
+                                        <button
+                                            onClick={() => {
+                                                tap();
+                                                setShowPaymentDialog(false);
+                                                setPaymentStep('form');
+                                                setPhoneNumber('');
+                                            }}
+                                            className="w-full h-11 rounded-xl
+                                                       bg-slate-100 dark:bg-white/[0.06]
+                                                       text-slate-700 dark:text-slate-200
+                                                       text-sm font-bold
+                                                       active:scale-[0.97] transition-transform"
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            Close
+                                        </button>
+                                    )}
+                                    {paymentStep === 'failed' && (
+                                        <button
+                                            onClick={() => {
+                                                tap();
+                                                setPaymentStep('form');
+                                            }}
+                                            className="w-full h-11 rounded-xl
+                                                       bg-emerald-600 text-white
+                                                       text-sm font-bold
+                                                       active:scale-[0.97] transition-transform"
+                                            style={{ touchAction: 'manipulation' }}
+                                        >
+                                            Try again
+                                        </button>
+                                    )}
+                                </footer>
                             </div>
-                        </DialogContent>
-                    </Dialog>
+                        </div>
+                    )}
                 </>
             )}
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Subcomponents                                                     */
+/* ------------------------------------------------------------------ */
+
+function LoadingSkeleton() {
+    return (
+        <div className="space-y-3 animate-pulse">
+            <div className="h-40 rounded-2xl bg-white dark:bg-[#161b22]" />
+            <div className="h-32 rounded-2xl bg-white dark:bg-[#161b22]" />
+            <div className="h-32 rounded-2xl bg-white dark:bg-[#161b22]" />
+        </div>
+    );
+}
+
+function SummaryRow({
+    label,
+    value,
+    strike,
+}: {
+    label: string;
+    value: string;
+    strike?: string;
+}) {
+    return (
+        <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                {label}
+            </span>
+            <span className="text-[11px] font-bold text-slate-900 dark:text-white tabular-nums">
+                {value}
+                {strike && (
+                    <span className="ml-1.5 text-[10px] line-through opacity-60 text-slate-400 dark:text-slate-500">
+                        {strike}
+                    </span>
+                )}
+            </span>
+        </div>
+    );
+}
+
+function ContactRow({
+    icon,
+    label,
+    value,
+    actions,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    actions: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center gap-2 p-2 rounded-xl
+                        bg-slate-50 dark:bg-[#0d1117]">
+            <span className="text-slate-400 dark:text-slate-500 shrink-0">{icon}</span>
+            <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-wider
+                              text-slate-500 dark:text-slate-400 leading-none mb-0.5">
+                    {label}
+                </p>
+                <p className="text-[12px] font-mono font-bold tabular-nums
+                              text-slate-900 dark:text-white truncate">
+                    {value}
+                </p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">{actions}</div>
+        </div>
+    );
+}
+
+function MiniBtn({
+    icon,
+    label,
+    onClick,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className="h-8 px-2 rounded-lg
+                       bg-white dark:bg-white/[0.06]
+                       text-[10px] font-bold uppercase tracking-wider
+                       text-slate-600 dark:text-slate-300
+                       flex items-center gap-1
+                       active:scale-[0.92] transition-transform"
+            style={{ touchAction: 'manipulation' }}
+        >
+            {icon}
+            <span>{label}</span>
+        </button>
+    );
+}
+
+function IconBtn({
+    icon,
+    label,
+    onClick,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className="h-10 px-3 rounded-xl
+                       bg-slate-100 dark:bg-white/[0.06]
+                       text-slate-700 dark:text-slate-200
+                       text-[11px] font-bold
+                       flex items-center gap-1.5
+                       active:scale-[0.97] transition-transform"
+            style={{ touchAction: 'manipulation' }}
+        >
+            {icon}
+            {label}
+        </button>
+    );
+}
+
+function MiniStat({
+    label,
+    value,
+    sub,
+    tone,
+}: {
+    label: string;
+    value: string;
+    sub?: string;
+    tone?: 'emerald';
+}) {
+    const valueColor =
+        tone === 'emerald'
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : 'text-slate-900 dark:text-white';
+    return (
+        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-2.5 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-wider
+                          text-slate-500 dark:text-slate-400 leading-none mb-1">
+                {label}
+            </p>
+            <p className={`text-[12px] font-bold tabular-nums ${valueColor}`}>
+                {value}
+            </p>
+            {sub && (
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                    {sub}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function PaymentBadge({ status }: { status: GroupPaymentStatus }) {
+    const isSuccess = status.is_successful;
+    const isPending = status.status === 'pending';
+    const cls = isSuccess
+        ? 'bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400'
+        : isPending
+            ? 'bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400'
+            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300';
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1
+                        text-[10px] font-bold uppercase tracking-wider
+                        px-1.5 py-0.5 rounded-full ${cls}`}
+        >
+            {isSuccess ? (
+                <CheckCircle className="h-2.5 w-2.5" />
+            ) : isPending ? (
+                <Clock className="h-2.5 w-2.5" />
+            ) : (
+                <AlertCircle className="h-2.5 w-2.5" />
+            )}
+            {status.status}
+        </span>
+    );
+}
+
+type Tone = 'amber' | 'rose' | 'blue' | 'emerald';
+
+function InfoCallout({
+    tone,
+    icon,
+    title,
+    body,
+}: {
+    tone: Tone;
+    icon: React.ReactNode;
+    title?: string;
+    body: React.ReactNode;
+}) {
+    const styles: Record<Tone, { bg: string; text: string; body: string }> = {
+        amber: {
+            bg: 'bg-amber-50 dark:bg-amber-400/10',
+            text: 'text-amber-700 dark:text-amber-400',
+            body: 'text-amber-700/80 dark:text-amber-300/80',
+        },
+        rose: {
+            bg: 'bg-rose-50 dark:bg-rose-400/10',
+            text: 'text-rose-700 dark:text-rose-400',
+            body: 'text-rose-700/80 dark:text-rose-300/80',
+        },
+        blue: {
+            bg: 'bg-blue-50 dark:bg-blue-400/10',
+            text: 'text-blue-700 dark:text-blue-400',
+            body: 'text-blue-700/80 dark:text-blue-300/80',
+        },
+        emerald: {
+            bg: 'bg-emerald-50 dark:bg-emerald-400/10',
+            text: 'text-emerald-700 dark:text-emerald-400',
+            body: 'text-emerald-700/80 dark:text-emerald-300/80',
+        },
+    };
+    const s = styles[tone];
+    return (
+        <div className={`rounded-xl p-3 ${s.bg}`}>
+            <div className="flex items-start gap-2">
+                <span className={`shrink-0 mt-0.5 ${s.text}`}>{icon}</span>
+                <div className="min-w-0 flex-1">
+                    {title && (
+                        <p className={`text-[11px] font-bold uppercase tracking-wider ${s.text} mb-1`}>
+                            {title}
+                        </p>
+                    )}
+                    <div className={`text-[11px] leading-relaxed ${s.body}`}>
+                        {body}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function CelebrationModal({
+    currentMemberCount,
+    pricePerMember,
+    totalAmount,
+    totalSavings,
+    durationLabel,
+    onClose,
+    onBrowse,
+}: {
+    currentMemberCount: number;
+    pricePerMember: number;
+    totalAmount: number;
+    totalSavings: number;
+    durationLabel: string;
+    onClose: () => void;
+    onBrowse: () => void;
+}) {
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-6">
+            <div className="absolute inset-0 bg-black/60" style={{ touchAction: 'manipulation' }} />
+            <div className="relative w-full sm:max-w-md
+                            bg-white dark:bg-[#161b22]
+                            rounded-t-2xl sm:rounded-2xl
+                            flex flex-col
+                            max-h-[92dvh] sm:max-h-[85vh]
+                            overflow-hidden">
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar
+                                 px-5 pt-6 pb-4 text-center space-y-4">
+                    <div className="h-16 w-16 rounded-2xl
+                                    bg-emerald-50 dark:bg-emerald-400/10
+                                    flex items-center justify-center mx-auto">
+                        <PartyPopper className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                      text-emerald-600 dark:text-emerald-400 mb-1">
+                            Success
+                        </p>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                            Group activated
+                        </h2>
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                            {durationLabel} premium unlocked for all {currentMemberCount}{' '}
+                            members
+                        </p>
+                    </div>
+
+                    <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3
+                                    grid grid-cols-3 gap-2">
+                        <MiniStat label="Members" value={String(currentMemberCount)} />
+                        <MiniStat
+                            label="Per member"
+                            value={`${GROUPPAY_CONFIG.CURRENCY} ${pricePerMember}`}
+                        />
+                        <MiniStat
+                            label="Total"
+                            value={`${GROUPPAY_CONFIG.CURRENCY} ${totalAmount}`}
+                            tone="emerald"
+                        />
+                    </div>
+
+                    <div className="rounded-xl bg-emerald-50 dark:bg-emerald-400/10 p-3
+                                    flex items-start gap-2 text-left">
+                        <Rocket className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-snug">
+                            Saved {GROUPPAY_CONFIG.CURRENCY}{' '}
+                            {totalSavings.toLocaleString()} vs {durationLabel} solo plans
+                        </p>
+                    </div>
+                </main>
+
+                <footer className="shrink-0 px-4 py-3 space-y-2
+                                   border-t border-slate-200/70 dark:border-white/[0.06]">
+                    <button
+                        onClick={onClose}
+                        className="w-full h-11 rounded-xl
+                                   bg-emerald-600 text-white
+                                   text-sm font-bold
+                                   flex items-center justify-center gap-2
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: 'manipulation' }}
+                    >
+                        <CheckCircle className="h-4 w-4" />
+                        Awesome, let's go
+                    </button>
+                    <button
+                        onClick={onBrowse}
+                        className="w-full h-10 rounded-xl
+                                   bg-slate-100 dark:bg-white/[0.06]
+                                   text-slate-700 dark:text-slate-200
+                                   text-sm font-bold
+                                   flex items-center justify-center gap-2
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: 'manipulation' }}
+                    >
+                        <Users className="h-4 w-4" />
+                        Browse groups
+                    </button>
+                </footer>
+            </div>
         </div>
     );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, MessageCircle, Layers, WifiOff, ImageOff } from "lucide-react";
+import { Layers, WifiOff, ImageOff } from "lucide-react";
+import { playSound } from "@/lib/soundManager";
 
 interface Props {
     feedImages: any[];
@@ -14,11 +15,19 @@ interface Props {
     onOpenPost: (groupKey: string, images: any[]) => void;
 }
 
+const vibrate = (p: number | number[] = 12) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
+};
+
+const tap = () => {
+    playSound("ui-tap");
+    vibrate(12);
+};
+
 export default function FeedImagesGrid({
     feedImages,
     loadedImages,
     setLoadedImages,
-    user,
     hasMoreImages,
     isLoadingImages,
     onLoadMore,
@@ -26,7 +35,6 @@ export default function FeedImagesGrid({
 }: Props) {
     const sentinelRef = useRef<HTMLDivElement>(null);
 
-    // ── Online/offline tracking ─────────────────────────────────────
     const [isOnline, setIsOnline] = useState<boolean>(
         typeof navigator !== "undefined" ? navigator.onLine : true
     );
@@ -36,7 +44,6 @@ export default function FeedImagesGrid({
         const handleOffline = () => setIsOnline(false);
         window.addEventListener("online", handleOnline);
         window.addEventListener("offline", handleOffline);
-        // Also sync on mount in case navigator changed before hydration
         setIsOnline(navigator.onLine);
         return () => {
             window.removeEventListener("online", handleOnline);
@@ -44,7 +51,6 @@ export default function FeedImagesGrid({
         };
     }, []);
 
-    // Group images into "posts" (one post = one carousel group).
     const posts = useMemo(() => {
         const groups = new Map<string, any[]>();
         for (const im of feedImages) {
@@ -85,8 +91,9 @@ export default function FeedImagesGrid({
     }, [hasMoreImages, isLoadingImages, onLoadMore]);
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
-            <div className="grid grid-cols-3 gap-[2px] px-[2px] pt-[2px]">
+        <div className="w-full max-w-4xl mx-auto px-1">
+            {/* ── Grid ──────────────────────────────────────── */}
+            <div className="grid grid-cols-3 gap-1">
                 {posts.map((post, i) => {
                     const cover = post.cover;
                     const isMulti = post.images.length > 1;
@@ -101,12 +108,18 @@ export default function FeedImagesGrid({
                     return (
                         <button
                             key={post.key}
-                            onClick={() => onOpenPost(post.key, post.images)}
-                            className="relative aspect-square bg-gray-100 dark:bg-gray-800 overflow-hidden active:opacity-70 transition-opacity"
+                            onClick={() => {
+                                tap();
+                                onOpenPost(post.key, post.images);
+                            }}
+                            className="relative aspect-square overflow-hidden rounded-lg
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
                             aria-label={`Open post ${i + 1}`}
                         >
                             {!isLoaded && (
-                                <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                <div className="absolute inset-0 bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
                             )}
 
                             <img
@@ -125,66 +138,63 @@ export default function FeedImagesGrid({
                                     }`}
                             />
 
+                            {/* Multi-image count — always visible, no hover dependency */}
                             {isMulti && (
-                                <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                <div className="absolute top-1.5 right-1.5
+                                                inline-flex items-center gap-0.5
+                                                bg-black/60 text-white
+                                                text-[10px] font-bold tabular-nums
+                                                px-1.5 py-0.5 rounded">
                                     <Layers size={10} strokeWidth={2.5} />
                                     <span>{post.images.length}</span>
                                 </div>
                             )}
-
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-1.5 py-1 opacity-0 hover:opacity-100 sm:group-hover:opacity-100 transition-opacity pointer-events-none">
-                                <div className="flex items-center gap-2 text-white text-[10px] font-semibold">
-                                    <span className="flex items-center gap-0.5">
-                                        <Heart size={10} className="fill-white" />
-                                        {cover.likes_count ?? ""}
-                                    </span>
-                                    <span className="flex items-center gap-0.5">
-                                        <MessageCircle size={10} />
-                                        {cover.comments_count ?? ""}
-                                    </span>
-                                </div>
-                            </div>
                         </button>
                     );
                 })}
             </div>
 
-            {/* ── Empty state: 3 possible messages ────────────────
-                1. Offline → "Check your internet"
-                2. Online + done loading + truly empty → "No images yet"
-                3. Online + still loading → nothing (skeleton row below)
-            ──────────────────────────────────────────────────────── */}
+            {/* ── Empty state ───────────────────────────────── */}
             {posts.length === 0 && !isLoadingImages && (
                 <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                    <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+                    <div className="h-14 w-14 rounded-full
+                                    bg-slate-100 dark:bg-white/[0.06]
+                                    flex items-center justify-center mb-3">
                         {!isOnline ? (
-                            <WifiOff className="w-7 h-7 text-gray-400" />
+                            <WifiOff className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                         ) : (
-                            <ImageOff className="w-7 h-7 text-gray-400" />
+                            <ImageOff className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                         )}
                     </div>
 
                     {!isOnline ? (
                         <>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                 You're offline
                             </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[240px] leading-snug">
                                 Check your internet connection and try again
                             </p>
                             <button
-                                onClick={() => onLoadMore()}
-                                className="mt-4 px-4 py-2 rounded-full bg-blue-500 text-white text-xs font-semibold active:scale-95 transition-transform"
+                                onClick={() => {
+                                    tap();
+                                    onLoadMore();
+                                }}
+                                className="mt-4 h-10 px-4 rounded-xl
+                                           bg-blue-600 text-white
+                                           text-[12px] font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
                                 Retry
                             </button>
                         </>
                     ) : (
                         <>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                 No images yet
                             </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[240px] leading-snug">
                                 Be the first to share a visual
                             </p>
                         </>
@@ -192,12 +202,15 @@ export default function FeedImagesGrid({
                 </div>
             )}
 
+            {/* ── Skeleton row ──────────────────────────────── */}
             {isLoadingImages && (
-                <div className="grid grid-cols-3 gap-[2px] px-[2px] pt-[2px]">
+                <div className="grid grid-cols-3 gap-1 mt-1">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <div
                             key={i}
-                            className="aspect-square bg-gray-200 dark:bg-gray-700 animate-pulse"
+                            className="aspect-square rounded-lg
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       animate-pulse"
                         />
                     ))}
                 </div>

@@ -1,11 +1,15 @@
 // components/progress/TriagePopup.tsx
 "use client";
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { motion } from "framer-motion";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
 
 export type TriageCode = "RED" | "YELLOW" | "GREEN" | "BLACK";
 
@@ -21,7 +25,8 @@ export interface TriageLevel {
     threshold: number;
     emoji: string;
     actionText: string;
-    actionLink: string; critical
+    actionLink: string;
+    critical?: boolean;
     detailedMessage: string;
 }
 
@@ -30,134 +35,152 @@ interface TriagePopupProps {
     onClose: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 15) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = () => {
+    playSound("ui-tap");
+    vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Tone map — every triage code gets an explicit token combo        */
+/* ------------------------------------------------------------------ */
+
+type Tone = {
+    chip: string;   // soft background for chip
+    text: string;   // accent text
+    solid: string;  // solid button bg
+};
+
+const TONE: Record<TriageCode, Tone> = {
+    GREEN: {
+        chip: "bg-emerald-50 dark:bg-emerald-400/10",
+        text: "text-emerald-700 dark:text-emerald-400",
+        solid: "bg-emerald-600",
+    },
+    YELLOW: {
+        chip: "bg-amber-50 dark:bg-amber-400/10",
+        text: "text-amber-700 dark:text-amber-400",
+        solid: "bg-amber-500",
+    },
+    RED: {
+        chip: "bg-rose-50 dark:bg-rose-400/10",
+        text: "text-rose-700 dark:text-rose-400",
+        solid: "bg-rose-600",
+    },
+    BLACK: {
+        chip: "bg-slate-100 dark:bg-white/[0.06]",
+        text: "text-slate-700 dark:text-slate-300",
+        solid: "bg-slate-800 dark:bg-slate-200 dark:text-slate-900",
+    },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                         */
+/* ------------------------------------------------------------------ */
+
 export function TriagePopup({ triage, onClose }: TriagePopupProps) {
     const navigate = useNavigate();
+    const tone = TONE[triage.code] ?? TONE.BLACK;
 
-    // Single soft toast sound for every triage state — no alarms, no chimes
-    const playTriageSound = (_code: TriageCode) => {
-        playSound("toast-sound", false);
-    };
-
-    // Play sound when popup appears
+    // Play a soft toast sound + haptic when the popup appears
     useEffect(() => {
-        document.body.style.overflow = "hidden";
         const timer = setTimeout(() => {
-            playTriageSound(triage.code);
+            playSound("toast-sound", false);
+            vibrate(25);
         }, 300);
-        return () => {
-            document.body.style.overflow = "auto";
-            clearTimeout(timer);
-        };
+        return () => clearTimeout(timer);
     }, [triage.code]);
 
-    // Vibration — subtle, uniform, no alarm patterns
-    const getVibrationPattern = (_code: TriageCode): number[] => {
-        return [25];
+    const handleAction = () => {
+        tap();
+        onClose();
+        navigate(triage.actionLink);
     };
 
-    useEffect(() => {
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            const pattern = getVibrationPattern(triage.code);
-            navigator.vibrate(pattern);
-        }
-    }, [triage.code]);
+    const handleClose = () => {
+        tap();
+        onClose();
+    };
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm"
-            onClick={onClose}
+        <CenteredModal
+            open={true}
+            onClose={handleClose}
+            title={triage.label}
+            maxWidthClass="max-w-md"
+            maxHeight="90vh"
         >
-            <motion.div
-                initial={{ scale: 0.9, y: 100 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 100 }}
-                className={`relative w-full md:max-w-md md:rounded-xl md:border-0 ${triage.borderColor}
-    ${triage.code === "RED" ? "bg-red-100 dark:bg-red-950" : triage.bgColor}
-    bg-white dark:bg-gray-900 md:shadow-2xl
-    p-4 md:p-6 max-h-[85vh] md:max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl border-0 md:border-0`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Drag handle for mobile bottom sheet */}
-                <div className="md:hidden flex justify-center pb-2">
-                    <div className="w-8 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-                </div>
-
-                <button
-                    onClick={onClose}
-                    className="absolute top-3 right-3 md:top-4 md:right-4 p-1.5 md:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                >
-                    <X className="w-4 h-4 md:w-5 md:h-5 text-gray-500 dark:text-gray-400" />
-                </button>
-
-                <div className="flex flex-col items-center text-center">
-                    {/* Colored CODE chip — replaces the round emoji circle */}
+            <div className="px-4 pt-2 pb-4 space-y-3">
+                {/* ── Hero chip + eyebrow ─────────────────── */}
+                <div className="flex flex-col items-center text-center pt-1">
                     <div
-                        className={`flex items-center justify-center rounded-full   tracking-wider
-                            ${triage.bgColor} ${triage.textColor}
-                            w-20 h-20 md:w-28 md:h-28
-                            text-[10px] md:text-xs
-                            mb-3 md:mb-4`}
+                        className={`h-20 w-20 rounded-full
+                                    flex flex-col items-center justify-center
+                                    ${tone.chip} ${tone.text}`}
                     >
-                        <span className="leading-tight">
-                            CODE<br />{triage.code}
+                        <span className="text-[9px] font-bold uppercase tracking-wider leading-none">
+                            Code
+                        </span>
+                        <span className="text-base font-bold leading-none mt-1">
+                            {triage.code}
                         </span>
                     </div>
 
-                    {/* Badge & Title */}
-                    <div className="flex items-center gap-1.5 md:gap-3 mb-1 md:mb-2">
-                        <Badge className={`${triage.bgColor} ${triage.textColor} border-0 font-normal
-                            text-sm px-2 md:px-4 py-0.5 md:py-1.5`}>
-                            Code {triage.code}
-                        </Badge>
-                        <h2 className="text-base md:text-2xl font-bold text-gray-900 dark:text-white">
-                            {triage.label}
-                        </h2>
-                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                  text-slate-500 dark:text-slate-400 mt-3">
+                        Triage status
+                    </p>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white
+                                   leading-tight mt-1">
+                        {triage.label}
+                    </h2>
+                </div>
 
-                    {/* Divider */}
-                    <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2 md:my-3" />
-
-                    {/* Message */}
-                    <p className="text-[11px] md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                {/* ── Message ─────────────────────────────── */}
+                <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                    <p className="text-[12px] text-slate-700 dark:text-slate-300
+                                  leading-relaxed whitespace-pre-line">
                         {triage.detailedMessage}
                     </p>
+                </div>
 
-                    {/* Divider */}
-                    <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2 md:my-4" />
-
-                    {/* Action Button */}
+                {/* ── Actions ─────────────────────────────── */}
+                <div className="space-y-2 pt-1">
                     <button
-                        onClick={() => {
-                            playSound("toast-sound", false);
-                            onClose();
-                            navigate(triage.actionLink);
-                        }}
-                        className={`w-full text-white text-xs md:text-sm font-bold rounded-xl transition-all md:hover:scale-105 md:shadow-lg active:scale-[0.98]
-                            py-2.5 md:py-3
-                            ${triage.code === "GREEN" ? "bg-emerald-600 hover:bg-emerald-700 md:shadow-emerald-500/30" :
-                                triage.code === "YELLOW" ? "bg-amber-600 hover:bg-amber-700 md:shadow-amber-500/30" :
-                                    triage.code === "RED" ? "bg-red-600 hover:bg-red-700 md:shadow-red-500/30" :
-                                        "bg-gray-600 hover:bg-gray-700 md:shadow-gray-500/30"
-                            }`}
+                        onClick={handleAction}
+                        className={`w-full h-11 rounded-xl text-white
+                                    text-sm font-bold
+                                    flex items-center justify-center gap-2
+                                    active:scale-[0.97] transition-transform
+                                    ${tone.solid}`}
+                        style={{ touchAction: "manipulation" }}
                     >
-                        {triage.actionText} →
+                        {triage.actionText}
+                        <span aria-hidden>→</span>
                     </button>
 
-                    {/* Close Link */}
                     <button
-                        onClick={() => {
-                            playSound("toast-sound", false);
-                            onClose();
-                        }}
-                        className="mt-2 md:mt-3 text-[10px] md:text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        onClick={handleClose}
+                        className="w-full h-10 rounded-xl
+                                   bg-slate-100 dark:bg-white/[0.06]
+                                   text-slate-700 dark:text-slate-200
+                                   text-sm font-bold
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: "manipulation" }}
                     >
                         Continue to progress
                     </button>
                 </div>
-            </motion.div>
-        </motion.div>
+            </div>
+        </CenteredModal>
     );
 }

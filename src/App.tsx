@@ -176,6 +176,7 @@ import MaintenanceNotice from "./components/MaintenanceNotice";
 import InstallPrompt from "./components/pwa/InstallPrompt";
 import Guide from "./pages/Guide";
 import { RoutePrefetcher } from "./components/RoutePrefetcher";
+import UnitSearch from "./pages/nursing/UnitSearch";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -322,13 +323,14 @@ const BottomBarWrapper = () => {
 // Routes where the fixed bottom Footer should NOT appear.
 // These are full-screen pages that own the whole viewport.
 const FOOTER_HIDDEN_PREFIXES = [
-  "/feed",
+
   "/menu",
   "/listen",
   "/chat",
   "/medtube",
   "/quiz",
   "/Medrae-quizzes",
+
   "/subscription",
   "/grouppay",
   "/settings",
@@ -646,10 +648,7 @@ const AppContent = () => {
                           <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
                           <Route path="/exam/results" element={<ResultsListPage />} />
                           <Route path="/challenge" element={<ChallengePage />} />
-                          <Route path="/live-classes/:id" element={<ClassDetails />} />
-                          <Route path="/live-classes" element={<LiveClassesDashboard />} />
-                          <Route path="/live-classes/create" element={<CreateClass />} />
-                          <Route path="/my-classes" element={<MyClasses />} />
+
 
                           {/* Tutor Exam Control */}
                           <Route path="/tutor/exams" element={<TutorExamList />} />
@@ -670,7 +669,7 @@ const AppContent = () => {
                           <Route path="/my-mistakes" element={null} />
                           <Route path="/ai-assistant" element={<AIAssistant />} />
                           <Route path="/calendar" element={<Calendar />} />
-                          <Route path="/progress" element={<StudyProgress />} />
+
 
 
                           <Route path="/feed" element={null} />
@@ -680,14 +679,7 @@ const AppContent = () => {
                           <Route path="/streak/restore" element={<StreakRestore />} />
 
                           <Route path="/guide" element={<Guide />} />
-                          {/* NURSING CURRICULUM ROUTES */}
-                          <Route path="/nursing" element={<NursingHome />} />
-                          <Route path="/nursing/:yearId" element={<NursingSemester />} />
-                          <Route path="/nursing/:yearId/:semId" element={<NursingModule />} />
-                          <Route path="/nursing/:yearId/:semId/:moduleId" element={<NursingUnit />} />
-                          <Route path="/nursing/quiz/:topicId" element={<NursingQuiz />} />
-                          <Route path="/nursing/search" element={<TopicSearch />} />
-                          <Route path="/nursing/progress" element={<ProgressPage />} />
+
 
                           {/* ═══════════════════════════════════════════════════════════
                               STAFF CPD MODULE (all routes guarded by StaffOnlyRoute)
@@ -746,6 +738,17 @@ const AppContent = () => {
                         <Route path="/medtube" element={<PrivateRoute><MedTube /></PrivateRoute>} />
                         <Route path="/quiz" element={<PrivateRoute><QuizPage /></PrivateRoute>} />
                         <Route path="/Medrae-quizzes" element={<PrivateRoute><MedraeQuizzes /></PrivateRoute>} />
+                        <Route path="/progress" element={<StudyProgress />} />
+                        {/* NURSING CURRICULUM — full-screen, same treatment as /quiz */}
+                        <Route path="/nursing" element={<PrivateRoute><NursingHome /></PrivateRoute>} />
+                        <Route path="/nursing/:yearId" element={<PrivateRoute><NursingSemester /></PrivateRoute>} />
+                        <Route path="/nursing/:yearId/:semId" element={<PrivateRoute><NursingModule /></PrivateRoute>} />
+                        <Route path="/nursing/:yearId/:semId/:moduleId" element={<PrivateRoute><NursingUnit /></PrivateRoute>} />
+                        <Route path="/nursing/quiz/:topicId" element={<PrivateRoute><NursingQuiz /></PrivateRoute>} />
+                        <Route path="/nursing/search" element={<PrivateRoute><TopicSearch /></PrivateRoute>} />
+                        <Route path="/nursing/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+                        <Route path="/nursing/unit-search" element={<PrivateRoute><UnitSearch /></PrivateRoute>} />
+
                         <Route path="/subscription" element={<PrivateRoute><Subscription /></PrivateRoute>} />
                         <Route path="/feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
                         <Route path="/help" element={<PrivateRoute><HelpCenter /></PrivateRoute>} />
@@ -769,6 +772,12 @@ const AppContent = () => {
                         <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
 
+
+                        <Route path="/my-classes" element={<MyClasses />} />
+
+                        <Route path="/live-classes/:id" element={<ClassDetails />} />
+                        <Route path="/live-classes" element={<LiveClassesDashboard />} />
+                        <Route path="/live-classes/create" element={<CreateClass />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
 

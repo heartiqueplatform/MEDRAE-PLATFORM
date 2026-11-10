@@ -1,89 +1,189 @@
 // src/pages/live-classes/CreateClass.tsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthProvider';
-import { liveClassService } from '@/services/liveClassService';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthProvider";
+import { liveClassService } from "@/services/liveClassService";
+import { toast } from "sonner";
 import {
-    X, Upload, Calendar, Clock, Users, Award, Link as LinkIcon,
-    BookOpen, Video, Loader2, CheckCircle, ChevronLeft
-} from 'lucide-react';
+    X,
+    Upload,
+    Calendar,
+    Clock,
+    Users,
+    Award,
+    Link as LinkIcon,
+    BookOpen,
+    Video,
+    Loader2,
+    CheckCircle,
+    ChevronLeft,
+    FileText,
+} from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { playSound } from "@/lib/soundManager";
 
-// Cloudinary configuration
-const CLOUDINARY_CLOUD_NAME = 'dpj5vprwf';
-const CLOUDINARY_UPLOAD_PRESET = 'medrae-classes';
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    playSound("ui-tap");
+    if (type === "success") vibrate([20, 30, 20]);
+    else if (type === "warning") vibrate(60);
+    else vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Cloudinary config                                                  */
+/* ------------------------------------------------------------------ */
+
+const CLOUDINARY_CLOUD_NAME = "dpj5vprwf";
+const CLOUDINARY_UPLOAD_PRESET = "medrae-classes";
+
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
+const TOPIC_CATEGORIES = [
+    "Nursing Fundamentals",
+    "Medical-Surgical Nursing",
+    "Pediatric Nursing",
+    "Maternal & Newborn Nursing",
+    "Psychiatric Nursing",
+    "Pharmacology",
+    "Community Health Nursing",
+    "Leadership & Management",
+    "Research & Evidence-Based Practice",
+    "Critical Care Nursing",
+    "Emergency Nursing",
+    "Oncology Nursing",
+    "Geriatric Nursing",
+    "Other",
+];
+
+const MEETING_PLATFORMS = [
+    { value: "google_meet", label: "Google Meet" },
+    { value: "zoom", label: "Zoom" },
+    { value: "teams", label: "Microsoft Teams" },
+    { value: "other", label: "Other" },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Reusable field wrapper                                             */
+/* ------------------------------------------------------------------ */
+
+function Field({
+    label,
+    required,
+    children,
+}: {
+    label: string;
+    required?: boolean;
+    children: React.ReactNode;
+}) {
+    return (
+        <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                {label}
+                {required && <span className="text-rose-500 ml-0.5">*</span>}
+            </label>
+            {children}
+        </div>
+    );
+}
+
+const inputClass =
+    "w-full h-10 rounded-lg bg-slate-50 dark:bg-[#0d1117] px-3 " +
+    "text-sm text-slate-900 dark:text-white " +
+    "placeholder:text-slate-400 dark:placeholder:text-slate-500 " +
+    "focus:outline-none focus:ring-2 focus:ring-blue-500/40 border-0";
+
+/* ------------------------------------------------------------------ */
+/*  Main                                                               */
+/* ------------------------------------------------------------------ */
 
 export const CreateClass = () => {
     const { user, profile } = useAuth();
     const navigate = useNavigate();
+
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
-    const [coverPreview, setCoverPreview] = useState<string>('');
-    const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+    const [coverPreview, setCoverPreview] = useState<string>("");
+    const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
     const [imageFile, setImageFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        topic_category: '',
-        meeting_link: '',
-        meeting_platform: 'google_meet',
-        meeting_id: '',
-        meeting_password: '',
-        class_date: '',
-        start_time: '',
-        end_time: '',
-        host_name: profile?.name || '',
+        title: "",
+        description: "",
+        topic_category: "",
+        meeting_link: "",
+        meeting_platform: "google_meet",
+        meeting_id: "",
+        meeting_password: "",
+        class_date: "",
+        start_time: "",
+        end_time: "",
+        host_name: profile?.name || "",
         max_students: 50,
         is_cpd_eligible: false,
         cpd_points: 0,
-        cpd_accreditation_number: '',
-        prerequisites: '',
-        learning_objectives: '',
+        cpd_accreditation_number: "",
+        prerequisites: "",
+        learning_objectives: "",
     });
 
-    const topicCategories = [
-        'Nursing Fundamentals',
-        'Medical-Surgical Nursing',
-        'Pediatric Nursing',
-        'Maternal & Newborn Nursing',
-        'Psychiatric Nursing',
-        'Pharmacology',
-        'Community Health Nursing',
-        'Leadership & Management',
-        'Research & Evidence-Based Practice',
-        'Critical Care Nursing',
-        'Emergency Nursing',
-        'Oncology Nursing',
-        'Geriatric Nursing',
-        'Other'
-    ];
+    /* Check if the form has any user data — to warn on back */
+    const hasUnsavedData =
+        formData.title.trim() ||
+        formData.description.trim() ||
+        formData.meeting_link.trim() ||
+        formData.class_date ||
+        formData.start_time ||
+        formData.end_time ||
+        imageFile;
 
-    const meetingPlatforms = [
-        { value: 'google_meet', label: 'Google Meet' },
-        { value: 'zoom', label: 'Zoom' },
-        { value: 'teams', label: 'Microsoft Teams' },
-        { value: 'other', label: 'Other' },
-    ];
+    const handleBack = useCallback(() => {
+        tap();
+        if (hasUnsavedData) {
+            const confirmLeave = window.confirm(
+                "You have unsaved changes. Discard and go back?"
+            );
+            if (!confirmLeave) return;
+        }
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate("/live-classes", { replace: true });
+        }
+    }, [navigate, hasUnsavedData]);
 
-    // Upload image to Cloudinary
+    /* ── Cloudinary upload ── */
     const uploadToCloudinary = async (file: File): Promise<string> => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        formData.append('folder', 'medrae/classes');
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        fd.append("folder", "medrae/classes");
 
         const response = await fetch(
             `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-            {
-                method: 'POST',
-                body: formData,
-            }
+            { method: "POST", body: fd }
         );
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error?.message || 'Upload failed');
+            throw new Error(error.error?.message || "Upload failed");
         }
 
         const data = await response.json();
@@ -93,79 +193,74 @@ export const CreateClass = () => {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            toast.error('Please upload an image file');
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please upload an image file");
             return;
         }
-
         if (file.size > 5 * 1024 * 1024) {
-            toast.error('Image must be less than 5MB');
+            toast.error("Image must be less than 5MB");
             return;
         }
-
+        tap();
         setImageFile(file);
-
         const reader = new FileReader();
-        reader.onload = (e) => {
-            setCoverPreview(e.target?.result as string);
-        };
+        reader.onload = (ev) => setCoverPreview(ev.target?.result as string);
         reader.readAsDataURL(file);
-
-        toast.success('Image selected. Will upload when you create the class.');
     };
 
     const removeImage = () => {
+        tap("warning");
         setImageFile(null);
-        setCoverPreview('');
-        setUploadedImageUrl('');
+        setCoverPreview("");
+        setUploadedImageUrl("");
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
-
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === "checkbox" ? checked : value,
         }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading) return;
+
+        if (!formData.title.trim()) {
+            toast.error("Title is required");
+            return;
+        }
+        if (!formData.class_date) {
+            toast.error("Class date is required");
+            return;
+        }
+        if (!formData.start_time || !formData.end_time) {
+            toast.error("Start and end times are required");
+            return;
+        }
+        if (!formData.host_name) {
+            toast.error("Host name is required");
+            return;
+        }
+        if (formData.start_time >= formData.end_time) {
+            toast.error("End time must be after start time");
+            return;
+        }
+        if (!formData.meeting_link.trim()) {
+            toast.error("Meeting link is required");
+            return;
+        }
+
         setLoading(true);
+        tap("success");
 
         try {
-            if (!formData.title.trim()) {
-                toast.error('Title is required');
-                setLoading(false);
-                return;
-            }
-
-            if (!formData.class_date) {
-                toast.error('Class date is required');
-                setLoading(false);
-                return;
-            }
-
-            if (!formData.start_time || !formData.end_time) {
-                toast.error('Start and end times are required');
-                setLoading(false);
-                return;
-            }
-
-            if (!formData.host_name) {
-                toast.error('Host name is required');
-                setLoading(false);
-                return;
-            }
-
-            if (formData.start_time >= formData.end_time) {
-                toast.error('End time must be after start time');
-                setLoading(false);
-                return;
-            }
-
             let imageUrl = uploadedImageUrl;
 
             if (imageFile && !uploadedImageUrl) {
@@ -173,10 +268,9 @@ export const CreateClass = () => {
                 try {
                     imageUrl = await uploadToCloudinary(imageFile);
                     setUploadedImageUrl(imageUrl);
-                    toast.success('Image uploaded successfully');
-                } catch (error) {
-                    toast.error('Failed to upload image. Class will be created without image.');
-                    imageUrl = '';
+                } catch {
+                    toast.error("Image upload failed. Class created without image.");
+                    imageUrl = "";
                 } finally {
                     setUploadingImage(false);
                 }
@@ -191,8 +285,8 @@ export const CreateClass = () => {
                 meeting_id: formData.meeting_id,
                 meeting_password: formData.meeting_password,
                 class_date: formData.class_date,
-                start_time: formData.start_time + ':00',
-                end_time: formData.end_time + ':00',
+                start_time: formData.start_time + ":00",
+                end_time: formData.end_time + ":00",
                 host_name: formData.host_name,
                 host_user_id: user?.id,
                 max_students: parseInt(formData.max_students.toString()),
@@ -201,433 +295,537 @@ export const CreateClass = () => {
                 cpd_accreditation_number: formData.cpd_accreditation_number,
                 prerequisites: formData.prerequisites,
                 learning_objectives: formData.learning_objectives
-                    .split('\n')
-                    .filter(obj => obj.trim()),
+                    .split("\n")
+                    .filter((obj) => obj.trim()),
                 cover_image_url: imageUrl || null,
             };
 
             await liveClassService.createClass(submitData);
-
-            toast.success('Class created successfully');
-            navigate('/live-classes');
-
+            toast.success("Class created");
+            navigate("/live-classes", { replace: true });
         } catch (error) {
-            console.error('Error creating class:', error);
+            console.error("Error creating class:", error);
+            toast.error("Failed to create class");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        // ✅ CHANGED: Removed max-w-2xl, added full width
-        <div className="container mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 max-w-full">
-            {/* Back Button */}
-            <button
-                onClick={() => navigate('/live-classes')}
-                className="flex items-center gap-1.5 md:gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 md:mb-6 transition-colors px-4 md:px-0"
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+            {/* ── HEADER ── */}
+            <header className="shrink-0 bg-white dark:bg-[#0d1117] border-b border-slate-200/70 dark:border-white/[0.06] z-30">
+                <div className="flex items-center gap-2 px-2 h-14">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   active:bg-slate-100 dark:active:bg-white/5 transition-colors shrink-0"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate">
+                            Create class
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Share a live session with the community
+                        </p>
+                    </div>
+
+                    <div className="inline-flex items-center gap-1 rounded-full px-2 py-1 shrink-0
+                                    bg-blue-100 text-blue-700
+                                    dark:bg-blue-400/10 dark:text-blue-300">
+                        <Video className="h-3 w-3" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                            New
+                        </span>
+                    </div>
+                </div>
+            </header>
+
+            {/* ── SCROLLABLE FORM ── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar"
+                style={{ WebkitOverflowScrolling: "touch" }}
             >
-                <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
-
-            </button>
-
-            {/* Header - Clean, no emojis */}
-            <div className="flex flex-col items-center text-center gap-1 md:gap-2 mb-4 md:mb-6 px-4 md:px-0">
-                <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg inline-flex">
-                    <Video className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                    <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Create Live Class</h1>
-                    <p className="text-xs md:text-base text-gray-600 dark:text-gray-400">Share your knowledge with the community</p>
-                </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-0 md:space-y-4">
-                {/* Cover Image Upload - Clean */}
-                <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 p-4 md:p-6">
-                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 md:mb-2">
-                        Class Cover Image (Optional)
-                    </label>
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4">
-                        {coverPreview ? (
-                            <div className="relative w-full md:w-48">
-                                <img
-                                    src={coverPreview}
-                                    alt="Preview"
-                                    className="w-full h-32 md:h-32 object-cover rounded-lg border-0"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={removeImage}
-                                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                                >
-                                    <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                </button>
-                                {uploadingImage && (
-                                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                                        <Loader2 className="h-6 w-6 md:h-8 md:w-8 text-white animate-spin" />
+                <form
+                    onSubmit={handleSubmit}
+                    className="w-full max-w-[880px] mx-auto pb-32"
+                    style={{
+                        paddingBottom:
+                            "calc(96px + env(safe-area-inset-bottom, 0px))",
+                    }}
+                >
+                    {/* Cover image */}
+                    <section className="px-4 pt-4 pb-3">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                            <Field label="Cover image">
+                                {coverPreview ? (
+                                    <div className="relative rounded-xl overflow-hidden">
+                                        <img
+                                            src={coverPreview}
+                                            alt="Preview"
+                                            className="w-full h-40 object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            aria-label="Remove image"
+                                            className="absolute top-2 right-2 h-8 w-8 rounded-full
+                                                       bg-black/60 text-white
+                                                       flex items-center justify-center
+                                                       active:scale-95 transition-transform"
+                                            style={{ touchAction: "manipulation" }}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                        {uploadingImage && (
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                <Loader2 className="h-6 w-6 text-white animate-spin" />
+                                            </div>
+                                        )}
+                                        {uploadedImageUrl && !uploadingImage && (
+                                            <div className="absolute bottom-2 left-2 inline-flex items-center gap-1
+                                                            rounded-full bg-emerald-600 text-white px-2 py-0.5">
+                                                <CheckCircle className="h-3 w-3" />
+                                                <span className="text-[10px] font-bold">Uploaded</span>
+                                            </div>
+                                        )}
                                     </div>
+                                ) : (
+                                    <label
+                                        className="cursor-pointer block"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <div className="w-full h-32 rounded-xl
+                                                        border-2 border-dashed border-slate-300 dark:border-white/[0.1]
+                                                        bg-slate-50 dark:bg-[#0d1117]
+                                                        flex flex-col items-center justify-center gap-1
+                                                        active:bg-slate-100 dark:active:bg-white/[0.04]
+                                                        transition-colors">
+                                            <Upload className="h-6 w-6 text-slate-400" />
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                Tap to upload
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                16:9 · max 5MB
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                            className="hidden"
+                                        />
+                                    </label>
                                 )}
-                                {uploadedImageUrl && !uploadingImage && (
-                                    <div className="absolute bottom-2 right-2 bg-green-500 text-white text-[8px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded">
-                                        Uploaded
-                                    </div>
-                                )}
+                            </Field>
+                        </div>
+                    </section>
+
+                    {/* Basic info */}
+                    <section className="px-4 pb-3">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <FileText className="h-4 w-4 text-slate-400" />
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Basic info
+                                </h2>
                             </div>
-                        ) : (
-                            <label className="cursor-pointer w-full md:w-48">
-                                <div className="w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center hover:border-blue-500 transition-colors">
-                                    <Upload className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
-                                    <span className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1">Click to upload</span>
-                                </div>
+
+                            <Field label="Title" required>
                                 <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    className="hidden"
+                                    type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., Cardiac emergencies"
+                                    className={inputClass}
+                                    required
+                                    autoComplete="off"
+                                    style={{ touchAction: "manipulation" }}
                                 />
-                            </label>
-                        )}
-                        <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">
-                            <p>Recommended: 16:9 ratio, max 5MB</p>
-                            <p className="text-blue-500">Uploads to Cloudinary when you create the class</p>
-                            {imageFile && !uploadedImageUrl && (
-                                <p className="text-yellow-500 text-[8px] md:text-xs">
-                                    Image selected. Will upload on submit.
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                            </Field>
 
-                {/* Basic Info - Clean */}
-                <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 p-4 md:p-6">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Basic Information</h3>
+                            <Field label="Description">
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    placeholder="What will students learn?"
+                                    className={`${inputClass} h-auto py-2 resize-none`}
+                                    style={{
+                                        touchAction: "manipulation",
+                                        WebkitAppearance: "none",
+                                    }}
+                                />
+                            </Field>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                        <div className="md:col-span-2">
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Class Title <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleInputChange}
-                                placeholder="Enter class title"
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                            />
-                        </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="Category">
+                                    <Select
+                                        value={formData.topic_category}
+                                        onValueChange={(value) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                topic_category: value,
+                                            }))
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            className="w-full h-10 rounded-lg border-0
+                                                       bg-slate-50 dark:bg-[#0d1117]
+                                                       px-3 text-sm text-slate-900 dark:text-white
+                                                       focus:ring-2 focus:ring-blue-500/40 focus:outline-none"
+                                        >
+                                            <SelectValue placeholder="Select" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-0 shadow-lg bg-white dark:bg-[#161b22] max-h-72">
+                                            {TOPIC_CATEGORIES.map((cat) => (
+                                                <SelectItem key={cat} value={cat}>
+                                                    {cat}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Description
-                            </label>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="Describe what students will learn..."
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Category <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                name="topic_category"
-                                value={formData.topic_category}
-                                onChange={handleInputChange}
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                            >
-                                <option value="">Select category</option>
-                                {topicCategories.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Host Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="host_name"
-                                value={formData.host_name}
-                                onChange={handleInputChange}
-                                placeholder="Your name"
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Date & Time - Clean */}
-                <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 p-4 md:p-6">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2">
-                        <Calendar className="h-4 w-4 md:h-5 md:w-5" />
-                        Date & Time
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Date <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="date"
-                                name="class_date"
-                                value={formData.class_date}
-                                onChange={handleInputChange}
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                                min={new Date().toISOString().split('T')[0]}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Start Time <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="time"
-                                name="start_time"
-                                value={formData.start_time}
-                                onChange={handleInputChange}
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                End Time <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="time"
-                                name="end_time"
-                                value={formData.end_time}
-                                onChange={handleInputChange}
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Meeting Details - Clean */}
-                <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 p-4 md:p-6">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2">
-                        <LinkIcon className="h-4 w-4 md:h-5 md:w-5" />
-                        Meeting Details
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Platform
-                            </label>
-                            <select
-                                name="meeting_platform"
-                                value={formData.meeting_platform}
-                                onChange={handleInputChange}
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            >
-                                {meetingPlatforms.map(platform => (
-                                    <option key={platform.value} value={platform.value}>
-                                        {platform.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Meeting Link <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="url"
-                                name="meeting_link"
-                                value={formData.meeting_link}
-                                onChange={handleInputChange}
-                                placeholder="https://meet.google.com/..."
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Meeting ID (Optional)
-                            </label>
-                            <input
-                                type="text"
-                                name="meeting_id"
-                                value={formData.meeting_id}
-                                onChange={handleInputChange}
-                                placeholder="Meeting ID"
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Meeting Password (Optional)
-                            </label>
-                            <input
-                                type="text"
-                                name="meeting_password"
-                                value={formData.meeting_password}
-                                onChange={handleInputChange}
-                                placeholder="Password"
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Capacity & CPD - Clean */}
-                <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 p-4 md:p-6">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Capacity & CPD</h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                <Users className="h-3.5 w-3.5 md:h-4 md:w-4 inline mr-0.5 md:mr-1" />
-                                Max Students
-                            </label>
-                            <input
-                                type="number"
-                                name="max_students"
-                                value={formData.max_students}
-                                onChange={handleInputChange}
-                                min={1}
-                                max={500}
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-2 md:gap-3 pt-4 md:pt-6">
-                            <input
-                                type="checkbox"
-                                name="is_cpd_eligible"
-                                checked={formData.is_cpd_eligible}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 md:h-5 md:w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                            />
-                            <label className="text-[10px] md:text-sm font-medium text-gray-700 dark:text-gray-300">
-                                <Award className="h-3.5 w-3.5 md:h-4 md:w-4 inline mr-0.5 md:mr-1" />
-                                This class offers CPD points
-                            </label>
-                        </div>
-
-                        {formData.is_cpd_eligible && (
-                            <>
-                                <div>
-                                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                        CPD Points
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="cpd_points"
-                                        value={formData.cpd_points}
-                                        onChange={handleInputChange}
-                                        min={0}
-                                        step={0.5}
-                                        className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                        Accreditation Number (Optional)
-                                    </label>
+                                <Field label="Host name" required>
                                     <input
                                         type="text"
-                                        name="cpd_accreditation_number"
-                                        value={formData.cpd_accreditation_number}
+                                        name="host_name"
+                                        value={formData.host_name}
                                         onChange={handleInputChange}
-                                        placeholder="e.g., CPD-2024-001"
-                                        className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
+                                        placeholder="Your name"
+                                        className={inputClass}
+                                        required
+                                        style={{ touchAction: "manipulation" }}
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Date & time */}
+                    <section className="px-4 pb-3">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Calendar className="h-4 w-4 text-slate-400" />
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Date & time
+                                </h2>
+                            </div>
+
+                            <Field label="Class date" required>
+                                <input
+                                    type="date"
+                                    name="class_date"
+                                    value={formData.class_date}
+                                    onChange={handleInputChange}
+                                    className={inputClass}
+                                    required
+                                    min={new Date().toISOString().split("T")[0]}
+                                    style={{ touchAction: "manipulation" }}
+                                />
+                            </Field>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="Start time" required>
+                                    <input
+                                        type="time"
+                                        name="start_time"
+                                        value={formData.start_time}
+                                        onChange={handleInputChange}
+                                        className={inputClass}
+                                        required
+                                        style={{ touchAction: "manipulation" }}
+                                    />
+                                </Field>
+
+                                <Field label="End time" required>
+                                    <input
+                                        type="time"
+                                        name="end_time"
+                                        value={formData.end_time}
+                                        onChange={handleInputChange}
+                                        className={inputClass}
+                                        required
+                                        style={{ touchAction: "manipulation" }}
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Meeting */}
+                    <section className="px-4 pb-3">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <LinkIcon className="h-4 w-4 text-slate-400" />
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Meeting details
+                                </h2>
+                            </div>
+
+                            <Field label="Platform">
+                                <Select
+                                    value={formData.meeting_platform}
+                                    onValueChange={(value) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            meeting_platform: value,
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger
+                                        className="w-full h-10 rounded-lg border-0
+                                                   bg-slate-50 dark:bg-[#0d1117]
+                                                   px-3 text-sm text-slate-900 dark:text-white
+                                                   focus:ring-2 focus:ring-blue-500/40 focus:outline-none"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-0 shadow-lg bg-white dark:bg-[#161b22]">
+                                        {MEETING_PLATFORMS.map((p) => (
+                                            <SelectItem key={p.value} value={p.value}>
+                                                {p.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+
+                            <Field label="Meeting link" required>
+                                <input
+                                    type="url"
+                                    name="meeting_link"
+                                    value={formData.meeting_link}
+                                    onChange={handleInputChange}
+                                    placeholder="https://meet.google.com/..."
+                                    className={inputClass}
+                                    required
+                                    autoComplete="off"
+                                    style={{ touchAction: "manipulation" }}
+                                />
+                            </Field>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="Meeting ID">
+                                    <input
+                                        type="text"
+                                        name="meeting_id"
+                                        value={formData.meeting_id}
+                                        onChange={handleInputChange}
+                                        placeholder="Optional"
+                                        className={inputClass}
+                                        autoComplete="off"
+                                        style={{ touchAction: "manipulation" }}
+                                    />
+                                </Field>
+
+                                <Field label="Password">
+                                    <input
+                                        type="text"
+                                        name="meeting_password"
+                                        value={formData.meeting_password}
+                                        onChange={handleInputChange}
+                                        placeholder="Optional"
+                                        className={inputClass}
+                                        autoComplete="off"
+                                        style={{ touchAction: "manipulation" }}
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Capacity & CPD */}
+                    <section className="px-4 pb-3">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Users className="h-4 w-4 text-slate-400" />
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Capacity & CPD
+                                </h2>
+                            </div>
+
+                            <Field label="Max students">
+                                <input
+                                    type="number"
+                                    name="max_students"
+                                    value={formData.max_students}
+                                    onChange={handleInputChange}
+                                    min={1}
+                                    max={500}
+                                    className={inputClass}
+                                    style={{ touchAction: "manipulation" }}
+                                />
+                            </Field>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    tap();
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        is_cpd_eligible: !prev.is_cpd_eligible,
+                                    }));
+                                }}
+                                className="w-full flex items-center justify-between p-3 rounded-xl
+                                           bg-slate-50 dark:bg-[#0d1117]
+                                           active:scale-[0.99] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Award className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                    <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                                        This class offers CPD points
+                                    </span>
+                                </div>
+                                <div
+                                    className={`relative w-10 h-6 rounded-full transition-colors ${formData.is_cpd_eligible
+                                        ? "bg-emerald-600"
+                                        : "bg-slate-300 dark:bg-white/[0.15]"
+                                        }`}
+                                >
+                                    <span
+                                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${formData.is_cpd_eligible
+                                            ? "translate-x-4"
+                                            : "translate-x-0"
+                                            }`}
                                     />
                                 </div>
-                            </>
-                        )}
-                    </div>
-                </div>
+                            </button>
 
-                {/* Prerequisites & Objectives - Clean */}
-                <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 p-4 md:p-6">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2">
-                        <BookOpen className="h-4 w-4 md:h-5 md:w-5" />
-                        Prerequisites & Learning Objectives
-                    </h3>
+                            {formData.is_cpd_eligible && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Field label="CPD points">
+                                        <input
+                                            type="number"
+                                            name="cpd_points"
+                                            value={formData.cpd_points}
+                                            onChange={handleInputChange}
+                                            min={0}
+                                            step={0.5}
+                                            className={inputClass}
+                                            style={{ touchAction: "manipulation" }}
+                                        />
+                                    </Field>
 
-                    <div className="grid grid-cols-1 gap-3 md:gap-4">
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Prerequisites (Optional)
-                            </label>
-                            <textarea
-                                name="prerequisites"
-                                value={formData.prerequisites}
-                                onChange={handleInputChange}
-                                rows={2}
-                                placeholder="What should students know before joining?"
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            />
+                                    <Field label="Accreditation">
+                                        <input
+                                            type="text"
+                                            name="cpd_accreditation_number"
+                                            value={formData.cpd_accreditation_number}
+                                            onChange={handleInputChange}
+                                            placeholder="CPD-2024-001"
+                                            className={inputClass}
+                                            autoComplete="off"
+                                            style={{ touchAction: "manipulation" }}
+                                        />
+                                    </Field>
+                                </div>
+                            )}
                         </div>
+                    </section>
 
-                        <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1">
-                                Learning Objectives (One per line)
-                            </label>
-                            <textarea
-                                name="learning_objectives"
-                                value={formData.learning_objectives}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="By the end of this class, students will be able to:"
-                                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-base"
-                            />
+                    {/* Learning */}
+                    <section className="px-4 pb-3">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <BookOpen className="h-4 w-4 text-slate-400" />
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Learning
+                                </h2>
+                            </div>
+
+                            <Field label="Prerequisites">
+                                <textarea
+                                    name="prerequisites"
+                                    value={formData.prerequisites}
+                                    onChange={handleInputChange}
+                                    rows={2}
+                                    placeholder="What should students know?"
+                                    className={`${inputClass} h-auto py-2 resize-none`}
+                                    style={{
+                                        touchAction: "manipulation",
+                                        WebkitAppearance: "none",
+                                    }}
+                                />
+                            </Field>
+
+                            <Field label="Learning objectives (one per line)">
+                                <textarea
+                                    name="learning_objectives"
+                                    value={formData.learning_objectives}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    placeholder={"By the end of this class, students will be able to:\n..."}
+                                    className={`${inputClass} h-auto py-2 resize-none`}
+                                    style={{
+                                        touchAction: "manipulation",
+                                        WebkitAppearance: "none",
+                                    }}
+                                />
+                            </Field>
                         </div>
-                    </div>
-                </div>
+                    </section>
+                </form>
+            </main>
 
-                {/* Submit Buttons - Clean */}
-                <div className="flex flex-col md:flex-row gap-2 md:gap-4 px-4 md:px-0 pb-4 md:pb-0">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 md:gap-2 text-sm md:text-base"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                                {uploadingImage ? 'Uploading Image...' : 'Creating...'}
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
-                                Create Class
-                            </>
-                        )}
-                    </button>
+            {/* ── STICKY BOTTOM BAR ── */}
+            <div
+                className="shrink-0 bg-white/95 dark:bg-[#0d1117]/95 backdrop-blur
+                           border-t border-slate-200/70 dark:border-white/[0.06]
+                           px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+            >
+                <div className="w-full max-w-[880px] mx-auto flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={() => navigate('/live-classes')}
-                        className="flex-1 px-4 md:px-6 py-2.5 md:py-3 border-0 text-gray-700 dark:bg-muted/60 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm md:text-base"
+                        onClick={handleBack}
+                        disabled={loading}
+                        className="h-12 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06]
+                                   text-slate-700 dark:text-slate-200
+                                   text-sm font-bold
+                                   active:scale-[0.97] transition-transform
+                                   disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{ touchAction: "manipulation" }}
                     >
                         Cancel
                     </button>
+                    <button
+                        type="submit"
+                        form="create-class-form"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="flex-1 h-12 rounded-xl bg-blue-600 text-white
+                                   text-sm font-bold
+                                   active:scale-[0.98] transition-transform
+                                   flex items-center justify-center gap-2
+                                   disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                {uploadingImage ? "Uploading…" : "Creating…"}
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle className="h-4 w-4" />
+                                Create class
+                            </>
+                        )}
+                    </button>
                 </div>
-            </form>
+            </div>
         </div>
     );
 };

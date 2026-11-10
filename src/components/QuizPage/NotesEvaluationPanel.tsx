@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, Phone, Users } from 'lucide-react';
-import React from 'react';
+import { CheckCircle2, Phone, Users } from "lucide-react";
+import React from "react";
 
 type NotesEvaluationPanelProps = {
     q: any;
@@ -54,11 +54,12 @@ async function fetchHelpOthersWithCache(supabase: any, questionId: string) {
             .not("help_others", "eq", "none")
             .limit(50);
 
-        const helpers = data?.map((d: any) => ({
-            id: d.id,
-            whatsapp: d.help_others,
-            profiles: d.profiles
-        })) || [];
+        const helpers =
+            data?.map((d: any) => ({
+                id: d.id,
+                whatsapp: d.help_others,
+                profiles: d.profiles,
+            })) || [];
 
         helpOthersCache.set(cacheKey, { data: helpers, timestamp: Date.now() });
 
@@ -87,11 +88,28 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
     const isMounted = React.useRef(true);
 
     const {
-        q, userId, notes, setNotes, understood, setUnderstood,
-        notUnderstood, setNotUnderstood, attempts, setAttempts,
-        saving, setSaving, saved, setSaved, helpOthersDisabled,
-        setHelpOthersDisabled, setHelpMeHelpers, setCurrentQuestionText,
-        setHelpMeOverlayOpen, saveNoteOffline, saveAnswersOffline, supabase,
+        q,
+        userId,
+        notes,
+        setNotes,
+        understood,
+        setUnderstood,
+        notUnderstood,
+        setNotUnderstood,
+        attempts,
+        setAttempts,
+        saving,
+        setSaving,
+        saved,
+        setSaved,
+        helpOthersDisabled,
+        setHelpOthersDisabled,
+        setHelpMeHelpers,
+        setCurrentQuestionText,
+        setHelpMeOverlayOpen,
+        saveNoteOffline,
+        saveAnswersOffline,
+        supabase,
     } = props;
 
     React.useEffect(() => {
@@ -102,39 +120,51 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
         };
     }, []);
 
-    const syncStatus = React.useCallback(async (isUnderstood: boolean, isNotUnderstood: boolean, customAttempts?: number) => {
-        if (!userId) return;
+    const syncStatus = React.useCallback(
+        async (
+            isUnderstood: boolean,
+            isNotUnderstood: boolean,
+            customAttempts?: number
+        ) => {
+            if (!userId) return;
 
-        const currentAttempts = customAttempts ?? (attempts[q.id] || 0);
-        const currentNote = notes[q.id] || "";
+            const currentAttempts = customAttempts ?? (attempts[q.id] || 0);
+            const currentNote = notes[q.id] || "";
 
-        await Promise.all([
-            saveNoteOffline(q.id, currentNote),
-            saveAnswersOffline(q.id, {
-                understood: isUnderstood,
-                not_understood: isNotUnderstood,
-                attempts: currentAttempts,
-            })
-        ]);
-
-        if (saveTimeout) clearTimeout(saveTimeout);
-
-        saveTimeout = setTimeout(async () => {
-            try {
-                await supabase.from("question_notes").upsert([{
-                    user_id: userId,
-                    question_id: q.id,
-                    note_text: currentNote,
+            await Promise.all([
+                saveNoteOffline(q.id, currentNote),
+                saveAnswersOffline(q.id, {
                     understood: isUnderstood,
-                    is_not_understood: isNotUnderstood,
+                    not_understood: isNotUnderstood,
                     attempts: currentAttempts,
-                    help_others: helpOthersDisabled[q.id] ? "saved" : null
-                }], { onConflict: "question_id, user_id" });
-            } catch (err) {
-                console.error("Sync Error:", err);
-            }
-        }, 1000);
-    }, [userId, q.id, attempts, notes, helpOthersDisabled, saveNoteOffline, saveAnswersOffline, supabase]);
+                }),
+            ]);
+
+            if (saveTimeout) clearTimeout(saveTimeout);
+
+            saveTimeout = setTimeout(async () => {
+                try {
+                    await supabase.from("question_notes").upsert(
+                        [
+                            {
+                                user_id: userId,
+                                question_id: q.id,
+                                note_text: currentNote,
+                                understood: isUnderstood,
+                                is_not_understood: isNotUnderstood,
+                                attempts: currentAttempts,
+                                help_others: helpOthersDisabled[q.id] ? "saved" : null,
+                            },
+                        ],
+                        { onConflict: "question_id, user_id" }
+                    );
+                } catch (err) {
+                    console.error("Sync Error:", err);
+                }
+            }, 1000);
+        },
+        [userId, q.id, attempts, notes, helpOthersDisabled, saveNoteOffline, saveAnswersOffline, supabase]
+    );
 
     const handleFindHelp = React.useCallback(async () => {
         if (!userId) return;
@@ -156,13 +186,18 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
     const handleEnableHelp = React.useCallback(async () => {
         if (!phoneInput.trim() || !userId || !activeQuestionId) return;
         try {
-            await supabase.from("question_notes").upsert([{
-                user_id: userId,
-                question_id: activeQuestionId,
-                help_others: phoneInput.trim(),
-            }], { onConflict: "question_id, user_id" });
+            await supabase.from("question_notes").upsert(
+                [
+                    {
+                        user_id: userId,
+                        question_id: activeQuestionId,
+                        help_others: phoneInput.trim(),
+                    },
+                ],
+                { onConflict: "question_id, user_id" }
+            );
 
-            setHelpOthersDisabled(prev => ({ ...prev, [activeQuestionId]: true }));
+            setHelpOthersDisabled((prev) => ({ ...prev, [activeQuestionId]: true }));
             setHelpModalOpen(false);
             setPhoneInput("");
             setActiveQuestionId(null);
@@ -176,20 +211,49 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
 
     return (
         <>
+            {/* ─── HELP MODAL ─── */}
             {helpModalOpen && (
-                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-none border-0 animate-in zoom-in-95 duration-200">
-                        <div className="bg-teal-600 p-6 text-center">
-                            <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-3">
-                                <Users className="text-white w-6 h-6" />
-                            </div>
-                            <h2 className="text-lg font-bold text-white">Peer Support Network</h2>
-                            <p className="text-teal-100 text-xs mt-1">Lend a hand to fellow students</p>
+                <div
+                    className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center
+                               bg-black/50 backdrop-blur-sm"
+                    onClick={() => {
+                        setHelpModalOpen(false);
+                        setPhoneInput("");
+                        setActiveQuestionId(null);
+                    }}
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                >
+                    <div
+                        className="w-full sm:max-w-sm
+                                   bg-white dark:bg-[#161b22]
+                                   rounded-t-2xl sm:rounded-2xl
+                                   overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Drag handle (mobile) */}
+                        <div className="sm:hidden flex justify-center pt-2.5 pb-1">
+                            <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-white/[0.15]" />
                         </div>
 
-                        <div className="p-6">
-                            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 ml-1">
-                                WhatsApp Contact
+                        {/* Header */}
+                        <div className="px-5 pt-4 pb-4 flex items-start gap-3 border-b border-slate-100 dark:border-white/[0.06]">
+                            <div className="h-10 w-10 rounded-xl bg-teal-600 flex items-center justify-center shrink-0">
+                                <Users className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Peer Support Network
+                                </h2>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Lend a hand to fellow students
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                                WhatsApp number
                             </label>
                             <div className="relative">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-600">
@@ -199,29 +263,45 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                     value={phoneInput}
                                     onChange={(e) => setPhoneInput(e.target.value)}
                                     placeholder="+254 7XX XXX XXX"
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition-all font-medium border-0"
+                                    className="w-full h-11 pl-10 pr-3 rounded-xl
+                                               bg-slate-50 dark:bg-[#0d1117]
+                                               text-sm text-slate-900 dark:text-white
+                                               placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                               focus:outline-none focus:ring-2 focus:ring-teal-500/40
+                                               border-0 font-medium"
+                                    style={{ touchAction: "manipulation" }}
                                 />
                             </div>
-                            <p className="mt-3 text-[11px] text-slate-400 leading-relaxed px-1">
-                                By providing your number, you agree to let other nursing students reach out to you for study assistance.
+                            <p className="mt-2.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                By providing your number, you agree to let other nursing
+                                students reach out to you for study assistance.
                             </p>
-                            <div className="grid grid-cols-2 gap-3 mt-6">
+
+                            <div className="grid grid-cols-2 gap-2 mt-4">
                                 <button
                                     onClick={() => {
                                         setHelpModalOpen(false);
                                         setPhoneInput("");
                                         setActiveQuestionId(null);
                                     }}
-                                    className="px-4 py-3 text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.06]
+                                               text-slate-700 dark:text-slate-200
+                                               text-sm font-bold
+                                               active:scale-[0.97] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleEnableHelp}
-                                    className="px-4 py-3 text-sm font-bold rounded-xl bg-teal-600 text-white hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="h-11 rounded-xl bg-teal-600 text-white
+                                               text-sm font-bold
+                                               active:scale-[0.97] transition-transform
+                                               flex items-center justify-center gap-1.5"
+                                    style={{ touchAction: "manipulation" }}
                                 >
-                                    <CheckCircle2 size={16} />
-                                    Enable Support
+                                    <CheckCircle2 size={14} />
+                                    Enable
                                 </button>
                             </div>
                         </div>
@@ -230,65 +310,101 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
             )}
 
             {/* ─── MAIN PANEL ─── */}
-            <div className="w-full h-full flex flex-col bg-amber-50/40 dark:bg-slate-800/80 rounded-xl overflow-hidden transition-all">
+            <div className="w-full h-full -mt-6 flex flex-col bg-white dark:bg-[#161b22] rounded-none overflow-hidden">
 
                 {/* ── Header ── */}
-                <div className="flex items-center justify-between px-4 py-3 bg-amber-100/50 dark:bg-slate-800/70 shrink-0">
+                <div className="flex items-center justify-between px-4 py-3  shrink-0
+                                border-b border-slate-100 dark:border-white/[0.04]">
                     <div className="flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 text-amber-600 dark:text-amber-400">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                            className="w-4 h-4 text-amber-600 dark:text-amber-400"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                            />
                         </svg>
-                        <h2 className="text-sm font-bold text-amber-900 dark:text-amber-100 tracking-tight">
-                            Study Notes
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Study notes
                         </h2>
                     </div>
                     {attempts[q.id] > 0 && (
-                        <span className="text-[10px] bg-amber-200/60 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">
-                            {attempts[q.id]} ATTEMPTS
+                        <span className="text-[10px] font-bold uppercase tracking-wider
+                                         bg-slate-100 dark:bg-white/[0.06]
+                                         text-slate-600 dark:text-slate-300
+                                         px-2 py-0.5 rounded-full tabular-nums">
+                            {attempts[q.id]} {attempts[q.id] === 1 ? "attempt" : "attempts"}
                         </span>
                     )}
                 </div>
 
-                {/* ── Textarea (grows to fill) ── */}
+                {/* ── Textarea ── */}
                 <div className="flex-1 min-h-0 p-1 flex flex-col">
                     <textarea
                         value={notes[q.id] || ""}
                         onChange={(e) => {
                             const val = e.target.value;
-                            setNotes(prev => ({ ...prev, [q.id]: val }));
+                            setNotes((prev) => ({ ...prev, [q.id]: val }));
                             saveNoteOffline(q.id, val).catch(console.error);
                             syncStatus(!!understood[q.id], !!notUnderstood[q.id]);
                         }}
-                        className="w-full flex-1 min-h-[160px] p-4 text-sm bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 hide-scrollbar"
+                        className="w-full flex-1 min-h-[160px] p-4 text-sm
+                                   bg-transparent border-0
+                                   focus:ring-0 focus:outline-none
+                                   resize-none
+                                   text-slate-800 dark:text-slate-200
+                                   placeholder-slate-400 dark:placeholder-slate-500
+                                   hide-scrollbar"
                         placeholder="Reflect on this question... Why was it tricky? What's the key takeaway?"
+                        style={{ touchAction: "manipulation" }}
                     />
                 </div>
 
-                {/* ── Subtle empty-space filler (shows when textarea is short) ── */}
+                {/* ── Hint ── */}
                 <div className="px-4 pb-3 -mt-1 shrink-0">
-                    <p className="text-[11px] text-amber-700/70 dark:text-amber-300/70 italic leading-relaxed">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 italic leading-relaxed">
                         💡 Writing it down makes it stick. A short note here compounds into exam-day recall.
                     </p>
                 </div>
 
-                {/* ── Action Toolbar — no dividers, flat buttons ── */}
-                <div className="shrink-0 p-2 space-y-1.5">
+                {/* ── Action toolbar ── */}
+                <div className="shrink-0 p-2 space-y-1.5 border-t border-slate-100 dark:border-white/[0.04]">
 
                     {/* Row 1 — Understood | Need Help */}
                     <div className="grid grid-cols-2 gap-1.5">
                         <button
                             onClick={() => {
                                 const next = !understood[q.id];
-                                setUnderstood(prev => ({ ...prev, [q.id]: next }));
-                                setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
+                                setUnderstood((prev) => ({ ...prev, [q.id]: next }));
+                                setNotUnderstood((prev) => ({ ...prev, [q.id]: false }));
                                 syncStatus(next, false);
                             }}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${understood[q.id]
-                                ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                                : 'bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60'}`}
+                            className={`flex items-center justify-center gap-1.5 px-2 h-10 rounded-lg
+                                        text-[11px] font-bold
+                                        active:scale-[0.97] transition-transform
+                                        ${understood[q.id]
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300"
+                                }`}
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 shrink-0">
-                                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.74-5.24Z" clipRule="evenodd" />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                className="w-4 h-4 shrink-0"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.74-5.24Z"
+                                    clipRule="evenodd"
+                                />
                             </svg>
                             <span className="truncate">Understood</span>
                         </button>
@@ -296,18 +412,32 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                         <button
                             onClick={() => {
                                 const next = !notUnderstood[q.id];
-                                setNotUnderstood(prev => ({ ...prev, [q.id]: next }));
-                                setUnderstood(prev => ({ ...prev, [q.id]: false }));
+                                setNotUnderstood((prev) => ({ ...prev, [q.id]: next }));
+                                setUnderstood((prev) => ({ ...prev, [q.id]: false }));
                                 syncStatus(false, next);
                             }}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${notUnderstood[q.id]
-                                ? 'bg-red-500/15 text-red-700 dark:text-red-400'
-                                : 'bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60'}`}
+                            className={`flex items-center justify-center gap-1.5 px-2 h-10 rounded-lg
+                                        text-[11px] font-bold
+                                        active:scale-[0.97] transition-transform
+                                        ${notUnderstood[q.id]
+                                    ? "bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300"
+                                }`}
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 shrink-0">
-                                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                className="w-4 h-4 shrink-0"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                                    clipRule="evenodd"
+                                />
                             </svg>
-                            <span className="truncate">Need Help</span>
+                            <span className="truncate">Need help</span>
                         </button>
                     </div>
 
@@ -315,14 +445,22 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                     <button
                         onClick={() => {
                             const nextVal = (attempts[q.id] || 0) + 1;
-                            setAttempts(prev => ({ ...prev, [q.id]: nextVal }));
+                            setAttempts((prev) => ({ ...prev, [q.id]: nextVal }));
                             syncStatus(!!understood[q.id], !!notUnderstood[q.id], nextVal);
                         }}
-                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60 transition-all active:scale-[0.98]"
+                        className="w-full flex items-center justify-between gap-2 px-3 h-10 rounded-lg
+                                   text-[11px] font-bold
+                                   bg-slate-100 text-slate-600
+                                   dark:bg-white/[0.06] dark:text-slate-300
+                                   active:scale-[0.98] transition-transform"
+                        style={{ touchAction: "manipulation" }}
                     >
                         <span>Mark attempt</span>
                         {attempts[q.id] > 0 && (
-                            <span className="text-[10px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded">
+                            <span className="text-[10px] font-bold
+                                             bg-blue-100 text-blue-700
+                                             dark:bg-blue-400/10 dark:text-blue-300
+                                             px-2 py-0.5 rounded-full tabular-nums">
                                 {attempts[q.id]}
                             </span>
                         )}
@@ -338,27 +476,56 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setHelpModalOpen(true);
                             }}
                             disabled={helpOthersDisabled[q.id]}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${helpOthersDisabled[q.id]
-                                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                                : 'bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60'}`}
+                            className={`flex items-center justify-center gap-1.5 px-2 h-10 rounded-lg
+                                        text-[11px] font-bold
+                                        active:scale-[0.97] transition-transform
+                                        ${helpOthersDisabled[q.id]
+                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300"
+                                }`}
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 shrink-0">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                stroke="currentColor"
+                                className="w-4 h-4 shrink-0"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
+                                />
                             </svg>
-                            <span className="truncate">{helpOthersDisabled[q.id] ? 'Helping' : 'Help'}</span>
+                            <span className="truncate">
+                                {helpOthersDisabled[q.id] ? "Helping" : "Help"}
+                            </span>
                         </button>
 
                         <button
                             onClick={handleFindHelp}
                             disabled={isLoadingHelpers}
-                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-semibold bg-amber-100/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 hover:bg-amber-100/70 dark:hover:bg-slate-700/60 transition-all active:scale-[0.98] disabled:opacity-50"
+                            className="flex items-center justify-center gap-1.5 px-2 h-10 rounded-lg
+                                       text-[11px] font-bold
+                                       bg-slate-100 text-slate-600
+                                       dark:bg-white/[0.06] dark:text-slate-300
+                                       active:scale-[0.97] transition-transform
+                                       disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ touchAction: "manipulation" }}
                         >
                             {isLoadingHelpers ? (
                                 <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                                    <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                                 </div>
                             ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 shrink-0">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    className="w-4 h-4 shrink-0"
+                                >
                                     <path d="M12.031 2c-5.508 0-9.969 4.461-9.969 9.969 0 1.758.461 3.469 1.336 4.969L2 22l5.25-1.383a9.897 9.897 0 0 0 4.781 1.234h.008c5.508 0 9.961-4.461 9.961-9.969 0-2.656-1.031-5.156-2.906-7.031A9.873 9.873 0 0 0 12.031 2Zm0 1.688c2.203 0 4.273.859 5.82 2.406s2.406 3.617 2.406 5.875c0 4.578-3.719 8.281-8.281 8.281h-.008a8.216 8.216 0 0 1-4.188-1.148l-.305-.18-3.102.813.828-3.016-.203-.32a8.204 8.204 0 0 1-1.258-4.383c.008-4.547 3.734-8.281 8.297-8.281Zm-2.336 3.141c-.227 0-.469.055-.656.258-.234.258-.891.875-.891 2.133 0 1.258.914 2.477 1.039 2.648s1.805 2.758 4.375 3.867c.609.266 1.086.422 1.461.539.617.195 1.172.164 1.617.102.492-.07 1.516-.617 1.727-1.219.211-.594.211-1.102.148-1.211-.063-.109-.234-.172-.492-.297-.258-.125-1.516-.75-1.75-.836-.234-.086-.406-.125-.578.133-.172.258-.664.836-.813 1.008-.148.172-.297.195-.555.07a3.896 3.896 0 0 1-2.063-1.805c-.148-.258-.016-.406.117-.539.125-.117.258-.297.391-.445.125-.156.172-.258.258-.43.086-.172.047-.32-.023-.445-.07-.125-.578-1.398-.797-1.922-.211-.5-.422-.43-.578-.438Z" />
                                 </svg>
                             )}
@@ -366,7 +533,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                         </button>
                     </div>
 
-                    {/* Row 4 — Save (flat, no stress) */}
+                    {/* Row 4 — Save */}
                     <button
                         onClick={async () => {
                             if (!userId) return;
@@ -374,19 +541,35 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                             setSaved(false);
                             await saveNoteOffline(q.id, notes[q.id] || "");
                             try {
-                                await supabase.from("question_notes").upsert([{
-                                    question_id: q.id, user_id: userId, note_text: notes[q.id] || "",
-                                    understood: !!understood[q.id], is_not_understood: !!notUnderstood[q.id],
-                                    attempts: attempts[q.id] || 0, help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                }], { onConflict: ["question_id", "user_id"] });
-                            } catch (e) { console.error(e); }
+                                await supabase.from("question_notes").upsert(
+                                    [
+                                        {
+                                            question_id: q.id,
+                                            user_id: userId,
+                                            note_text: notes[q.id] || "",
+                                            understood: !!understood[q.id],
+                                            is_not_understood: !!notUnderstood[q.id],
+                                            attempts: attempts[q.id] || 0,
+                                            help_others: helpOthersDisabled[q.id] ? "saved" : null,
+                                        },
+                                    ],
+                                    { onConflict: ["question_id", "user_id"] }
+                                );
+                            } catch (e) {
+                                console.error(e);
+                            }
                             setSaving(false);
                             setSaved(true);
                             setTimeout(() => setSaved(false), 2000);
                         }}
-                        className={`w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all active:scale-[0.98] ${saved
-                            ? 'bg-green-500 text-white'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                        className={`w-full flex items-center justify-center gap-1.5 h-11 rounded-lg
+                                    text-sm font-bold
+                                    active:scale-[0.97] transition-transform
+                                    ${saved
+                                ? "bg-emerald-600 text-white"
+                                : "bg-blue-600 text-white"
+                            }`}
+                        style={{ touchAction: "manipulation" }}
                     >
                         {saving ? (
                             <div className="flex gap-1 shrink-0">
@@ -395,15 +578,33 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.4s]" />
                             </div>
                         ) : saved ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-4 h-4 shrink-0">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="3"
+                                stroke="currentColor"
+                                className="w-4 h-4 shrink-0"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                             </svg>
                         ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 shrink-0">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2.5"
+                                stroke="currentColor"
+                                className="w-4 h-4 shrink-0"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
+                                />
                             </svg>
                         )}
-                        <span>{saving ? 'Saving…' : saved ? 'Saved!' : 'Save note'}</span>
+                        <span>{saving ? "Saving…" : saved ? "Saved" : "Save note"}</span>
                     </button>
                 </div>
             </div>
