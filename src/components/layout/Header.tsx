@@ -944,7 +944,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               </p>
             </div>
             <div className="relative">
-              <Avatar className="h-9 w-9 sm:h-12 sm:w-12 rounded-full border-0 shadow-none">
+              <Avatar className="h-14 w-14 sm:h-14 sm:w-14 rounded-full border-0 shadow-none">
                 <AvatarImage
                   src={
                     user?.avatar ||

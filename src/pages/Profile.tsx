@@ -1,6 +1,9 @@
 import {
   User, Mail, Phone, MapPin, School, Calendar, Edit, Camera, Eye, EyeOff, Briefcase, Building2,
   Wifi, WifiOff, RefreshCw, ChevronLeft,
+  KeyRound,
+  LogOut,
+  Trash2,
 } from "lucide-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
@@ -958,13 +961,21 @@ export function Profile() {
 
                   {/* Edit button — centered */}
                   <div className="mt-5 flex justify-center">
-                    <Button
-                      variant="outline"
+                    <button
+                      type="button"
                       onClick={handleProfileUpdate}
-                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                      className="h-10 px-4 rounded-xl
+               bg-slate-200 dark:bg-white/[0.08]
+               text-slate-800 dark:text-slate-100
+               text-sm font-bold
+               flex items-center justify-center gap-2
+               active:scale-[0.97] active:bg-slate-300 dark:active:bg-white/[0.12]
+               transition-transform"
+                      style={{ touchAction: "manipulation" }}
                     >
-                      <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit My Profile
-                    </Button>
+                      <Edit className="h-4 w-4" />
+                      Edit my profile
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -1053,73 +1064,128 @@ export function Profile() {
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-2">
-              <Card className="border-0 shadow-none rounded-xl">
-                <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
-                  <CardTitle className="text-base md:text-lg">Account Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
-                  <p className="text-muted-foreground text-xs md:text-sm">Update your account settings and preferences in the Settings page.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
-                      <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit Profile
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowLogoutDialog(true)}
-                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
-                    >
-                      Logout
-                    </Button>
-
-                    <LogoutDialog
-                      open={showLogoutDialog}
-                      onOpenChange={setShowLogoutDialog}
-                      onConfirm={handleLogout}
-                      userName={profileState?.name || profileState?.username}
-                      streakDays={profileState?.streak_days}
-                    />
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none rounded-xl"
-                    >
-                      Delete My Account
-                    </Button>
-
-                    <DeleteAccountDialog
-                      open={showDeleteDialog}
-                      onOpenChange={setShowDeleteDialog}
-                      onConfirm={handleDeleteAccount}
-                      userName={profileState?.name}
-                      username={profileState?.username}
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowDialog(true)}
-                      className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
-                    >
-                      Change Password
-                    </Button>
-
-                    <ChangePasswordDialog
-                      open={showDialog}
-                      onOpenChange={setShowDialog}
-                      onSubmit={async (newPassword) => {
-                        const { error } = await supabase.auth.updateUser({ password: newPassword });
-                        if (error) {
-                          toast({ title: "Error", description: error.message });
-                        } else {
-                          toast({
-                            title: "Password updated",
-                            description: "Your new password is now active.",
-                          });
-                          setShowDialog(false);
-                        }
-                      }}
-                    />
+              <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                {/* Section header */}
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg
+                      bg-slate-100 dark:bg-white/[0.06]
+                      flex items-center justify-center shrink-0">
+                    <User className="h-4 w-4 text-slate-600 dark:text-slate-300" />
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider
+                      text-slate-500 dark:text-slate-400 leading-none mb-1">
+                      Account
+                    </p>
+                    <h2 className="text-sm font-bold leading-tight text-slate-900 dark:text-white">
+                      Account settings
+                    </h2>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Update your account settings and preferences in the Settings page.
+                </p>
+
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleProfileUpdate}
+                    className="h-10 px-4 rounded-xl
+                   bg-slate-200 dark:bg-white/[0.08]
+                   text-slate-800 dark:text-slate-100
+                   text-sm font-bold
+                   flex items-center justify-center gap-2
+                   active:scale-[0.97] active:bg-slate-300 dark:active:bg-white/[0.12]
+                   transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit profile
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowLogoutDialog(true)}
+                    className="h-10 px-4 rounded-xl
+                   bg-slate-200 dark:bg-white/[0.08]
+                   text-slate-800 dark:text-slate-100
+                   text-sm font-bold
+                   flex items-center justify-center gap-2
+                   active:scale-[0.97] active:bg-slate-300 dark:active:bg-white/[0.12]
+                   transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+
+                  <LogoutDialog
+                    open={showLogoutDialog}
+                    onOpenChange={setShowLogoutDialog}
+                    onConfirm={handleLogout}
+                    userName={profileState?.name || profileState?.username}
+                    streakDays={profileState?.streak_days}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowDialog(true)}
+                    className="h-10 px-4 rounded-xl
+                   bg-slate-200 dark:bg-white/[0.08]
+                   text-slate-800 dark:text-slate-100
+                   text-sm font-bold
+                   flex items-center justify-center gap-2
+                   active:scale-[0.97] active:bg-slate-300 dark:active:bg-white/[0.12]
+                   transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <KeyRound className="h-4 w-4" />
+                    Change password
+                  </button>
+
+                  <ChangePasswordDialog
+                    open={showDialog}
+                    onOpenChange={setShowDialog}
+                    onSubmit={async (newPassword) => {
+                      const { error } = await supabase.auth.updateUser({ password: newPassword });
+                      if (error) {
+                        toast({ title: "Error", description: error.message });
+                      } else {
+                        toast({
+                          title: "Password updated",
+                          description: "Your new password is now active.",
+                        });
+                        setShowDialog(false);
+                      }
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="h-10 px-4 rounded-xl
+                   bg-rose-600 text-white
+                   text-sm font-bold
+                   flex items-center justify-center gap-2
+                   active:scale-[0.97] active:bg-rose-700
+                   transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete account
+                  </button>
+
+                  <DeleteAccountDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                    onConfirm={handleDeleteAccount}
+                    userName={profileState?.name}
+                    username={profileState?.username}
+                  />
+                </div>
+              </div>
             </TabsContent>
 
           </Tabs>

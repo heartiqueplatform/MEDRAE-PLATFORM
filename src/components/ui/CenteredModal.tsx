@@ -113,13 +113,11 @@ export function CenteredModal({
             {children}
         </div>
     );
-
     const footerEl = footer && (
-        <div className="shrink-0 border-t border-slate-200/70 dark:border-white/[0.06]">
+        <div className="shrink-0 border-t border-slate-200/70 dark:border-white/[0.06] px-4 py-2.5">
             {footer}
         </div>
     );
-
     const content = (
         <AnimatePresence>
             {open && (
