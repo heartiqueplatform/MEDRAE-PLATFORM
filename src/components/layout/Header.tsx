@@ -720,7 +720,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
   shadow-none
   flex items-center justify-between xl:justify-evenly
-  px-4 sm:px-8
+  px-1 sm:px-2
   text-base sm:text-lg
   transition-all duration-300 ease-in-out
 `}>
