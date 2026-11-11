@@ -1208,7 +1208,7 @@ Keep striving - each step you take strengthens your nursing expertise and prepar
         {/* ── Internally-scrolling content ───────────────────── */}
         <div
           className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-              custom-scrollbar overscroll-contain"
+              no-scrollbar"
         >
           <div className="w-full px-2 py-4 md:p-6 lg:p-10 pb-24 safe-bottom font-sans">
 

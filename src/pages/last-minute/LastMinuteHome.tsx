@@ -284,7 +284,7 @@ export default function LastMinuteHome() {
             <div
                 ref={contentRef}
                 className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-          custom-scrollbar overscroll-contain
+          no-scrollbar
           px-0 sm:px-6 md:px-4 lg:px-6"
             >
                 <div className="w-full max-w-full space-y-2 pb-24 safe-bottom">

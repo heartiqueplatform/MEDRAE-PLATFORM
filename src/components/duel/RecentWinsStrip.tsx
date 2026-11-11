@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { Trophy, Flame } from "lucide-react";
-import { useRecentWins, type RecentWin } from "@/hooks/useRecentWins";
+import { Trophy } from "lucide-react";
+import { useRecentWins } from "@/hooks/useRecentWins";
 
 function relTime(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
@@ -27,24 +27,27 @@ export const RecentWinsStrip = memo(function RecentWinsStrip({
     if (!loading && wins.length === 0) return null;
 
     return (
-        <div className="mb-4">
+        <div>
             {/* Header */}
-            <div className="flex items-center gap-2 px-3 md:px-0 mb-2">
-                <Trophy size={13} className="text-amber-500" />
-                <h3 className="text-[11px]   uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            <div className="flex items-center gap-1.5 px-1 mb-2">
+                <Trophy size={12} className="text-amber-600 dark:text-amber-400" />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider
+                               text-slate-500 dark:text-slate-400">
                     Recent wins
                 </h3>
             </div>
 
-            {/* Horizontal scroll */}
-            <div className="flex gap-2.5 overflow-x-auto custom-scrollbar pb-2 px-3 md:px-0">
+            {/* Horizontal scroll — no visible bar */}
+            <div
+                className="flex gap-2 overflow-x-auto no-scrollbar overscroll-x-contain pb-1 -mx-1 px-1"
+                style={{ WebkitOverflowScrolling: "touch" }}
+            >
                 {loading && wins.length === 0
                     ? Array.from({ length: 4 }).map((_, i) => (
                         <div
                             key={i}
-                            className="shrink-0 w-[132px] h-[156px] rounded-2xl
+                            className="shrink-0 w-[124px] h-[148px] rounded-2xl
                                        bg-white dark:bg-[#161b22]
-                                       shadow-sm shadow-slate-900/5 dark:shadow-black/30
                                        animate-pulse"
                         />
                     ))
@@ -54,15 +57,14 @@ export const RecentWinsStrip = memo(function RecentWinsStrip({
                             <button
                                 key={w.challenge_id}
                                 onClick={() => onSelectUser(w.winner_id)}
-                                className={`
-                                    shrink-0 w-[132px] min-h-[156px] rounded-2xl p-3 text-left
-                                    transition-all duration-200 active:scale-[0.97] hover:shadow-md
-                                    bg-white dark:bg-[#161b22]
-                                    shadow-sm
-                                    ${isMe
-                                        ? "shadow-amber-500/15 dark:shadow-amber-500/20 ring-1 ring-amber-400/50 dark:ring-amber-400/40"
-                                        : "shadow-slate-900/5 dark:shadow-black/30"}
-                                `}
+                                className={`shrink-0 w-[124px] min-h-[148px] rounded-2xl p-3 text-left
+                                            transition-transform active:scale-[0.97]
+                                            bg-white dark:bg-[#161b22]
+                                            ${isMe
+                                        ? "bg-amber-50 dark:bg-amber-400/10"
+                                        : ""
+                                    }`}
+                                style={{ touchAction: "manipulation" }}
                             >
                                 <div className="relative">
                                     <img
@@ -70,23 +72,26 @@ export const RecentWinsStrip = memo(function RecentWinsStrip({
                                         alt={w.winner_name}
                                         loading="lazy"
                                         decoding="async"
-                                        className="w-14 h-14 rounded-full object-cover mx-auto
-                                                   ring-2 ring-white dark:ring-[#0d1117]"
+                                        className="h-14 w-14 rounded-full object-cover mx-auto
+                                                   bg-slate-100 dark:bg-white/[0.06]"
                                     />
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full
+                                    <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full
                                                      bg-amber-500 flex items-center justify-center
-                                                     border-2 border-white dark:border-[#161b22]">
+                                                     ring-2 ring-white dark:ring-[#161b22]">
                                         <Trophy size={10} className="text-white" strokeWidth={2.6} />
                                     </span>
                                 </div>
 
-                                <p className="mt-2 text-[11px] font-bold text-slate-900 dark:text-white truncate text-center">
+                                <p className="mt-2 text-[11px] font-bold truncate text-center
+                                              text-slate-900 dark:text-white">
                                     {isMe ? "You" : w.winner_name}
                                 </p>
-                                <p className="text-[9px] text-slate-500 dark:text-slate-400 text-center truncate mt-0.5">
-                                    Won a Clinical Duel
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400
+                                              text-center truncate mt-0.5">
+                                    Won a clinical duel
                                 </p>
-                                <p className="text-[9px] text-slate-400 dark:text-slate-500 text-center mt-0.5">
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500
+                                              text-center mt-0.5 tabular-nums">
                                     {relTime(w.won_at)}
                                 </p>
                             </button>

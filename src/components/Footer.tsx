@@ -516,15 +516,24 @@ export function Footer() {
 
     useEffect(() => {
         const html = document.documentElement;
+        let rafId: number | null = null;
         const observer = new MutationObserver(() => {
-            const isDark = html.classList.contains('dark');
-            const next = isDark ? 'dark' : 'light';
-            setTheme((prev) => (prev === next ? prev : next));
+            if (rafId !== null) return;
+            rafId = requestAnimationFrame(() => {
+                rafId = null;
+                const next = findScrollContainer();
+                if (next) attach(next);
+            });
         });
-        observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+        observer.observe(document.body, { childList: true, subtree: true });
         return () => observer.disconnect();
     }, []);
-
+    useEffect(() => {
+        const el = document.querySelector('[data-scroll-container]') ||
+            Array.from(document.querySelectorAll('.overflow-auto, .overflow-y-auto'))
+                .find(n => n.scrollHeight > n.clientHeight + 10);
+        if (el) { /* attach(el) */ }
+    }, [location.pathname]);
     const smartNav = useSmartNavigate();
 
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {

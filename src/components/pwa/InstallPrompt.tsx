@@ -378,7 +378,7 @@ export default function InstallPrompt() {
                         <X className="h-4 w-4" />
                     </button>
 
-                    <div className="overflow-y-auto custom-scrollbar overscroll-contain">
+                    <div className="overflow-y-auto no-scrollbar">
                         {/* HERO */}
                         <div className="medrae-install-hero relative h-36 w-full overflow-hidden bg-gradient-to-br from-rose-200 via-amber-100 via-emerald-100 to-sky-200 dark:from-[#1f2937] dark:via-[#111827] dark:via-[#0d1117] dark:to-[#1e1b4b]">
                             <div className="absolute -top-10 -left-10 h-28 w-28 rounded-full bg-rose-300/50 blur-2xl animate-pulse dark:bg-rose-500/10" />

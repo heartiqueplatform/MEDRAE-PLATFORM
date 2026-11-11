@@ -729,7 +729,7 @@ export function Subscription() {
       <div
         ref={contentRef}
         className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-          custom-scrollbar overscroll-contain"
+          no-scrollbar"
       >
         {showSkeleton ? (
           <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-6 md:py-10 pb-24 safe-bottom">

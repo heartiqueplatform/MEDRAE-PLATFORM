@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -15,55 +15,62 @@ import {
     AlertCircle,
     ServerCrash,
     RefreshCw,
-    FileQuestion
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from "@/components/ui/button";
+    FileQuestion,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { playSound } from "@/lib/soundManager";
 
 type StudentResult = any;
 
-// Skeleton Loader
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = () => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                          */
+/* ------------------------------------------------------------------ */
+
 const ResultsDetailSkeleton = () => (
-    <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
-        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
-            {/* Back button skeleton */}
-            <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-
-            {/* Paper info card skeleton */}
-            <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5 space-y-4">
-                <div className="space-y-2">
-                    <div className="h-6 w-56 md:w-72 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                    <div className="h-4 w-48 md:w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                    <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
-                    <div className="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
-                    <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
-                </div>
+    <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+        <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           safe-top">
+            <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="h-4 w-40 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-28 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
             </div>
-
-            {/* Result summary skeleton */}
-            <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5 flex items-center justify-between gap-4">
-                <div className="h-10 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-10 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-10 w-36 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
-            </div>
-
-            {/* Questions skeleton */}
-            <div className="space-y-3">
-                <div className="h-5 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white dark:bg-muted/30 rounded-2xl p-4 space-y-3">
-                        <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {[1, 2, 3, 4].map((j) => (
-                                <div key={j} className="h-10 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-                            ))}
-                        </div>
+        </header>
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3 pb-24 safe-bottom">
+            <div className="w-full max-w-[880px] mx-auto space-y-3">
+                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3 animate-pulse">
+                    <div className="h-5 w-56 md:w-72 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                    <div className="h-3 w-48 md:w-64 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                    <div className="flex gap-1.5">
+                        <div className="h-6 w-20 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
+                        <div className="h-6 w-16 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
+                        <div className="h-6 w-20 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
                     </div>
-                ))}
+                </div>
+                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 flex items-center justify-between gap-4 animate-pulse">
+                    <div className="h-10 w-24 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                    <div className="h-10 w-20 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                    <div className="h-10 w-36 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 );
 
@@ -77,6 +84,12 @@ const StudentResultsPage = () => {
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState("");
     const [errorType, setErrorType] = useState<"auth" | "network" | "server" | "general">("general");
+
+    const handleBack = useCallback(() => {
+        tap();
+        if (window.history.length > 1) navigate(-1);
+        else navigate("/dashboard/student", { replace: true });
+    }, [navigate]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -154,259 +167,408 @@ const StudentResultsPage = () => {
         fetchData();
     }, [paper_id]);
 
+    /* ─── LOADING ───────────────────────────────────────────── */
     if (loading) return <ResultsDetailSkeleton />;
 
+    /* ─── ERROR ─────────────────────────────────────────────── */
     if (errorMessage) {
         const errorIcons = { auth: AlertCircle, network: WifiOff, server: ServerCrash, general: AlertCircle };
-        const errorColors = { auth: "text-amber-600 dark:text-amber-400", network: "text-orange-600 dark:text-orange-400", server: "text-rose-600 dark:text-rose-400", general: "text-red-600 dark:text-red-400" };
-        const errorBgs = { auth: "bg-amber-50 dark:bg-amber-950/20", network: "bg-orange-50 dark:bg-orange-950/20", server: "bg-rose-50 dark:bg-rose-950/20", general: "bg-red-50 dark:bg-red-950/20" };
+        const errorColors = {
+            auth: "text-amber-600 dark:text-amber-400",
+            network: "text-amber-600 dark:text-amber-400",
+            server: "text-rose-600 dark:text-rose-400",
+            general: "text-rose-600 dark:text-rose-400",
+        };
+        const errorBgs = {
+            auth: "bg-amber-50 dark:bg-amber-400/10",
+            network: "bg-amber-50 dark:bg-amber-400/10",
+            server: "bg-rose-50 dark:bg-rose-400/10",
+            general: "bg-rose-50 dark:bg-rose-400/10",
+        };
+        const errorTitles = {
+            network: "Connection lost",
+            auth: "Sign in needed",
+            server: "Server hiccup",
+            general: "Oops!",
+        };
         const ErrorIcon = errorIcons[errorType];
 
         return (
-            <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background flex items-center justify-center px-4 py-8">
-                <div className="text-center max-w-sm">
-                    <div className={`w-16 h-16 md:w-20 md:h-20 ${errorBgs[errorType]} rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6`}>
-                        <ErrorIcon className={`w-8 h-8 md:w-10 md:h-10 ${errorColors[errorType]}`} />
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   z-30 safe-top">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors shrink-0"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate">
+                            Results
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Something went wrong
+                        </p>
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2">
-                        {errorType === "network" ? "Connection Lost"
-                            : errorType === "auth" ? "Sign In Needed"
-                                : errorType === "server" ? "Server Hiccup"
-                                    : "Oops!"}
-                    </h3>
-                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
-                        {errorMessage}
-                    </p>
-                    <div className="flex gap-2 justify-center flex-wrap">
-                        {errorType === "network" && (
-                            <Button
-                                onClick={() => window.location.reload()}
-                                className="text-xs md:text-sm gap-1.5 border-0 bg-blue-600 hover:bg-blue-700 text-white"
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex items-center justify-center px-4 py-6">
+                    <div className="text-center max-w-sm">
+                        <div className={`h-16 w-16 ${errorBgs[errorType]} rounded-full
+                                        flex items-center justify-center mx-auto mb-4`}>
+                            <ErrorIcon className={`h-8 w-8 ${errorColors[errorType]}`} />
+                        </div>
+                        <h2 className="text-base font-bold mb-2">
+                            {errorTitles[errorType]}
+                        </h2>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                            {errorMessage}
+                        </p>
+                        <div className="flex gap-2 justify-center flex-wrap">
+                            {errorType === "network" && (
+                                <button
+                                    onClick={() => { tap(); window.location.reload(); }}
+                                    className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                               text-sm font-bold
+                                               flex items-center justify-center gap-1.5
+                                               active:scale-[0.97] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                    Try again
+                                </button>
+                            )}
+                            {errorType === "auth" && (
+                                <button
+                                    onClick={() => { tap(); navigate("/login"); }}
+                                    className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                               text-sm font-bold
+                                               active:scale-[0.97] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    Sign in
+                                </button>
+                            )}
+                            <button
+                                onClick={handleBack}
+                                className="h-10 px-4 rounded-xl
+                                           bg-slate-100 dark:bg-white/[0.06]
+                                           text-slate-700 dark:text-slate-200
+                                           text-sm font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
-                                <RefreshCw className="w-3.5 h-3.5" /> Try Again
-                            </Button>
-                        )}
-                        {errorType === "auth" && (
-                            <Button
-                                onClick={() => navigate("/login")}
-                                className="text-xs md:text-sm border-0 bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                                Sign In
-                            </Button>
-                        )}
-                        <Button
-                            onClick={() => navigate(-1)}
-                            className="text-xs md:text-sm border-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
-                        >
-                            Go Back
-                        </Button>
+                                Go back
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </main>
             </div>
         );
     }
 
+    /* ─── NO RESULT ─────────────────────────────────────────── */
     if (!paper || !result) {
         return (
-            <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background flex items-center justify-center px-4 py-8">
-                <div className="text-center max-w-sm">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
-                        <FileQuestion className="w-8 h-8 md:w-10 md:h-10 text-slate-400" />
-                    </div>
-                    <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2">
-                        No Results Yet
-                    </h3>
-                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
-                        {!paper
-                            ? "We couldn't find this exam. It may have been removed."
-                            : "You haven't taken this exam yet. Complete it to see your results!"}
-                    </p>
-                    <Button
-                        onClick={() => navigate(-1)}
-                        className="text-xs md:text-sm border-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   z-30 safe-top">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors shrink-0"
+                        style={{ touchAction: "manipulation" }}
                     >
-                        Go Back
-                    </Button>
-                </div>
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate">
+                            Results
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            No results yet
+                        </p>
+                    </div>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex items-center justify-center px-4 py-6">
+                    <div className="text-center max-w-sm">
+                        <div className="h-16 w-16 rounded-full
+                                        bg-slate-100 dark:bg-white/[0.06]
+                                        flex items-center justify-center mx-auto mb-4">
+                            <FileQuestion className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                        </div>
+                        <h2 className="text-base font-bold mb-2">
+                            No results yet
+                        </h2>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                            {!paper
+                                ? "We couldn't find this exam. It may have been removed."
+                                : "You haven't taken this exam yet. Complete it to see your results!"}
+                        </p>
+                        <button
+                            onClick={handleBack}
+                            className="h-10 px-4 rounded-xl
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-700 dark:text-slate-200
+                                       text-sm font-bold
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            Go back
+                        </button>
+                    </div>
+                </main>
             </div>
         );
     }
 
     const percent = ((result.score / result.total_questions) * 100).toFixed(1);
 
+    /* ─── REAL PAGE ─────────────────────────────────────────── */
     return (
-        <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-4xl mx-auto space-y-4 md:space-y-6"
-            >
-                {/* Back button */}
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+            {/* ── HEADER ──────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
                 <button
-                    onClick={() => navigate(-1)}
-                    className="group flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors font-medium"
+                    onClick={handleBack}
+                    aria-label="Go back"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors shrink-0"
+                    style={{ touchAction: "manipulation" }}
                 >
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-sm">Back to Dashboard</span>
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                 </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate">
+                        {paper.title || "Results"}
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        {paper.course || "—"} · Block {paper.block || "—"}
+                    </p>
+                </div>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                 text-[10px] font-bold tabular-nums shrink-0
+                                 ${Number(percent) >= 50
+                        ? "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
+                        : "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400"
+                    }`}>
+                    {percent}%
+                </span>
+            </header>
 
-                {/* PAPER INFO CARD — flat */}
-                <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5 space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4">
-                        <div className="min-w-0">
-                            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            {/* ── SCROLLING BODY ──────────────────────────────── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
+                style={{ WebkitOverflowScrolling: "touch" }}
+            >
+                <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
+
+                    {/* Paper info card */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <div className="space-y-1">
+                            <h2 className="text-sm font-bold leading-tight">
                                 {paper.title}
-                            </h1>
+                            </h2>
                             {paper.description && (
-                                <p className="mt-1.5 text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                                     {paper.description}
                                 </p>
                             )}
                         </div>
-                        <div className="flex flex-wrap gap-1.5 md:gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">
-                                <BookOpen size={12} /> {paper.course || "N/A"}
+                        <div className="flex flex-wrap gap-1.5">
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                             text-[10px] font-bold uppercase tracking-wider
+                                             bg-blue-50 dark:bg-blue-400/10
+                                             text-blue-700 dark:text-blue-400">
+                                <BookOpen className="h-3 w-3" />
+                                {paper.course || "N/A"}
                             </span>
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">
-                                <Layout size={12} /> Block {paper.block || "N/A"}
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                             text-[10px] font-bold uppercase tracking-wider
+                                             bg-violet-50 dark:bg-violet-400/10
+                                             text-violet-700 dark:text-violet-400">
+                                <Layout className="h-3 w-3" />
+                                Block {paper.block || "N/A"}
                             </span>
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] md:text-xs font-bold uppercase tracking-wider">
-                                <Clock size={12} /> {paper.duration} mins
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                             text-[10px] font-bold uppercase tracking-wider
+                                             bg-slate-100 dark:bg-white/[0.06]
+                                             text-slate-600 dark:text-slate-300">
+                                <Clock className="h-3 w-3" />
+                                {paper.duration} mins
                             </span>
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-                {/* RESULT SUMMARY CARD — flat */}
-                <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
-                        <div className="space-y-1 text-center md:text-left">
-                            <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                                Final Score
-                            </p>
-                            <div className="flex items-baseline gap-1.5 md:gap-2 justify-center md:justify-start">
-                                <span className="text-3xl md:text-4xl   text-slate-900 dark:text-white">
-                                    {result.score}
-                                </span>
-                                <span className="text-base md:text-lg text-slate-400 dark:text-slate-500 font-bold">
-                                    / {result.total_questions}
-                                </span>
+                    {/* Result summary */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="text-center md:text-left">
+                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                              text-slate-500 dark:text-slate-400 mb-1">
+                                    Final score
+                                </p>
+                                <div className="flex items-baseline gap-1.5 justify-center md:justify-start">
+                                    <span className="text-3xl font-bold tabular-nums leading-none
+                                                     text-slate-900 dark:text-white">
+                                        {result.score}
+                                    </span>
+                                    <span className="text-base font-bold text-slate-400 dark:text-slate-500">
+                                        / {result.total_questions}
+                                    </span>
+                                </div>
                             </div>
+
+                            <div className="text-center">
+                                <p className={`text-3xl font-bold tabular-nums leading-none
+                                               ${Number(percent) >= 50
+                                        ? "text-emerald-600 dark:text-emerald-400"
+                                        : "text-rose-600 dark:text-rose-400"
+                                    }`}>
+                                    {percent}%
+                                </p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                              text-slate-400 dark:text-slate-500 mt-1">
+                                    Accuracy
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => { tap(); setExpanded(!expanded); }}
+                                className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                           text-sm font-bold
+                                           flex items-center justify-center gap-1.5
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                {expanded ? "Hide review" : "Review answers"}
+                                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
                         </div>
+                    </section>
 
-                        <div className="text-center">
-                            <p className={`text-3xl md:text-4xl   ${Number(percent) >= 50 ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500'}`}>
-                                {percent}%
-                            </p>
-                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-                                Accuracy
-                            </p>
-                        </div>
+                    {/* Answers expand/collapse */}
+                    <AnimatePresence initial={false}>
+                        {expanded && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                className="overflow-hidden space-y-2"
+                            >
+                                <h2 className="text-[11px] font-bold uppercase tracking-wider
+                                               text-slate-500 dark:text-slate-400 mt-2 px-1">
+                                    Question analysis
+                                </h2>
 
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            className="flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-xs md:text-sm active:scale-[0.98] border-0"
-                        >
-                            {expanded ? "Hide Review" : "Review Answers"}
-                            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
-                    </div>
-                </div>
+                                {answers.map((ans: any, index: number) => (
+                                    <div
+                                        key={ans.id}
+                                        className="rounded-2xl bg-white dark:bg-[#161b22] p-4"
+                                    >
+                                        {/* Question header */}
+                                        <div className="flex justify-between items-start gap-2 mb-3">
+                                            <p className="text-[12px] font-bold leading-snug
+                                                          text-slate-900 dark:text-white">
+                                                <span className="text-slate-400 dark:text-slate-500 mr-1.5 tabular-nums">
+                                                    Q{index + 1}.
+                                                </span>
+                                                {ans.exam_questions?.question_text}
+                                            </p>
+                                            {ans.is_correct ? (
+                                                <div className="p-1 rounded-full shrink-0
+                                                                bg-emerald-50 dark:bg-emerald-400/10">
+                                                    <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-1 rounded-full shrink-0
+                                                                bg-rose-50 dark:bg-rose-400/10">
+                                                    <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                                </div>
+                                            )}
+                                        </div>
 
-                {/* ANSWERS SECTION */}
-                <AnimatePresence>
-                    {expanded && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.4, ease: "circOut" }}
-                            className="overflow-hidden space-y-3 md:space-y-4"
-                        >
-                            <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mt-2">
-                                Question Analysis
-                            </h2>
+                                        {/* Options */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                                            {["A", "B", "C", "D"].map((opt) => {
+                                                const isSelected = ans.selected_answer === opt;
+                                                const isCorrect = ans.exam_questions?.correct_answer === opt;
 
-                            {answers.map((ans: any, index: number) => (
-                                <motion.div
-                                    key={ans.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5"
-                                >
-                                    {/* Question header */}
-                                    <div className="flex justify-between items-start gap-2 mb-3">
-                                        <p className="text-sm md:text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
-                                            <span className="text-slate-400 mr-1.5">
-                                                Q{index + 1}.
-                                            </span>
-                                            {ans.exam_questions?.question_text}
-                                        </p>
-                                        {ans.is_correct ? (
-                                            <div className="p-1 bg-green-100 dark:bg-green-950/40 rounded-full shrink-0">
-                                                <CheckCircle className="text-green-600 dark:text-green-400 w-4 h-4 md:w-5 md:h-5" />
-                                            </div>
-                                        ) : (
-                                            <div className="p-1 bg-rose-100 dark:bg-rose-950/40 rounded-full shrink-0">
-                                                <XCircle className="text-rose-600 dark:text-rose-400 w-4 h-4 md:w-5 md:h-5" />
+                                                let optionClasses = "bg-slate-50 dark:bg-[#0d1117] text-slate-600 dark:text-slate-300";
+                                                let letterClasses = "bg-slate-200 dark:bg-white/[0.1] text-slate-600 dark:text-slate-300";
+
+                                                if (isSelected && isCorrect) {
+                                                    optionClasses = "bg-emerald-600 text-white";
+                                                    letterClasses = "bg-white/25 text-white";
+                                                } else if (isSelected && !isCorrect) {
+                                                    optionClasses = "bg-amber-500 text-white";
+                                                    letterClasses = "bg-white/25 text-white";
+                                                } else if (isCorrect) {
+                                                    optionClasses = "bg-emerald-600 text-white";
+                                                    letterClasses = "bg-white/25 text-white";
+                                                }
+
+                                                return (
+                                                    <div
+                                                        key={opt}
+                                                        className={`p-2.5 rounded-xl text-[11px]
+                                                                    flex items-center gap-2.5
+                                                                    ${optionClasses}`}
+                                                    >
+                                                        <span className={`h-5 w-5 flex items-center justify-center rounded-full
+                                                                         text-[10px] font-bold shrink-0
+                                                                         ${letterClasses}`}>
+                                                            {opt}
+                                                        </span>
+                                                        <span className="leading-snug">
+                                                            {ans.exam_questions?.[`option_${opt.toLowerCase()}`]}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Explanation */}
+                                        {ans.exam_questions?.explanation && (
+                                            <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-3">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                                              text-blue-600 dark:text-blue-400 mb-1">
+                                                    Explanation
+                                                </p>
+                                                <p className="text-[11px] text-slate-600 dark:text-slate-300
+                                                              italic leading-relaxed">
+                                                    {ans.exam_questions.explanation}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Options grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                                        {["A", "B", "C", "D"].map((opt) => {
-                                            const isSelected = ans.selected_answer === opt;
-                                            const isCorrect = ans.exam_questions?.correct_answer === opt;
-
-                                            let optionClasses = "bg-slate-100/70 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400";
-                                            let letterClasses = "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300";
-
-                                            if (isSelected && isCorrect) {
-                                                optionClasses = "bg-green-600 text-white";
-                                                letterClasses = "bg-white/25 text-white";
-                                            } else if (isSelected && !isCorrect) {
-                                                optionClasses = "bg-amber-500 text-white";
-                                                letterClasses = "bg-white/25 text-white";
-                                            } else if (isCorrect) {
-                                                optionClasses = "bg-green-600 text-white";
-                                                letterClasses = "bg-white/25 text-white";
-                                            }
-
-                                            return (
-                                                <div
-                                                    key={opt}
-                                                    className={`p-2.5 md:p-3 rounded-xl text-xs md:text-sm transition-all flex items-center gap-2.5 md:gap-3 ${optionClasses}`}
-                                                >
-                                                    <span className={`w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full text-[10px] md:text-xs font-bold shrink-0 ${letterClasses}`}>
-                                                        {opt}
-                                                    </span>
-                                                    <span className="leading-snug">
-                                                        {ans.exam_questions?.[`option_${opt.toLowerCase()}`]}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Explanation */}
-                                    {ans.exam_questions?.explanation && (
-                                        <div className="mt-3 p-3 md:p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/20">
-                                            <p className="text-[10px] md:text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">
-                                                Explanation
-                                            </p>
-                                            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed">
-                                                {ans.exam_questions.explanation}
-                                            </p>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </main>
         </div>
     );
 };

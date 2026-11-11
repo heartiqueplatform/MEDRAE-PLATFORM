@@ -27,7 +27,7 @@ import ListingDetail from "./pages/market/[id]";
 import ListenPage from "@/pages/ListenPage";
 import MenuPage from "@/pages/MenuPage";
 // Pages
-import ChallengePage from "./pages/challenge";
+import ChallengePage from "./pages/challenge/index";
 import { AuthProvider } from "@/context/AuthProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { NavProgressBar } from "@/navigation/NavProgressBar";
@@ -301,6 +301,7 @@ const BottomBarWrapper = () => {
       "/last-minute",
       "/challenge",
       "/assessments",
+      "/exam",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -641,11 +642,7 @@ const AppContent = () => {
                           <Route path="/share" element={<LinkGenerator />} />
 
                           {/* Student Exam Flow */}
-                          <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
-                          <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
-                          <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
-                          <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
-                          <Route path="/exam/results" element={<ResultsListPage />} />
+
 
 
 
@@ -782,6 +779,12 @@ const AppContent = () => {
                         <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
 
+                        <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
+                        <Route path="/exam/candidate" element={<PrivateRoute><ExamCandidateInfo /></PrivateRoute>} />
+                        <Route path="/exam/instructions/:paper_id" element={<PrivateRoute><ExamInstructions /></PrivateRoute>} />
+                        <Route path="/exam/access/:paper_id" element={<PrivateRoute><ExamAccessPage /></PrivateRoute>} />
+                        <Route path="/exam/:paper_id/results" element={<PrivateRoute><StudentResultsPage /></PrivateRoute>} />
+                        <Route path="/exam/results" element={<PrivateRoute><ResultsListPage /></PrivateRoute>} />
 
                         <Route path="/my-classes" element={<MyClasses />} />
 

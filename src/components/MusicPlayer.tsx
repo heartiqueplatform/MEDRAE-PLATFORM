@@ -1883,6 +1883,33 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         );
     }, [shows, selectedShowId, showSkeleton, onToggleEndorse, onSelectShow, getFollow, onToggleFollow]);
 
+    const [visibleCount, setVisibleCount] = useState(12);
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+    // Reset the window when the underlying track list changes
+    useEffect(() => {
+        setVisibleCount(12);
+    }, [visibleTracks]);
+
+    // Grow the window as the sentinel scrolls into view
+    useEffect(() => {
+        const el = sentinelRef.current;
+        if (!el) return;
+        const io = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setVisibleCount((prev) => Math.min(prev + 12, visibleTracks.length));
+                }
+            },
+            { rootMargin: "200px" }
+        );
+        io.observe(el);
+        return () => io.disconnect();
+    }, [visibleTracks.length]);
+
+    const windowedTracks = visibleTracks.slice(0, visibleCount);
+    const hasMore = visibleCount < visibleTracks.length;
+
     const episodeRows = useMemo(() => (
         <>
             {showSkeleton && <SkeletonList count={8} />}
@@ -1891,7 +1918,7 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                     No episodes yet.
                 </div>
             )}
-            {!showSkeleton && visibleTracks.map((t: any, i: number) => {
+            {!showSkeleton && windowedTracks.map((t: any, i: number) => {
                 const isThisActive = currentTrackSrc === t.src;
                 return (
                     <EpisodeRow
@@ -1919,11 +1946,20 @@ const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                     />
                 );
             })}
+            {!showSkeleton && hasMore && (
+                <div ref={sentinelRef} className="py-6 text-center">
+                    <span className="text-[11px] text-gh-l-muted dark:text-gh-muted">
+                        Loading more…
+                    </span>
+                </div>
+            )}
         </>
-        // 🚀 `progress` is intentionally NOT in deps — the active row reads it
-        //    from props and re-renders itself. Including it here forced the
-        //    ENTIRE list to rebuild 30×/sec while audio plays → scroll lag.
-    ), [visibleTracks, currentTrackSrc, isPlaying, showSkeleton, isAdmin, onSelectTrack, onHideEpisode, getInteraction, onToggleReaction, getDownloadState, getDownloadProgress, onDownload, onCancelDownload]);
+    ), [
+        windowedTracks, currentTrackSrc, isPlaying, showSkeleton, isAdmin,
+        onSelectTrack, onHideEpisode, getInteraction, onToggleReaction,
+        getDownloadState, getDownloadProgress, onDownload, onCancelDownload,
+        hasMore, visibleTracks.length,
+    ]);
     return (
         <div className="h-full flex flex-col min-h-0">
             <div className="md:hidden h-full overflow-y-auto custom-scrollbar">

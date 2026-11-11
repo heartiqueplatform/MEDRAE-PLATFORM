@@ -660,7 +660,7 @@ export function Profile() {
 
         {/* Internally-scrolling content */}
         <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-            custom-scrollbar overscroll-contain safe-bottom">
+    no-scrollbar overscroll-contain safe-bottom">
           <div className="min-h-full flex items-center justify-center px-4 py-8">
             <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
               <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
@@ -748,7 +748,7 @@ export function Profile() {
 
         {/* Internally-scrolling content */}
         <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-            custom-scrollbar overscroll-contain safe-bottom">
+    no-scrollbar overscroll-contain safe-bottom">
           {hasLoadedOnce && !isLoading && user && !isOffline ? (
             <div className="min-h-full flex items-center justify-center px-4 py-8">
               <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
@@ -830,7 +830,7 @@ export function Profile() {
       <div
         ref={contentRef}
         className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-            custom-scrollbar overscroll-contain"
+      no-scrollbar overscroll-contain"
       >
         <div className="mx-auto w-full max-w-3xl px-2 sm:px-2 lg:px-8 py-4 md:py-6 pb-24 safe-bottom">
           <Tabs defaultValue="overview" className="space-y-2">

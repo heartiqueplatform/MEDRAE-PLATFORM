@@ -489,12 +489,11 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         return sortTracks(dbEps.map(dbToTrack));
     }, []);
 
+    // AFTER
     useEffect(() => {
-        const hasAnything = tracks.length > 0;
-        refreshEpisodes({ silent: hasAnything });
+        refreshEpisodes({ silent: tracks.length > 0 });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [refreshEpisodes]);
-
+    }, []);   // ← mount only
     // ── History recording ──
     useEffect(() => {
         const audio = audioRef.current;

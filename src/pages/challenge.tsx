@@ -1,0 +1,1897 @@
+"use client";
+import { createPortal } from 'react-dom';
+import { useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useSession } from "@supabase/auth-helpers-react";
+import { supabase } from "@/lib/supabaseClient";
+import { playSound, initSound } from "@/lib/soundManager";
+import { motion, AnimatePresence } from "framer-motion";
+import { GlobalLoader } from "@/components/GlobalLoader";
+import confetti from "canvas-confetti";
+import { useSearchParams } from "react-router-dom";
+import {
+    Inbox,
+    History,
+    Swords,
+    Trophy,
+    Flame,
+    Send,
+    Check,
+    Clock,
+    Users,
+    Search,
+    Zap,
+    ChevronLeft,
+    ChevronRight,
+    Star,
+    StarOff,
+    RefreshCw,
+    X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { UserProfileModal } from '@/components/UserProfileModal';
+import { RecentWinsStrip } from '@/components/duel/RecentWinsStrip';
+
+import { useFollowingList } from "@/hooks/useFollowingList";
+import { FollowButton } from "@/components/FollowButton";
+interface CachedUser {
+    user_id: string;
+    name: string;
+    username: string;
+    avatar_url: string;
+    is_online: boolean;
+    is_pinned?: boolean;
+    pinned_at?: number;
+    institution?: string | null;
+    is_same_school?: boolean;
+}
+// Cache keys - persistent across sessions
+const PLAYERS_CACHE_KEY = "challenge_players_cache_v5";
+const CHALLENGES_CACHE_KEY = "challenge_history_cache_v5";
+const CACHE_VERSION = "5.2";
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days cache
+// Read the current user's campus slug (written by SchoolWarsCard)
+const readSchoolSlug = (): string | null => {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem("school_wars_current_institution_v1");
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.slug ?? null;
+    } catch {
+        return null;
+    }
+};
+// Memory cache for faster access
+let playersMemoryCache: CachedUser[] | null = null;
+let challengesMemoryCache: any[] | null = null;
+
+// Optimized cache management functions
+const loadCache = <T,>(key: string): T | null => {
+    try {
+        const cached = localStorage.getItem(key);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.version === CACHE_VERSION) {
+                return parsed.data;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to load cache:", error);
+        return null;
+    }
+};
+
+const saveCache = <T,>(key: string, data: T): void => {
+    try {
+        const cacheData = {
+            data,
+            timestamp: Date.now(),
+            version: CACHE_VERSION,
+        };
+        localStorage.setItem(key, JSON.stringify(cacheData));
+
+        // Update memory cache
+        if (key === PLAYERS_CACHE_KEY) {
+            playersMemoryCache = data as any;
+        } else if (key === CHALLENGES_CACHE_KEY) {
+            challengesMemoryCache = data as any;
+        }
+    } catch (error) {
+        console.error("Failed to save cache:", error);
+    }
+};
+
+// Clear all cache
+const clearAllCache = () => {
+    localStorage.removeItem(PLAYERS_CACHE_KEY);
+    localStorage.removeItem(CHALLENGES_CACHE_KEY);
+    playersMemoryCache = null;
+    challengesMemoryCache = null;
+};
+
+// Optimized confetti burst
+const burstConfetti = () => {
+    requestAnimationFrame(() => {
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, startVelocity: 25, colors: ["#fbbf24", "#f97316", "#ef4444", "#22c55e"], ticks: 150, gravity: 0.8 });
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 }, startVelocity: 20, colors: ["#f59e0b", "#ec4899", "#06b6d4"], ticks: 120, gravity: 0.9 });
+            });
+        }, 120);
+    });
+};
+
+// Storage keys for battle overlays
+const LAST_BATTLE_KEY = "last_battle_result";
+const LAST_BATTLE_SHOWN_KEY = "last_battle_result_shown";
+
+function ChallengeTabs({
+    incoming,
+    outgoing,
+    completed,
+    acceptChallenge,
+    user,
+    loading,
+    search,
+    setSearch,
+    onlyOnline,
+    setOnlyOnline,
+    filteredPlayers,
+    sendChallenge,
+    inviteCards,
+    handleInvite,
+    seenIncomingIds,
+    setSeenIncomingIds,
+    cancelChallenge,
+    unseenIncomingCount,
+    pendingSentCount,
+    pinnedUsers,
+    togglePin,
+    onUpdateList,
+    isUpdating,
+    onSelectUser,
+    initialTab = "find",
+}: any) {
+
+    const [activeTab, setActiveTab] = useState<"find" | "pinned" | "incoming" | "sent" | "completed">(initialTab);
+    const searchDebounceRef = useRef<NodeJS.Timeout>();
+
+    // ✅ When parent passes a new initialTab, honor it
+    useEffect(() => {
+        if (initialTab && initialTab !== activeTab) {
+            setActiveTab(initialTab);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialTab]);
+    const handleSearchChange = useCallback((value: string) => {
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => {
+            setSearch(value);
+            if (!value.trim()) setSearch("");
+        }, 300);
+    }, [setSearch]);
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case "find":
+                return (
+                    <div className="w-full">
+                        {/* Search input — full width, own row */}
+                        <div className="relative w-full group px-2 mb-1">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                                defaultValue={search}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                placeholder="Search peers..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 dark:bg-muted/30 border-none text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
+                            />
+                        </div>
+
+                        {/* Feed */}
+                        <div className="w-full">
+                            {loading ? (
+                                <PlayerRowSkeleton count={6} />
+                            ) : filteredPlayers.length === 0 && inviteCards.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 w-full px-2">
+                                    <Users size={48} className="text-slate-300" />
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Players Found</p>
+                                    <p className="text-xs text-slate-400">Tap "Update" to refresh the player directory</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">
+
+                                    {/* === INVITE ROW (with Update button at the end) === */}
+                                    {inviteCards.map((card) => (
+                                        <div
+                                            key={card.id}
+                                            className="flex items-center gap-3 px-3 py-2.5
+                                           transition-colors duration-150
+                                           hover:bg-slate-50 dark:hover:bg-white/5"
+                                        >
+                                            {/* Invite button — clickable area on the left */}
+                                            <button
+                                                onClick={() => handleInvite(card.type)}
+                                                className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-70"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                <div className="relative shrink-0">
+                                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                                        <Send size={20} className="text-white rotate-[-20deg]" />
+                                                    </div>
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                                        {card.name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                                        Strengthen the network • Free
+                                                    </p>
+                                                </div>
+                                            </button>
+
+                                            {/* Invite pill */}
+                                            <button
+                                                onClick={() => handleInvite(card.type)}
+                                                className="shrink-0 text-[11px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 active:scale-95 transition-transform"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                Invite
+                                            </button>
+
+                                            {/* ✅ UPDATE BUTTON — sits right after Invite */}
+                                            <button
+                                                onClick={onUpdateList}
+                                                disabled={isUpdating}
+                                                className={`shrink-0 flex items-center justify-center h-8 px-3 rounded-xl
+                text-[11px] font-bold transition-all active:scale-95
+                ${isUpdating
+                                                        ? "bg-blue-400/60 text-white cursor-not-allowed"
+                                                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                                                    }`}
+                                                style={{ touchAction: 'manipulation' }}
+                                                title="Refresh player list"
+                                            >
+                                                <span>{isUpdating ? "Updating..." : "Update"}</span>
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {/* === PLAYER ROWS === */}
+                                    {/* === PLAYER ROWS === */}
+                                    {filteredPlayers.map((p: any) => (
+                                        <div
+                                            key={p.user_id}
+                                            className="group px-3 py-2.5
+       transition-colors duration-150
+       hover:bg-slate-50 dark:hover:bg-white/5
+       sm:flex sm:items-center sm:gap-3"
+                                        >
+                                            {/* Top (phone) / left (desktop): avatar + name */}
+                                            <div className="flex items-start gap-3 sm:flex-1 sm:min-w-0 sm:items-center">
+                                                <button
+                                                    onClick={() => onSelectUser(p.user_id)}
+                                                    className="relative shrink-0 active:scale-95 transition-transform"
+                                                    style={{ touchAction: 'manipulation' }}
+                                                >
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                        {p.avatar_url ? (
+                                                            <img
+                                                                src={p.avatar_url}
+                                                                className="w-full h-full object-cover"
+                                                                alt={p.name}
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <img
+                                                                src="/pwa-512x512.png"
+                                                                className="w-full h-full object-cover"
+                                                                alt="Medrae Logo"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    {p.is_online && (
+                                                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
+                                                    )}
+                                                    {p.is_pinned && (
+                                                        <span className="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                                            <Star size={8} className="text-white fill-white" />
+                                                        </span>
+                                                    )}
+                                                </button>
+
+                                                <button
+                                                    onClick={() => onSelectUser(p.user_id)}
+                                                    className="flex-1 min-w-0 text-left active:opacity-70 pt-0.5 sm:pt-0"
+                                                    style={{ touchAction: 'manipulation' }}
+                                                >
+                                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                                        {p.name || "Unknown User"}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                                        @{p.username || "nurse"}
+                                                    </p>
+                                                    {p.is_same_school && (
+                                                        <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                                            Same campus
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </div>
+
+                                            {/* Actions: below on phone, inline-right on desktop */}
+                                            <div className="mt-2 flex items-center gap-2 pl-[60px] sm:mt-0 sm:pl-0 sm:flex-nowrap sm:shrink-0">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        togglePin(p.user_id);
+                                                    }}
+                                                    className={`shrink-0 flex items-center justify-center gap-1.5 rounded-sm transition-colors active:scale-90
+                    h-9 sm:h-8 px-3
+                    ${p.is_pinned
+                                                            ? "bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                                            : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+                                                        }`}
+                                                    style={{ touchAction: 'manipulation' }}
+                                                    title={p.is_pinned ? "Remove from favorites" : "Add to favorites"}
+                                                    aria-pressed={!!p.is_pinned}
+                                                    aria-label={p.is_pinned ? "Remove from favorites" : "Add to favorites"}
+                                                >
+                                                    <Star size={14} className={p.is_pinned ? "fill-current" : ""} />
+                                                    <span className="text-[12px] sm:text-[11px] font-bold">
+                                                        {p.is_pinned ? "Favorited" : "Favorite"}
+                                                    </span>
+                                                </button>
+
+                                                <div className="shrink-0 [&_button]:h-9 sm:[&_button]:h-8 [&_button]:text-[12px] sm:[&_button]:text-[11px] [&_button]:rounded-sm">
+                                                    <FollowButton targetUserId={p.user_id} size="sm" />
+                                                </div>
+
+                                                <Button
+                                                    onClick={(e: React.MouseEvent) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        sendChallenge(p.user_id);
+                                                    }}
+                                                    size="sm"
+                                                    className="shrink-0 h-9 sm:h-8 px-3 rounded-sm bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] sm:text-[11px] transition-colors active:scale-95 shadow-none flex-1 sm:flex-none"
+                                                    style={{ touchAction: 'manipulation' }}
+                                                >
+                                                    Challenge Me
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            case "pinned":
+                if (pinnedUsers.length === 0) {
+                    return (
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
+                            <Star size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Pinned Friends</p>
+                            <p className="text-xs text-slate-400">Pin your favorite peers for quick access</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="flex flex-col">
+                        {pinnedUsers.map((p: any) => (
+                            <div
+                                key={p.user_id}
+                                className="group flex items-center gap-3 px-3 py-2.5
+                               transition-colors duration-150
+                               hover:bg-slate-50 dark:hover:bg-white/5"
+                            >
+                                <button
+                                    onClick={() => onSelectUser(p.user_id)}
+                                    className="relative shrink-0 active:scale-95 transition-transform"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 ring-2 ring-amber-400/60">
+                                        {p.avatar_url ? (
+                                            <img
+                                                src={p.avatar_url}
+                                                className="w-full h-full object-cover"
+                                                alt={p.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <img
+                                                src="/pwa-512x512.png"
+                                                className="w-full h-full object-cover"
+                                                alt="Medrae Logo"
+                                            />
+                                        )}
+                                    </div>
+                                    {p.is_online && (
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
+                                    )}
+                                    <span className="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                        <Star size={8} className="text-white fill-white" />
+                                    </span>
+                                </button>
+
+                                <button
+                                    onClick={() => onSelectUser(p.user_id)}
+                                    className="flex-1 min-w-0 text-left active:opacity-70"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                        {p.name || "Unknown User"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                        @{p.username || "nurse"}
+                                    </p>
+                                </button>
+
+                                <button
+                                    onClick={() => togglePin(p.user_id)}
+                                    className="shrink-0 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
+                                    style={{ touchAction: 'manipulation' }}
+                                    title="Unpin user"
+                                >
+                                    <StarOff size={14} className="text-slate-300" />
+                                </button>
+
+                                <Button
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        sendChallenge(p.user_id);
+                                    }}
+                                    size="sm"
+                                    className="shrink-0 h-8 px-3 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition-colors active:scale-95 shadow-none"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Swords size={12} className="mr-1" />
+                                    Challenge
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                );
+
+            case "incoming":
+                if (incoming.length === 0) {
+                    return (
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
+                            <Inbox size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Incoming Challenges</p>
+                            <p className="text-xs text-slate-400">When someone challenges you, it will appear here</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="flex flex-col">
+                        {incoming.map((challenge: any) => (
+                            <div
+                                key={challenge.id}
+                                className="group flex items-center gap-3 px-3 py-2.5
+                               transition-colors duration-150
+                               hover:bg-slate-50 dark:hover:bg-white/5"
+                            >
+                                <div className="relative shrink-0">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                        {challenge.from_user?.avatar_url ? (
+                                            <img
+                                                src={challenge.from_user.avatar_url}
+                                                className="w-full h-full object-cover"
+                                                alt={challenge.from_user.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400   text-lg">
+                                                {challenge.from_user?.name?.[0]?.toUpperCase() || "?"}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                        <Swords size={8} className="text-white" />
+                                    </span>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                        {challenge.from_user?.name || "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                        Incoming Challenge
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        acceptChallenge(challenge);
+                                    }}
+                                    size="sm"
+                                    className="shrink-0 h-8 px-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-colors active:scale-95 shadow-none"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Check size={12} className="mr-1" />
+                                    Accept
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                );
+
+            case "sent":
+                if (outgoing.length === 0) {
+                    return (
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
+                            <Send size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Sent Challenges</p>
+                            <p className="text-xs text-slate-400">Your pending challenges will appear here</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="flex flex-col">
+                        {outgoing.map((challenge: any) => (
+                            <div
+                                key={challenge.id}
+                                className="group flex items-center gap-3 px-3 py-2.5
+                               transition-colors duration-150
+                               hover:bg-slate-50 dark:hover:bg-white/5"
+                            >
+                                <div className="relative shrink-0">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                        {challenge.to_user?.avatar_url ? (
+                                            <img
+                                                src={challenge.to_user.avatar_url}
+                                                className="w-full h-full object-cover"
+                                                alt={challenge.to_user.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400   text-lg">
+                                                {challenge.to_user?.name?.[0]?.toUpperCase() || "?"}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                        <Clock size={8} className="text-white" />
+                                    </span>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                        {challenge.to_user?.name || "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                        Awaiting Response
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={() => cancelChallenge(challenge.id)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="shrink-0 h-8 px-3 rounded-full border-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-[11px] transition-colors active:scale-95"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <X size={12} className="mr-1" />
+                                    Cancel
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                );
+
+            case "completed":
+                if (completed.length === 0) {
+                    return (
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
+                            <History size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Battle History</p>
+                            <p className="text-xs text-slate-400">Complete challenges to see your history</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="flex flex-col">
+                        {completed.slice(0, 20).map((challenge: any) => {
+                            const isWin = challenge.winner_id === user.id;
+                            const opponent = challenge.from_user_id === user.id
+                                ? challenge.to_user
+                                : challenge.from_user;
+
+                            return (
+                                <div
+                                    key={challenge.id}
+                                    className="group flex items-center gap-3 px-3 py-2.5
+                                   transition-colors duration-150
+                                   hover:bg-slate-50 dark:hover:bg-white/5"
+                                >
+                                    <div className="relative shrink-0">
+                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                            {opponent?.avatar_url ? (
+                                                <img
+                                                    src={opponent.avatar_url}
+                                                    className="w-full h-full object-cover"
+                                                    alt={opponent.name}
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/pwa-512x512.png"
+                                                    className="w-full h-full object-cover"
+                                                    alt="Medrae Logo"
+                                                />
+                                            )}
+                                        </div>
+                                        <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 ${isWin ? "bg-emerald-500" : "bg-rose-500"
+                                            }`}>
+                                            {isWin ? (
+                                                <Trophy size={8} className="text-white" />
+                                            ) : (
+                                                <Flame size={8} className="text-white" />
+                                            )}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                            {opponent?.name || "Unknown"}
+                                        </p>
+                                        <p className={`text-xs truncate leading-tight mt-0.5 font-semibold ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                            }`}>
+                                            {isWin ? "Victory" : "Defeat"} • {challenge.from_user_id === user.id ? challenge.score_to_beat : challenge.opponent_score} vs {challenge.from_user_id === user.id ? challenge.opponent_score : challenge.score_to_beat}
+                                        </p>
+                                    </div>
+
+                                    <span className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-bold ${isWin
+                                        ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                                        : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400"
+                                        }`}>
+                                        {isWin ? "Win" : "Loss"}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+
+
+    return (
+        <div className="mt-1">
+            <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-1 gap-1 overflow-x-auto custom-scrollbar">
+                {[
+                    { id: "find", label: "Find", icon: Users },
+                    { id: "pinned", label: "Pinned", icon: Star, badge: pinnedUsers.length, color: "bg-amber-500" },
+                    { id: "incoming", label: "Incoming", icon: Inbox, badge: unseenIncomingCount, color: "bg-rose-500" },
+                    { id: "sent", label: "Sent", icon: Send, badge: pendingSentCount, color: "bg-blue-500" },
+                    { id: "completed", label: "History", icon: History, badge: completed.length, color: "bg-emerald-500" }
+                ].map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    const Icon = tab.icon;
+
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => {
+                                if (navigator.vibrate) navigator.vibrate(30);
+                                setActiveTab(tab.id as any);
+                            }}
+                            className={`
+                            relative flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap active:scale-95
+                            ${isActive ? "text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}
+                        `}
+                            style={{ touchAction: 'manipulation' }}
+                        >
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeTabBackground"
+                                    className="absolute inset-0 bg-white dark:bg-blue-600 shadow-sm rounded-xl z-0"
+                                    transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                                />
+                            )}
+
+                            <div className="relative z-10 flex items-center gap-2">
+                                {Icon && <Icon size={14} className={isActive ? "text-blue-600 dark:text-white" : "text-slate-400"} />}
+                                <span className="uppercase tracking-tight">{tab.label}</span>
+                                {tab.badge > 0 && (
+                                    <span className={`flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full text-[10px]   text-white border-2 border-white dark:border-slate-800 ${tab.color || 'bg-slate-500'}`}>
+                                        {tab.badge}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="min-h-[400px]">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                    >
+                        {loading ? (
+                            <div className="space-y-3">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="h-20 w-full bg-slate-50 dark:bg-slate-900/50 rounded-2xl animate-pulse border border-slate-100 dark:border-white/5" />
+                                ))}
+                            </div>
+                        ) : (
+                            renderTabContent()
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
+// ================= SKELETON COMPONENTS =================
+function StatCardSkeleton() {
+    return <div className="p-3 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse h-20" />;
+}
+/* Facebook-style row skeleton for player lists */
+function PlayerRowSkeleton({ count = 6 }: { count?: number }) {
+    return (
+        <div className="flex flex-col" aria-hidden="true">
+            {Array.from({ length: count }).map((_, i) => (
+                <div
+                    key={i}
+                    className="flex items-center gap-3 px-3 py-2.5 animate-pulse"
+                >
+                    <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="h-3 w-2/3 rounded bg-slate-200 dark:bg-white/10" />
+                        <div className="h-2.5 w-1/3 rounded bg-slate-200 dark:bg-white/10" />
+                    </div>
+                    <div className="h-8 w-16 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                </div>
+            ))}
+        </div>
+    );
+}
+// Timer beep function using Web Audio API
+const playTimerBeep = () => {
+    try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = 800;
+        oscillator.type = 'square';
+
+        gainNode.gain.value = 0.3;
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (error) {
+        console.log('Audio not available');
+    }
+};
+
+export default function ChallengePage() {
+    const session = useSession();
+    const user = session?.user;
+    const [currentQIndex, setCurrentQIndex] = useState(0);
+    const [challenges, setChallenges] = useState<any[]>(() => {
+        if (typeof window !== "undefined") {
+            return loadCache(CHALLENGES_CACHE_KEY) || [];
+        }
+        return [];
+    });
+    const [players, setPlayers] = useState<any[]>(() => {
+        if (typeof window !== "undefined") {
+            const cached = loadCache(PLAYERS_CACHE_KEY);
+            if (cached) {
+                playersMemoryCache = cached;
+                return cached;
+            }
+        }
+        return [];
+    });
+    const [search, setSearch] = useState("");
+    const [onlyOnline, setOnlyOnline] = useState(false);
+    const [tempQuestions, setTempQuestions] = useState<any[]>([]);
+    const [pendingTargetUser, setPendingTargetUser] = useState<string | null>(null);
+    const [activeChallenge, setActiveChallenge] = useState<any | null>(null);
+    const [answers, setAnswers] = useState<string[]>([]);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
+
+    // ✅ Initialize loading from cache presence — no flash if cache exists
+    const [loading, setLoading] = useState(() => {
+        if (typeof window === "undefined") return false;
+        const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
+        const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
+        return !(cachedPlayers?.length > 0 || cachedChallenges?.length > 0);
+    });
+    const [isInitialLoad, setIsInitialLoad] = useState(() => {
+        // ✅ If cache exists, we've already "loaded" — skip the skeleton
+        if (typeof window === "undefined") return true;
+        const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
+        const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
+        return !(cachedPlayers?.length > 0 || cachedChallenges?.length > 0);
+    });
+    const [showWinOverlay, setShowWinOverlay] = useState(false);
+    const [showLossOverlay, setShowLossOverlay] = useState(false);
+    const [seenIncomingIds, setSeenIncomingIds] = useState<Set<string>>(new Set());
+    const [pinnedUsers, setPinnedUsers] = useState<any[]>(() => {
+        const cached = loadCache(PLAYERS_CACHE_KEY);
+        if (cached) return cached.filter((p: any) => p.is_pinned);
+        return [];
+    });
+    const [isUpdating, setIsUpdating] = useState(false); // New state for update loading
+    const [timerWarningPlayed, setTimerWarningPlayed] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const duelTarget = searchParams.get("duel");
+
+    // ✅ Read hash for tab deep-linking (e.g. /challenge#incoming)
+    const [initialTab, setInitialTab] = useState<
+        "find" | "pinned" | "incoming" | "sent" | "completed"
+    >("find");
+
+    useEffect(() => {
+        const hash = (window.location.hash || "").replace("#", "").trim();
+        if (
+            hash === "find" ||
+            hash === "pinned" ||
+            hash === "incoming" ||
+            hash === "sent" ||
+            hash === "completed"
+        ) {
+            setInitialTab(hash);
+        }
+    }, []);
+    const lastShownBattleId = useRef<string | null>(null);
+    const processingCompletedRef = useRef(false);
+    const timerRef = useRef<NodeJS.Timeout>();
+    const intervalRef = useRef<NodeJS.Timeout>();
+    const beepIntervalRef = useRef<NodeJS.Timeout>();
+    const duelHandledRef = useRef(false);
+    const submitGuardRef = useRef(false);
+    const sendingRef = useRef(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const { isFollowing } = useFollowingList();
+    // Load pinned users from cache on mount
+    useEffect(() => {
+        const cached = loadCache(PLAYERS_CACHE_KEY);
+        if (cached) {
+            const pinned = cached.filter(user => user.is_pinned);
+            setPinnedUsers(pinned);
+        }
+    }, []);
+
+    // Toggle pin for a user
+    const togglePin = useCallback((userId: string) => {
+        playSound("ui-tap");
+
+        setPlayers(prevPlayers => {
+            const updatedPlayers = prevPlayers.map(player =>
+                player.user_id === userId
+                    ? { ...player, is_pinned: !player.is_pinned, pinned_at: !player.is_pinned ? Date.now() : undefined }
+                    : player
+            );
+
+            const updatedCache = updatedPlayers.map(p => ({
+                user_id: p.user_id,
+                name: p.name,
+                username: p.username,
+                avatar_url: p.avatar_url,
+                is_online: p.is_online,
+                is_pinned: p.is_pinned,
+                pinned_at: p.pinned_at
+            }));
+            saveCache(PLAYERS_CACHE_KEY, updatedCache);
+
+            const updatedPinned = updatedPlayers.filter(p => p.is_pinned);
+            setPinnedUsers(updatedPinned);
+
+            return updatedPlayers;
+        });
+    }, []);
+
+    // Body scroll lock for overlays
+    useEffect(() => {
+        if (showWinOverlay || showLossOverlay || activeChallenge) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+    }, [showWinOverlay, showLossOverlay, activeChallenge]);
+
+    // ✅ OPTIMIZED: Fetch challenges with persistent caching (no auto-refresh)
+    const fetchChallenges = useCallback(async () => {
+        if (!user) return;
+
+        try {
+            const { data } = await supabase
+                .from("challenges")
+                .select(`*, from_user:from_user_id (name, username, avatar_url), to_user:to_user_id (name, username, avatar_url)`)
+                .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+                .order("completed_at", { ascending: false })
+                .limit(100);
+
+            if (data) {
+                setChallenges(data || []);
+                saveCache(CHALLENGES_CACHE_KEY, data || []);
+            }
+        } catch (err) {
+            console.error("Error fetching challenges:", err);
+        }
+    }, [user]);
+
+    // ✅ OPTIMIZED: Fetch players with persistent caching (no auto-refresh)
+    // ✅ OPTIMIZED: Fetch players with persistent caching + campus tagging
+    const fetchPlayers = useCallback(async () => {
+        if (!user) return;
+
+        try {
+            /* ---------- 1. resolve my campus slug (self-heal from DB) ---------- */
+            let mySchoolSlug = readSchoolSlug();
+
+            if (!mySchoolSlug) {
+                const { data: me } = await supabase
+                    .from("profiles")
+                    .select("institution")
+                    .eq("user_id", user.id)
+                    .single();
+
+                if (me?.institution && me.institution !== "other") {
+                    mySchoolSlug = me.institution;
+                    try {
+                        localStorage.setItem(
+                            "school_wars_current_institution_v1",
+                            JSON.stringify({ slug: mySchoolSlug, ts: Date.now() })
+                        );
+                    } catch { /* ignore */ }
+                }
+            }
+
+            /* ---------- 2. fetch all players with institution ---------- */
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("user_id, name, username, avatar_url, is_online, institution")
+                .neq("user_id", user.id)
+                .order("name", { ascending: true })
+                .limit(200);
+
+            if (error || !data) return;
+
+            /* ---------- 3. preserve pins ---------- */
+            const existingCache = loadCache(PLAYERS_CACHE_KEY);
+            const pinMap = new Map();
+            if (existingCache) {
+                existingCache.forEach((u: any) => {
+                    if (u.is_pinned) {
+                        pinMap.set(u.user_id, {
+                            is_pinned: true,
+                            pinned_at: u.pinned_at,
+                        });
+                    }
+                });
+            }
+
+            /* ---------- 4. tag each player ---------- */
+            const mergedData = data.map((player: any) => ({
+                ...player,
+                is_pinned: pinMap.has(player.user_id),
+                pinned_at: pinMap.get(player.user_id)?.pinned_at,
+                is_same_school:
+                    !!mySchoolSlug && player.institution === mySchoolSlug,
+            }));
+
+            /* ---------- 5. cache ---------- */
+            const cacheData = mergedData.map((p: any) => ({
+                user_id: p.user_id,
+                name: p.name,
+                username: p.username,
+                avatar_url: p.avatar_url,
+                is_online: p.is_online,
+                institution: p.institution,
+                is_pinned: p.is_pinned,
+                pinned_at: p.pinned_at,
+                is_same_school: p.is_same_school,
+            }));
+
+            saveCache(PLAYERS_CACHE_KEY, cacheData);
+            setPlayers(mergedData);
+            setPinnedUsers(mergedData.filter((p: any) => p.is_pinned));
+        } catch (err) {
+            console.error("Error fetching players:", err);
+        }
+    }, [user]);
+
+    // Manual update function - triggered by user tapping "Update List"
+    const handleManualUpdate = useCallback(async () => {
+        if (isUpdating) return;
+
+        setIsUpdating(true);
+        playSound("ui-tap");
+
+        try {
+            // Fetch fresh data
+            await Promise.all([
+                fetchChallenges(),
+                fetchPlayers()
+            ]);
+
+            // Optional: Show success feedback
+            if (navigator.vibrate) navigator.vibrate(50);
+        } catch (err) {
+            console.error("Error updating data:", err);
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [fetchChallenges, fetchPlayers, isUpdating]);
+
+    // Initial data load - only on mount, no auto-refresh
+    useEffect(() => {
+        if (!user) return;
+
+        // ✅ 1. Paint from cache FIRST (sync, no await)
+        const cachedPlayers = loadCache(PLAYERS_CACHE_KEY);
+        const cachedChallenges = loadCache(CHALLENGES_CACHE_KEY);
+
+        const hasCache =
+            (cachedPlayers?.length ?? 0) > 0 ||
+            (cachedChallenges?.length ?? 0) > 0;
+
+        if (cachedPlayers?.length > 0) {
+            setPlayers(cachedPlayers);
+            setPinnedUsers(cachedPlayers.filter((p: any) => p.is_pinned));
+        }
+        if (cachedChallenges?.length > 0) {
+            setChallenges(cachedChallenges);
+        }
+
+        // If we have cache, kill the loading state immediately.
+        if (hasCache) {
+            setLoading(false);
+            setIsInitialLoad(false);
+        }
+
+        // ✅ 2. Background refresh — do NOT await, do NOT gate the UI on it.
+        //    It updates state when it finishes.
+        (async () => {
+            try {
+                await Promise.all([
+                    fetchPlayers(),
+                    fetchChallenges(),
+                ]);
+            } finally {
+                // Only turn off loading if it was still on
+                setLoading(false);
+                setIsInitialLoad(false);
+            }
+        })();
+    }, [user, fetchPlayers, fetchChallenges]);
+    // Add this inside the ChallengePage component
+    useEffect(() => {
+        let debounce: ReturnType<typeof setTimeout> | null = null;
+
+        const handleAutoRefresh = () => {
+            if (document.visibilityState !== 'visible' || !user) return;
+
+            // ✅ Debounce — avoid firing on every focus event
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                // ✅ Silent refresh: no setLoading, no skeleton.
+                //    Data just updates when it arrives.
+                fetchChallenges();
+                fetchPlayers();
+            }, 400);
+        };
+
+        document.addEventListener("visibilitychange", handleAutoRefresh);
+        window.addEventListener("focus", handleAutoRefresh);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleAutoRefresh);
+            window.removeEventListener("focus", handleAutoRefresh);
+            if (debounce) clearTimeout(debounce);
+        };
+    }, [user, fetchChallenges, fetchPlayers]);
+    useEffect(() => { initSound(); }, []);
+
+
+    // ═══════════════════════════════════════════════════════════════
+    // ── Challenge action handlers ──
+    //    All three are declared HERE — above the deep-link effect —
+    //    so the effect's dep array can safely reference them.
+    // ═══════════════════════════════════════════════════════════════
+
+    const sendChallenge = async (targetUserId: string) => {
+        // ✅ Prevent double-send from any source
+        if (sendingRef.current) return;
+        sendingRef.current = true;
+
+        try {
+            playSound("ui-tap");
+
+            const canSend = !challenges.some(
+                (c) =>
+                    (c.from_user_id === user.id &&
+                        c.to_user_id === targetUserId &&
+                        c.status !== "completed") ||
+                    (c.from_user_id === targetUserId &&
+                        c.to_user_id === user.id &&
+                        c.status !== "completed")
+            );
+
+            if (!canSend) {
+                alert("Complete previous challenge with this player first.");
+                return;
+            }
+
+            // Try prefetched questions first (set by QuickDuelStrip)
+            let questionsData: any[] | null = null;
+            try {
+                const prefetched = sessionStorage.getItem(`prefetched_questions_${targetUserId}`);
+                if (prefetched) {
+                    questionsData = JSON.parse(prefetched);
+                    sessionStorage.removeItem(`prefetched_questions_${targetUserId}`);
+                }
+            } catch { }
+
+            // Fallback to RPC
+            if (!questionsData || questionsData.length === 0) {
+                const { data, error } = await supabase.rpc(
+                    "get_random_questions",
+                    { limit_count: 10 }
+                );
+                if (error || !data) return;
+                questionsData = data;
+            }
+
+            setTempQuestions(questionsData);
+            setPendingTargetUser(targetUserId);
+            setAnswers(Array(questionsData.length).fill(""));
+            setCurrentQIndex(0);
+            setActiveChallenge({
+                from_user_id: user.id,
+                to_user_id: targetUserId,
+                questions: questionsData,
+                status: "self",
+                score_to_beat: 0,
+            });
+
+            setTimeout(() => {
+                if (document.documentElement.requestFullscreen)
+                    document.documentElement.requestFullscreen().catch(() => { });
+            }, 100);
+
+            setTimeLeft(300);
+            setTimerWarningPlayed(false);
+        } finally {
+            setTimeout(() => {
+                sendingRef.current = false;
+            }, 1500);
+        }
+    };
+
+    const acceptChallenge = async (challenge: any) => {
+        playSound("start");
+        setSeenIncomingIds((prev) => new Set(prev).add(challenge.id));
+        if (!challenge.question_ids || challenge.question_ids.length === 0) return;
+
+        const { data: questionsData } = await supabase
+            .from("simulation_questions")
+            .select("*")
+            .in("id", challenge.question_ids);
+        if (!questionsData) return;
+
+        setAnswers(Array(questionsData.length).fill(""));
+        setCurrentQIndex(0);
+        setActiveChallenge({ ...challenge, questions: questionsData, status: "opponent" });
+
+        setTimeout(() => {
+            if (document.documentElement.requestFullscreen)
+                document.documentElement.requestFullscreen().catch(() => { });
+        }, 100);
+        setTimeLeft(300);
+        setTimerWarningPlayed(false);
+    };
+
+    const cancelChallenge = async (challengeId: string) => {
+        playSound("ui-tap");
+        const { error } = await supabase.from("challenges").delete().eq("id", challengeId);
+        if (error) console.error(error);
+        else await fetchChallenges();
+    };
+
+    // Reset the guard whenever the duel param changes (new challenge request)
+    // Reset the guard whenever the duel param changes (new challenge request)
+    useEffect(() => {
+        if (duelTarget) {
+            duelHandledRef.current = false;
+        }
+    }, [duelTarget]);
+
+    // ✅ Deep-link: auto-start duel when ?duel=<userId> is present
+    // ✅ Deep-link: auto-start duel when ?duel=<userId> is present
+    //    Smart routing:
+    //      1. If they already challenged me → accept and play it
+    //      2. If I already challenged them → do nothing (waiting on them)
+    //      3. Otherwise → start a fresh challenge
+    useEffect(() => {
+        if (!duelTarget) return;
+        if (activeChallenge) return;
+        if (!players.length) return;
+        if (duelHandledRef.current) return;
+
+        const opponent = players.find((p: any) => p.user_id === duelTarget);
+        if (!opponent) return;
+
+        duelHandledRef.current = true;
+
+        // Clear URL FIRST so any re-render sees no duel param
+        setSearchParams({}, { replace: true });
+
+        // ─── Case 1: incoming pending challenge from this user ───
+        const incomingChallenge = challenges.find(
+            (c: any) =>
+                c.status === "pending" &&
+                c.from_user_id === duelTarget &&
+                c.to_user_id === user?.id
+        );
+        if (incomingChallenge) {
+            acceptChallenge(incomingChallenge);
+            return;
+        }
+
+        // ─── Case 2: I already sent them a challenge ───
+        const outgoingChallenge = challenges.find(
+            (c: any) =>
+                c.status === "pending" &&
+                c.from_user_id === user?.id &&
+                c.to_user_id === duelTarget
+        );
+        if (outgoingChallenge) {
+            // Nothing to do — they owe us. Could show a toast here
+            // like "Waiting on them to play your challenge" but for
+            // now, silently do nothing.
+            return;
+        }
+
+        // ─── Case 3: no existing challenge → start one ───
+        sendChallenge(duelTarget);
+    }, [
+        duelTarget,
+        players,
+        activeChallenge,
+        challenges,
+        user?.id,
+        sendChallenge,
+        acceptChallenge,
+        setSearchParams,
+    ]);
+
+    const filteredPlayers = useMemo(() => {
+        let filtered = [...players];
+        const term = search.trim().toLowerCase();
+        if (term) {
+            filtered = filtered.filter((p) => {
+                const name = (p.name || "").toLowerCase();
+                const username = (p.username || "").toLowerCase();
+                return name.includes(term) || username.includes(term);
+            });
+        }
+        if (onlyOnline) filtered = filtered.filter((p) => p.is_online);
+        return filtered.sort((a, b) => {
+            // 1) pinned first
+            if (a.is_pinned && !b.is_pinned) return -1;
+            if (!a.is_pinned && b.is_pinned) return 1;
+
+            // 2) same campus next
+            if (a.is_same_school && !b.is_same_school) return -1;
+            if (!a.is_same_school && b.is_same_school) return 1;
+
+            // 3) followed next
+            const aFollow = isFollowing(a.user_id);
+            const bFollow = isFollowing(b.user_id);
+            if (aFollow && !bFollow) return -1;
+            if (!aFollow && bFollow) return 1;
+
+            // 4) name
+            return (a.name || "").localeCompare(b.name || "");
+        });
+    }, [players, search, onlyOnline, isFollowing]);
+    const handleInvite = (type: string) => {
+        playSound("ui-tap");
+        const message = `Hey 👋\n\nJoin me on Medrae 🚀\n\nCompete in challenges:\nhttps://medrae.vercel.app/challenge\n\nSign up here:\nhttps://medrae.vercel.app`;
+        if (type === "whatsapp") window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+        if (type === "link") { navigator.clipboard.writeText("https://medrae.vercel.app"); alert("Invite link copied!"); }
+    };
+
+
+
+    const handleAnswer = useCallback((idx: number, opt: string) => {
+        if (navigator.vibrate) navigator.vibrate(30);
+        playSound("ui-tap");
+        setAnswers((prev) => { const copy = [...prev]; copy[idx] = opt; return copy; });
+        if (idx < activeChallenge?.questions?.length - 1) {
+            setTimeout(() => setCurrentQIndex((i) => Math.min(i + 1, activeChallenge.questions.length - 1)), 150);
+        }
+    }, [activeChallenge]);
+
+    const submitChallenge = useCallback(async () => {
+        if (!activeChallenge) return;
+
+        // ✅ Guard: prevent double-submit from button + fullscreen-change + timer
+        if (submitGuardRef.current) return;
+        submitGuardRef.current = true;
+
+        try {
+            const score = activeChallenge.questions.reduce(
+                (acc: number, q: any, idx: number) =>
+                    acc + (answers[idx] === q.correct_answer ? 1 : 0),
+                0
+            );
+
+            if (activeChallenge.status === "self") {
+                const { error } = await supabase
+                    .from("challenges")
+                    .insert({
+                        from_user_id: user?.id,
+                        to_user_id: pendingTargetUser,
+                        question_ids: tempQuestions.map((q) => q.id),
+                        score_to_beat: score,
+                        status: "pending",
+                    });
+
+                if (!error) {
+                    playSound("notification");
+                    await fetchChallenges();
+                }
+            } else {
+                await supabase
+                    .from("challenges")
+                    .update({
+                        opponent_score: score,
+                        status: "completed",
+                        winner_id:
+                            score > (activeChallenge.score_to_beat || 0)
+                                ? user?.id
+                                : activeChallenge.from_user_id,
+                        completed_at: new Date(),
+                    })
+                    .eq("id", activeChallenge.id);
+
+                await fetchChallenges();
+            }
+        } finally {
+            // Cleanup UI state
+            setActiveChallenge(null);
+            setTempQuestions([]);
+            setPendingTargetUser(null);
+            setAnswers([]);
+            setCurrentQIndex(0);
+            setTimerWarningPlayed(false);
+
+            if (beepIntervalRef.current) {
+                clearInterval(beepIntervalRef.current);
+                beepIntervalRef.current = undefined;
+            }
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = undefined;
+            }
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => { });
+            }
+
+            // ✅ Release the guard after a short delay so a fresh challenge can start
+            setTimeout(() => {
+                submitGuardRef.current = false;
+            }, 1000);
+        }
+    }, [
+        activeChallenge,
+        answers,
+        user,
+        pendingTargetUser,
+        tempQuestions,
+        fetchChallenges,
+    ]);
+
+    // Timer effect with 10-second warning and 5-second repeating beeps
+    useEffect(() => {
+        if (!activeChallenge) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (beepIntervalRef.current) {
+                clearInterval(beepIntervalRef.current);
+                beepIntervalRef.current = undefined;
+            }
+            return;
+        }
+
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+            setTimeLeft((t) => {
+                if (t <= 1) {
+                    submitChallenge();
+                    return 0;
+                }
+                return t - 1;
+            });
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (beepIntervalRef.current) {
+                clearInterval(beepIntervalRef.current);
+                beepIntervalRef.current = undefined;
+            }
+        };
+    }, [activeChallenge, submitChallenge]);
+
+    // Timer warning effect - plays beep at 10 seconds
+    useEffect(() => {
+        if (activeChallenge && timeLeft <= 10 && timeLeft > 0) {
+            if (!timerWarningPlayed) {
+                setTimerWarningPlayed(true);
+                playTimerBeep();
+            }
+        } else if (timeLeft > 10) {
+            setTimerWarningPlayed(false);
+        }
+    }, [timeLeft, activeChallenge, timerWarningPlayed]);
+
+    // Repeating beep effect for last 5 seconds
+    useEffect(() => {
+        // Clear any existing interval
+        if (beepIntervalRef.current) {
+            clearInterval(beepIntervalRef.current);
+            beepIntervalRef.current = undefined;
+        }
+
+        if (activeChallenge && timeLeft <= 5 && timeLeft > 0) {
+            beepIntervalRef.current = setInterval(() => {
+                playTimerBeep();
+            }, 800);
+        }
+
+        return () => {
+            if (beepIntervalRef.current) {
+                clearInterval(beepIntervalRef.current);
+                beepIntervalRef.current = undefined;
+            }
+        };
+    }, [timeLeft, activeChallenge]);
+
+    // Fullscreen handling
+    useEffect(() => {
+        if (!activeChallenge) {
+            if (document.fullscreenElement) document.exitFullscreen();
+            return;
+        }
+        history.pushState(null, "", location.href);
+        const handleFullscreenChange = () => { if (!document.fullscreenElement && activeChallenge) submitChallenge(); };
+        const handlePopState = () => { if (activeChallenge && confirm("Leave challenge? Your answers will be submitted.")) submitChallenge(); else history.pushState(null, "", location.href); };
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => { if (activeChallenge) { e.preventDefault(); e.returnValue = ""; submitChallenge(); } };
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        window.addEventListener("popstate", handlePopState);
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => {
+            document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            window.removeEventListener("popstate", handlePopState);
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [activeChallenge, submitChallenge]);
+
+    useEffect(() => {
+        if (!activeChallenge && document.fullscreenElement) document.exitFullscreen().catch(() => { });
+    }, [activeChallenge]);
+
+    const wins = challenges.filter((c) => c.winner_id === user?.id).length;
+    const losses = challenges.filter((c) => c.status === "completed" && c.winner_id !== user?.id).length;
+    const incoming = challenges.filter((c) => c.to_user_id === user?.id && c.status === "pending");
+    const unseenIncomingCount = incoming.filter(c => !seenIncomingIds.has(c.id)).length;
+    const outgoing = challenges.filter((c) => c.from_user_id === user?.id && c.status === "pending");
+    const pendingSentCount = outgoing.length;
+    const completed = challenges.filter((c) => c.status === "completed");
+
+    const getMostRecentBattle = useCallback(() => {
+        if (completed.length === 0) return null;
+        return [...completed].sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())[0];
+    }, [completed]);
+
+    // Handle showing overlay for most recent battle only once
+    useEffect(() => {
+        if (processingCompletedRef.current || completed.length === 0) return;
+        const mostRecent = getMostRecentBattle();
+        if (!mostRecent) return;
+
+        const lastShown = localStorage.getItem(LAST_BATTLE_SHOWN_KEY);
+        if (lastShown !== mostRecent.id) {
+            processingCompletedRef.current = true;
+            localStorage.setItem(LAST_BATTLE_SHOWN_KEY, mostRecent.id);
+            localStorage.setItem(LAST_BATTLE_KEY, JSON.stringify({ id: mostRecent.id, result: mostRecent.winner_id === user?.id ? 'win' : 'loss', timestamp: mostRecent.completed_at }));
+
+            if (mostRecent.winner_id === user?.id) {
+                burstConfetti();
+                playSound("trivia-finish");
+                setShowWinOverlay(true);
+                setTimeout(() => { setShowWinOverlay(false); processingCompletedRef.current = false; }, 5000);
+            } else {
+                playSound("loss");
+                setShowLossOverlay(true);
+                setTimeout(() => { setShowLossOverlay(false); processingCompletedRef.current = false; }, 5000);
+            }
+        }
+    }, [completed, user, getMostRecentBattle]);
+
+    if (!user) return <GlobalLoader />;
+
+    const inviteCards = [{ id: "invite-whatsapp", name: "Invite via WhatsApp", type: "whatsapp" }];
+
+    return (
+        <>
+            {/* Battle Interface - Edge to edge, no borders */}
+            {activeChallenge && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-muted/100 flex flex-col overflow-hidden"
+                    style={{ willChange: 'transform' }}
+                >
+                    {/* Header - Clean, no border */}
+                    <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg">
+                        <div className="px-4 py-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl" />
+                                        <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center ring-0 ring-primary/20 shadow-none">
+                                            <svg
+                                                viewBox="0 0 192 192"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="h-full w-full"
+                                                aria-label="MEDRAE Nursing Logo"
+                                            >
+                                                {/* White rounded background */}
+                                                <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
+
+                                                {/* Red Heart */}
+                                                <path
+                                                    d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
+                                                    fill="#FF1F1F"
+                                                />
+
+                                                {/* Graduation Cap */}
+                                                <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
+
+                                                {/* Cap lower body */}
+                                                <path
+                                                    d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
+                                                    fill="#FFFFFF"
+                                                />
+
+                                                {/* Red cap seam */}
+                                                <path
+                                                    d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
+                                                    fill="none"
+                                                    stroke="#FF1F1F"
+                                                    strokeWidth="3"
+                                                    strokeLinecap="round"
+                                                />
+
+                                                {/* Red cap string */}
+                                                <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
+
+                                                {/* Red button */}
+                                                <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
+
+                                                {/* Tassel */}
+                                                <path
+                                                    d="M94 82 C86 86 75 88 63 89"
+                                                    fill="none"
+                                                    stroke="#FF1F1F"
+                                                    strokeWidth="2"
+                                                />
+
+                                                {/* White tassel cord */}
+                                                <path
+                                                    d="M63 89 C61 94 61 98 61 103"
+                                                    fill="none"
+                                                    stroke="#FFFFFF"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                />
+
+                                                {/* Tassel top */}
+                                                <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
+
+                                                {/* Tassel */}
+                                                <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xs   text-slate-900 dark:text-white uppercase tracking-tight leading-none">Medrae Nursing Challenge</h2>
+                                        <p className="text-[8px] font-bold text-slate-400  tracking-widest mt-0.5">{activeChallenge?.status === "self" ? "Setting Benchmark" : "Peer Challenge"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <svg className="w-11 h-11 transform -rotate-90">
+                                            <circle cx="22" cy="22" r="18" stroke="currentColor" strokeWidth="2.5" fill="none" className="text-slate-200 dark:text-slate-700" />
+                                            <circle cx="22" cy="22" r="18" stroke="currentColor" strokeWidth="2.5" fill="none" strokeDasharray={`${2 * Math.PI * 18}`} strokeDashoffset={`${2 * Math.PI * 18 * (1 - timeLeft / 300)}`} className={`transition-all duration-1000 ${timeLeft < 30 ? 'text-rose-500' : 'text-blue-500'}`} />
+                                        </svg>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className={`text-xs   tabular-nums ${timeLeft < 30 ? 'text-rose-500 animate-pulse' : 'text-slate-700 dark:text-slate-300'}`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[8px]   text-slate-400 uppercase tracking-widest">Question</p>
+                                        <p className="text-lg   text-slate-800 dark:text-white">{currentQIndex + 1} <span className="text-xs text-slate-400">/ {activeChallenge.questions.length}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Progress bar — color shifts by quarter, no dots */}
+                            {(() => {
+                                const total = activeChallenge.questions.length;
+                                const progress = (currentQIndex + 1) / total;
+
+                                // Color tiers
+                                let barColor = "from-blue-500 to-indigo-500";       // 0–25%
+                                if (progress > 0.25 && progress <= 0.5) {
+                                    barColor = "from-cyan-500 to-blue-500";         // 25–50%
+                                } else if (progress > 0.5 && progress <= 0.75) {
+                                    barColor = "from-amber-500 to-orange-500";      // 50–75%
+                                } else if (progress > 0.75 && progress < 1) {
+                                    barColor = "from-orange-500 to-rose-500";       // 75–99%
+                                } else if (progress >= 1) {
+                                    barColor = "from-emerald-500 to-green-500";     // 100% = green
+                                }
+
+                                return (
+                                    <div className="mt-3 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className={`h-full bg-gradient-to-r ${barColor} rounded-full`}
+                                            initial={{ width: "0%" }}
+                                            animate={{ width: `${progress * 100}%` }}
+                                            transition={{ duration: 0.3, ease: "easeOut" }}
+                                        />
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+
+                    {/* Main Content - Edge to edge */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <div className="px-4 py-6 md:py-8 max-w-2xl mx-auto">
+                            <motion.div key={currentQIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-5">
+                                {/* Tags - Clean, no border */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 backdrop-blur-sm">
+                                        <Zap size={11} className="text-blue-600 fill-current" />
+                                        <span className="text-[10px]   text-blue-600  tracking-wider">Clinical</span>
+                                    </div>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10">
+                                        <Trophy size={11} className="text-amber-600" />
+                                        <span className="text-[10px]   text-amber-600 tracking-wider">{activeChallenge?.status === "self" ? "Target" : "vs Peer"}</span>
+                                    </div>
+                                </div>
+
+                                {/* Question - Reasonable font size */}
+                                <div className="space-y-3">
+                                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold leading-snug text-slate-900 dark:text-slate-100">
+                                        {activeChallenge.questions[currentQIndex].question_text}
+                                    </h3>
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/5">
+                                        <p className="text-[11px] font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                                            <span className="text-sm">Hi</span>
+                                            {currentQIndex === 0 && "Let's begin! Read carefully and choose the best answer."}
+                                            {currentQIndex === Math.floor(activeChallenge.questions.length / 2) && "You're doing great! Keep the momentum going!"}
+                                            {currentQIndex === activeChallenge.questions.length - 2 && "Almost there! One final push!"}
+                                            {currentQIndex > 0 && currentQIndex < Math.floor(activeChallenge.questions.length / 2) && currentQIndex !== Math.floor(activeChallenge.questions.length / 2) && "Stay focused, you've got this!"}
+                                            {currentQIndex > Math.floor(activeChallenge.questions.length / 2) && currentQIndex < activeChallenge.questions.length - 2 && "Excellent progress! Keep going!"}
+                                        </p>
+                                    </motion.div>
+                                </div>
+
+                                {/* Options - Clean, no borders */}
+                                <div className="grid grid-cols-1 gap-2.5 mt-5">
+                                    {["A", "B", "C", "D"].map((opt, optIndex) => {
+                                        const optionText = activeChallenge.questions[currentQIndex][`option_${opt.toLowerCase()}`];
+                                        const isSelected = answers[currentQIndex] === opt;
+                                        return (
+                                            <motion.button
+                                                key={opt}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: optIndex * 0.05 }}
+                                                onClick={() => { if (navigator.vibrate) navigator.vibrate(30); handleAnswer(currentQIndex, opt); playSound("ui-tap"); }}
+                                                className={`group relative p-3.5 rounded-xl text-left transition-all duration-300 flex items-start gap-3 active:scale-[0.99] ${isSelected
+                                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30"
+                                                    : "bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                                    }`}
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                <div className={`relative z-10 h-7 w-7 shrink-0 rounded-lg flex items-center justify-center   text-xs transition-all duration-200 ${isSelected
+                                                    ? "bg-white/20 text-white"
+                                                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20"
+                                                    }`}>{opt}</div>
+                                                <span className={`relative z-10 font-medium text-sm md:text-base leading-relaxed flex-1 ${isSelected ? "text-white" : "text-slate-700 dark:text-slate-300"
+                                                    }`}>{optionText}</span>
+                                                {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute right-3 top-1/2 -translate-y-1/2"><Check size={18} className="text-white" /></motion.div>}
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Progress indicator - Clean, no border */}
+                                <div className="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/20">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-1.5"><Check size={11} className="text-emerald-500" /><span className="font-medium text-slate-600 dark:text-slate-400 text-[10px]">Answered: {answers.filter(a => a).length}</span></div>
+                                            <div className="flex items-center gap-1.5"><Clock size={11} className="text-amber-500" /><span className="font-medium text-slate-600 dark:text-slate-400 text-[10px]">Remaining: {activeChallenge.questions.length - answers.filter(a => a).length}</span></div>
+                                        </div>
+                                        <div className="text-right"><span className="text-[9px] font-mono text-slate-400">Q{currentQIndex + 1}/{activeChallenge.questions.length}</span></div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Navigation - Clean, no border */}
+                    <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-lg">
+                        <div className="px-4 py-3 max-w-2xl mx-auto">
+                            <div className="flex items-center gap-3">
+                                <Button variant="outline" onClick={() => { if (navigator.vibrate) navigator.vibrate(20); setCurrentQIndex((i) => Math.max(i - 1, 0)); playSound("ui-tap"); }} disabled={currentQIndex === 0} className="flex-1 h-11 rounded-xl font-bold active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 bg-white dark:bg-slate-800 border-0 shadow-sm"><ChevronLeft className="mr-2 w-4 h-4" /><span className="hidden sm:inline text-xs">Previous</span></Button>
+                                {currentQIndex < activeChallenge.questions.length - 1 ? (
+                                    <Button onClick={() => { if (navigator.vibrate) navigator.vibrate(20); setCurrentQIndex((i) => Math.min(i + 1, activeChallenge.questions.length - 1)); playSound("ui-tap"); }} className="flex-1 h-11 rounded-xl bg-gradient-to-r from-slate-800 to-slate-700 dark:from-blue-600 dark:to-indigo-600 text-white font-bold active:scale-95 transition-all shadow-lg border-0"><span className="hidden sm:inline text-xs">Next</span><ChevronRight className="ml-2 w-4 h-4" /></Button>
+                                ) : (
+                                    <Button onClick={() => { if (navigator.vibrate) navigator.vibrate(50); playSound("ui-tap"); setShowSubmitModal(true); }} className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold active:scale-95 transition-all shadow-lg shadow-emerald-500/20 border-0"><Send className="mr-2 w-4 h-4" />Submit</Button>
+                                )}
+                            </div>
+                            <p className="text-center text-[8px] font-medium text-slate-400 mt-1.5">Tap option to select • Swipe to navigate</p>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Header - Clean typography */}
+
+
+            {/* Stats Dashboard - Clean, no borders */}
+            <div className="grid grid-cols-3 gap-2 text-center max-w-full mx-auto mb-3">
+                {loading && isInitialLoad && players.length === 0 && challenges.length === 0 ? (<><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>) : (<>
+                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                        <Trophy className="mx-auto mb-1.5 text-emerald-600 dark:text-emerald-400" size={18} />
+                        <p className="text-xl   text-emerald-700 dark:text-emerald-400 leading-none">{wins}</p>
+                        <p className="text-[9px] font-bold text-emerald-600/60 uppercase tracking-widest mt-1.5">Wins</p>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10">
+                        <Flame className="mx-auto mb-1.5 text-rose-600 dark:text-rose-400" size={18} />
+                        <p className="text-xl   text-rose-700 dark:text-rose-400 leading-none">{losses}</p>
+                        <p className="text-[9px] font-bold text-rose-600/60 uppercase tracking-widest mt-1.5">Losses</p>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10">
+                        <Clock className="mx-auto mb-1.5 text-amber-600 dark:text-amber-400" size={18} />
+                        <p className="text-xl   text-amber-700 dark:text-amber-400 leading-none">{unseenIncomingCount}</p>
+                        <p className="text-[9px] font-bold text-amber-600/60 uppercase tracking-widest mt-1.5">Pending</p>
+                    </div>
+                </>)}
+            </div>
+            {/* ✅ Recent wins — public recognition, no scores, no losers */}
+            <RecentWinsStrip
+                onSelectUser={setSelectedUserId}
+                currentUserId={user?.id}
+            />
+            {/* Challenge Tabs - Edge to edge, no borders */}
+            <div className="w-full max-w-full mx-auto">
+                <ChallengeTabs
+                    incoming={incoming}
+                    outgoing={outgoing}
+                    completed={completed}
+                    acceptChallenge={acceptChallenge}
+                    initialTab={initialTab}
+                    user={user}
+                    loading={loading && isInitialLoad && players.length === 0 && challenges.length === 0}
+                    search={search}
+                    setSearch={setSearch}
+                    onlyOnline={onlyOnline}
+                    setOnlyOnline={setOnlyOnline}
+                    filteredPlayers={filteredPlayers}
+                    sendChallenge={sendChallenge}
+                    inviteCards={inviteCards}
+                    handleInvite={handleInvite}
+                    seenIncomingIds={seenIncomingIds}
+                    setSeenIncomingIds={setSeenIncomingIds}
+                    unseenIncomingCount={unseenIncomingCount}
+                    pendingSentCount={pendingSentCount}
+                    cancelChallenge={cancelChallenge}
+                    pinnedUsers={pinnedUsers}
+                    togglePin={togglePin}
+                    onUpdateList={handleManualUpdate}
+                    isUpdating={isUpdating}
+                    onSelectUser={setSelectedUserId}
+                    isFollowing={isFollowing}
+                />
+            </div>
+
+            {/* Submit Modal - Clean design */}
+            <AnimatePresence>
+                {showSubmitModal && (
+                    <motion.div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[10000]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSubmitModal(false)}>
+                        <motion.div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-11/12 max-w-md shadow-2xl flex flex-col gap-4" initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={e => e.stopPropagation()}>
+                            <h3 className="text-lg font-bold text-center">Submit Challenge?</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 text-center">Once submitted, you won't be able to change your answers.</p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <button onClick={() => setShowSubmitModal(false)} className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 active:scale-95 transition-all font-medium text-sm">Cancel</button>
+                                <button onClick={() => { if (navigator.vibrate) navigator.vibrate(50); playSound("ui-tap"); submitChallenge(); setShowSubmitModal(false); }} className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white active:scale-95 transition-all font-medium text-sm shadow-lg shadow-emerald-500/20">Submit</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Win Overlay - Clean design */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {showWinOverlay && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden" onClick={() => setShowWinOverlay(false)}>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500/20 rounded-full blur-[100px] animate-pulse" />
+                            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-[80px]" />
+                            <motion.div initial={{ scale: 0.8, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.8, y: 40, opacity: 0 }} transition={{ type: "spring", damping: 15 }} className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+                                <div className="relative mb-6"><div className="absolute inset-0 bg-amber-400/30 blur-2xl rounded-full" /><motion.div animate={{ y: [0, -15, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}><Trophy size={64} className="relative text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" /></motion.div></div>
+                                <div className="space-y-3 mb-8"><div><p className="text-amber-500 text-[10px]   uppercase tracking-[0.4em] mb-2">Champion</p><h1 className="text-4xl md:text-5xl   text-slate-900 dark:text-white tracking-tighter italic uppercase">Victory!</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Clinical dominance established. You've out-performed your peer.</p></div>
+                                <Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowWinOverlay(false); }} className="h-12 px-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900   uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl border-0 text-sm">Continue</Button>
+                                <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Clinical Challenge</p>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>, document.body
+            )}
+
+            {/* Loss Overlay - Clean design */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {showLossOverlay && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden" onClick={() => setShowLossOverlay(false)}>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/20 rounded-full blur-[100px] animate-pulse" />
+                            <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-red-500/10 rounded-full blur-[80px]" />
+                            <motion.div initial={{ scale: 0.8, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.8, y: 40, opacity: 0 }} transition={{ type: "spring", damping: 15 }} className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-rose-400 to-transparent" />
+                                <div className="relative mb-6"><div className="absolute inset-0 bg-rose-400/30 blur-2xl rounded-full" /><motion.div animate={{ y: [0, -10, 0, -5, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}><Flame size={64} className="relative text-rose-500 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]" /></motion.div></div>
+                                <div className="space-y-3 mb-8"><div><p className="text-rose-500 text-[10px]   uppercase tracking-[0.4em] mb-2">Outcome</p><h1 className="text-4xl md:text-5xl   text-slate-900 dark:text-white tracking-tighter italic uppercase">Defeat</h1></div><div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" /><p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">Every loss is a lesson. Knowledge is power, and power grows with persistence.</p></div>
+                                <div className="flex flex-col gap-3 w-full"><Button size="lg" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setShowLossOverlay(false); }} className="h-12 px-10 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white   uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-rose-500/30 border-0 text-sm">Try Another Battle</Button><p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1">Rise Again • Stronger Than Before</p></div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>, document.body
+            )}
+            <UserProfileModal
+                userId={selectedUserId}
+                onClose={() => setSelectedUserId(null)}
+            />
+        </>
+    );
+}

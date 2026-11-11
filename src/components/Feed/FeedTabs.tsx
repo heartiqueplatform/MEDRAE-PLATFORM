@@ -95,15 +95,13 @@ export default function FeedTabs({ active, onChange, counts }: Props) {
                         with the tabs. Its `left` is measured against the
                         content's own coordinate space — never drifts. */}
                     <div className="relative flex items-center gap-0 p-1 min-w-max">
-                        {/* Sliding indicator — absolute, positioned
-                            relative to the scrolling content, so it moves
-                            in lockstep with the tab text during swipe. */}
+                        {/* Sliding indicator */}
                         {indicator && (
                             <span
                                 className="absolute top-1 bottom-1 rounded-lg
-                                           bg-white dark:bg-[#161b22]
-                                           shadow-sm pointer-events-none
-                                           transition-[left,width] duration-200"
+                       bg-white dark:bg-[#161b22]
+                       pointer-events-none
+                       transition-[left,width] duration-200"
                                 style={{
                                     left: indicator.left,
                                     width: indicator.width,
@@ -127,10 +125,10 @@ export default function FeedTabs({ active, onChange, counts }: Props) {
                                     ref={isActive ? activeBtnRef : null}
                                     onClick={() => handleTap(t.key)}
                                     className={`relative z-10 shrink-0
-                                                flex items-center justify-center gap-1.5
-                                                h-9 px-3 rounded-lg
-                                                transition-colors
-                                                ${isActive
+            flex items-center justify-center gap-1
+            h-9 px-2 rounded-lg
+            transition-colors
+            ${isActive
                                             ? "text-slate-900 dark:text-white"
                                             : "text-slate-500 dark:text-slate-400"}`}
                                     aria-current={isActive ? "page" : undefined}

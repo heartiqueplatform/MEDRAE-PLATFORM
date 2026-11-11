@@ -160,7 +160,7 @@ function SettingsSkeleton() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden custom-scrollbar overscroll-contain">
+      <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden custom-scrollbar no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-2 py-4 md:py-6 pb-24 safe-bottom space-y-3 md:space-y-4">
           <Card className="w-full overflow-hidden p-3 md:p-4 rounded-2xl bg-card border-0 shadow-none">
             <div className="space-y-2 md:space-y-3 animate-pulse">
@@ -530,7 +530,7 @@ export function Settings() {
       {/* ── Scrolling content ── */}
       <div
         ref={contentRef}
-        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden custom-scrollbar overscroll-contain"
+        className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden custom-scrollbar no-scrollbar"
       >
         <div className="mx-auto w-full max-w-3xl px-2 py-4 md:py-6 pb-24 safe-bottom space-y-3 md:space-y-4">
           {/* Profile summary card */}

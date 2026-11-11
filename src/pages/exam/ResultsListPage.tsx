@@ -1,13 +1,24 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import React from 'react';
 
-import { BarChart3, ChevronRight, Lock, BookOpen, Trophy, ClipboardList, GraduationCap, RefreshCw, WifiOff, AlertCircle, ServerCrash } from 'lucide-react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+    BarChart3,
+    ChevronRight,
+    ChevronLeft,
+    Lock,
+    BookOpen,
+    Trophy,
+    ClipboardList,
+    GraduationCap,
+    RefreshCw,
+    WifiOff,
+    AlertCircle,
+    ServerCrash,
+} from 'lucide-react';
+import { playSound } from "@/lib/soundManager";
 
 type Result = {
     id: string;
@@ -24,48 +35,53 @@ type Result = {
     };
 };
 
-// Skeleton Loader Component
-const ResultsSkeleton = () => (
-    <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
-        <div className="max-w-4xl mx-auto space-y-4">
-            {/* Header Skeleton */}
-            <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 md:h-11 md:w-11 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
-                        <div>
-                            <div className="h-5 md:h-6 w-48 md:w-56 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-1.5" />
-                            <div className="h-3 md:h-4 w-36 md:w-44 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
-                        <div className="h-9 w-28 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
-                    </div>
-                </div>
-            </div>
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
 
-            {/* Rows Skeleton */}
-            <div className="space-y-2.5 md:space-y-3">
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = () => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Skeletons                                                         */
+/* ------------------------------------------------------------------ */
+
+const ResultsSkeleton = () => (
+    <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+        <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           safe-top">
+            <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="h-4 w-40 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-28 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            </div>
+            <div className="h-9 w-24 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+        </header>
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3 pb-24 safe-bottom">
+            <div className="w-full max-w-[880px] mx-auto space-y-3">
                 {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-white dark:bg-muted/30 rounded-2xl p-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <div className="flex gap-3 items-start">
-                                <div className="h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse mt-0.5" />
-                                <div className="space-y-1.5">
-                                    <div className="h-4 md:h-5 w-40 md:w-52 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                                    <div className="h-3 w-32 md:w-44 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="h-5 md:h-6 w-16 md:w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                                <div className="h-4 w-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                    <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-4 animate-pulse">
+                        <div className="flex items-start gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-slate-200 dark:bg-white/[0.06] shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 w-40 md:w-52 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                <div className="h-3 w-32 md:w-44 bg-slate-200 dark:bg-white/[0.1] rounded" />
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
-        </div>
+        </main>
     </div>
 );
 
@@ -76,6 +92,12 @@ const ResultsListPage = () => {
     const [errorMessage, setErrorMessage] = useState("");
     const [errorType, setErrorType] = useState<"network" | "server" | "general">("general");
     const [refreshing, setRefreshing] = useState(false);
+
+    const handleBack = useCallback(() => {
+        tap();
+        if (window.history.length > 1) navigate(-1);
+        else navigate("/dashboard/student", { replace: true });
+    }, [navigate]);
 
     const fetchResults = async () => {
         try {
@@ -223,190 +245,277 @@ const ResultsListPage = () => {
         }
     };
 
-    const refreshResults = async () => { setRefreshing(true); await fetchResults(); setRefreshing(false); };
+    const refreshResults = async () => {
+        tap();
+        setRefreshing(true);
+        await fetchResults();
+        setRefreshing(false);
+    };
 
     useEffect(() => { fetchResults(); }, []);
 
+    /* ─── LOADING ───────────────────────────────────────────── */
     if (loading) return <ResultsSkeleton />;
 
+    /* ─── ERROR ─────────────────────────────────────────────── */
     if (errorMessage) {
         const errorIcons = { network: WifiOff, server: ServerCrash, general: AlertCircle };
-        const errorColors = { network: "text-orange-600 dark:text-orange-400", server: "text-rose-600 dark:text-rose-400", general: "text-amber-600 dark:text-amber-400" };
-        const errorBgs = { network: "bg-orange-50 dark:bg-orange-950/20", server: "bg-rose-50 dark:bg-rose-950/20", general: "bg-amber-50 dark:bg-amber-950/20" };
-        const errorTitles = { network: "Connection Lost", server: "Server Hiccup", general: "Something's Not Right" };
+        const errorColors = {
+            network: "text-amber-600 dark:text-amber-400",
+            server: "text-rose-600 dark:text-rose-400",
+            general: "text-amber-600 dark:text-amber-400",
+        };
+        const errorBgs = {
+            network: "bg-amber-50 dark:bg-amber-400/10",
+            server: "bg-rose-50 dark:bg-rose-400/10",
+            general: "bg-amber-50 dark:bg-amber-400/10",
+        };
+        const errorTitles = {
+            network: "Connection lost",
+            server: "Server hiccup",
+            general: "Something's not right",
+        };
         const ErrorIcon = errorIcons[errorType] || errorIcons.general;
 
         return (
-            <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background flex items-center justify-center px-4 py-8">
-                <div className="text-center max-w-sm">
-                    <div className={`w-16 h-16 md:w-20 md:h-20 ${errorBgs[errorType]} rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6`}>
-                        <ErrorIcon className={`w-8 h-8 md:w-10 md:h-10 ${errorColors[errorType]}`} />
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   z-30 safe-top">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors shrink-0"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate">
+                            Results
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Something went wrong
+                        </p>
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2">
-                        {errorTitles[errorType]}
-                    </h3>
-                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
-                        {errorMessage}
-                    </p>
-                    <div className="flex gap-2 justify-center flex-wrap">
-                        <Button
-                            onClick={refreshResults}
-                            className="text-xs md:text-sm gap-1.5 border-0 bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                            <RefreshCw className="w-3.5 h-3.5" /> Try Again
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => window.location.reload()}
-                            className="text-xs md:text-sm border-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-                        >
-                            Refresh Page
-                        </Button>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex items-center justify-center px-4 py-6">
+                    <div className="text-center max-w-sm">
+                        <div className={`h-16 w-16 ${errorBgs[errorType]} rounded-full
+                                        flex items-center justify-center mx-auto mb-4`}>
+                            <ErrorIcon className={`h-8 w-8 ${errorColors[errorType]}`} />
+                        </div>
+                        <h2 className="text-base font-bold mb-2">
+                            {errorTitles[errorType]}
+                        </h2>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                            {errorMessage}
+                        </p>
+                        <div className="flex gap-2 justify-center flex-wrap">
+                            <button
+                                onClick={refreshResults}
+                                className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                           text-sm font-bold
+                                           flex items-center justify-center gap-1.5
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Try again
+                            </button>
+                            <button
+                                onClick={() => { tap(); window.location.reload(); }}
+                                className="h-10 px-4 rounded-xl
+                                           bg-slate-100 dark:bg-white/[0.06]
+                                           text-slate-700 dark:text-slate-200
+                                           text-sm font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                Refresh page
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </main>
             </div>
         );
     }
 
+    /* ─── REAL PAGE ─────────────────────────────────────────── */
     return (
-        <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
-            <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
-
-                {/* HEADER */}
-                <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 md:h-11 md:w-11 bg-blue-50 dark:bg-blue-950/30 rounded-xl flex items-center justify-center shrink-0">
-                                <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div className="min-w-0">
-                                <h1 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                    Official Results Portal
-                                </h1>
-                                <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400">
-                                    Institutional Examination Records
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Button
-                                onClick={refreshResults}
-                                disabled={refreshing}
-                                size="sm"
-                                className="gap-1.5 text-[10px] md:text-xs h-9 border-0 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
-                            >
-                                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                                <span className="hidden sm:inline">Refresh</span>
-                            </Button>
-
-                            {results.length > 0 && (
-                                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
-                                    <GraduationCap className="h-3.5 w-3.5 text-slate-400" />
-                                    <span className="text-[10px] md:text-xs font-bold text-slate-700 dark:text-slate-300">
-                                        {results.length} Assessment{results.length > 1 ? 's' : ''}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* CONTENT */}
-                {results.length === 0 ? (
-                    <div className="bg-white dark:bg-muted/30 rounded-2xl py-12 md:py-16 px-6 text-center">
-                        <div className="w-16 h-16 mx-auto bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                            <ClipboardList className="h-7 w-7 md:h-8 md:w-8 text-slate-400 dark:text-slate-500" />
-                        </div>
-                        <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-white mb-1.5">
-                            No Records Found
-                        </h3>
-                        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                            You haven't completed any exams yet, or your results are still
-                            being processed. Results will appear here automatically once
-                            your tutor releases them.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-2.5 md:space-y-3">
-                        {results.map((res) => {
-                            const isReleased = res.exam_papers?.is_released && res.is_released;
-                            const percentage = res.total_questions > 0
-                                ? ((res.score / res.total_questions) * 100).toFixed(1)
-                                : "0.0";
-
-                            return (
-                                <div
-                                    key={res.id}
-                                    onClick={() => isReleased && navigate(`/exam/${res.paper_id}/results`)}
-                                    className={`group relative flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl transition-all duration-200 ${isReleased
-                                        ? "bg-white dark:bg-muted/30 hover:-translate-y-0.5 cursor-pointer"
-                                        : "bg-slate-100/70 dark:bg-slate-900/20 opacity-75 cursor-not-allowed"
-                                        }`}
-                                >
-                                    <div className="flex gap-3 items-start min-w-0">
-                                        <div className={`mt-0.5 p-2 rounded-lg shrink-0 ${isReleased
-                                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
-                                            : 'bg-slate-200 dark:bg-slate-800'
-                                            }`}>
-                                            <BookOpen className={`h-4 w-4 ${isReleased
-                                                ? 'text-emerald-600 dark:text-emerald-400'
-                                                : 'text-slate-400'
-                                                }`} />
-                                        </div>
-                                        <div className="space-y-1 min-w-0">
-                                            <h2 className="text-sm md:text-base font-bold text-slate-900 dark:text-white truncate">
-                                                {res.exam_papers.title || "Untitled Exam"}
-                                            </h2>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                    {res.exam_papers.course || "General Assessment"}
-                                                </span>
-                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                                <span className="text-[10px] text-slate-400">
-                                                    ID: {res.paper_id.slice(0, 8)}
-                                                </span>
-                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                                <span className="text-[10px] text-slate-400">
-                                                    {new Date(res.submitted_at).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 md:mt-0 flex items-center justify-end gap-3 md:gap-4">
-                                        {isReleased ? (
-                                            <>
-                                                <div className="text-right">
-                                                    <div className="flex items-center justify-end gap-1.5 text-emerald-600 dark:text-emerald-400   text-base md:text-lg">
-                                                        <Trophy className="h-4 w-4" />
-                                                        {res.score}/{res.total_questions}
-                                                    </div>
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                        Score: {percentage}%
-                                                    </div>
-                                                </div>
-                                                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform group-hover:translate-x-1" />
-                                            </>
-                                        ) : (
-                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold uppercase tracking-wide">
-                                                <Lock className="h-3 w-3" /> Pending Release
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* FOOTER */}
-                <div className="text-center pt-2">
-                    <p className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-semibold">
-                        Official Academic Transcript • Generated via Institutional Gateway
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+            {/* ── HEADER ──────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <button
+                    onClick={handleBack}
+                    aria-label="Go back"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors shrink-0"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate">
+                        Exam results
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        {results.length > 0
+                            ? `${results.length} assessment${results.length > 1 ? "s" : ""}`
+                            : "Official records"}
                     </p>
                 </div>
-            </div>
+                <button
+                    onClick={refreshResults}
+                    disabled={refreshing}
+                    className="h-9 px-2.5 rounded-full flex items-center justify-center gap-1 shrink-0
+                               bg-slate-100 dark:bg-white/[0.06]
+                               active:bg-slate-200 dark:active:bg-white/[0.1]
+                               disabled:opacity-50
+                               transition-colors"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                    <span className="text-[11px] font-semibold">
+                        {refreshing ? "Refreshing" : "Refresh"}
+                    </span>
+                </button>
+            </header>
+
+            {/* ── SCROLLING BODY ──────────────────────────────── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
+                style={{ WebkitOverflowScrolling: "touch" }}
+            >
+                <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
+
+                    {results.length === 0 ? (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] py-14 px-6 text-center">
+                            <div className="h-16 w-16 rounded-full
+                                            bg-slate-100 dark:bg-white/[0.06]
+                                            flex items-center justify-center mx-auto mb-4">
+                                <ClipboardList className="h-7 w-7 text-slate-400 dark:text-slate-500" />
+                            </div>
+                            <h3 className="text-sm font-bold mb-1.5">
+                                No records found
+                            </h3>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                                You haven't completed any exams yet, or your results are still
+                                being processed. Results will appear here automatically once
+                                your tutor releases them.
+                            </p>
+                        </section>
+                    ) : (
+                        <div className="space-y-2">
+                            {results.map((res) => {
+                                const isReleased = res.exam_papers?.is_released && res.is_released;
+                                const percentage = res.total_questions > 0
+                                    ? ((res.score / res.total_questions) * 100).toFixed(1)
+                                    : "0.0";
+
+                                return (
+                                    <div
+                                        key={res.id}
+                                        onClick={() => {
+                                            if (isReleased) {
+                                                tap();
+                                                navigate(`/exam/${res.paper_id}/results`);
+                                            }
+                                        }}
+                                        className={`group relative flex flex-col md:flex-row md:items-center justify-between gap-3
+                                                    rounded-2xl p-4 transition-colors
+                                                    ${isReleased
+                                                ? "bg-white dark:bg-[#161b22] cursor-pointer active:scale-[0.99] transition-transform"
+                                                : "bg-slate-100/70 dark:bg-white/[0.04] opacity-75 cursor-not-allowed"
+                                            }`}
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <div className="flex gap-3 items-start min-w-0">
+                                            <div className={`mt-0.5 p-2 rounded-lg shrink-0
+                                                            ${isReleased
+                                                    ? "bg-emerald-50 dark:bg-emerald-400/10"
+                                                    : "bg-slate-200 dark:bg-white/[0.06]"
+                                                }`}>
+                                                <BookOpen className={`h-4 w-4
+                                                                     ${isReleased
+                                                        ? "text-emerald-600 dark:text-emerald-400"
+                                                        : "text-slate-400 dark:text-slate-500"
+                                                    }`} />
+                                            </div>
+                                            <div className="space-y-1 min-w-0">
+                                                <h2 className="text-[12px] font-bold truncate leading-tight">
+                                                    {res.exam_papers.title || "Untitled exam"}
+                                                </h2>
+                                                <div className="flex items-center gap-2 flex-wrap
+                                                                text-[10px] text-slate-500 dark:text-slate-400">
+                                                    <span className="font-bold uppercase tracking-wider">
+                                                        {res.exam_papers.course || "General"}
+                                                    </span>
+                                                    <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                                                    <span className="text-slate-400 dark:text-slate-500 tabular-nums">
+                                                        ID: {res.paper_id.slice(0, 8)}
+                                                    </span>
+                                                    <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                                                    <span className="text-slate-400 dark:text-slate-500">
+                                                        {new Date(res.submitted_at).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-end gap-2 shrink-0">
+                                            {isReleased ? (
+                                                <>
+                                                    <div className="text-right">
+                                                        <div className="flex items-center justify-end gap-1.5
+                                                                        text-emerald-600 dark:text-emerald-400
+                                                                        text-base font-bold tabular-nums leading-none">
+                                                            <Trophy className="h-4 w-4" />
+                                                            {res.score}/{res.total_questions}
+                                                        </div>
+                                                        <div className="text-[10px] font-bold uppercase tracking-wider
+                                                                        text-slate-400 dark:text-slate-500 mt-1">
+                                                            {percentage}%
+                                                        </div>
+                                                    </div>
+                                                    <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600
+                                                                             group-active:translate-x-0.5 transition-transform" />
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full
+                                                                bg-amber-50 dark:bg-amber-400/10
+                                                                text-amber-700 dark:text-amber-400
+                                                                text-[10px] font-bold uppercase tracking-wider">
+                                                    <Lock className="h-3 w-3" />
+                                                    Pending release
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Footer note */}
+                    <p className="text-[9px] text-center uppercase tracking-[0.2em] font-semibold
+                                  text-slate-400 dark:text-slate-500 leading-relaxed pt-2">
+                        Official academic transcript · Generated via institutional gateway
+                    </p>
+                </div>
+            </main>
         </div>
     );
 };

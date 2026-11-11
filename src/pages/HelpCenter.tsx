@@ -471,7 +471,7 @@ const HelpCenter = () => {
 
             {/* ── Scrolling content ─────────────────────────────── */}
             <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-                custom-scrollbar overscroll-contain">
+                no-scrollbar">
 
                 {/* Sticky search bar */}
                 <div className="sticky top-0 z-[100] bg-background/95 dark:bg-background/90 backdrop-blur-lg p-3 md:p-5 border-b border-gray-100 dark:border-gray-800">

@@ -1,33 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import React from 'react';
+import React from "react";
 import {
-    CheckCircle,
-    Users,
-    BarChart3,
-    TrendingUp,
-    TrendingDown,
     CheckCircle2,
     XCircle,
     ChevronDown,
     ChevronUp,
+    ChevronLeft,
     Mail,
     Send,
     FileSearch,
     PieChart,
+    TrendingUp,
+    TrendingDown,
+    Users,
     ClipboardCheck,
     AlertCircle,
     RefreshCw,
     WifiOff,
-    ServerCrash
+    ServerCrash,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { playSound } from "@/lib/soundManager";
 
 type StudentResult = any;
 type PaperResults = {
@@ -35,48 +31,67 @@ type PaperResults = {
     results: StudentResult[];
 };
 
-// Skeleton Loader
-const ExamResultsSkeleton = () => (
-    <div className="min-h-screen bg-white dark:bg-background p-0 md:p-4 lg:p-8 transition-colors duration-300 pb-20 md:pb-6">
-        <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto space-y-4 md:space-y-6">
-            {/* Header Skeleton */}
-            <div className="flex justify-between items-center px-4 md:px-0 pt-4 md:pt-0">
-                <div>
-                    <div className="h-6 md:h-7 w-48 md:w-56 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-1.5" />
-                    <div className="h-4 w-36 md:w-44 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                </div>
-                <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-            </div>
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
 
-            {/* Paper Cards Skeleton */}
-            {[1, 2].map((i) => (
-                <div key={i} className="space-y-3 px-4 md:px-0">
-                    <div className="bg-white dark:bg-muted/30 p-4 md:p-6 rounded-none md:rounded-xl shadow-none md:shadow-sm border-b border-slate-100 dark:border-slate-800 md:border-b-0">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <div className="space-y-2">
-                                <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
-                                <div className="h-6 md:h-7 w-52 md:w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = () => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                          */
+/* ------------------------------------------------------------------ */
+
+const ExamResultsSkeleton = () => (
+    <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+        <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           safe-top">
+            <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="h-4 w-40 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-32 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            </div>
+            <div className="h-9 w-24 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+        </header>
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3 pb-24 safe-bottom">
+            <div className="w-full max-w-[880px] mx-auto space-y-3">
+                {[1, 2].map((i) => (
+                    <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-4 animate-pulse space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1.5">
+                                <div className="h-4 w-20 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
+                                <div className="h-4 w-48 bg-slate-200 dark:bg-white/[0.1] rounded" />
                             </div>
-                            <div className="h-10 w-36 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
+                            <div className="h-9 w-24 bg-slate-200 dark:bg-white/[0.1] rounded-lg" />
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                            {[1, 2, 3, 4].map((j) => (
+                                <div key={j} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] p-3 space-y-1.5">
+                                    <div className="h-7 w-7 bg-slate-200 dark:bg-white/[0.1] rounded-lg" />
+                                    <div className="h-2.5 w-16 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                    <div className="h-4 w-12 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    {/* Stats Grid Skeleton */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                        {[1, 2, 3, 4].map((j) => (
-                            <div key={j} className="bg-white dark:bg-muted/30 p-3 md:p-4 rounded-lg md:rounded-2xl border-b border-slate-100 dark:border-slate-800 md:border-b-0 md:shadow-sm">
-                                <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse mb-3" />
-                                <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-1" />
-                                <div className="h-5 w-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
+        </main>
     </div>
 );
 
 const ExamResultsPage = () => {
+    const navigate = useNavigate();
     const [resultsByPaper, setResultsByPaper] = useState<PaperResults[]>([]);
     const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -84,11 +99,20 @@ const ExamResultsPage = () => {
     const [errorMessage, setErrorMessage] = useState("");
     const [errorType, setErrorType] = useState<"auth" | "network" | "server" | "general">("general");
 
+    const handleBack = useCallback(() => {
+        tap();
+        if (window.history.length > 1) navigate(-1);
+        else navigate("/tutor/exams", { replace: true });
+    }, [navigate]);
+
     const fetchResults = async () => {
         setLoading(true);
         setErrorMessage("");
         try {
-            const { data: papers, error: paperErr } = await supabase.from("exam_papers").select("id, title, is_released").order("created_at", { ascending: false });
+            const { data: papers, error: paperErr } = await supabase
+                .from("exam_papers")
+                .select("id, title, is_released")
+                .order("created_at", { ascending: false });
 
             if (paperErr) {
                 if (paperErr.message?.includes("fetch") || !navigator.onLine) {
@@ -102,33 +126,71 @@ const ExamResultsPage = () => {
                 return;
             }
 
-            if (!papers || papers.length === 0) { setResultsByPaper([]); setLoading(false); return; }
+            if (!papers || papers.length === 0) {
+                setResultsByPaper([]);
+                setLoading(false);
+                return;
+            }
 
             const resultsData = await Promise.all(
                 papers.map(async (paper) => {
-                    const { data: answerData } = await supabase.from("exam_answers").select("user_id, question_id, selected_answer, is_correct, answered_at").eq("paper_id", paper.id);
+                    const { data: answerData } = await supabase
+                        .from("exam_answers")
+                        .select("user_id, question_id, selected_answer, is_correct, answered_at")
+                        .eq("paper_id", paper.id);
+
                     const userAnswersMap = new Map();
                     answerData?.forEach((ans) => {
                         if (!userAnswersMap.has(ans.user_id)) userAnswersMap.set(ans.user_id, []);
                         userAnswersMap.get(ans.user_id).push(ans);
                     });
 
-                    const { data: questions } = await supabase.from("exam_questions").select("id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation").eq("paper_id", paper.id);
+                    const { data: questions } = await supabase
+                        .from("exam_questions")
+                        .select("id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation")
+                        .eq("paper_id", paper.id);
                     const totalQuestions = questions?.length || 0;
 
                     const userResults = await Promise.all(
                         Array.from(userAnswersMap.entries()).map(async ([userId, answers]) => {
-                            const { data: profile } = await supabase.from("profiles").select("name, email, avatar_url").eq("user_id", userId).single();
+                            const { data: profile } = await supabase
+                                .from("profiles")
+                                .select("name, email, avatar_url")
+                                .eq("user_id", userId)
+                                .single();
+
                             let correctCount = 0;
                             answers.forEach((ans: any) => { if (ans.is_correct === true) correctCount++; });
 
-                            const { data: existingResult } = await supabase.from("exam_results").select("*").eq("user_id", userId).eq("paper_id", paper.id).maybeSingle();
+                            const { data: existingResult } = await supabase
+                                .from("exam_results")
+                                .select("*")
+                                .eq("user_id", userId)
+                                .eq("paper_id", paper.id)
+                                .maybeSingle();
+
                             let resultRecord = existingResult;
                             if (!existingResult && answers.length > 0) {
-                                const { data: newResult } = await supabase.from("exam_results").insert({ user_id: userId, paper_id: paper.id, score: correctCount, total_questions: totalQuestions, submitted_at: new Date().toISOString(), is_released: paper.is_released || false }).select().single();
+                                const { data: newResult } = await supabase
+                                    .from("exam_results")
+                                    .insert({
+                                        user_id: userId,
+                                        paper_id: paper.id,
+                                        score: correctCount,
+                                        total_questions: totalQuestions,
+                                        submitted_at: new Date().toISOString(),
+                                        is_released: paper.is_released || false,
+                                    })
+                                    .select()
+                                    .single();
                                 if (newResult) resultRecord = newResult;
                             } else if (existingResult && existingResult.score !== correctCount) {
-                                const { data: updatedResult } = await supabase.from("exam_results").update({ score: correctCount, total_questions: totalQuestions }).eq("id", existingResult.id).select().single();
+                                const { data: updatedResult } = await supabase
+                                    .from("exam_results")
+                                    .update({ score: correctCount, total_questions: totalQuestions })
+                                    .eq("id", existingResult.id)
+                                    .select()
+                                    .single();
                                 if (updatedResult) resultRecord = updatedResult;
                             }
 
@@ -137,7 +199,17 @@ const ExamResultsPage = () => {
                                 return { ...ans, exam_questions: question || null };
                             });
 
-                            return { id: resultRecord?.id || `temp-${userId}`, user_id: userId, paper_id: paper.id, score: resultRecord?.score || correctCount, total_questions: resultRecord?.total_questions || totalQuestions, submitted_at: resultRecord?.submitted_at || new Date().toISOString(), is_released: resultRecord?.is_released || paper.is_released || false, profile: profile || { name: "Unknown", email: "", avatar_url: null }, answers: fullAnswers || [] };
+                            return {
+                                id: resultRecord?.id || `temp-${userId}`,
+                                user_id: userId,
+                                paper_id: paper.id,
+                                score: resultRecord?.score || correctCount,
+                                total_questions: resultRecord?.total_questions || totalQuestions,
+                                submitted_at: resultRecord?.submitted_at || new Date().toISOString(),
+                                is_released: resultRecord?.is_released || paper.is_released || false,
+                                profile: profile || { name: "Unknown", email: "", avatar_url: null },
+                                answers: fullAnswers || [],
+                            };
                         })
                     );
                     return { paper, results: userResults };
@@ -151,240 +223,525 @@ const ExamResultsPage = () => {
         setLoading(false);
     };
 
-    const refreshResults = async () => { setRefreshing(true); await fetchResults(); setRefreshing(false); };
+    const refreshResults = async () => {
+        tap();
+        setRefreshing(true);
+        await fetchResults();
+        setRefreshing(false);
+    };
 
     useEffect(() => { fetchResults(); }, []);
 
     const releaseResults = async (paperId: string) => {
+        tap();
         const paper = resultsByPaper.find((p) => p.paper.id === paperId);
         const currentlyReleased = paper?.paper.is_released ?? false;
         const newReleaseState = !currentlyReleased;
         await supabase.from("exam_papers").update({ is_released: newReleaseState }).eq("id", paperId);
         await supabase.from("exam_results").update({ is_released: newReleaseState }).eq("paper_id", paperId);
-        setResultsByPaper((prev) => prev.map((p) => p.paper.id === paperId ? { ...p, paper: { ...p.paper, is_released: newReleaseState }, results: p.results.map((r) => ({ ...r, is_released: newReleaseState })) } : p));
+        setResultsByPaper((prev) =>
+            prev.map((p) =>
+                p.paper.id === paperId
+                    ? {
+                        ...p,
+                        paper: { ...p.paper, is_released: newReleaseState },
+                        results: p.results.map((r) => ({ ...r, is_released: newReleaseState })),
+                    }
+                    : p
+            )
+        );
     };
 
     const toggleStudentRelease = async (resultId: string, current: boolean) => {
+        tap();
         await supabase.from("exam_results").update({ is_released: !current }).eq("id", resultId);
-        setResultsByPaper((prev) => prev.map((p) => ({ ...p, results: p.results.map((r) => r.id === resultId ? { ...r, is_released: !current } : r) })));
+        setResultsByPaper((prev) =>
+            prev.map((p) => ({
+                ...p,
+                results: p.results.map((r) => (r.id === resultId ? { ...r, is_released: !current } : r)),
+            }))
+        );
     };
 
+    /* ─── LOADING ───────────────────────────────────────────── */
     if (loading) return <ExamResultsSkeleton />;
 
+    /* ─── ERROR ─────────────────────────────────────────────── */
     if (errorMessage) {
         const errorIcons = { auth: AlertCircle, network: WifiOff, server: ServerCrash, general: AlertCircle };
-        const errorColors = { auth: "text-amber-600 dark:text-amber-400", network: "text-orange-600 dark:text-orange-400", server: "text-rose-600 dark:text-rose-400", general: "text-red-600 dark:text-red-400" };
-        const errorBgs = { auth: "bg-amber-50 dark:bg-amber-950/20", network: "bg-orange-50 dark:bg-orange-950/20", server: "bg-rose-50 dark:bg-rose-950/20", general: "bg-red-50 dark:bg-red-950/20" };
+        const errorColors = {
+            auth: "text-amber-600 dark:text-amber-400",
+            network: "text-amber-600 dark:text-amber-400",
+            server: "text-rose-600 dark:text-rose-400",
+            general: "text-rose-600 dark:text-rose-400",
+        };
+        const errorBgs = {
+            auth: "bg-amber-50 dark:bg-amber-400/10",
+            network: "bg-amber-50 dark:bg-amber-400/10",
+            server: "bg-rose-50 dark:bg-rose-400/10",
+            general: "bg-rose-50 dark:bg-rose-400/10",
+        };
+        const errorTitles = {
+            network: "Connection lost",
+            server: "Server hiccup",
+            auth: "Sign in needed",
+            general: "Oops!",
+        };
         const ErrorIcon = errorIcons[errorType];
+
         return (
-            <div className="min-h-screen bg-white dark:bg-background flex items-center justify-center p-4 md:p-8">
-                <div className="text-center max-w-sm">
-                    <div className={`w-16 h-16 md:w-20 md:h-20 ${errorBgs[errorType]} rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6`}>
-                        <ErrorIcon className={`w-8 h-8 md:w-10 md:h-10 ${errorColors[errorType]}`} />
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   z-30 safe-top">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors shrink-0"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate">
+                            Exam results
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Something went wrong
+                        </p>
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">
-                        {errorType === "network" ? "Connection Lost" : errorType === "server" ? "Server Hiccup" : "Oops!"}
-                    </h3>
-                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">{errorMessage}</p>
-                    <Button onClick={refreshResults} className="text-xs md:text-sm gap-1.5">
-                        <RefreshCw className="w-3.5 h-3.5" /> Try Again
-                    </Button>
-                </div>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex items-center justify-center px-4 py-6">
+                    <div className="text-center max-w-sm">
+                        <div className={`h-16 w-16 ${errorBgs[errorType]} rounded-full
+                                        flex items-center justify-center mx-auto mb-4`}>
+                            <ErrorIcon className={`h-8 w-8 ${errorColors[errorType]}`} />
+                        </div>
+                        <h2 className="text-base font-bold mb-2">
+                            {errorTitles[errorType]}
+                        </h2>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                            {errorMessage}
+                        </p>
+                        <button
+                            onClick={refreshResults}
+                            className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                       text-sm font-bold
+                                       flex items-center justify-center gap-1.5 mx-auto
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Try again
+                        </button>
+                    </div>
+                </main>
             </div>
         );
     }
 
+    /* ─── REAL PAGE ─────────────────────────────────────────── */
     return (
-        <div className="min-h-screen bg-white dark:bg-background p-0 md:p-4 lg:p-8 transition-colors duration-300 pb-20 md:pb-6">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto space-y-4 md:space-y-6">
-
-                {/* Header */}
-                <div className="flex justify-between items-center px-4 md:px-0 pt-4 md:pt-0">
-                    <div>
-                        <h1 className="text-xl md:text-2xl   text-slate-900 dark:text-white">Exam Results Dashboard</h1>
-                        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">View and manage student performance</p>
-                    </div>
-                    <Button onClick={refreshResults} disabled={refreshing} variant="outline" className="gap-1.5 text-xs md:text-sm h-9">
-                        <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+            {/* ── HEADER ──────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <button
+                    onClick={handleBack}
+                    aria-label="Go back"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors shrink-0"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate">
+                        Exam results
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        {resultsByPaper.length > 0
+                            ? `${resultsByPaper.length} paper${resultsByPaper.length > 1 ? "s" : ""} · ${resultsByPaper.reduce((a, p) => a + p.results.length, 0)} candidate${resultsByPaper.reduce((a, p) => a + p.results.length, 0) === 1 ? "" : "s"}`
+                            : "View and manage performance"}
+                    </p>
                 </div>
+                <button
+                    onClick={refreshResults}
+                    disabled={refreshing}
+                    className="h-9 px-2.5 rounded-full flex items-center justify-center gap-1 shrink-0
+                               bg-slate-100 dark:bg-white/[0.06]
+                               active:bg-slate-200 dark:active:bg-white/[0.1]
+                               disabled:opacity-50
+                               transition-colors"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                    <span className="text-[11px] font-semibold">
+                        {refreshing ? "Refreshing" : "Refresh"}
+                    </span>
+                </button>
+            </header>
 
-                {/* Empty State */}
-                {!loading && (!resultsByPaper || resultsByPaper.length === 0) && (
-                    <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center px-4">
-                        <div className="bg-white dark:bg-muted/30 p-6 md:p-8 rounded-xl md:shadow-sm border border-slate-100 dark:border-slate-800 max-w-md w-full">
-                            <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4">
-                                <FileSearch className="w-8 h-8 md:w-10 md:h-10 text-slate-300 dark:text-slate-600" />
+            {/* ── SCROLLING BODY ──────────────────────────────── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
+                style={{ WebkitOverflowScrolling: "touch" }}
+            >
+                <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
+
+                    {/* Empty state */}
+                    {(!resultsByPaper || resultsByPaper.length === 0) && (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] py-14 px-6 text-center">
+                            <div className="h-16 w-16 rounded-full
+                                            bg-slate-100 dark:bg-white/[0.06]
+                                            flex items-center justify-center mx-auto mb-4">
+                                <FileSearch className="h-7 w-7 text-slate-400 dark:text-slate-500" />
                             </div>
-                            <h2 className="text-xl md:text-2xl   text-slate-900 dark:text-white mb-2 md:mb-3 tracking-tight">No Records Found..Refresh Page</h2>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                                Exam results will populate here automatically once students submit their answers.
+                            <h2 className="text-sm font-bold mb-1.5">
+                                No records found
+                            </h2>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-md mx-auto">
+                                Exam results will populate here automatically once students
+                                submit their answers. Tap refresh to check again.
                             </p>
-                        </div>
-                    </div>
-                )}
+                        </section>
+                    )}
 
-                {/* Paper Results List */}
-                {resultsByPaper.map(({ paper, results }: any) => {
-                    const average = results.length > 0 ? results.reduce((a: any, b: any) => a + b.score, 0) / results.length : 0;
-                    if (results.length === 0) return null;
+                    {/* Paper results */}
+                    {resultsByPaper.map(({ paper, results }: any) => {
+                        if (results.length === 0) return null;
+                        const average = results.reduce((a: any, b: any) => a + b.score, 0) / results.length;
 
-                    return (
-                        <div key={paper.id} className="space-y-3">
-                            {/* Paper Header */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-muted/30 p-4 md:p-6 md:rounded-xl md:shadow-sm border-0 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-                                        <Badge className={`text-[10px] md:text-xs ${paper.is_released ? "bg-blue-500" : "bg-amber-500"}`}>
-                                            {paper.is_released ? "Public" : "Draft"}
-                                        </Badge>
-                                        <span className="text-[9px] md:text-[10px]   uppercase text-slate-400 tracking-widest">ID: {paper.id.slice(0, 8)}</span>
-                                        <Badge variant="outline" className="text-[9px] md:text-[10px]">{results.length} Candidates</Badge>
-                                    </div>
-                                    <h1 className="text-xl md:text-2xl   text-slate-900 dark:text-white tracking-tight">{paper.title}</h1>
-                                </div>
-                                <Button
-                                    onClick={() => releaseResults(paper.id)}
-                                    className={`h-9 md:h-10 px-4 md:px-5 rounded-xl font-bold transition-all text-xs md:text-sm ${paper.is_released
-                                        ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600"
-                                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                                        }`}
-                                >
-                                    <Send className="w-3.5 h-3.5 mr-1.5" />
-                                    {paper.is_released ? "Revoke" : "Release All"}
-                                </Button>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 md:px-0">
-                                <StatCard label="Candidates" value={results.length} icon={<Users />} color="blue" />
-                                <StatCard label="Avg. Score" value={`${average.toFixed(1)}%`} icon={<PieChart />} color="indigo" />
-                                <StatCard label="Top Score" value={results.length ? `${Math.max(...results.map((r: any) => r.score))}%` : "0%"} icon={<TrendingUp />} color="emerald" />
-                                <StatCard label="Lowest" value={results.length ? `${Math.min(...results.map((r: any) => r.score))}%` : "0%"} icon={<TrendingDown />} color="rose" />
-                            </div>
-
-                            {/* Candidate Roster */}
-                            <div className="space-y-3 md:space-y-4 px-4 md:px-0">
-                                <h3 className="text-[10px] md:text-xs   uppercase tracking-[0.2em] text-slate-400">Candidate Performance</h3>
-                                {results.map((student: any) => {
-                                    const percent = student.total_questions > 0 ? ((student.score / student.total_questions) * 100) : 0;
-                                    const isExpanded = expandedStudent === student.id;
-
-                                    return (
-                                        <div
-                                            key={student.id}
-                                            className={`group transition-all duration-300 md:rounded-xl border overflow-hidden ${isExpanded
-                                                ? "bg-white dark:bg-muted/30 border-0 md:ring-4 md:ring-indigo-50 dark:md:ring-indigo-900/10 md:shadow-xl"
-                                                : "bg-white/60 dark:bg-slate-900/60 border-0 md:hover:border-slate-200"
-                                                } border-b border-slate-100 dark:border-slate-800 md:border-b-0 ${!paper.is_released && !student.is_released ? "opacity-75" : ""}`}
-                                        >
-                                            <div className="p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
-                                                    <div className="relative">
-                                                        <img
-                                                            src={student.profile?.avatar_url || "/default-avatar.png"}
-                                                            alt="Avatar"
-                                                            className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md"
-                                                            loading="lazy"
-                                                        />
-                                                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 md:w-4 md:h-4 rounded-full border-2 border-white dark:border-slate-900 ${student.is_released ? "bg-green-500" : "bg-slate-300"}`} />
-                                                    </div>
-                                                    <div>
-                                                        <h2 className="font-bold text-slate-900 dark:text-white leading-none mb-0.5 text-sm md:text-base">{student.profile?.name || "Unknown"}</h2>
-                                                        <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1"><Mail className="w-2.5 h-2.5 md:w-3 md:h-3" /> {student.profile?.email || "No email"}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto justify-between md:justify-end">
-                                                    <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer select-none bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
-                                                        <input type="checkbox" className="w-3.5 h-3.5 md:w-4 md:h-4 rounded border-slate-300 text-indigo-600" checked={!!student.is_released} onChange={() => toggleStudentRelease(student.id, student.is_released ?? false)} />
-                                                        <span className="text-[9px] md:text-[10px]   uppercase text-slate-500">Release</span>
-                                                    </label>
-
-                                                    <div className="text-right">
-                                                        <div className="text-lg md:text-xl   text-slate-900 dark:text-white">{student.score} <span className="text-slate-400 text-xs md:text-sm">/ {student.total_questions}</span></div>
-                                                        <div className="w-20 md:w-24"><Progress value={percent} className={`h-1 md:h-1.5 mt-0.5 md:mt-1 ${percent > 70 ? "bg-emerald-500" : percent > 40 ? "bg-amber-500" : "bg-rose-500"}`} /></div>
-                                                    </div>
-
-                                                    <Button variant="ghost" size="icon" className={`rounded-xl h-8 w-8 md:h-9 md:w-9 ${isExpanded ? "bg-indigo-50 text-indigo-600" : ""}`} onClick={() => setExpandedStudent(isExpanded ? null : student.id)}>
-                                                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                                    </Button>
-                                                </div>
+                        return (
+                            <section key={paper.id} className="space-y-2">
+                                {/* Paper header */}
+                                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5
+                                                                 text-[10px] font-bold uppercase tracking-wider
+                                                                 ${paper.is_released
+                                                        ? "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400"
+                                                        : "bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400"
+                                                    }`}>
+                                                    {paper.is_released ? "Public" : "Draft"}
+                                                </span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider
+                                                                 text-slate-400 dark:text-slate-500 tabular-nums">
+                                                    ID: {paper.id.slice(0, 8)}
+                                                </span>
+                                                <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                                                 text-[10px] font-bold uppercase tracking-wider
+                                                                 bg-slate-100 dark:bg-white/[0.06]
+                                                                 text-slate-600 dark:text-slate-300">
+                                                    {results.length} candidate{results.length === 1 ? "" : "s"}
+                                                </span>
                                             </div>
+                                            <h2 className="text-sm font-bold leading-tight truncate">
+                                                {paper.title}
+                                            </h2>
+                                        </div>
 
-                                            {isExpanded && (
-                                                <div className="px-4 md:px-6 pb-6 md:pb-8 space-y-4 md:space-y-6">
-                                                    <Separator className="opacity-50" />
-                                                    <h4 className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs   uppercase text-slate-400 tracking-widest"><ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" /> Review</h4>
-                                                    {student.answers?.length > 0 ? (
-                                                        student.answers.map((ans: any, idx: number) => (
-                                                            <div key={ans.id || idx} className="p-4 md:p-5 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                                                                <div className="flex justify-between gap-3 md:gap-4 mb-3 md:mb-4">
-                                                                    <p className="font-bold text-slate-800 dark:text-slate-200 text-xs md:text-sm"><span className="text-slate-400 mr-1.5 md:mr-2">Q{idx + 1}.</span>{ans.exam_questions?.question_text || "N/A"}</p>
-                                                                    {ans.is_correct ? (
-                                                                        <Badge className="bg-emerald-500/10 text-emerald-600 border-none h-fit text-[10px] md:text-xs"><CheckCircle2 className="w-3 h-3 md:w-3.5 md:h-3.5 mr-1" /> Correct</Badge>
-                                                                    ) : (
-                                                                        <Badge className="bg-rose-500/10 text-rose-600 border-none h-fit text-[10px] md:text-xs"><XCircle className="w-3 h-3 md:w-3.5 md:h-3.5 mr-1" /> Wrong</Badge>
+                                        <button
+                                            onClick={() => releaseResults(paper.id)}
+                                            className={`h-9 px-3 rounded-xl shrink-0
+                                                        text-[11px] font-bold uppercase tracking-wider
+                                                        flex items-center justify-center gap-1
+                                                        active:scale-[0.97] transition-transform
+                                                        ${paper.is_released
+                                                    ? "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                                                    : "bg-emerald-600 text-white"
+                                                }`}
+                                            style={{ touchAction: "manipulation" }}
+                                        >
+                                            <Send className="h-3 w-3" />
+                                            {paper.is_released ? "Revoke" : "Release"}
+                                        </button>
+                                    </div>
+
+                                    {/* Stats grid */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                        <StatCard label="Candidates" value={results.length} icon={<Users />} color="blue" />
+                                        <StatCard label="Avg score" value={`${average.toFixed(1)}%`} icon={<PieChart />} color="violet" />
+                                        <StatCard
+                                            label="Top score"
+                                            value={results.length ? `${Math.max(...results.map((r: any) => r.score))}%` : "0%"}
+                                            icon={<TrendingUp />}
+                                            color="emerald"
+                                        />
+                                        <StatCard
+                                            label="Lowest"
+                                            value={results.length ? `${Math.min(...results.map((r: any) => r.score))}%` : "0%"}
+                                            icon={<TrendingDown />}
+                                            color="rose"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Candidate roster */}
+                                <div className="space-y-2">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-wider
+                                                   text-slate-500 dark:text-slate-400 px-1 pt-1">
+                                        Candidate performance
+                                    </h3>
+
+                                    {results.map((student: any) => {
+                                        const percent = student.total_questions > 0
+                                            ? (student.score / student.total_questions) * 100
+                                            : 0;
+                                        const isExpanded = expandedStudent === student.id;
+                                        const dimmed = !paper.is_released && !student.is_released;
+
+                                        return (
+                                            <div
+                                                key={student.id}
+                                                className={`rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden
+                                                            ${dimmed ? "opacity-75" : ""}`}
+                                            >
+                                                <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                        <div className="relative shrink-0">
+                                                            <img
+                                                                src={student.profile?.avatar_url || "/default-avatar.png"}
+                                                                alt="Avatar"
+                                                                className="h-10 w-10 rounded-full object-cover
+                                                                           bg-slate-100 dark:bg-white/[0.06]"
+                                                                loading="lazy"
+                                                            />
+                                                            <span
+                                                                className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full
+                                                                            ring-2 ring-white dark:ring-[#161b22]
+                                                                            ${student.is_released
+                                                                        ? "bg-emerald-500"
+                                                                        : "bg-slate-300 dark:bg-slate-600"
+                                                                    }`}
+                                                            />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <h2 className="text-[12px] font-bold truncate leading-tight">
+                                                                {student.profile?.name || "Unknown"}
+                                                            </h2>
+                                                            <p className="text-[11px] text-slate-500 dark:text-slate-400
+                                                                          flex items-center gap-1 truncate mt-0.5">
+                                                                <Mail className="h-3 w-3 shrink-0" />
+                                                                <span className="truncate">
+                                                                    {student.profile?.email || "No email"}
+                                                                </span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <label
+                                                            className="flex items-center gap-1.5 cursor-pointer select-none
+                                                                       h-8 px-2.5 rounded-full
+                                                                       bg-slate-100 dark:bg-white/[0.06]"
+                                                            style={{ touchAction: "manipulation" }}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                className="h-3.5 w-3.5 rounded border-slate-300
+                                                                           text-blue-600 focus:ring-blue-500/40"
+                                                                checked={!!student.is_released}
+                                                                onChange={() => toggleStudentRelease(student.id, student.is_released ?? false)}
+                                                            />
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider
+                                                                             text-slate-600 dark:text-slate-300">
+                                                                Release
+                                                            </span>
+                                                        </label>
+
+                                                        <div className="text-right min-w-[64px]">
+                                                            <div className="text-base font-bold tabular-nums leading-none">
+                                                                {student.score}
+                                                                <span className="text-slate-400 dark:text-slate-500 text-[11px] ml-0.5">
+                                                                    / {student.total_questions}
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-20 mt-1.5 h-1 rounded-full overflow-hidden
+                                                                            bg-slate-100 dark:bg-white/[0.06]">
+                                                                <div
+                                                                    className={`h-full rounded-full
+                                                                                ${percent > 70
+                                                                            ? "bg-emerald-500"
+                                                                            : percent > 40
+                                                                                ? "bg-amber-500"
+                                                                                : "bg-rose-500"
+                                                                        }`}
+                                                                    style={{ width: `${percent}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                tap();
+                                                                setExpandedStudent(isExpanded ? null : student.id);
+                                                            }}
+                                                            aria-label={isExpanded ? "Collapse" : "Expand"}
+                                                            className={`h-8 w-8 rounded-full flex items-center justify-center
+                                                                        transition-colors shrink-0
+                                                                        ${isExpanded
+                                                                    ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400"
+                                                                    : "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400"
+                                                                }`}
+                                                            style={{ touchAction: "manipulation" }}
+                                                        >
+                                                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {isExpanded && (
+                                                    <div className="px-4 pb-4 space-y-2">
+                                                        <div className="h-px bg-slate-200/60 dark:bg-white/[0.06]" />
+
+                                                        <h4 className="flex items-center gap-1.5
+                                                                       text-[10px] font-bold uppercase tracking-wider
+                                                                       text-slate-500 dark:text-slate-400 pt-1">
+                                                            <ClipboardCheck className="h-3 w-3" />
+                                                            Answer review
+                                                        </h4>
+
+                                                        {student.answers?.length > 0 ? (
+                                                            student.answers.map((ans: any, idx: number) => (
+                                                                <div
+                                                                    key={ans.id || idx}
+                                                                    className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2"
+                                                                >
+                                                                    <div className="flex justify-between gap-2">
+                                                                        <p className="text-[11px] font-bold leading-snug flex-1 min-w-0">
+                                                                            <span className="text-slate-400 dark:text-slate-500 mr-1.5 tabular-nums">
+                                                                                Q{idx + 1}.
+                                                                            </span>
+                                                                            {ans.exam_questions?.question_text || "N/A"}
+                                                                        </p>
+                                                                        {ans.is_correct ? (
+                                                                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 shrink-0
+                                                                                             text-[10px] font-bold
+                                                                                             bg-emerald-50 dark:bg-emerald-400/10
+                                                                                             text-emerald-700 dark:text-emerald-400">
+                                                                                <CheckCircle2 className="h-3 w-3" />
+                                                                                Correct
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 shrink-0
+                                                                                             text-[10px] font-bold
+                                                                                             bg-rose-50 dark:bg-rose-400/10
+                                                                                             text-rose-700 dark:text-rose-400">
+                                                                                <XCircle className="h-3 w-3" />
+                                                                                Wrong
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                                        {["A", "B", "C", "D"].map((opt) => {
+                                                                            const isSelected = ans.selected_answer === opt;
+                                                                            const isCorrect = ans.exam_questions?.correct_answer === opt;
+
+                                                                            const cls = isCorrect
+                                                                                ? "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-300"
+                                                                                : isSelected
+                                                                                    ? "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-300"
+                                                                                    : "bg-white dark:bg-[#161b22] text-slate-600 dark:text-slate-300";
+
+                                                                            return (
+                                                                                <div
+                                                                                    key={opt}
+                                                                                    className={`p-2 rounded-lg text-[11px] leading-snug ${cls}`}
+                                                                                >
+                                                                                    <span className="font-bold mr-1.5">
+                                                                                        {opt}:
+                                                                                    </span>
+                                                                                    {ans.exam_questions?.[`option_${opt.toLowerCase()}`] || "N/A"}
+                                                                                    {isSelected && !isCorrect && (
+                                                                                        <span className="ml-1.5 italic text-[9px] opacity-70">
+                                                                                            (Student)
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {isCorrect && (
+                                                                                        <span className="ml-1.5 italic text-[9px] opacity-70">
+                                                                                            (Key)
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+
+                                                                    {ans.exam_questions?.explanation && (
+                                                                        <div className="rounded-lg bg-blue-50 dark:bg-blue-400/10 p-2.5
+                                                                                        flex gap-1.5">
+                                                                            <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5
+                                                                                                   text-blue-600 dark:text-blue-400" />
+                                                                            <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                                                                                <strong>Rationale:</strong>{" "}
+                                                                                {ans.exam_questions.explanation}
+                                                                            </p>
+                                                                        </div>
                                                                     )}
                                                                 </div>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                                                                    {["A", "B", "C", "D"].map((opt) => {
-                                                                        const isSelected = ans.selected_answer === opt;
-                                                                        const isCorrect = ans.exam_questions?.correct_answer === opt;
-                                                                        return (
-                                                                            <div key={opt} className={`p-2 md:p-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-medium border ${isCorrect ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 text-emerald-700" : isSelected ? "bg-rose-50 dark:bg-rose-500/10 border-rose-200 text-rose-700" : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 text-slate-500"}`}>
-                                                                                <span className="  mr-1.5 md:mr-2">{opt}:</span>{ans.exam_questions?.[`option_${opt.toLowerCase()}`] || "N/A"}
-                                                                                {isSelected && !isCorrect && <span className="ml-1.5 italic text-[9px] md:text-[10px]">(Student)</span>}
-                                                                                {isCorrect && <span className="ml-1.5 italic text-[9px] md:text-[10px]">(Key)</span>}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                                {ans.exam_questions?.explanation && (
-                                                                    <div className="mt-3 md:mt-4 p-2.5 md:p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg md:rounded-xl border border-blue-100 dark:border-blue-800 text-[10px] md:text-[11px] text-blue-700 dark:text-blue-300 flex gap-1.5 md:gap-2">
-                                                                        <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
-                                                                        <span><strong>Rationale:</strong> {ans.exam_questions.explanation}</span>
-                                                                    </div>
-                                                                )}
+                                                            ))
+                                                        ) : (
+                                                            <div className="text-center py-6 text-[11px]
+                                                                            text-slate-400 dark:text-slate-500">
+                                                                No detailed answers available.
                                                             </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-center py-6 md:py-8 text-slate-400 text-xs md:text-sm">No detailed answers available.</div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        );
+                    })}
+                </div>
+            </main>
         </div>
     );
 };
 
 export default ExamResultsPage;
 
-// StatCard Sub-component
+/* ------------------------------------------------------------------ */
+/*  StatCard                                                          */
+/* ------------------------------------------------------------------ */
+
 function StatCard({ label, value, icon, color }: any) {
     const colors: any = {
-        blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20",
-        indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20",
-        emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20",
-        rose: "bg-rose-50 text-rose-600 dark:bg-rose-900/20",
+        blue: "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400",
+        violet: "bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-400",
+        emerald: "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400",
+        rose: "bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400",
     };
     return (
-        <Card className="border-none shadow-none md:shadow-sm bg-white dark:bg-muted/30 md:rounded-2xl overflow-hidden group border-b border-slate-100 dark:border-slate-800 md:border-b-0">
-            <CardContent className="p-3 md:p-5">
-                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center mb-2 md:mb-3 transition-transform group-hover:scale-110 ${colors[color]}`}>
-                    {React.cloneElement(icon, { size: 16 })}
-                </div>
-                <p className="text-[9px] md:text-[10px]   uppercase text-slate-400 tracking-widest leading-none mb-0.5 md:mb-1">{label}</p>
-                <p className="text-lg md:text-2xl   text-slate-900 dark:text-white tracking-tighter">{value}</p>
-            </CardContent>
-        </Card>
+        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+            <div className={`h-7 w-7 rounded-lg flex items-center justify-center mb-2 ${colors[color]}`}>
+                {React.cloneElement(icon, { size: 14 })}
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-wider
+                          text-slate-500 dark:text-slate-400 leading-none mb-1">
+                {label}
+            </p>
+            <p className="text-base font-bold tabular-nums leading-none
+                          text-slate-900 dark:text-white">
+                {value}
+            </p>
+        </div>
     );
 }

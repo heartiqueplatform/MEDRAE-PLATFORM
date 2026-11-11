@@ -1,10 +1,111 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
-import { ArrowRight, Check, Clock, Edit3, FileEdit, FileText, Globe, PlayCircle, PlusCircle, ShieldAlert, Trash2, History, FileSearch, Sparkles } from "lucide-react";
+import {
+    ArrowRight,
+    Check,
+    Clock,
+    Edit3,
+    FileEdit,
+    FileText,
+    Globe,
+    PlayCircle,
+    PlusCircle,
+    ShieldAlert,
+    Trash2,
+    History,
+    FileSearch,
+    Sparkles,
+    ChevronLeft,
+} from "lucide-react";
+import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    if (type === "success") vibrate([15, 30, 15]);
+    else if (type === "warning") vibrate(60);
+    else vibrate(15);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Toggle button                                                     */
+/* ------------------------------------------------------------------ */
+
+const ToggleButton = ({
+    checked,
+    onClick,
+    label,
+}: {
+    checked: boolean;
+    onClick: () => void;
+    label: string;
+}) => (
+    <button
+        type="button"
+        onClick={() => {
+            tap();
+            onClick();
+        }}
+        className={`flex items-center gap-2 w-full text-left rounded-xl px-3 py-2.5
+                    transition-colors
+                    ${checked
+                ? "bg-blue-50 dark:bg-blue-400/10"
+                : "bg-slate-50 dark:bg-[#0d1117] active:bg-slate-100 dark:active:bg-white/[0.1]"
+            }`}
+        style={{ touchAction: "manipulation" }}
+    >
+        <span
+            className={`h-5 w-5 flex items-center justify-center rounded-md shrink-0
+                        ${checked
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-white/[0.08] text-transparent"
+                }`}
+        >
+            {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+        </span>
+        <span
+            className={`text-[11px] font-bold leading-tight
+                        ${checked
+                    ? "text-blue-700 dark:text-blue-300"
+                    : "text-slate-700 dark:text-slate-200"
+                }`}
+        >
+            {label}
+        </span>
+    </button>
+);
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                          */
+/* ------------------------------------------------------------------ */
+
+const ExamSkeleton = () => (
+    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3 animate-pulse">
+        <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-white/[0.06]" />
+            <div className="flex-1 space-y-1.5">
+                <div className="h-4 w-40 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                <div className="h-3 w-24 bg-slate-200 dark:bg-white/[0.1] rounded" />
+            </div>
+        </div>
+        {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+        ))}
+    </div>
+);
 
 const TutorExamList = () => {
     const user = useUser();
@@ -40,8 +141,14 @@ const TutorExamList = () => {
     const [loading, setLoading] = useState(false);
     const [isLoadingExams, setIsLoadingExams] = useState(true);
 
-    // All exams created by the tutor (both finished and unfinished)
+    // All exams created by the tutor
     const [allExams, setAllExams] = useState<any[]>([]);
+
+    const handleBack = useCallback(() => {
+        tap();
+        if (window.history.length > 1) navigate(-1);
+        else navigate("/dashboard/tutor", { replace: true });
+    }, [navigate]);
 
     useEffect(() => {
         if (!user) return;
@@ -62,38 +169,39 @@ const TutorExamList = () => {
         fetchAllExams();
     }, [user]);
 
-    // Helper function to convert UTC database time to local datetime-local input format
+    // Helper: UTC → datetime-local string
     const convertUTCToLocalInput = (utcDate: string | null) => {
         if (!utcDate) return "";
         try {
             const date = new Date(utcDate);
             const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            const hours = String(date.getHours()).padStart(2, "0");
+            const minutes = String(date.getMinutes()).padStart(2, "0");
             return `${year}-${month}-${day}T${hours}:${minutes}`;
-        } catch (e) {
+        } catch {
             return "";
         }
     };
 
-    // Helper function to convert local datetime-local input to UTC ISO string
+    // Helper: datetime-local → UTC ISO string
     const convertLocalToUTC = (localDate: string) => {
         if (!localDate) return null;
         try {
-            const date = new Date(localDate);
-            return date.toISOString();
-        } catch (e) {
+            return new Date(localDate).toISOString();
+        } catch {
             return null;
         }
     };
 
     const handleContinueExam = (examId: string) => {
+        tap();
         navigate(`/tutor/exams/${examId}`);
     };
 
     const handleEditExam = (exam: any) => {
+        tap();
         setEditingExamId(exam.id);
         setTitle(exam.title);
         setDescription(exam.description);
@@ -126,6 +234,7 @@ const TutorExamList = () => {
         );
         if (!confirmDelete) return;
 
+        tap("warning");
         setLoading(true);
 
         const { error } = await supabase.from("exam_papers").delete().eq("id", examId);
@@ -138,7 +247,7 @@ const TutorExamList = () => {
             return;
         }
 
-        setAllExams(prev => prev.filter(e => e.id !== examId));
+        setAllExams((prev) => prev.filter((e) => e.id !== examId));
         alert("Exam deleted successfully");
     };
 
@@ -146,6 +255,7 @@ const TutorExamList = () => {
         e.preventDefault();
         if (!user) return alert("Not authenticated");
 
+        tap("success");
         setLoading(true);
 
         const scheduledStartUTC = convertLocalToUTC(scheduledStart);
@@ -269,492 +379,593 @@ const TutorExamList = () => {
         setMaxViolationLimit(5);
     };
 
-    // Helper toggle button
-    const ToggleButton = ({
-        checked,
-        onClick,
-        label,
-    }: {
-        checked: boolean;
-        onClick: () => void;
-        label: string;
-    }) => (
-        <div className="flex items-center gap-2">
-            <button
-                type="button"
-                onClick={onClick}
-                className={`w-6 h-6 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 transition-all ${checked ? "bg-blue-500 text-white" : "bg-transparent"
-                    }`}
-            >
-                {checked && <Check size={16} />}
-            </button>
-            <span className="text-gray-800 dark:text-gray-200 select-none">{label}</span>
-        </div>
-    );
-
-    // Skeleton Loader for Exam List
-    const ExamSkeleton = () => (
-        <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto mb-4 px-0 sm:px-4 md:px-0">
-            <div className="relative overflow-hidden bg-white/40 dark:bg-background rounded-none sm:rounded-xl shadow-xl backdrop-blur-xl border-0 transition-all duration-300">
-                <div className="h-2 w-full bg-gradient-to-r from-amber-400 to-orange-500 opacity-80" />
-                <div className="p-4 sm:p-8">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-200 dark:bg-slate-700 rounded-2xl animate-pulse" />
-                            <div>
-                                <div className="h-6 sm:h-7 w-32 sm:w-48 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-                                <div className="h-3 w-20 sm:w-28 bg-slate-200 dark:bg-slate-700 rounded mt-1 animate-pulse" />
-                            </div>
-                        </div>
-                        <div className="h-4 w-32 sm:w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                    </div>
-
-                    <div className="space-y-2 sm:space-y-3">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="flex flex-col sm:flex-row justify-between items-center p-3 sm:p-4 bg-white/60 dark:bg-slate-800/40 rounded-xl sm:rounded-2xl gap-3 sm:gap-4">
-                                <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
-                                    <div className="flex-1">
-                                        <div className="h-4 sm:h-5 w-32 sm:w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                                        <div className="h-3 w-24 sm:w-32 bg-slate-200 dark:bg-slate-700 rounded mt-1 animate-pulse" />
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
-                                    <div className="h-7 sm:h-9 w-16 sm:w-20 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-                                    <div className="h-7 sm:h-9 w-16 sm:w-20 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-                                    <div className="h-7 sm:h-9 w-16 sm:w-20 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
+    /* ─── REAL PAGE ──────────────────────────────────────────── */
     return (
-        <div className="min-h-screen bg-transparent p-0 m-0 w-full font-['Inter',system-ui,-apple-system,sans-serif]">
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+            {/* ── HEADER ──────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <button
+                    onClick={handleBack}
+                    aria-label="Go back"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors shrink-0"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate">
+                        {editingExamId ? "Edit exam" : "Exam papers"}
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        {allExams.length > 0
+                            ? `${allExams.length} exam${allExams.length > 1 ? "s" : ""} · ${allExams.filter((e) => e.closed_at === null).length} draft`
+                            : "Create and manage exams"}
+                    </p>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                 text-[10px] font-bold uppercase tracking-wider
+                                 bg-amber-50 dark:bg-amber-400/10
+                                 text-amber-700 dark:text-amber-400 shrink-0">
+                    <History className="h-3 w-3" />
+                    Tutor
+                </span>
+            </header>
 
-            {/* Loading State - Skeleton */}
-            {isLoadingExams && <ExamSkeleton />}
+            {/* ── SCROLLING BODY ──────────────────────────────── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
+                style={{ WebkitOverflowScrolling: "touch" }}
+            >
+                <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
 
-            {/* All Exams Section - Only show when loaded and has exams */}
-            {!isLoadingExams && allExams.length > 0 && (
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto mb-4 px-0 sm:px-4 md:px-0">
-                    <div className="relative overflow-hidden bg-white/40 dark:bg-background rounded-none sm:rounded-xl shadow-xl backdrop-blur-xl border-0 transition-all duration-300">
+                    {/* Loading skeleton */}
+                    {isLoadingExams && <ExamSkeleton />}
 
-                        {/* Header with Decorative Status Bar */}
-                        <div className="h-2 w-full bg-gradient-to-r from-amber-400 to-orange-500 opacity-80" />
-
-                        <div className="p-4 sm:p-8">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-                                <div className="flex items-center gap-3 sm:gap-4">
-                                    <div className="bg-amber-100 dark:bg-amber-900/30 p-2.5 sm:p-3 rounded-2xl">
-                                        <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-500" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl sm:text-2xl   text-slate-900 dark:text-white tracking-tight">
-                                            Your <span className="text-amber-600">Exam Papers</span>
-                                        </h2>
-                                        <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                            {allExams.length} Exam{allExams.length > 1 ? 's' : ''} Created
-                                        </p>
-                                    </div>
+                    {/* Exam list */}
+                    {!isLoadingExams && allExams.length > 0 && (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-lg
+                                                bg-amber-50 dark:bg-amber-400/10
+                                                flex items-center justify-center shrink-0">
+                                    <History className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                 </div>
-                                <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    {allExams.filter(e => e.closed_at === null).length} Draft{allExams.filter(e => e.closed_at === null).length !== 1 ? 's' : ''} · {allExams.filter(e => e.closed_at !== null).length} Completed
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                                  text-amber-600 dark:text-amber-400 leading-none mb-1">
+                                        Your papers
+                                    </p>
+                                    <h2 className="text-sm font-bold leading-tight">
+                                        {allExams.length} exam{allExams.length > 1 ? "s" : ""} created
+                                    </h2>
                                 </div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider
+                                                 text-slate-400 dark:text-slate-500 shrink-0">
+                                    {allExams.filter((e) => e.closed_at === null).length} draft ·{" "}
+                                    {allExams.filter((e) => e.closed_at !== null).length} done
+                                </span>
                             </div>
 
-                            <ul className="grid grid-cols-1 gap-2 sm:gap-3">
-                                {allExams.map((exam) => (
-                                    <li
-                                        key={exam.id}
-                                        className={`group/item flex flex-col sm:flex-row justify-between items-center p-3 sm:p-4 bg-white/60 dark:bg-slate-800/40 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 gap-3 sm:gap-4 ${editingExamId === exam.id
-                                            ? 'border-blue-400 dark:border-blue-600 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30'
-                                            : 'border-transparent hover:border-amber-300 dark:hover:border-amber-700'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full">
-                                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-colors ${editingExamId === exam.id
-                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover/item:text-amber-500'
-                                                }`}>
-                                                {editingExamId === exam.id ? (
-                                                    <Edit3 className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                ) : (
-                                                    <FileEdit className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`font-bold text-sm sm:text-base leading-tight truncate ${editingExamId === exam.id
-                                                        ? 'text-blue-600 dark:text-blue-400'
-                                                        : 'text-slate-800 dark:text-slate-200'
-                                                        }`}>
-                                                        {exam.title || "Untitled Exam"}
-                                                    </span>
-                                                    {editingExamId === exam.id && (
-                                                        <span className="text-[8px] sm:text-[10px]   uppercase tracking-widest bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                                                            Editing
-                                                        </span>
+                            <div className="space-y-2">
+                                {allExams.map((exam) => {
+                                    const isEditingThis = editingExamId === exam.id;
+                                    const isDraft = exam.closed_at === null;
+                                    return (
+                                        <div
+                                            key={exam.id}
+                                            className={`rounded-xl p-3 space-y-2.5 transition-colors
+                                                        ${isEditingThis
+                                                    ? "bg-blue-50 dark:bg-blue-400/10"
+                                                    : "bg-slate-50 dark:bg-[#0d1117]"
+                                                }`}
+                                        >
+                                            <div className="flex items-start gap-2.5">
+                                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0
+                                                                ${isEditingThis
+                                                        ? "bg-blue-100 dark:bg-blue-400/20 text-blue-600 dark:text-blue-400"
+                                                        : "bg-slate-200 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400"
+                                                    }`}>
+                                                    {isEditingThis ? (
+                                                        <Edit3 className="h-4 w-4" />
+                                                    ) : (
+                                                        <FileEdit className="h-4 w-4" />
                                                     )}
                                                 </div>
-                                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">
-                                                    {exam.closed_at === null ? (
-                                                        <span className="text-amber-500">● Draft</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <p className="text-[12px] font-bold truncate leading-tight">
+                                                            {exam.title || "Untitled exam"}
+                                                        </p>
+                                                        {isEditingThis && (
+                                                            <span className="text-[9px] font-bold uppercase tracking-wider
+                                                                             bg-blue-100 dark:bg-blue-400/20
+                                                                             text-blue-700 dark:text-blue-300
+                                                                             px-1.5 py-0.5 rounded-full">
+                                                                Editing
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                                                  text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                                                        <span className={isDraft ? "text-amber-500" : "text-emerald-500"}>
+                                                            ● {isDraft ? "Draft" : "Completed"}
+                                                        </span>
+                                                        {exam.course && ` · ${exam.course}`}
+                                                        {exam.block && ` · ${exam.block}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <button
+                                                    onClick={() => handleEditExam(exam)}
+                                                    className={`flex-1 min-w-[80px] h-9 rounded-lg
+                                                                text-[10px] font-bold uppercase tracking-wider
+                                                                flex items-center justify-center gap-1
+                                                                active:scale-[0.97] transition-transform
+                                                                ${isEditingThis
+                                                            ? "bg-blue-600 text-white"
+                                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200"
+                                                        }`}
+                                                    style={{ touchAction: "manipulation" }}
+                                                >
+                                                    <Edit3 className="h-3 w-3" />
+                                                    {isEditingThis ? "Editing" : "Edit"}
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleDeleteExam(exam.id)}
+                                                    className="h-9 px-3 rounded-lg
+                                                               bg-rose-50 dark:bg-rose-400/10
+                                                               text-rose-700 dark:text-rose-400
+                                                               text-[10px] font-bold uppercase tracking-wider
+                                                               flex items-center justify-center gap-1
+                                                               active:scale-[0.97] transition-transform"
+                                                    style={{ touchAction: "manipulation" }}
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Delete
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleContinueExam(exam.id)}
+                                                    className="flex-1 min-w-[90px] h-9 rounded-lg
+                                                               bg-emerald-600 text-white
+                                                               text-[10px] font-bold uppercase tracking-wider
+                                                               flex items-center justify-center gap-1
+                                                               active:scale-[0.97] transition-transform"
+                                                    style={{ touchAction: "manipulation" }}
+                                                >
+                                                    {isEditingThis ? (
+                                                        <>
+                                                            <FileText className="h-3 w-3" />
+                                                            Preview
+                                                        </>
                                                     ) : (
-                                                        <span className="text-emerald-500">● Completed</span>
+                                                        <>
+                                                            <PlayCircle className="h-3 w-3" />
+                                                            {isDraft ? "Resume" : "View"}
+                                                        </>
                                                     )}
-                                                    {exam.course && ` · ${exam.course}`}
-                                                    {exam.block && ` · ${exam.block}`}
-                                                </span>
+                                                </button>
+
+                                                {isEditingThis && (
+                                                    <button
+                                                        type="submit"
+                                                        form="exam-form"
+                                                        className="flex-1 min-w-[90px] h-9 rounded-lg
+                                                                   bg-blue-600 text-white
+                                                                   text-[10px] font-bold uppercase tracking-wider
+                                                                   flex items-center justify-center gap-1
+                                                                   active:scale-[0.97] transition-transform"
+                                                        style={{ touchAction: "manipulation" }}
+                                                    >
+                                                        <Check className="h-3 w-3" />
+                                                        Update
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    )}
 
-                                        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
-                                            <button
-                                                onClick={() => handleEditExam(exam)}
-                                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold rounded-lg sm:rounded-xl transition-all duration-200 ${editingExamId === exam.id
-                                                    ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-0 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200'
-                                                    }`}
-                                            >
-                                                <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                <span>{editingExamId === exam.id ? 'Editing' : 'Edit Exam'}</span>
-                                            </button>
+                    {/* Empty state */}
+                    {!isLoadingExams && allExams.length === 0 && (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-5 text-center space-y-3">
+                            <div className="h-16 w-16 rounded-full
+                                            bg-amber-50 dark:bg-amber-400/10
+                                            flex items-center justify-center mx-auto">
+                                <FileSearch className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold">
+                                    No exams created yet
+                                </h3>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                    You haven't started creating any exams. Configure your first
+                                    one below to begin assessing your students.
+                                </p>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                                            bg-amber-50 dark:bg-amber-400/10
+                                            text-amber-700 dark:text-amber-300">
+                                <Sparkles className="h-3 w-3" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">
+                                    Get started below
+                                </span>
+                            </div>
+                        </section>
+                    )}
 
-                                            <button
-                                                onClick={() => handleDeleteExam(exam.id)}
-                                                className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg sm:rounded-xl border-0 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-200"
-                                            >
-                                                <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                <span>Delete</span>
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleContinueExam(exam.id)}
-                                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs   uppercase tracking-widest rounded-lg sm:rounded-xl transition-all duration-200 ${editingExamId === exam.id
-                                                    ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/30'
-                                                    : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none'
-                                                    }`}
-                                            >
-                                                {editingExamId === exam.id ? (
-                                                    <>
-                                                        <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                        <span>Preview</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <PlayCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                        <span>{exam.closed_at === null ? "Resume" : "View/Edit"}</span>
-                                                    </>
-                                                )}
-                                            </button>
-
-                                            {editingExamId === exam.id && (
-                                                <button
-                                                    type="submit"
-                                                    form="exam-form"
-                                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs   uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-                                                >
-                                                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                    <span>Update Exam</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                    {/* Create/edit form */}
+                    <section
+                        id="exam-form-container"
+                        className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden"
+                    >
+                        <div className="px-4 py-3
+                                        border-b border-slate-200/70 dark:border-white/[0.06]
+                                        flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-lg
+                                            bg-blue-50 dark:bg-blue-400/10
+                                            flex items-center justify-center shrink-0">
+                                <PlusCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                              text-blue-600 dark:text-blue-400 leading-none mb-1">
+                                    {editingExamId ? "Edit mode" : "New exam"}
+                                </p>
+                                <h2 className="text-sm font-bold leading-tight truncate">
+                                    {editingExamId ? "Update exam configuration" : "Create exam session"}
+                                </h2>
+                            </div>
                         </div>
 
-                        <div className="px-4 sm:px-8 py-2 sm:py-3 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500 animate-pulse" />
-                            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">All exams displayed from Medrae Database</span>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        <form id="exam-form" onSubmit={handleCreateExam} className="p-4 space-y-4">
 
-            {/* Empty State - No Exams Created Yet */}
-            {!isLoadingExams && allExams.length === 0 && (
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto mb-4 px-4 sm:px-0">
-                    <div className="relative overflow-hidden bg-white/40 dark:bg-background rounded-xl shadow-xl backdrop-blur-xl border-0 transition-all duration-300">
-                        <div className="h-2 w-full bg-gradient-to-r from-amber-400 to-orange-500 opacity-80" />
-                        <div className="p-8 sm:p-12 text-center">
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                                    <FileSearch className="w-10 h-10 text-amber-600 dark:text-amber-500" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl sm:text-2xl   text-slate-900 dark:text-white">
-                                        No Exams Created Yet
-                                    </h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md">
-                                        You haven't started creating any exams. Click the button below to create your first exam and begin assessing your students.
+                            {/* Section 1: Identity */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                    <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                                  text-slate-500 dark:text-slate-400">
+                                        Exam identity
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2 mt-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/50">
-                                    <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                                    <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                                        Get started with your first exam today
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setEditingExamId(null);
-                                        window.scrollTo({ top: 0, behavior: "smooth" });
-                                    }}
-                                    className="mt-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 dark:shadow-blue-900/30 transition-all hover:scale-[1.02] active:scale-[0.98] text-sm"
-                                >
-                                    <PlusCircle className="w-4 h-4 inline mr-2" />
-                                    Create Your First Exam
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* Create New Exam Section - Edge to Edge on Phone */}
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto bg-white/40 dark:bg-background p-1 rounded-xl shadow-xl backdrop-blur-xl border-0 transition-all duration-300 sm:mx-auto">
-                <div className="p-4 sm:p-8">
-                    <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-                        <div className="bg-blue-600 p-2.5 sm:p-3 rounded-2xl shadow-lg shadow-blue-200 dark:shadow-none">
-                            <PlusCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl sm:text-3xl   text-slate-900 dark:text-white tracking-tight">
-                                {editingExamId ? "Edit" : "Create New"} <span className="text-blue-600">Exam Session</span>
-                            </h1>
-                            <p className="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-                                {editingExamId ? "Update your exam configuration" : "Configure session parameters and proctoring protocols."}
-                            </p>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleCreateExam} className="space-y-6 sm:space-y-10">
-
-                        {/* SECTION 1: IDENTITY & CONTENT */}
-                        <div className="space-y-3 sm:space-y-4">
-                            <div className="flex items-center gap-2 mb-3 sm:mb-4 border-b pb-2 dark:border-slate-800">
-                                <FileText className="w-4 h-4 text-blue-500" />
-                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-400">Exam Identity</h3>
-                            </div>
-
-                            <div className="space-y-3 sm:space-y-4">
-                                <div className="relative group">
-                                    <input
-                                        type="text"
-                                        placeholder="Exam Title"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        required
-                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-bold text-slate-800 dark:text-white placeholder:font-normal text-sm sm:text-base"
-                                    />
-                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Exam title"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    required
+                                    className="w-full h-10 px-3 rounded-xl text-sm font-bold
+                                               bg-slate-50 dark:bg-[#0d1117]
+                                               border-0 outline-none
+                                               text-slate-900 dark:text-white
+                                               placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                               placeholder:font-normal
+                                               focus:ring-2 focus:ring-blue-500/40"
+                                />
 
                                 <textarea
-                                    placeholder="Description (Scope, Objectives, etc.)"
+                                    placeholder="Description (scope, objectives, etc.)"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={3}
-                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all text-sm sm:text-base"
+                                    className="w-full p-3 rounded-xl text-sm resize-none
+                                               bg-slate-50 dark:bg-[#0d1117]
+                                               border-0 outline-none
+                                               text-slate-900 dark:text-white
+                                               placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                               focus:ring-2 focus:ring-blue-500/40"
                                 />
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div className="space-y-1">
-                                        <label className="text-[8px] sm:text-[10px] font-bold uppercase text-slate-400 ml-2">Course</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 ml-1">
+                                            Course
+                                        </label>
                                         <input
                                             type="text"
                                             placeholder="e.g. Nursing"
                                             value={course}
                                             onChange={(e) => setCourse(e.target.value)}
-                                            className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base"
+                                            className="w-full h-10 px-3 rounded-xl text-sm
+                                                       bg-slate-50 dark:bg-[#0d1117]
+                                                       border-0 outline-none
+                                                       text-slate-900 dark:text-white
+                                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                                       focus:ring-2 focus:ring-blue-500/40"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[8px] sm:text-[10px] font-bold uppercase text-slate-400 ml-2">Block / Class</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 ml-1">
+                                            Block / Class
+                                        </label>
                                         <input
                                             type="text"
                                             placeholder="e.g. Section B"
                                             value={block}
                                             onChange={(e) => setBlock(e.target.value)}
-                                            className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base"
+                                            className="w-full h-10 px-3 rounded-xl text-sm
+                                                       bg-slate-50 dark:bg-[#0d1117]
+                                                       border-0 outline-none
+                                                       text-slate-900 dark:text-white
+                                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                                       focus:ring-2 focus:ring-blue-500/40"
                                         />
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* SECTION 2: SECURITY & INTEGRITY */}
-                        <div className="space-y-3 sm:space-y-4">
-                            <div className="flex items-center gap-2 mb-3 sm:mb-4 border-b pb-2 dark:border-slate-800">
-                                <ShieldAlert className="w-4 h-4 text-rose-500" />
-                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-400">Security & Proctoring</h3>
-                            </div>
+                            {/* Section 2: Security */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                    <ShieldAlert className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                                  text-slate-500 dark:text-slate-400">
+                                        Security & proctoring
+                                    </p>
+                                </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                <div className="sm:col-span-2 space-y-1">
-                                    <label className="text-[8px] sm:text-[10px] font-bold uppercase text-slate-400 ml-2">Access Key (Exam Password)</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider
+                                                      text-slate-500 dark:text-slate-400 ml-1">
+                                        Access key (exam password)
+                                    </label>
                                     <input
                                         type="text"
                                         placeholder="Enter a secure key"
                                         value={examKey}
                                         onChange={(e) => setExamKey(e.target.value)}
-                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 border-transparent focus:ring-2 focus:ring-blue-500 font-mono font-bold tracking-widest text-blue-600 dark:text-blue-400 text-sm sm:text-base"
+                                        className="w-full h-10 px-3 rounded-xl text-sm font-mono font-bold tracking-widest
+                                                   bg-slate-50 dark:bg-[#0d1117]
+                                                   border-0 outline-none
+                                                   text-blue-600 dark:text-blue-400
+                                                   placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                                   placeholder:font-sans placeholder:tracking-normal placeholder:font-normal
+                                                   focus:ring-2 focus:ring-blue-500/40"
                                     />
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[8px] sm:text-[10px] font-bold uppercase text-slate-400 ml-2">Duration (Minutes)</label>
-                                    <input
-                                        type="number"
-                                        value={duration}
-                                        onChange={(e) => setDuration(Number(e.target.value))}
-                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[8px] sm:text-[10px] font-bold uppercase text-slate-400 ml-2">Max Tab Switches</label>
-                                    <input
-                                        type="number"
-                                        value={maxTabSwitch}
-                                        onChange={(e) => setMaxTabSwitch(Number(e.target.value))}
-                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[8px] sm:text-[10px] font-bold uppercase text-slate-400 ml-2">Violation Tolerance Limit</label>
-                                    <input
-                                        type="number"
-                                        value={maxViolationLimit}
-                                        onChange={(e) => setMaxViolationLimit(Number(e.target.value))}
-                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/50 dark:bg-slate-800/50 border-0 focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[8px] sm:text-[10px] font-bold uppercase text-blue-500 ml-2">
-                                        Tutor Reset Code <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Admin Reset Code"
-                                        value={tutorResetCode}
-                                        onChange={(e) => setTutorResetCode(e.target.value)}
-                                        required
-                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-blue-50 dark:bg-blue-900/20 border-0 dark:border-blue-800 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm sm:text-base"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* SECTION 3: TEMPORAL LOGIC (DATES) */}
-                        <div className="space-y-3 sm:space-y-4">
-                            <div className="flex items-center gap-2 mb-3 sm:mb-4 border-0 pb-2">
-                                <Clock className="w-4 h-4 text-cyan-500" />
-                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-400">Scheduling & Release</h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-slate-50 dark:bg-slate-800/30 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-0">
-                                <div className="space-y-3 sm:space-y-4">
-                                    <h4 className="text-[8px] sm:text-[10px]   text-slate-400 uppercase tracking-widest text-center">Exam Window</h4>
+                                <div className="grid grid-cols-2 gap-2">
                                     <div className="space-y-1">
-                                        <label className="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">Scheduled Start (Your Local Time)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 ml-1">
+                                            Duration (mins)
+                                        </label>
                                         <input
-                                            type="datetime-local"
-                                            value={scheduledStart}
-                                            onChange={(e) => setScheduledStart(e.target.value)}
-                                            className="w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 border-none outline-none text-xs sm:text-sm font-bold shadow-sm"
+                                            type="number"
+                                            value={duration}
+                                            onChange={(e) => setDuration(Number(e.target.value))}
+                                            className="w-full h-10 px-3 rounded-xl text-sm
+                                                       bg-slate-50 dark:bg-[#0d1117]
+                                                       border-0 outline-none
+                                                       text-slate-900 dark:text-white
+                                                       focus:ring-2 focus:ring-blue-500/40"
                                         />
-                                        <p className="text-[8px] text-slate-400 ml-1">This will be stored as UTC in the database</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">Scheduled End (Your Local Time)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 ml-1">
+                                            Max tab switches
+                                        </label>
                                         <input
-                                            type="datetime-local"
-                                            value={scheduledEnd}
-                                            onChange={(e) => setScheduledEnd(e.target.value)}
-                                            className="w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 border-none outline-none text-xs sm:text-sm font-bold shadow-sm"
+                                            type="number"
+                                            value={maxTabSwitch}
+                                            onChange={(e) => setMaxTabSwitch(Number(e.target.value))}
+                                            className="w-full h-10 px-3 rounded-xl text-sm
+                                                       bg-slate-50 dark:bg-[#0d1117]
+                                                       border-0 outline-none
+                                                       text-slate-900 dark:text-white
+                                                       focus:ring-2 focus:ring-blue-500/40"
                                         />
-                                        <p className="text-[8px] text-slate-400 ml-1">This will be stored as UTC in the database</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3 sm:space-y-4">
-                                    <h4 className="text-[8px] sm:text-[10px]   text-slate-400 uppercase tracking-widest text-center">Publicity Window</h4>
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">Released At (Your Local Time)</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={releasedAt}
-                                            onChange={(e) => setReleasedAt(e.target.value)}
-                                            className="w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 border-none outline-none text-xs sm:text-sm font-bold shadow-sm"
-                                        />
-                                        <p className="text-[8px] text-slate-400 ml-1">This will be stored as UTC in the database</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">Closed At (Your Local Time)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 ml-1">
+                                            Violation limit
+                                        </label>
                                         <input
-                                            type="datetime-local"
-                                            value={closedAt}
-                                            onChange={(e) => setClosedAt(e.target.value)}
-                                            className="w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 border-none outline-none text-xs sm:text-sm font-bold shadow-sm"
+                                            type="number"
+                                            value={maxViolationLimit}
+                                            onChange={(e) => setMaxViolationLimit(Number(e.target.value))}
+                                            className="w-full h-10 px-3 rounded-xl text-sm
+                                                       bg-slate-50 dark:bg-[#0d1117]
+                                                       border-0 outline-none
+                                                       text-slate-900 dark:text-white
+                                                       focus:ring-2 focus:ring-blue-500/40"
                                         />
-                                        <p className="text-[8px] text-slate-400 ml-1">This will be stored as UTC in the database</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-blue-600 dark:text-blue-400 ml-1">
+                                            Tutor reset code *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Admin reset code"
+                                            value={tutorResetCode}
+                                            onChange={(e) => setTutorResetCode(e.target.value)}
+                                            required
+                                            className="w-full h-10 px-3 rounded-xl text-sm font-bold
+                                                       bg-blue-50 dark:bg-blue-400/10
+                                                       border-0 outline-none
+                                                       text-slate-900 dark:text-white
+                                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                                       placeholder:font-normal
+                                                       focus:ring-2 focus:ring-blue-500/40"
+                                        />
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* SECTION 4: OPERATIONAL TOGGLES */}
-                        <div className="bg-white dark:bg-slate-950 p-4 sm:p-8 rounded-2xl sm:rounded-[2rem] shadow-xl border-0 dark:border-slate-800">
-                            <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-slate-200 dark:border-slate-800 pb-2">
-                                <Globe className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                <h3 className="text-[10px] sm:text-xs   uppercase tracking-widest text-slate-600 dark:text-slate-500">
-                                    Visibility & Automation
-                                </h3>
-                            </div>
+                            {/* Section 3: Dates */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                    <Clock className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                                  text-slate-500 dark:text-slate-400">
+                                        Scheduling & release
+                                    </p>
+                                </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-3 sm:gap-y-4">
-                                <ToggleButton checked={isPublic} onClick={() => setIsPublic(!isPublic)} label="Public Access" />
-                                <ToggleButton checked={isFree} onClick={() => setIsFree(!isFree)} label="Free Trial Exam" />
-                                <ToggleButton checked={isActive} onClick={() => setIsActive(!isActive)} label="Status: Active" />
-                                <ToggleButton checked={isReleased} onClick={() => setIsReleased(!isReleased)} label="Status: Released" />
-                                <ToggleButton checked={resultsReleased} onClick={() => setResultsReleased(!resultsReleased)} label="Results Visibility" />
-                                <ToggleButton checked={strictMode} onClick={() => setStrictMode(!strictMode)} label="Strict Proctoring" />
-                                <div className="sm:col-span-2">
-                                    <ToggleButton
-                                        checked={autoSubmitOnViolation}
-                                        onClick={() => setAutoSubmitOnViolation(!autoSubmitOnViolation)}
-                                        label="Auto-Terminate on Violation"
-                                    />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3
+                                                bg-slate-50 dark:bg-[#0d1117] rounded-xl p-3">
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                                      text-slate-500 dark:text-slate-400 text-center">
+                                            Exam window
+                                        </p>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">
+                                                Scheduled start
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={scheduledStart}
+                                                onChange={(e) => setScheduledStart(e.target.value)}
+                                                className="w-full h-10 px-2 rounded-lg text-[11px] font-bold
+                                                           bg-white dark:bg-[#161b22]
+                                                           border-0 outline-none
+                                                           text-slate-900 dark:text-white
+                                                           focus:ring-2 focus:ring-blue-500/40"
+                                            />
+                                            <p className="text-[9px] text-slate-400 dark:text-slate-500 ml-1">
+                                                Stored as UTC
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">
+                                                Scheduled end
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={scheduledEnd}
+                                                onChange={(e) => setScheduledEnd(e.target.value)}
+                                                className="w-full h-10 px-2 rounded-lg text-[11px] font-bold
+                                                           bg-white dark:bg-[#161b22]
+                                                           border-0 outline-none
+                                                           text-slate-900 dark:text-white
+                                                           focus:ring-2 focus:ring-blue-500/40"
+                                            />
+                                            <p className="text-[9px] text-slate-400 dark:text-slate-500 ml-1">
+                                                Stored as UTC
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider
+                                                      text-slate-500 dark:text-slate-400 text-center">
+                                            Publicity window
+                                        </p>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">
+                                                Released at
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={releasedAt}
+                                                onChange={(e) => setReleasedAt(e.target.value)}
+                                                className="w-full h-10 px-2 rounded-lg text-[11px] font-bold
+                                                           bg-white dark:bg-[#161b22]
+                                                           border-0 outline-none
+                                                           text-slate-900 dark:text-white
+                                                           focus:ring-2 focus:ring-blue-500/40"
+                                            />
+                                            <p className="text-[9px] text-slate-400 dark:text-slate-500 ml-1">
+                                                Stored as UTC
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-1">
+                                                Closed at
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={closedAt}
+                                                onChange={(e) => setClosedAt(e.target.value)}
+                                                className="w-full h-10 px-2 rounded-lg text-[11px] font-bold
+                                                           bg-white dark:bg-[#161b22]
+                                                           border-0 outline-none
+                                                           text-slate-900 dark:text-white
+                                                           focus:ring-2 focus:ring-blue-500/40"
+                                            />
+                                            <p className="text-[9px] text-slate-400 dark:text-slate-500 ml-1">
+                                                Stored as UTC
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="group w-full relative h-14 sm:h-16 overflow-hidden rounded-2xl sm:rounded-[2rem] bg-blue-600 text-white   text-base sm:text-lg uppercase tracking-widest shadow-2xl shadow-blue-200 dark:shadow-none hover:bg-blue-700 disabled:bg-slate-300 transition-all active:scale-[0.98]"
-                        >
-                            <span className="relative z-10 flex items-center justify-center gap-2">
+                            {/* Section 4: Toggles */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                    <Globe className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                                    <p className="text-[10px] font-bold uppercase tracking-wider
+                                                  text-slate-500 dark:text-slate-400">
+                                        Visibility & automation
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                    <ToggleButton checked={isPublic} onClick={() => setIsPublic(!isPublic)} label="Public access" />
+                                    <ToggleButton checked={isFree} onClick={() => setIsFree(!isFree)} label="Free trial exam" />
+                                    <ToggleButton checked={isActive} onClick={() => setIsActive(!isActive)} label="Status: Active" />
+                                    <ToggleButton checked={isReleased} onClick={() => setIsReleased(!isReleased)} label="Status: Released" />
+                                    <ToggleButton checked={resultsReleased} onClick={() => setResultsReleased(!resultsReleased)} label="Results visibility" />
+                                    <ToggleButton checked={strictMode} onClick={() => setStrictMode(!strictMode)} label="Strict proctoring" />
+                                    <div className="sm:col-span-2">
+                                        <ToggleButton
+                                            checked={autoSubmitOnViolation}
+                                            onClick={() => setAutoSubmitOnViolation(!autoSubmitOnViolation)}
+                                            label="Auto-terminate on violation"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Submit */}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full h-10 rounded-xl bg-blue-600 text-white
+                                           text-sm font-bold
+                                           flex items-center justify-center gap-1.5
+                                           active:scale-[0.97] transition-transform
+                                           disabled:opacity-50 disabled:active:scale-100"
+                                style={{ touchAction: "manipulation" }}
+                            >
                                 {loading ? (
-                                    <>Configuring Secure Session...</>
+                                    "Configuring secure session…"
                                 ) : (
                                     <>
-                                        {editingExamId ? "Update Exam" : "Finalize & Create Exam"}
-                                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                                        {editingExamId ? "Update exam" : "Finalize & create exam"}
+                                        <ArrowRight className="h-4 w-4" />
                                     </>
                                 )}
-                            </span>
-                        </button>
-                    </form>
+                            </button>
+                        </form>
+                    </section>
                 </div>
-            </div>
+            </main>
         </div>
     );
 };
