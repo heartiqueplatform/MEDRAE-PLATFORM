@@ -1,3 +1,4 @@
+// src/components/UserProfileModal.tsx
 "use client";
 
 import {
@@ -18,10 +19,9 @@ import {
     Star,
     Cpu,
     ClipboardCheck,
-    RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createPortal } from "react-dom";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 import { useFollow } from "@/hooks/useFollow";
 import { FollowButton } from "@/components/FollowButton";
 import { useAuth } from "@/context/AuthProvider";
@@ -75,7 +75,6 @@ interface TriviaResult {
     attempt_date: string;
 }
 
-// ✅ Duel wins — public recognition for the winner only
 interface DuelStats {
     wins: number;
     losses: number;
@@ -94,48 +93,62 @@ interface UserDataState {
     isLoading: boolean;
     isPaperTitlesLoaded: boolean;
 }
+
+const INITIAL_USER_DATA: UserDataState = {
+    profile: null,
+    quizResults: [],
+    simulationResults: [],
+    triviaResults: [],
+    totalFeedSeen: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    duelStats: { wins: 0, losses: 0, total: 0 },
+    isLoading: true,
+    isPaperTitlesLoaded: false,
+};
+
 /* ------------------------------------------------------------------ */
-/*  Skeletons — flat, no borders                                      */
+/*  Skeletons                                                         */
 /* ------------------------------------------------------------------ */
 
 const SkeletonStatCard = memo(() => (
-    <div className="flex flex-col items-center p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse">
-        <div className="w-4 h-4 mb-2 rounded-full bg-slate-200 dark:bg-slate-700" />
-        <div className="w-8 h-5 bg-slate-200 dark:bg-slate-700 rounded mb-1" />
-        <div className="w-12 h-2 bg-slate-200 dark:bg-slate-700 rounded" />
+    <div className="flex flex-col items-center p-3 bg-slate-100 dark:bg-white/[0.06] rounded-2xl animate-pulse">
+        <div className="w-4 h-4 mb-2 rounded-full bg-slate-200 dark:bg-white/[0.1]" />
+        <div className="w-8 h-5 bg-slate-200 dark:bg-white/[0.1] rounded mb-1" />
+        <div className="w-12 h-2 bg-slate-200 dark:bg-white/[0.1] rounded" />
     </div>
 ));
 SkeletonStatCard.displayName = "SkeletonStatCard";
 
 const SkeletonStreakCard = memo(() => (
-    <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-3 flex items-center gap-3 animate-pulse">
-        <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700" />
+    <div className="bg-slate-100 dark:bg-white/[0.06] rounded-2xl p-3 flex items-center gap-3 animate-pulse">
+        <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-white/[0.1]" />
         <div className="flex-1">
-            <div className="w-12 h-2 bg-slate-200 dark:bg-slate-700 rounded mb-2" />
-            <div className="w-16 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+            <div className="w-12 h-2 bg-slate-200 dark:bg-white/[0.1] rounded mb-2" />
+            <div className="w-16 h-4 bg-slate-200 dark:bg-white/[0.1] rounded" />
         </div>
     </div>
 ));
 SkeletonStreakCard.displayName = "SkeletonStreakCard";
 
 const SkeletonHistoryItem = memo(() => (
-    <div className="flex justify-between items-center p-2 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse">
-        <div className="w-32 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
-        <div className="w-10 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+    <div className="flex justify-between items-center p-2 bg-slate-100 dark:bg-white/[0.06] rounded-xl animate-pulse">
+        <div className="w-32 h-3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+        <div className="w-10 h-3 bg-slate-200 dark:bg-white/[0.1] rounded" />
     </div>
 ));
 SkeletonHistoryItem.displayName = "SkeletonHistoryItem";
 
 const SkeletonAcademicDetail = memo(() => (
     <div className="flex justify-between flex-wrap gap-2 animate-pulse">
-        <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
-        <div className="w-24 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+        <div className="w-20 h-3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+        <div className="w-24 h-3 bg-slate-200 dark:bg-white/[0.1] rounded" />
     </div>
 ));
 SkeletonAcademicDetail.displayName = "SkeletonAcademicDetail";
 
 /* ------------------------------------------------------------------ */
-/*  Stat card — flat, no borders                                      */
+/*  Stat card                                                         */
 /* ------------------------------------------------------------------ */
 
 const StatCard = memo(
@@ -151,7 +164,7 @@ const StatCard = memo(
         icon: any;
     }) => (
         <div
-            className="flex flex-col items-center p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-95 transition-transform"
+            className="flex flex-col items-center p-3 bg-slate-100 dark:bg-white/[0.06] rounded-2xl active:scale-[0.97] transition-transform"
             style={{ touchAction: "manipulation" }}
         >
             <Icon className={`w-4 h-4 mb-2 ${color}`} />
@@ -171,28 +184,16 @@ StatCard.displayName = "StatCard";
 /* ------------------------------------------------------------------ */
 
 export const UserProfileModal = ({ userId, onClose }: Props) => {
-    const [userData, setUserData] = useState<UserDataState>({
-        profile: null,
-        quizResults: [],
-        simulationResults: [],
-        triviaResults: [],
-        totalFeedSeen: 0,
-        currentStreak: 0,
-        bestStreak: 0,
-        duelStats: { wins: 0, losses: 0, total: 0 },
-        isLoading: true,
-        isPaperTitlesLoaded: false,
-    });
+    const [userData, setUserData] = useState<UserDataState>(INITIAL_USER_DATA);
 
     const [isAvatarOpen, setIsAvatarOpen] = useState(false);
-    const [hasAnimationCompleted, setHasAnimationCompleted] = useState(false);
+
     const [isRefreshing, setIsRefreshing] = useState(false);
     const isMounted = useRef(true);
     const abortControllerRef = useRef<AbortController | null>(null);
     const paperTitlesLoadedRef = useRef(false);
     const [, startTransition] = useTransition();
 
-    // ─── Follow system ────────────────────────────────────────────
     const { status: followStatus } = useFollow(userId);
     const { user } = useAuth();
     const isSelf = !!user?.id && user.id === userData.profile?.user_id;
@@ -200,9 +201,8 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
     /* ---------------- Fetch ---------------- */
 
     const fetchUserData = useCallback(
-        async (forceRefresh = false) => {
+        async () => {
             if (!userId) return;
-            if (!hasAnimationCompleted && !forceRefresh) return;
 
             if (abortControllerRef.current) abortControllerRef.current.abort();
             abortControllerRef.current = new AbortController();
@@ -329,32 +329,35 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                 setIsRefreshing(false);
             }
         },
-        [userId, hasAnimationCompleted]
+        [userId]
     );
 
     const handleRefresh = useCallback(() => {
         if (!isRefreshing) {
             paperTitlesLoadedRef.current = false;
-            fetchUserData(true);
+            fetchUserData();
         }
     }, [fetchUserData, isRefreshing]);
 
-    useEffect(() => {
-        if (hasAnimationCompleted && userId) fetchUserData();
-    }, [hasAnimationCompleted, userId, fetchUserData]);
+    /* ---------------- Effects ---------------- */
+    // IMPORTANT: reset effect is declared BEFORE the fetch effect so it
+    // always runs first on a userId change (A → B shows B's skeleton,
+    // never A's stale profile).
 
     useEffect(() => {
         isMounted.current = true;
-        document.body.style.overflow = "hidden";
         paperTitlesLoadedRef.current = false;
-        setHasAnimationCompleted(false);
+        setUserData(INITIAL_USER_DATA);
 
         return () => {
             isMounted.current = false;
-            document.body.style.overflow = "";
             if (abortControllerRef.current) abortControllerRef.current.abort();
         };
     }, [userId]);
+
+    useEffect(() => {
+        if (userId) fetchUserData();
+    }, [userId, fetchUserData]);
 
     /* ---------------- Memo ---------------- */
 
@@ -395,13 +398,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
 
     /* ---------------- Handlers ---------------- */
 
-    const handleClose = useCallback(
-        (e?: React.MouseEvent) => {
-            e?.stopPropagation();
-            onClose();
-        },
-        [onClose]
-    );
+    const handleClose = useCallback(() => onClose(), [onClose]);
 
     const handleAvatarOpen = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -415,87 +412,71 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
 
     if (!userId) return null;
 
-    /* ---------------- Theme tokens ---------------- */
+    /* ---------------- Render ---------------- */
 
-    const surface = "bg-white dark:bg-slate-900";
-    const surfaceAlt = "bg-slate-100 dark:bg-slate-800";
-    const textMain = "text-slate-900 dark:text-white";
-    const textSub = "text-slate-500 dark:text-slate-400";
-    const accentBg = "bg-blue-600";
-    const accentText = "text-blue-600 dark:text-blue-400";
-
-    return createPortal(
-        <AnimatePresence>
-            <motion.div
-                className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={handleClose}
+    return (
+        <>
+            <CenteredModal
+                open={!!userId}
+                onClose={handleClose}
+                hideHeader
+                noScrollBody
+                maxWidthClass="max-w-lg"
+                maxHeight="92vh"
+                bodyClassName="relative"
             >
-                <motion.div
-                    className={`${surface} w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl overflow-hidden relative max-h-[92vh] flex flex-col`}
-                    initial={{ y: 400 }}
-                    animate={{ y: 0 }}
-                    exit={{ y: 400 }}
-                    transition={{ type: "tween", duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-                    onAnimationComplete={() => setHasAnimationCompleted(true)}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {/* ---------------- Header — flat blue ---------------- */}
-                    <div className="relative h-36 flex flex-col flex-shrink-0">
-                        <div className={`absolute inset-0 ${accentBg}`} />
-
-                        <div className="absolute top-0 right-0 p-4 sm:p-6 z-20 flex gap-2">
-                            <button
-                                onClick={handleRefresh}
-                                disabled={isRefreshing}
-                                className={`p-2 bg-white/15 rounded-full text-white active:scale-95 transition-transform ${isRefreshing ? "opacity-50" : ""
-                                    }`}
-                                style={{ touchAction: "manipulation" }}
-                                aria-label="Refresh data"
-                            >
-                                <RefreshCw
-                                    className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`}
-                                />
-                            </button>
-                            <button
-                                onClick={handleClose}
-                                className="p-2 bg-white/15 rounded-full text-white active:scale-95 transition-transform"
-                                style={{ touchAction: "manipulation" }}
-                                aria-label="Close modal"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                <div className="relative flex flex-col flex-1 min-h-0">
+                    {/* ── HEADER ROW ────────────────────────────────── */}
+                    <div className="shrink-0 flex items-center gap-2 px-3 h-12
+                border-b border-slate-200/70 dark:border-white/[0.06]">
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-white">
+                                {userData.profile?.name || "Profile"}
+                            </h2>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                                {userData.profile
+                                    ? `@${userData.profile.username || "user"}`
+                                    : "Loading…"}
+                            </p>
                         </div>
-
-                        <div className="relative flex justify-center translate-y-1/2 z-30">
-                            <div className="relative group">
-                                <img
-                                    src={userData.profile?.avatar_url || "/UsersAvatar.jpg"}
-                                    onClick={handleAvatarOpen}
-                                    className="relative cursor-pointer w-28 h-28 rounded-full object-cover active:scale-95 transition-transform"
-                                    style={{ touchAction: "manipulation" }}
-                                    loading="eager"
-                                    alt="User avatar"
-                                />
-                                {userData.profile?.is_online && (
-                                    <span className="absolute bottom-2 right-2 w-5 h-5 bg-emerald-500 rounded-full" />
-                                )}
-                            </div>
-                        </div>
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            className="h-8 px-3 rounded-full shrink-0
+                   bg-slate-100 dark:bg-white/[0.06]
+                   text-slate-600 dark:text-slate-300
+                   text-[10px] font-bold uppercase tracking-wider
+                   active:scale-[0.95] transition-transform
+                   disabled:opacity-50 disabled:active:scale-100"
+                            style={{ touchAction: "manipulation" }}
+                            aria-label="Refresh data"
+                        >
+                            {isRefreshing ? "Loading…" : "Refresh"}
+                        </button>
+                        <button
+                            onClick={handleClose}
+                            aria-label="Close"
+                            className="h-9 w-9 rounded-full flex items-center justify-center shrink-0
+                   text-slate-700 dark:text-slate-200
+                   active:bg-slate-100 dark:active:bg-white/5
+                   transition-colors"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <X className="h-4 w-4" strokeWidth={2.5} />
+                        </button>
                     </div>
-
-                    {/* ---------------- Scrollable content ---------------- */}
+                    {/* ── BODY ──────────────────────────────────────── */}
                     <div
-                        className="relative flex-1 overflow-y-auto hide-scrollbar pt-16 px-6 pb-24 z-10"
-                        style={{ contain: "content" }}
+                        className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain
+                                   px-4 pt-4 pb-6"
+                        style={{ WebkitOverflowScrolling: "touch" }}
                     >
-                        {userData.isLoading || !hasAnimationCompleted ? (
+                        {userData.isLoading ? (
                             <div className="flex flex-col">
                                 <div className="flex flex-col items-center text-center mb-6">
-                                    <div className="w-32 h-7 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse mb-2" />
-                                    <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+                                    <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-white/[0.1] animate-pulse" />
+                                    <div className="w-32 h-5 bg-slate-200 dark:bg-white/[0.1] rounded-full animate-pulse mt-3" />
+                                    <div className="w-24 h-3 bg-slate-200 dark:bg-white/[0.1] rounded-full animate-pulse mt-2" />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 mb-6">
@@ -509,8 +490,8 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                     ))}
                                 </div>
 
-                                <div className="p-5 bg-slate-100 dark:bg-slate-800 rounded-3xl mb-8">
-                                    <div className="w-32 h-3 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-4" />
+                                <div className="p-5 bg-slate-100 dark:bg-white/[0.04] rounded-3xl mb-8">
+                                    <div className="w-32 h-3 bg-slate-200 dark:bg-white/[0.1] rounded animate-pulse mb-4" />
                                     <div className="space-y-3">
                                         {[...Array(4)].map((_, i) => (
                                             <SkeletonAcademicDetail key={i} />
@@ -519,10 +500,10 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                 </div>
 
                                 <div className="space-y-6">
-                                    <div className="w-48 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                                    <div className="w-48 h-4 bg-slate-200 dark:bg-white/[0.1] rounded animate-pulse" />
                                     {[...Array(3)].map((_, i) => (
                                         <div key={i} className="space-y-2">
-                                            <div className="w-32 h-3 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                                            <div className="w-32 h-3 bg-slate-200 dark:bg-white/[0.1] rounded animate-pulse" />
                                             {[...Array(3)].map((_, j) => (
                                                 <SkeletonHistoryItem key={j} />
                                             ))}
@@ -534,44 +515,60 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                             <div className="flex flex-col">
                                 {/* Identity */}
                                 <div className="flex flex-col items-center text-center mb-6">
-                                    <h2 className={`text-2xl font-bold ${textMain} tracking-tight leading-tight`}>
+                                    <div className="relative">
+                                        <img
+                                            src={userData.profile.avatar_url || "/UsersAvatar.jpg"}
+                                            onClick={handleAvatarOpen}
+                                            className="cursor-pointer w-20 h-20 rounded-full object-cover
+                                                       bg-slate-100 dark:bg-white/[0.06]
+                                                       active:scale-[0.97] transition-transform"
+                                            style={{ touchAction: "manipulation" }}
+                                            loading="eager"
+                                            alt="User avatar"
+                                        />
+                                        {userData.profile.is_online && (
+                                            <span className="absolute bottom-0.5 right-0.5 w-4 h-4
+                                                             bg-emerald-500 rounded-full
+                                                             ring-2 ring-white dark:ring-[#161b22]" />
+                                        )}
+                                    </div>
+                                    <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight leading-tight mt-3">
                                         {userData.profile.name || "Student"}
                                     </h2>
                                     <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
-                                        <span className={`text-sm font-bold ${accentText}`}>
+                                        <span className="text-[12px] font-bold text-blue-600 dark:text-blue-400">
                                             @{userData.profile.username || "user"}
                                         </span>
                                         {userData.profile.is_online !== null && (
                                             <>
                                                 <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
                                                 <span
-                                                    className={`text-[10px] font-bold uppercase tracking-widest ${userData.profile.is_online
+                                                    className={`text-[10px] font-bold uppercase tracking-wider ${userData.profile.is_online
                                                         ? "text-emerald-500"
-                                                        : textSub
+                                                        : "text-slate-500 dark:text-slate-400"
                                                         }`}
                                                 >
                                                     {userData.profile.is_online
-                                                        ? "Active Now"
+                                                        ? "Active now"
                                                         : "Offline"}
                                                 </span>
                                             </>
                                         )}
                                     </div>
 
-                                    {/* Follow button — hidden on self inside FollowButton */}
-                                    {/* Follow button — centered, prominent */}
-                                    <div className="mt-4 flex justify-center [&_button]:h-11 [&_button]:px-6 [&_button]:text-[14px] [&_button]:font-bold [&_button]:gap-1.5 [&_button]:rounded-lg">
+                                    <div className="mt-3 flex justify-center [&_button]:h-10 [&_button]:px-5 [&_button]:text-[12px] [&_button]:font-bold [&_button]:gap-1.5 [&_button]:rounded-xl">
                                         <FollowButton
                                             targetUserId={userData.profile.user_id}
                                             size="md"
                                         />
                                     </div>
 
-                                    {/* ✅ Duel wins badge — only shows when the user has at least 1 win */}
                                     {userData.duelStats.wins > 0 && (
-                                        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                                            <Trophy size={12} />
-                                            <span className="text-[11px]  ">
+                                        <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full
+                                                        bg-amber-50 dark:bg-amber-400/10
+                                                        text-amber-600 dark:text-amber-400">
+                                            <Trophy size={11} />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">
                                                 {userData.duelStats.wins}{" "}
                                                 {userData.duelStats.wins === 1
                                                     ? "duel won"
@@ -583,174 +580,155 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
 
                                 {followStatus.iFollow || isSelf ? (
                                     <>
-                                        {/* Streaks — flat cards */}
+                                        {/* Streaks */}
                                         <div className="grid grid-cols-2 gap-3 mb-6">
-                                            <div className={`${surfaceAlt} rounded-2xl p-3 flex items-center gap-3`}>
+                                            <div className="rounded-2xl bg-slate-100 dark:bg-white/[0.06] p-3 flex items-center gap-3">
                                                 <div className="p-2 bg-amber-500 rounded-xl text-white">
-                                                    <Zap className="w-5 h-5 fill-current" />
+                                                    <Zap className="w-4 h-4 fill-current" />
                                                 </div>
                                                 <div>
-                                                    <p className={`text-[9px] font-bold uppercase leading-none mb-1 ${textSub}`}>
+                                                    <p className="text-[9px] font-bold uppercase leading-none mb-1 text-slate-500 dark:text-slate-400">
                                                         Current
                                                     </p>
-                                                    <p className={`text-sm font-bold ${textMain}`}>
-                                                        {userData.currentStreak} Days
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                                        {userData.currentStreak} days
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className={`${surfaceAlt} rounded-2xl p-3 flex items-center gap-3`}>
+                                            <div className="rounded-2xl bg-slate-100 dark:bg-white/[0.06] p-3 flex items-center gap-3">
                                                 <div className="p-2 bg-amber-500 rounded-xl text-white">
-                                                    <Trophy className="w-5 h-5" />
+                                                    <Trophy className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className={`text-[9px] font-bold uppercase leading-none mb-1 ${textSub}`}>
+                                                    <p className="text-[9px] font-bold uppercase leading-none mb-1 text-slate-500 dark:text-slate-400">
                                                         Best
                                                     </p>
-                                                    <p className={`text-sm font-bold ${textMain}`}>
-                                                        {userData.bestStreak} Days
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                                        {userData.bestStreak} days
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Stats */}
-                                        <div className="grid grid-cols-4 gap-2 mb-8">
+                                        <div className="grid grid-cols-4 gap-2 mb-6">
                                             {statsData.map((stat, i) => (
                                                 <StatCard key={i} {...stat} />
                                             ))}
                                         </div>
 
-                                        {/* Academic info — flat */}
-                                        <div className={`${surfaceAlt} p-5 rounded-3xl mb-8`}>
-                                            <p className={`text-[10px] font-bold ${textSub} uppercase tracking-[2px] mb-4`}>
-                                                Academic Details
+                                        {/* Academic info */}
+                                        <div className="rounded-3xl bg-slate-100 dark:bg-white/[0.04] p-4 mb-6">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+                                                Academic details
                                             </p>
-                                            <div className="space-y-3 text-sm">
+                                            <div className="space-y-2.5 text-sm">
+                                                <AcademicRow
+                                                    label="Institution"
+                                                    value={userData.profile.institution}
+                                                />
+                                                <AcademicRow
+                                                    label="Course / Block"
+                                                    value={`${userData.profile.course || "-"} / ${userData.profile.block || "-"}`}
+                                                />
+                                                <AcademicRow
+                                                    label="County"
+                                                    value={userData.profile.county}
+                                                />
                                                 <div className="flex justify-between flex-wrap gap-2">
-                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                        Institution
-                                                    </span>
-                                                    <span className={`font-bold ${textMain} text-right`}>
-                                                        {userData.profile.institution || "-"}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between flex-wrap gap-2">
-                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                        Course / Block
-                                                    </span>
-                                                    <span className={`font-bold ${textMain} text-right`}>
-                                                        {userData.profile.course || "-"} /{" "}
-                                                        {userData.profile.block || "-"}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between flex-wrap gap-2">
-                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
-                                                        County
-                                                    </span>
-                                                    <span className={`font-bold ${textMain} text-right`}>
-                                                        {userData.profile.county || "-"}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between flex-wrap gap-2">
-                                                    <span className={`${textSub} font-bold uppercase text-[10px]`}>
+                                                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
                                                         Specialization
                                                     </span>
-                                                    <span className={`font-bold ${accentText} text-right`}>
+                                                    <span className="text-[12px] font-bold text-blue-600 dark:text-blue-400 text-right">
                                                         {userData.profile.specialization || "-"}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Performance History — flat */}
-                                        <div className="space-y-6">
-                                            <h4 className={`text-xs font-bold ${textMain} uppercase tracking-[2px] flex items-center gap-2`}>
-                                                <div className={`w-1.5 h-4 ${accentBg} rounded-full`} />
-                                                Performance History
+                                        {/* Performance history */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                <span className="w-1 h-3.5 bg-blue-600 rounded-full" />
+                                                Performance history
                                             </h4>
 
                                             {userData.quizResults.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
-                                                        Recent Quizzes
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                                        Recent quizzes
                                                     </p>
-                                                    <div className="space-y-2">
-                                                        {userData.quizResults.slice(0, 3).map((quiz) => (
-                                                            <div
-                                                                key={quiz.id}
-                                                                className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
-                                                            >
-                                                                <span className={`text-xs font-medium truncate max-w-[150px] ${textMain}`}>
-                                                                    {quiz.unit || "Quiz"}
-                                                                </span>
-                                                                <span className="text-xs font-bold text-emerald-600">
-                                                                    {Math.round(
-                                                                        (quiz.score / quiz.total_questions) * 100
-                                                                    )}
-                                                                    %
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    {userData.quizResults.slice(0, 3).map((quiz) => (
+                                                        <div
+                                                            key={quiz.id}
+                                                            className="flex justify-between items-center p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.04]"
+                                                        >
+                                                            <span className="text-[11px] font-medium truncate max-w-[150px] text-slate-900 dark:text-white">
+                                                                {quiz.unit || "Quiz"}
+                                                            </span>
+                                                            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                                                {Math.round(
+                                                                    (quiz.score / quiz.total_questions) * 100
+                                                                )}
+                                                                %
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
 
                                             {userData.simulationResults.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <p className={`text-[10px] font-bold ${accentText} uppercase tracking-wider`}>
-                                                        Recent Simulations
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                                        Recent simulations
                                                     </p>
-                                                    <div className="space-y-2">
-                                                        {userData.simulationResults.slice(0, 3).map((sim) => (
-                                                            <div
-                                                                key={sim.id}
-                                                                className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
-                                                            >
-                                                                <span className={`text-xs font-medium truncate max-w-[150px] ${textMain}`}>
-                                                                    {sim.paper_name || "Simulation"}
-                                                                </span>
-                                                                <span className={`text-xs font-bold ${accentText}`}>
-                                                                    {Math.round(
-                                                                        (sim.score / sim.total_questions) * 100
-                                                                    )}
-                                                                    %
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    {userData.simulationResults.slice(0, 3).map((sim) => (
+                                                        <div
+                                                            key={sim.id}
+                                                            className="flex justify-between items-center p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.04]"
+                                                        >
+                                                            <span className="text-[11px] font-medium truncate max-w-[150px] text-slate-900 dark:text-white">
+                                                                {sim.paper_name || "Simulation"}
+                                                            </span>
+                                                            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                                                                {Math.round(
+                                                                    (sim.score / sim.total_questions) * 100
+                                                                )}
+                                                                %
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
 
                                             {userData.triviaResults.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
-                                                        Daily Trivia
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                                        Daily trivia
                                                     </p>
-                                                    <div className="space-y-2">
-                                                        {userData.triviaResults.slice(0, 3).map((trivia) => (
-                                                            <div
-                                                                key={trivia.id}
-                                                                className={`flex justify-between items-center p-2 ${surfaceAlt} rounded-xl`}
-                                                            >
-                                                                <span className={`text-xs font-medium ${textMain}`}>
-                                                                    {new Date(trivia.attempt_date).toLocaleDateString()}
-                                                                </span>
-                                                                <span className="text-xs font-bold text-amber-600">
-                                                                    {Math.round(
-                                                                        (trivia.score / trivia.total_questions) * 100
-                                                                    )}
-                                                                    %
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    {userData.triviaResults.slice(0, 3).map((trivia) => (
+                                                        <div
+                                                            key={trivia.id}
+                                                            className="flex justify-between items-center p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.04]"
+                                                        >
+                                                            <span className="text-[11px] font-medium text-slate-900 dark:text-white">
+                                                                {new Date(trivia.attempt_date).toLocaleDateString()}
+                                                            </span>
+                                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                                                                {Math.round(
+                                                                    (trivia.score / trivia.total_questions) * 100
+                                                                )}
+                                                                %
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="mt-8 text-center">
-                                            <p className={`text-[9px] font-bold ${textSub} uppercase tracking-[3px]`}>
-                                                Student Since{" "}
+                                        <div className="mt-6 text-center">
+                                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                                Student since{" "}
                                                 {userData.profile.joined_date
                                                     ? new Date(userData.profile.joined_date).getFullYear()
                                                     : "2024"}
@@ -759,10 +737,10 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center text-center py-10 px-4">
-                                        <p className={`text-[11px] font-bold uppercase tracking-[2px] ${textSub} mb-2`}>
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                                             Activity hidden
                                         </p>
-                                        <p className={`text-xs ${textSub} max-w-[260px] leading-relaxed`}>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[260px] leading-relaxed">
                                             Follow this student to see their streaks, stats, and performance history.
                                         </p>
                                     </div>
@@ -770,39 +748,55 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                             </div>
                         ) : (
                             <div className="text-center py-20">
-                                <p className={`${textSub} font-bold uppercase tracking-widest text-xs`}>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     No profile discovered
                                 </p>
                             </div>
                         )}
                     </div>
-                </motion.div>
+                </div>
+            </CenteredModal>
 
-                {/* ---------------- Avatar zoom ---------------- */}
-                <AnimatePresence>
-                    {isAvatarOpen && (
-                        <motion.div
-                            className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={handleAvatarClose}
-                        >
-                            <motion.img
-                                src={userData.profile?.avatar_url || "/UsersAvatar.jpg"}
-                                className="max-h-[80vh] max-w-full rounded-3xl"
-                                initial={{ scale: 0.9 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0.9 }}
-                                transition={{ type: "tween", duration: 0.2 }}
-                                onClick={(e) => e.stopPropagation()}
-                                alt="User avatar enlarged"
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-        </AnimatePresence>,
-        document.body
+            {/* Avatar zoom — unchanged behavior, GitHub palette */}
+            <AnimatePresence>
+                {isAvatarOpen && (
+                    <motion.div
+                        className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4 bg-black/90"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={handleAvatarClose}
+                    >
+                        <motion.img
+                            src={userData.profile?.avatar_url || "/UsersAvatar.jpg"}
+                            className="max-h-[80vh] max-w-full rounded-2xl"
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            transition={{ type: "tween", duration: 0.2 }}
+                            onClick={(e) => e.stopPropagation()}
+                            alt="User avatar enlarged"
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     );
 };
+
+/* ------------------------------------------------------------------ */
+/*  Row helper                                                        */
+/* ------------------------------------------------------------------ */
+
+function AcademicRow({ label, value }: { label: string; value: string | null }) {
+    return (
+        <div className="flex justify-between flex-wrap gap-2">
+            <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                {label}
+            </span>
+            <span className="text-[12px] font-bold text-slate-900 dark:text-white text-right">
+                {value || "-"}
+            </span>
+        </div>
+    );
+}

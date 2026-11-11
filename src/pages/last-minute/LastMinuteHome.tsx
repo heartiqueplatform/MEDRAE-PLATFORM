@@ -398,14 +398,14 @@ export default function LastMinuteHome() {
                     {/* ── CARDS ── */}
                     <section className="mt-3 px-2 sm:px-0">
                         {loading ? (
-                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                            <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                                 {[1, 2, 3, 4].map((j) => (
-                                    <div key={j} className="rounded-xl overflow-hidden bg-white dark:bg-muted/70 shadow-sm animate-pulse">
-                                        <div className="h-60 sm:h-64 w-full bg-gray-200 dark:bg-gray-800" />
+                                    <div key={j} className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22]">
+                                        <div className="h-60 sm:h-64 w-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
                                         <div className="p-4 space-y-3">
-                                            <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-800 rounded-lg" />
-                                            <div className="h-4 w-full bg-gray-200 dark:bg-gray-800 rounded-lg" />
-                                            <div className="h-12 w-full bg-gray-200 dark:bg-gray-800 rounded-2xl mt-2" />
+                                            <div className="h-5 w-3/4 bg-slate-200 dark:bg-white/[0.06] rounded-lg animate-pulse" />
+                                            <div className="h-4 w-full bg-slate-200 dark:bg-white/[0.06] rounded-lg animate-pulse" />
+                                            <div className="h-10 w-full bg-slate-200 dark:bg-white/[0.06] rounded-xl mt-2 animate-pulse" />
                                         </div>
                                     </div>
                                 ))}
@@ -452,8 +452,11 @@ export default function LastMinuteHome() {
                                         <div
                                             key={p.id}
                                             onClick={() => openPaper(p)}
-                                            className="group relative overflow-hidden transition-all duration-300 rounded-xl border-0
-                        bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer p-0"
+                                            className="group relative overflow-hidden rounded-2xl
+bg-white dark:bg-[#161b22]
+cursor-pointer p-0
+active:scale-[0.99] transition-transform"
+                                            style={{ touchAction: "manipulation" }}
                                         >
                                             {/* IMAGE */}
                                             <div className="relative h-60 sm:h-64 w-full overflow-hidden">
@@ -465,14 +468,14 @@ export default function LastMinuteHome() {
                                                         onError={(e) => {
                                                             (e.currentTarget as HTMLImageElement).style.display = "none";
                                                             (e.currentTarget.parentElement as HTMLElement).classList.add(
-                                                                "bg-gradient-to-br", "from-primary/60", "to-primary"
+                                                                "bg-slate-100", "dark:bg-[#0d1117]"
                                                             );
                                                         }}
                                                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                                                     />
                                                 ) : (
-                                                    <div className="h-full w-full bg-gradient-to-br from-primary/60 to-primary flex items-center justify-center">
-                                                        <BookOpen className="w-12 h-12 text-white/60" />
+                                                    <div className="h-full w-full bg-slate-100 dark:bg-[#0d1117] flex items-center justify-center">
+                                                        <BookOpen className="w-12 h-12 text-slate-400 dark:text-slate-600" />
                                                     </div>
                                                 )}
 
@@ -565,16 +568,16 @@ export default function LastMinuteHome() {
                                                         )}
                                                     </button>
                                                 </div>
-
-                                                {/* ACTION ROW — stars on their own row, then bookmark + share together */}
-                                                <div className="pt-3 mt-1 border-t border-gray-100 dark:border-gray-800">
-                                                    <div className="flex flex-col items-center gap-1 mb-3">
-                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center">
+                                                {/* ACTION ROW — stars, then Save + Share labeled pills */}
+                                                <div className="pt-3 mt-1">
+                                                    <div className="flex flex-col items-center gap-1.5 mb-2">
+                                                        <p className="text-[10px] font-bold uppercase tracking-wider
+                      text-slate-500 dark:text-slate-400 text-center">
                                                             {myRating > 0
                                                                 ? `You rated this ${myRating} star${myRating === 1 ? "" : "s"} · tap again to clear`
                                                                 : "Tap a star to rate"}
                                                         </p>
-                                                        <div className="flex items-center justify-center gap-0.5">
+                                                        <div className="flex items-center justify-center gap-1">
                                                             {[1, 2, 3, 4, 5].map((n) => {
                                                                 const filled = myRating >= n;
                                                                 return (
@@ -585,17 +588,22 @@ export default function LastMinuteHome() {
                                                                             const nextRating = myRating === n ? 0 : n;
                                                                             rate(p, nextRating);
                                                                         }}
-                                                                        className="relative flex items-center justify-center h-9 w-9 rounded-md transition-transform hover:scale-110 active:scale-95 touch-manipulation"
+                                                                        className="relative flex items-center justify-center h-9 w-9 rounded-lg
+                                   bg-slate-50 dark:bg-white/[0.04]
+                                   active:scale-[0.95] transition-transform"
+                                                                        style={{ touchAction: "manipulation" }}
                                                                         aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
                                                                     >
                                                                         {bubbleKey === `rt:${p.id}:${n}` && <BubblePop color="#F59E0B" emoji="⭐" />}
                                                                         <Star
-                                                                            size={20}
+                                                                            size={18}
                                                                             fill={filled ? "currentColor" : "none"}
-                                                                            strokeWidth={1.75}
+                                                                            strokeWidth={2}
                                                                             className={cn(
                                                                                 "relative z-10 transition-colors",
-                                                                                filled ? "text-amber-500" : "text-gray-300 dark:text-gray-600"
+                                                                                filled
+                                                                                    ? "text-amber-500"
+                                                                                    : "text-slate-300 dark:text-slate-600"
                                                                             )}
                                                                         />
                                                                     </button>
@@ -604,29 +612,37 @@ export default function LastMinuteHome() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-1.5">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); toggleBookmark(p); }}
                                                             className={cn(
-                                                                "relative flex items-center justify-center h-10 w-10 rounded-xl transition-colors touch-manipulation active:scale-95",
+                                                                "relative flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5",
+                                                                "text-[10px] font-bold uppercase tracking-wider",
+                                                                "active:scale-[0.97] transition-transform",
                                                                 bookmarked
-                                                                    ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
-                                                                    : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                                                    ? "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400"
+                                                                    : "bg-slate-50 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300"
                                                             )}
-                                                            title={bookmarked ? "Bookmarked" : "Save for later"}
+                                                            style={{ touchAction: "manipulation" }}
                                                             aria-label={bookmarked ? "Remove bookmark" : "Bookmark this paper"}
                                                         >
                                                             {bubbleKey === `bm:${p.id}` && <BubblePop color="#10B981" emoji="🔖" />}
-                                                            <Bookmark size={20} fill={bookmarked ? "currentColor" : "none"} className="relative z-10" />
+                                                            <Bookmark size={14} fill={bookmarked ? "currentColor" : "none"} className="relative z-10" />
+                                                            <span className="relative z-10">{bookmarked ? "Saved" : "Save"}</span>
                                                         </button>
 
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); share(p); }}
-                                                            className="relative flex items-center justify-center h-10 w-10 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors touch-manipulation active:scale-95"
-                                                            title="Share"
+                                                            className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5
+                       bg-slate-50 dark:bg-white/[0.04]
+                       text-slate-600 dark:text-slate-300
+                       text-[10px] font-bold uppercase tracking-wider
+                       active:scale-[0.97] transition-transform"
+                                                            style={{ touchAction: "manipulation" }}
                                                             aria-label="Share this paper"
                                                         >
-                                                            <Share2 size={20} />
+                                                            <Share2 size={14} />
+                                                            <span>Share</span>
                                                         </button>
                                                     </div>
                                                 </div>

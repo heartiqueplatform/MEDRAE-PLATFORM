@@ -7,11 +7,8 @@ import {
     getGroupPricePerMember,
     getIndividualPrice,
     getSavingsPerMember,
-} from '@/types/grouppay';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+} from "@/types/grouppay";
+import { Progress } from "@/components/ui/progress";
 import {
     Users,
     User,
@@ -22,15 +19,24 @@ import {
     Phone,
     Sparkles,
     TrendingDown,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { playSound } from "@/lib/soundManager";
+
+const tap = (type: "light" | "success" = "light") => {
+    playSound("ui-tap");
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        if (type === "success") navigator.vibrate([15, 30, 15]);
+        else navigator.vibrate(12);
+    }
+};
 
 interface GroupCardProps {
     group: StudyGroup;
     onJoin?: (groupId: string) => void;
     isMember?: boolean;
-    userRole?: 'leader' | 'member' | null;
+    userRole?: "leader" | "member" | null;
     currentUserId?: string;
 }
 
@@ -43,33 +49,24 @@ export function GroupCard({
 }: GroupCardProps) {
     const navigate = useNavigate();
 
-    // ============================================================
-    // ✅ ALL VALUES DERIVED — no hardcoded numbers anywhere
-    // ============================================================
+    /* ── Derived values ─────────────────────────────────── */
     const durationType: GroupDuration =
-        group.duration_type === '1-month' ? '1-month' : '2-months';
+        group.duration_type === "1-month" ? "1-month" : "2-months";
+    const durationLabel = durationType === "1-month" ? "1 month" : "2 months";
 
-    const durationLabel = durationType === '1-month' ? '1 Month' : '2 Months';
-
-    // Prefer DB values; fall back to helpers only if DB rows are missing
     const pricePerMember =
         group.price_per_member ??
         group.contribution_per_member ??
         getGroupPricePerMember(durationType);
-
     const individualPrice = getIndividualPrice(durationType);
     const savingsPerMember = getSavingsPerMember(durationType);
 
     const currentMembers = group.current_members ?? 0;
     const maxMembers = group.max_members ?? 0;
-
     const progress =
         maxMembers > 0 ? (currentMembers / maxMembers) * 100 : 0;
-
     const isFull = currentMembers >= maxMembers && maxMembers > 0;
-
-    // ✅ Simple model: group is ready when full
-    const readyToActivate = isFull && group.status !== 'active';
+    const readyToActivate = isFull && group.status !== "active";
 
     const isCreator = currentUserId === group.created_by;
     const memberStatus =
@@ -87,258 +84,275 @@ export function GroupCard({
         group.leader_email
     );
 
-    // ============================================================
-    // STATUS BADGE — quiet, borderless palette
-    // ============================================================
-    const statusStyles: Record<typeof group.status, string> = {
-        open: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
-        payment_pending:
-            'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-        active:
-            'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400',
-        closed:
-            'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-    };
-
-    const statusIconFor = (status: typeof group.status) => {
-        // Reuse existing icons we already import; keeps bundle small
-        switch (status) {
-            case 'active':
-                return <Sparkles className="w-3 h-3 mr-1" />;
-            case 'payment_pending':
-                return <Calendar className="w-3 h-3 mr-1" />;
-            case 'closed':
-                return <Lock className="w-3 h-3 mr-1" />;
-            default:
-                return null;
-        }
-    };
-
     const handleCardClick = () => {
+        tap();
         navigate(`/grouppay/${group.id}`);
     };
 
     const handleJoinClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (onJoin) {
-            onJoin(group.id);
-        }
+        tap("success");
+        onJoin?.(group.id);
     };
 
+    /* ── Status pill colors — token palette only ────────── */
+    const statusTone = {
+        open: "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400",
+        payment_pending:
+            "bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400",
+        active:
+            "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400",
+        closed:
+            "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300",
+    }[group.status];
+
     return (
-        <Card
-            className="group rounded-2xl border-0 shadow-none
-                bg-white dark:bg-muted/30
-                hover:bg-slate-50 dark:hover:bg-muted/40
-                transition-colors cursor-pointer overflow-hidden"
+        <article
             onClick={handleCardClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCardClick();
+                }
+            }}
+            className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2.5
+                       cursor-pointer active:scale-[0.995] transition-transform
+                       focus:outline-none"
+            style={{ touchAction: "manipulation" }}
         >
-            {/* Top accent — reflects status subtly */}
-            <div
-                className={`h-1 w-full ${group.status === 'active'
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                    : group.status === 'payment_pending'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500'
-                        : group.status === 'closed'
-                            ? 'bg-gradient-to-r from-slate-400 to-slate-500'
-                            : 'bg-gradient-to-r from-green-500 via-emerald-500 to-blue-500'
-                    }`}
-            />
-
-            <CardHeader className="space-y-2 pb-3 px-4 pt-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-base md:text-lg font-bold leading-tight line-clamp-1 text-slate-900 dark:text-white">
-                            {group.group_name}
-                        </h3>
-                        <p className="text-xs md:text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                            {group.school}
-                        </p>
-
-                        {/* Duration + savings mini-badges */}
-                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                            <Badge className="border-0 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[9px] md:text-[10px] font-semibold">
-                                {durationLabel}
-                            </Badge>
-                            {savingsPerMember > 0 && (
-                                <Badge className="border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] md:text-[10px] font-semibold flex items-center gap-0.5">
-                                    <TrendingDown className="w-2.5 h-2.5" />
-                                    Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}
-                                </Badge>
-                            )}
-                            {readyToActivate && (
-                                <Badge className="border-0 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[9px] md:text-[10px] font-bold flex items-center gap-0.5">
-                                    <Sparkles className="w-2.5 h-2.5" />
-                                    Ready
-                                </Badge>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Lock badge — compact, borderless */}
-                    <Badge
-                        className={`shrink-0 border-0 text-[9px] md:text-[10px] font-semibold px-2 py-0.5 ${group.is_locked
-                            ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
-                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                            }`}
-                    >
-                        {group.is_locked ? (
-                            <Lock className="w-2.5 h-2.5 mr-1" />
-                        ) : (
-                            <Unlock className="w-2.5 h-2.5 mr-1" />
-                        )}
-                        {group.is_locked ? 'Locked' : 'Open'}
-                    </Badge>
+            {/* ── Title row + lock pill ──────────────────── */}
+            <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-[14px] font-bold text-slate-900 dark:text-white
+                                   leading-snug line-clamp-1">
+                        {group.group_name}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400
+                                  line-clamp-1 mt-0.5">
+                        {group.school}
+                    </p>
                 </div>
+                <span
+                    className={`shrink-0 inline-flex items-center gap-1
+                                bg-slate-100 dark:bg-white/[0.06]
+                                text-slate-600 dark:text-slate-300
+                                text-[9px] font-bold uppercase tracking-wider
+                                px-2 py-0.5 rounded-full`}
+                >
+                    {group.is_locked ? (
+                        <Lock className="h-2.5 w-2.5" />
+                    ) : (
+                        <Unlock className="h-2.5 w-2.5" />
+                    )}
+                    {group.is_locked ? "Locked" : "Open"}
+                </span>
+            </div>
 
-                {/* Creator + contact indicator */}
-                <div className="flex items-center text-[11px] md:text-xs text-muted-foreground">
-                    <User className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                    <span className="line-clamp-1">
-                        Created by {group.creator?.name || 'Unknown'}
+            {/* ── Duration + savings + Ready ─────────────── */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="bg-violet-50 dark:bg-violet-400/10
+                                 text-violet-700 dark:text-violet-400
+                                 text-[9px] font-bold uppercase tracking-wider
+                                 px-1.5 py-0.5 rounded-full">
+                    {durationLabel}
+                </span>
+                {savingsPerMember > 0 && (
+                    <span className="inline-flex items-center gap-1
+                                     bg-emerald-50 dark:bg-emerald-400/10
+                                     text-emerald-700 dark:text-emerald-400
+                                     text-[9px] font-bold uppercase tracking-wider
+                                     px-1.5 py-0.5 rounded-full">
+                        <TrendingDown className="h-2.5 w-2.5" />
+                        Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}
                     </span>
-                    {isCreator && (
-                        <Crown className="w-3.5 h-3.5 ml-1.5 text-yellow-500 flex-shrink-0" />
-                    )}
-                    {hasContactInfo && (
-                        <Phone className="w-3 h-3 ml-1.5 text-green-500 flex-shrink-0" />
-                    )}
-                </div>
-            </CardHeader>
+                )}
+                {readyToActivate && (
+                    <span className="inline-flex items-center gap-1
+                                     bg-emerald-600 text-white
+                                     text-[9px] font-bold uppercase tracking-wider
+                                     px-1.5 py-0.5 rounded-full">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Ready
+                    </span>
+                )}
+            </div>
 
-            <CardContent className="space-y-3 pb-3 px-4">
-                {/* Members + time */}
-                <div className="flex items-center justify-between text-xs md:text-sm">
+            {/* ── Creator + contact ──────────────────────── */}
+            <div className="flex items-center gap-1.5
+                            text-[11px] text-slate-500 dark:text-slate-400">
+                <User className="h-3 w-3 shrink-0" />
+                <span className="truncate">
+                    {group.creator?.name || "Unknown"}
+                </span>
+                {isCreator && (
+                    <Crown className="h-3 w-3 text-amber-500 shrink-0" />
+                )}
+                {hasContactInfo && (
+                    <Phone className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                )}
+                <span className="ml-auto shrink-0 text-[10px]">
+                    {formatDistanceToNow(new Date(group.created_at), {
+                        addSuffix: true,
+                    })}
+                </span>
+            </div>
+
+            {/* ── Members + progress ─────────────────────── */}
+            <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" />
-                        <span className="font-medium tabular-nums text-slate-900 dark:text-white">
+                        <Users className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                        <span className="text-[12px] font-bold
+                                         text-slate-900 dark:text-white tabular-nums">
                             {currentMembers}
-                            <span className="text-muted-foreground font-normal">
-                                {' / '}
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">
+                                {" / "}
                                 {maxMembers}
                             </span>
                         </span>
                     </div>
-                    <span className="text-[10px] md:text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(group.created_at), {
-                            addSuffix: true,
-                        })}
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
+                        {Math.round(progress)}%
                     </span>
                 </div>
 
-                {/* Progress bar */}
-                <div className="space-y-1">
-                    <Progress
-                        value={Math.min(progress, 100)}
-                        className="h-1.5"
-                    />
-                    <div className="flex justify-between text-[10px] md:text-xs text-muted-foreground">
-                        <span>
-                            {isFull
-                                ? 'Group is full'
-                                : `${maxMembers - currentMembers} slot${maxMembers - currentMembers !== 1 ? 's' : ''
-                                } left`}
-                        </span>
-                        <span className="tabular-nums">
-                            {Math.round(progress)}%
-                        </span>
-                    </div>
-                </div>
+                <Progress
+                    value={Math.min(progress, 100)}
+                    className="h-1"
+                />
 
-                {/* Description */}
-                {group.description && (
-                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                        {group.description}
-                    </p>
-                )}
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    {isFull
+                        ? "Group is full"
+                        : `${maxMembers - currentMembers} slot${maxMembers - currentMembers !== 1 ? "s" : ""
+                        } left`}
+                </p>
+            </div>
 
-                {/* Price row — all derived, no hardcoding */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border-0">
-                    <span className="text-[11px] md:text-xs text-muted-foreground">
-                        Per member
+            {/* ── Description ────────────────────────────── */}
+            {group.description && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400
+                              line-clamp-2 leading-snug">
+                    {group.description}
+                </p>
+            )}
+
+            {/* ── Price row ──────────────────────────────── */}
+            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-2.5
+                            flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider
+                                 text-slate-500 dark:text-slate-400">
+                    Per member
+                </span>
+                <div className="flex items-baseline gap-1.5">
+                    <span className="text-[13px] font-bold tabular-nums
+                                     text-emerald-600 dark:text-emerald-400">
+                        {GROUPPAY_CONFIG.CURRENCY} {pricePerMember}
                     </span>
-                    <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm md:text-base font-bold text-green-600 dark:text-green-400 tabular-nums">
-                            {GROUPPAY_CONFIG.CURRENCY} {pricePerMember}
+                    {individualPrice > pricePerMember && (
+                        <span className="text-[10px] line-through tabular-nums
+                                         text-slate-400 dark:text-slate-500">
+                            {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
                         </span>
-                        {individualPrice > pricePerMember && (
-                            <span className="text-[10px] md:text-xs text-muted-foreground line-through opacity-60 tabular-nums">
-                                {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
-                            </span>
-                        )}
-                    </div>
+                    )}
                 </div>
+            </div>
 
-                {/* Status badge — quiet, only when not "open" (open is default state) */}
-                {group.status !== 'open' && (
-                    <Badge
-                        className={`border-0 text-[10px] md:text-[11px] font-semibold ${statusStyles[group.status]}`}
-                    >
-                        {statusIconFor(group.status)}
-                        {group.status.replace('_', ' ')}
-                    </Badge>
-                )}
-            </CardContent>
+            {/* ── Status pill (when not "open") ──────────── */}
+            {group.status !== "open" && (
+                <span className={`inline-flex items-center gap-1
+                                  text-[10px] font-bold uppercase tracking-wider
+                                  px-2 py-0.5 rounded-full
+                                  ${statusTone}`}>
+                    {group.status === "active" && (
+                        <Sparkles className="h-2.5 w-2.5" />
+                    )}
+                    {group.status === "payment_pending" && (
+                        <Calendar className="h-2.5 w-2.5" />
+                    )}
+                    {group.status === "closed" && (
+                        <Lock className="h-2.5 w-2.5" />
+                    )}
+                    {group.status.replace("_", " ")}
+                </span>
+            )}
 
-            <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 border-0 bg-transparent">
-                <div className="text-[10px] md:text-xs text-muted-foreground">
-                    Code:{' '}
-                    <span className="font-mono font-semibold text-slate-900 dark:text-white">
+            {/* ── Footer: code + action ──────────────────── */}
+            <div className="flex items-center justify-between gap-2
+                            pt-1 border-t border-slate-100 dark:border-white/[0.04]">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400
+                                truncate min-w-0">
+                    Code:{" "}
+                    <span className="font-mono font-bold
+                                     text-slate-900 dark:text-white">
                         {group.group_code}
                     </span>
                 </div>
 
-                {/* Action area */}
-                {!memberStatus &&
-                    !isFull &&
-                    group.status !== 'closed' &&
-                    !group.is_locked && (
-                        <Button
-                            size="sm"
-                            onClick={handleJoinClick}
-                            disabled={group.is_locked}
-                            className="h-8 md:h-9 px-3 md:px-4 rounded-lg border-0
-                                bg-slate-900 hover:bg-slate-800
-                                dark:bg-white dark:hover:bg-slate-100
-                                text-white dark:text-slate-900
-                                text-xs md:text-sm font-semibold"
+                {/* Actions */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {!memberStatus &&
+                        !isFull &&
+                        group.status !== "closed" &&
+                        !group.is_locked && (
+                            <button
+                                onClick={handleJoinClick}
+                                className="h-8 px-3 rounded-lg
+                                           bg-slate-900 dark:bg-white
+                                           text-white dark:text-slate-900
+                                           text-[11px] font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                Join
+                            </button>
+                        )}
+
+                    {memberStatus && (
+                        <span
+                            className={`inline-flex items-center gap-1
+                                        text-[10px] font-bold uppercase tracking-wider
+                                        px-2 py-0.5 rounded-full
+                                        ${role === "leader"
+                                    ? "bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400"
+                                    : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
+                                }`}
                         >
-                            Join Group
-                        </Button>
+                            {role === "leader" && <Crown className="h-2.5 w-2.5" />}
+                            {role === "leader" ? "Leader" : "Member"}
+                        </span>
                     )}
 
-                {memberStatus && (
-                    <Badge
-                        className={`border-0 text-[10px] md:text-[11px] font-semibold flex items-center gap-1 ${role === 'leader'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            }`}
-                    >
-                        {role === 'leader' && (
-                            <Crown className="w-3 h-3" />
-                        )}
-                        {role === 'leader' ? 'Leader' : 'Member'}
-                    </Badge>
-                )}
+                    {isFull && !memberStatus && (
+                        <span className="bg-slate-100 dark:bg-white/[0.06]
+                                         text-slate-600 dark:text-slate-300
+                                         text-[10px] font-bold uppercase tracking-wider
+                                         px-2 py-0.5 rounded-full">
+                            Full
+                        </span>
+                    )}
 
-                {isFull && !memberStatus && (
-                    <Badge className="border-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] md:text-[11px] font-semibold">
-                        Full
-                    </Badge>
-                )}
+                    {group.status === "closed" && !memberStatus && (
+                        <span className="bg-slate-100 dark:bg-white/[0.06]
+                                         text-slate-600 dark:text-slate-300
+                                         text-[10px] font-bold uppercase tracking-wider
+                                         px-2 py-0.5 rounded-full">
+                            Closed
+                        </span>
+                    )}
 
-                {group.status === 'closed' && !memberStatus && (
-                    <Badge className="border-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] md:text-[11px] font-semibold">
-                        Closed
-                    </Badge>
-                )}
-
-                {group.is_locked && !memberStatus && group.status !== 'closed' && (
-                    <Badge className="border-0 bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-[10px] md:text-[11px] font-semibold">
-                        Locked
-                    </Badge>
-                )}
-            </CardFooter>
-        </Card>
+                    {group.is_locked && !memberStatus && group.status !== "closed" && (
+                        <span className="bg-rose-50 dark:bg-rose-400/10
+                                         text-rose-700 dark:text-rose-400
+                                         text-[10px] font-bold uppercase tracking-wider
+                                         px-2 py-0.5 rounded-full">
+                            Locked
+                        </span>
+                    )}
+                </div>
+            </div>
+        </article>
     );
 }

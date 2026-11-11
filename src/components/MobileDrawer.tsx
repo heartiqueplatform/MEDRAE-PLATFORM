@@ -691,8 +691,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             sectionsArray.push({
                 label: "Tutor Tools",
                 items: [
-                    { title: "Tutor Exams", url: "/tutor/exams", icon: GraduationCap, iconTone: "learning" as IconTone },
-                    { title: "Exam Results", url: "/tutor/exams/results", icon: BarChart3, iconTone: "progress" as IconTone },
+
                     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
                 ],
             });
@@ -747,7 +746,49 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                 ],
             });
         }
+        // ── Institutional Exams ─────────────────────────────────
+        if (isStudent) {
+            sectionsArray.push({
+                label: "Institutional Exams",
+                items: [
+                    {
+                        title: "Candidate Exams",
+                        url: "/exam/candidate",
+                        icon: GraduationCap,
+                        iconTone: "learning" as IconTone,
+                    },
+                    {
+                        title: "Exam Results",
+                        url: "/exam/results",
+                        icon: BarChart3,
+                        iconTone: "progress" as IconTone,
+                    },
+                ],
+            });
+        }
 
+        if (isTutor) {
+            sectionsArray.push({
+                label: "Institutional Exams",
+                items: [
+                    {
+                        title: "Tutor Exams",
+                        url: "/tutor/exams",
+                        icon: GraduationCap,
+                        iconTone: "learning" as IconTone,
+                    },
+                    {
+                        title: "Exam Results",
+                        url: "/tutor/exams/results",
+                        icon: BarChart3,
+                        iconTone: "progress" as IconTone,
+                    },
+                ],
+            });
+        }
+
+        // Staff — intentionally no Institutional Exams section
+        // (matches AppSidebar's `return [];` for staff)
         const learningItems: any[] = [
             { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
             { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
@@ -808,8 +849,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
-    }, [userRole, isStudent, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements]);
-
+    }, [userRole, isStudent, isTutor, isStaff, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements]);
     /* ---------------- Horizontal identity strip ---------------- */
     const identityStrip = useMemo(() => {
         const base: any[] = [

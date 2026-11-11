@@ -26,6 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 import {
   FileText, Layers, Sparkles, Lock, XCircle, Video, CheckCircle2,
   FilePlus, Library, Info, Trash2, Link, Heart, Search, Download,
@@ -66,7 +67,7 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-blue-200/80 dark:bg-blue-950/60",
     badgeText: "text-blue-800 dark:text-blue-200",
     footerBg: "bg-blue-100/60 dark:bg-blue-950/30",
-    footerBorder: "border-blue-200/70 dark:border-blue-900/50",
+    footerBorder: "border-none",
     cardBg: "bg-blue-50 dark:bg-blue-950/25",
     cardBorder: "border-blue-100 dark:border-blue-900/40",
     cardHoverBorder: "hover:border-blue-300 dark:hover:border-blue-700",
@@ -78,7 +79,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-emerald-200/80 dark:bg-emerald-950/60",
     badgeText: "text-emerald-800 dark:text-emerald-200",
     footerBg: "bg-emerald-100/60 dark:bg-emerald-950/30",
-    footerBorder: "border-emerald-200/70 dark:border-emerald-900/50",
+    footerBorder: "border-none",
+
     cardBg: "bg-emerald-50 dark:bg-emerald-950/25",
     cardBorder: "border-emerald-100 dark:border-emerald-900/40",
     cardHoverBorder: "hover:border-emerald-300 dark:hover:border-emerald-700",
@@ -90,7 +92,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-violet-200/80 dark:bg-violet-950/60",
     badgeText: "text-violet-800 dark:text-violet-200",
     footerBg: "bg-violet-100/60 dark:bg-violet-950/30",
-    footerBorder: "border-violet-200/70 dark:border-violet-900/50",
+    footerBorder: "border-none",
+
     cardBg: "bg-violet-50 dark:bg-violet-950/25",
     cardBorder: "border-violet-100 dark:border-violet-900/40",
     cardHoverBorder: "hover:border-violet-300 dark:hover:border-violet-700",
@@ -102,7 +105,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-amber-200/80 dark:bg-amber-950/60",
     badgeText: "text-amber-800 dark:text-amber-200",
     footerBg: "bg-amber-100/60 dark:bg-amber-950/30",
-    footerBorder: "border-amber-200/70 dark:border-amber-900/50",
+    footerBorder: "border-none",
+
     cardBg: "bg-amber-50 dark:bg-amber-950/25",
     cardBorder: "border-amber-100 dark:border-amber-900/40",
     cardHoverBorder: "hover:border-amber-300 dark:hover:border-amber-700",
@@ -114,7 +118,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-rose-200/80 dark:bg-rose-950/60",
     badgeText: "text-rose-800 dark:text-rose-200",
     footerBg: "bg-rose-100/60 dark:bg-rose-950/30",
-    footerBorder: "border-rose-200/70 dark:border-rose-900/50",
+    footerBorder: "border-none",
+
     cardBg: "bg-rose-50 dark:bg-rose-950/25",
     cardBorder: "border-rose-100 dark:border-rose-900/40",
     cardHoverBorder: "hover:border-rose-300 dark:hover:border-rose-700",
@@ -126,7 +131,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-cyan-200/80 dark:bg-cyan-950/60",
     badgeText: "text-cyan-800 dark:text-cyan-200",
     footerBg: "bg-cyan-100/60 dark:bg-cyan-950/30",
-    footerBorder: "border-cyan-200/70 dark:border-cyan-900/50",
+    footerBorder: "border-none",
+
     cardBg: "bg-cyan-50 dark:bg-cyan-950/25",
     cardBorder: "border-cyan-100 dark:border-cyan-900/40",
     cardHoverBorder: "hover:border-cyan-300 dark:hover:border-cyan-700",
@@ -138,7 +144,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-indigo-200/80 dark:bg-indigo-950/60",
     badgeText: "text-indigo-800 dark:text-indigo-200",
     footerBg: "bg-indigo-100/60 dark:bg-indigo-950/30",
-    footerBorder: "border-indigo-200/70 dark:border-indigo-900/50",
+    footerBorder: "border-none",
+
     cardBg: "bg-indigo-50 dark:bg-indigo-950/25",
     cardBorder: "border-indigo-100 dark:border-indigo-900/40",
     cardHoverBorder: "hover:border-indigo-300 dark:hover:border-indigo-700",
@@ -150,7 +157,8 @@ const BLOCK_THEME: Record<string, BlockTheme> = {
     badgeBg: "bg-slate-200/80 dark:bg-slate-800",
     badgeText: "text-slate-700 dark:text-slate-300",
     footerBg: "bg-slate-100/60 dark:bg-slate-900/50",
-    footerBorder: "border-slate-200 dark:border-slate-800",
+    footerBorder: "border-none",
+
     cardBg: "bg-slate-50 dark:bg-slate-900/30",
     cardBorder: "border-slate-200 dark:border-slate-800",
     cardHoverBorder: "hover:border-slate-300 dark:hover:border-slate-700",
@@ -264,6 +272,7 @@ export function Resources() {
   const [floatingBlockOpen, setFloatingBlockOpen] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState("PTS");
   const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);   // ← add
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -898,7 +907,6 @@ export function Resources() {
   };
 
   // ORIGINAL handleViewNote - ONLY uses isPremium for access check
-  // CACHE-FIRST handleViewNote — downloads once, then always reads from device
   const handleViewNote = useCallback(async (note: any) => {
     if (!isPremium) {
       setSelectedNoteForOverlay(note);
@@ -906,12 +914,15 @@ export function Resources() {
       return;
     }
 
+    // Skip if a download for this note is already in flight
+    if (downloadingId === note.id) return;
+
+    setDownloadingId(note.id);
     try {
-      // Cache-first: 1st time downloads + saves; afterwards reads from IndexedDB
       const url = await resolveFileUrl(note);
       if (isMounted.current) setFullscreenNote({ ...note, file_url: url });
 
-      // Only log a view ONCE per user per note, ever (kills DB write egress)
+      // …view-count logic unchanged…
       const seenKey = `seen_${note.id}`;
       if (!localStorage.getItem(seenKey)) {
         localStorage.setItem(seenKey, "1");
@@ -930,7 +941,6 @@ export function Resources() {
             }
           });
       } else {
-        // Still bump the local counter optimistically for the UI
         if (isMounted.current) {
           setViewCounts(prev => ({
             ...prev,
@@ -941,8 +951,10 @@ export function Resources() {
     } catch (err) {
       console.error("View error:", err);
       alert("Failed to load file. Check your connection.");
+    } finally {
+      if (isMounted.current) setDownloadingId(null);
     }
-  }, [isPremium, session?.user?.id, resolveFileUrl]);
+  }, [isPremium, session?.user?.id, resolveFileUrl, downloadingId]);
   // ORIGINAL handleDownloadNote - ONLY uses isPremium for access check
   // handleDownloadNote — now uses the same cache-first resolver
   const handleDownloadNote = useCallback(async (note: any) => {
@@ -952,8 +964,10 @@ export function Resources() {
       return;
     }
 
+    if (downloadingId === note.id) return;
+
+    setDownloadingId(note.id);
     try {
-      // resolveFileUrl already saves silently — if cached, instant; if not, downloads once
       await resolveFileUrl(note);
       if (isMounted.current) {
         setOfflineFiles((prev) =>
@@ -964,8 +978,10 @@ export function Resources() {
     } catch (err) {
       console.error("Failed to save offline:", err);
       alert("Failed to save offline.");
+    } finally {
+      if (isMounted.current) setDownloadingId(null);
     }
-  }, [isPremium, resolveFileUrl]);
+  }, [isPremium, resolveFileUrl, downloadingId]);
 
   const blockCategories = [
     { id: "PTS", name: "YR 1.O/PTS" },
@@ -1064,7 +1080,7 @@ export function Resources() {
         <div
           ref={contentRef}
           className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-              custom-scrollbar overscroll-contain"
+      no-scrollbar overscroll-contain"
         >
           <div className="w-full mx-auto max-w-7xl px-0 sm:px-4 md:px-6 lg:px-8 py-0 sm:py-4 md:py-6 pb-24 safe-bottom">
             {/* REMOVED ALL CARD STYLING ON MOBILE - NO BORDERS, NO ROUNDED, NO PADDING */}
@@ -1163,145 +1179,194 @@ export function Resources() {
                 </div>
 
                 {/* Upload Form - KEPT SAME BUT WITH REDUCED PADDING ON MOBILE */}
-                <AnimatePresence>
-                  {showUploadForm && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mt-2 md:mt-4 overflow-hidden rounded-none md:rounded-xl border-0 md:border border-gray-100 dark:border-gray-800 bg-white dark:bg-muted/30 shadow-2xl"
-                    >
-                      <div className="p-3 md:p-8 space-y-4 md:space-y-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
-                            <UploadCloud className="w-5 h-5 text-emerald-600" />
-                          </div>
-                          <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                            Contribute to Library
-                          </h2>
+                <CenteredModal
+                  open={showUploadForm}
+                  onClose={() => setShowUploadForm(false)}
+                  title="Contribute to library"
+                  subtitle="Add study material for your block"
+                  maxWidthClass="max-w-2xl"
+                  maxHeight="90vh"
+                >
+                  <div className="p-4 space-y-4">
+                    {/* ── Heading (icon + title row) ── */}
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-400/10
+                      flex items-center justify-center shrink-0">
+                        <UploadCloud className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Fill in what you know — everything is optional except the file.
+                      </p>
+                    </div>
+
+                    {/* ── Fields grid ── */}
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {/* Course */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">
+                          Course (optional)
+                        </label>
+                        <Input
+                          placeholder="e.g. Nursing BSc"
+                          value={uploadForm.course}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setUploadForm({ ...uploadForm, course: value });
+                            localStorage.setItem("selectedCourse", value);
+                          }}
+                          className="h-10 rounded-xl bg-slate-50 dark:bg-[#0d1117] border-0
+                     focus-visible:ring-2 focus-visible:ring-emerald-500/40 text-sm"
+                        />
+                      </div>
+
+                      {/* Block */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">
+                          Academic block
+                        </label>
+                        <select
+                          value={uploadForm.block}
+                          onChange={(e) => setUploadForm({ ...uploadForm, block: e.target.value })}
+                          className="w-full h-10 rounded-xl bg-slate-50 dark:bg-[#0d1117] border-0
+                     px-3 text-sm font-medium outline-none
+                     focus:ring-2 focus:ring-emerald-500/40 cursor-pointer"
+                        >
+                          {blockCategories.map((b) => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Description */}
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">
+                          Brief description
+                        </label>
+                        <Input
+                          placeholder="What is this resource about?"
+                          value={uploadForm.description}
+                          onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                          className="h-10 rounded-xl bg-slate-50 dark:bg-[#0d1117] border-0
+                     focus-visible:ring-2 focus-visible:ring-emerald-500/40 text-sm"
+                        />
+                      </div>
+
+                      {/* File type */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">
+                          Format type
+                        </label>
+                        <select
+                          value={uploadForm.fileType}
+                          onChange={(e) => setUploadForm({ ...uploadForm, fileType: e.target.value })}
+                          className="w-full h-10 rounded-xl bg-slate-50 dark:bg-[#0d1117] border-0
+                     px-3 text-sm font-medium outline-none
+                     focus:ring-2 focus:ring-emerald-500/40 cursor-pointer"
+                        >
+                          <option value="pdf">PDF Document</option>
+                          <option value="video">Video Tutorial</option>
+                          <option value="audio">Audio Lecture</option>
+                          <option value="link">Web Link</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* ── Dropzone ── */}
+                    <label className="group block w-full border-2 border-dashed
+                      border-slate-200 dark:border-white/[0.08]
+                      rounded-2xl p-5 text-center cursor-pointer
+                      bg-slate-50 dark:bg-[#0d1117]
+                      active:scale-[0.99] transition-transform">
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (!e.target.files) return;
+                          const selected = Array.from(e.target.files);
+                          setFiles(selected);
+                          uploadBatchResources(e.target.files);
+                        }}
+                      />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full
+                        bg-white dark:bg-[#161b22]
+                        flex items-center justify-center">
+                          <FilePlus className="h-5 w-5 text-emerald-500" />
                         </div>
-                        <div className="grid gap-4 md:gap-5 md:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <label className="text-[8px] md:text-[10px] font-bold  tracking-widest text-gray-400 ml-1">Course (Optional)</label>
-                            <Input
-                              placeholder="e.g. Nursing BSc"
-                              value={uploadForm.course}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setUploadForm({ ...uploadForm, course: value });
-                                localStorage.setItem("selectedCourse", value);
-                              }}
-                              className="h-10 md:h-12 rounded-xl md:rounded-xl bg-gray-50 dark:bg-gray-900 border-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Academic Block</label>
-                            <select
-                              value={uploadForm.block}
-                              onChange={(e) => setUploadForm({ ...uploadForm, block: e.target.value })}
-                              className="w-full h-10 md:h-12 rounded-none md:rounded-xl bg-gray-50 dark:bg-gray-900 border-none px-4 text-sm font-medium focus:ring-2 focus:ring-emerald-500/50 outline-none appearance-none cursor-pointer"
-                            >
-                              {blockCategories.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
-                            </select>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Brief Description</label>
-                            <Input
-                              placeholder="What is this resource about?"
-                              value={uploadForm.description}
-                              onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                              className="h-10 md:h-12 rounded-none md:rounded-xl bg-gray-50 dark:bg-gray-900 border-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Format Type</label>
-                            <select
-                              value={uploadForm.fileType}
-                              onChange={(e) => setUploadForm({ ...uploadForm, fileType: e.target.value })}
-                              className="w-full h-10 md:h-12 rounded-none md:rounded-xl bg-gray-50 dark:bg-gray-900 border-none px-4 text-sm font-medium focus:ring-2 focus:ring-emerald-500/50 outline-none appearance-none cursor-pointer"
-                            >
-                              <option value="pdf">PDF Document</option>
-                              <option value="video">Video Tutorial</option>
-                              <option value="audio">Audio Lecture</option>
-                              <option value="link">Web Link</option>
-                            </select>
-                          </div>
+                        <p className="text-[12px] font-bold text-slate-900 dark:text-white">
+                          {files.length > 0 ? `${files.length} file${files.length === 1 ? "" : "s"} selected` : "Tap to select PDF files"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          PDF only · max 50 MB per file
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* ── Progress ── */}
+                    {uploadProgress !== null && (
+                      <div className="rounded-xl bg-emerald-50 dark:bg-emerald-400/10 p-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 animate-pulse">
+                            Uploading to cloud…
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                            {(() => {
+                              const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024);
+                              const uploaded = (uploadProgress / 100) * totalSize;
+                              return `${uploaded.toFixed(1)} / ${totalSize.toFixed(1)} MB · ${Math.round(uploadProgress)}%`;
+                            })()}
+                          </span>
                         </div>
-                        <div className="relative">
-                          <label className="group block w-full border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-none md:rounded-2xl p-4 md:p-8 text-center hover:border-emerald-500 dark:hover:border-emerald-500/50 transition-all cursor-pointer bg-gray-50/50 dark:bg-gray-900/30">
-                            <input
-                              type="file"
-                              accept=".pdf"
-                              multiple
-                              className="hidden"
-                              onChange={(e) => {
-                                if (!e.target.files) return;
-                                const selected = Array.from(e.target.files);
-                                setFiles(selected);
-                                uploadBatchResources(e.target.files);
-                              }}
-                            />
-                            <div className="flex flex-col items-center gap-2">
-                              <div className="p-2 md:p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm group-hover:scale-110 transition-transform">
-                                <FilePlus className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" />
-                              </div>
-                              <p className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300">
-                                {files.length > 0 ? `${files.length} files selected` : "Click to select or drag PDF files"}
-                              </p>
-                              <p className="text-[8px] md:text-[10px] font-medium text-gray-400">Supported format: PDF (Max 50MB per file)</p>
-                            </div>
-                          </label>
-                        </div>
-                        {uploadProgress !== null && (
-                          <div className="p-3 md:p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-none md:rounded-xl border border-emerald-100 dark:border-emerald-800">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-[8px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-widest animate-pulse">Uploading to Cloud...</span>
-                              <span className="text-[10px] md:text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                                {(() => {
-                                  const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024);
-                                  const uploaded = (uploadProgress / 100) * totalSize;
-                                  return `${uploaded.toFixed(1)} / ${totalSize.toFixed(1)} MB (${Math.round(uploadProgress)}%)`;
-                                })()}
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${uploadProgress}%` }}
-                                className="bg-emerald-500 h-full rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]"
-                              />
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-3">
-                          {uploading ? (
-                            <Button
-                              variant="destructive"
-                              onClick={() => {
-                                uploadAbortController.current?.abort();
-                                setUploading(false);
-                                setUploadProgress(null);
-                                setFiles([]);
-                                alert("Upload process terminated.");
-                              }}
-                              className="flex-1 h-10 md:h-12 rounded-none md:rounded-2xl font-bold shadow-lg shadow-red-200 dark:shadow-none text-sm"
-                            >
-                              <XCircle className="w-4 h-4 mr-2" />Stop & Cancel
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={uploadResource}
-                              disabled={files.length === 0}
-                              className="flex-1 h-10 md:h-12 rounded-none md:rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 dark:shadow-none disabled:opacity-50 text-sm"
-                            >
-                              <CheckCircle2 className="w-4 h-4 mr-2" />Complete Submission
-                            </Button>
-                          )}
+                        <div className="w-full h-1.5 rounded-full bg-emerald-100 dark:bg-emerald-400/20 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                            className="h-full bg-emerald-600 rounded-full"
+                          />
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    )}
+
+                    {/* ── Actions ── */}
+                    <div className="flex items-center gap-2">
+                      {uploading ? (
+                        <button
+                          onClick={() => {
+                            uploadAbortController.current?.abort();
+                            setUploading(false);
+                            setUploadProgress(null);
+                            setFiles([]);
+                            alert("Upload process terminated.");
+                          }}
+                          className="flex-1 h-10 rounded-xl bg-rose-600 text-white
+                     text-sm font-bold
+                     active:scale-[0.97] transition-transform
+                     flex items-center justify-center gap-1.5"
+                          style={{ touchAction: "manipulation" }}
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Stop & cancel
+                        </button>
+                      ) : (
+                        <button
+                          onClick={uploadResource}
+                          disabled={files.length === 0}
+                          className="flex-1 h-10 rounded-xl bg-emerald-600 text-white
+                     text-sm font-bold
+                     active:scale-[0.97] transition-transform
+                     disabled:opacity-50 disabled:active:scale-100
+                     flex items-center justify-center gap-1.5"
+                          style={{ touchAction: "manipulation" }}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Complete submission
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </CenteredModal>
 
                 {/* BLOCK SELECTOR TOOLBAR - FULL WIDTH, NO PADDING */}
                 <div className="relative mt-4 md:mt-6 w-full flex justify-center px-0 sm:px-0">
@@ -1324,62 +1389,45 @@ export function Resources() {
                     <ChevronDown className={`w-3 h-3 md:w-4 md:h-4 ml-1 md:ml-2 transition-transform duration-300 ${floatingBlockOpen ? 'rotate-180' : ''}`} />
                   </Button>
 
-                  <AnimatePresence>
-                    {floatingBlockOpen && (
-                      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={() => setFloatingBlockOpen(false)}
-                          className="absolute inset-0 bg-gray-950/60 backdrop-blur-md"
-                        />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                          className="relative w-full max-w-md bg-white dark:bg-muted/80 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
-                        >
-                          <div className="px-8 pt-8 pb-4">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                              Select Curriculum <span className="text-blue-600 font-normal underline decoration-2 underline-offset-4">Block</span>
-                            </h3>
-                            <p className="text-xs font-medium text-gray-400 mt-2">Filter resources by your current semester or level.</p>
-                          </div>
-                          <div className="px-4 pb-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                            <div className="space-y-1">
-                              {blockCategories.map((cat) => {
-                                const isActive = selectedBlock === cat.id;
-                                return (
-                                  <button
-                                    key={cat.id}
-                                    onClick={() => {
-                                      setSelectedBlock(cat.id);
-                                      setFloatingBlockOpen(false);
-                                    }}
-                                    className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all group ${isActive
-                                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
-                                      }`}
-                                  >
-                                    <span className={`text-sm font-bold ${isActive ? 'translate-x-1' : ''} transition-transform`}>
-                                      {cat.name}
-                                    </span>
-                                    {isActive ? <CheckCircle2 className="w-5 h-5 fill-current" /> : <div className="w-5 h-5 rounded-full border-2 border-gray-100 dark:border-gray-800 group-hover:border-blue-200 transition-colors" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
-                            <Button onClick={() => setFloatingBlockOpen(false)} className="w-full bg-white dark:bg-gray-800 text-gray-500 font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100">
-                              Close Menu
-                            </Button>
-                          </div>
-                        </motion.div>
-                      </div>
-                    )}
-                  </AnimatePresence>
+                  <CenteredModal
+                    open={floatingBlockOpen}
+                    onClose={() => setFloatingBlockOpen(false)}
+                    title="Select block"
+                    subtitle="Filter resources by your current semester or level"
+                    maxWidthClass="max-w-md"
+                    maxHeight="80vh"
+                  >
+                    <div className="px-3 pb-4 space-y-1">
+                      {blockCategories.map((cat) => {
+                        const isActive = selectedBlock === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => {
+                              setSelectedBlock(cat.id);
+                              setFloatingBlockOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between gap-3 px-3 py-3 rounded-xl
+                      transition-colors active:scale-[0.99]
+                      ${isActive
+                                ? "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400"
+                                : "text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-[#0d1117]"
+                              }`}
+                            style={{ touchAction: "manipulation" }}
+                          >
+                            <span className={`text-[12px] font-bold ${isActive ? "translate-x-0.5" : ""} transition-transform`}>
+                              {cat.name}
+                            </span>
+                            {isActive ? (
+                              <CheckCircle2 className="h-4 w-4 fill-current shrink-0" />
+                            ) : (
+                              <span className="h-4 w-4 rounded-full border-2 border-slate-200 dark:border-white/[0.08] shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CenteredModal>
                 </div>
 
                 {/* RESOURCES GRID - NO PADDING, NO MARGIN ON MOBILE */}
@@ -1423,7 +1471,7 @@ export function Resources() {
                                   const theme = themeForBlock(note.block);
                                   return (
                                     <div
-                                      className={`group relative flex flex-col justify-between transition-all duration-300 border-0 border-b sm:border sm:rounded-xl ${theme.cardBg} ${theme.cardBorder} ${theme.cardHoverBorder} rounded-none sm:rounded-xl shadow-none sm:shadow-sm hover:shadow-xl overflow-hidden cursor-pointer`}
+                                      className={`group relative flex flex-col justify-between transition-all duration-300 border-0 border-b rounded-xl ${theme.cardBg} ${theme.cardBorder} ${theme.cardHoverBorder} overflow-hidden cursor-pointer`}
                                       onClick={() => setDetailsOverlayNote(note)}
                                     >
 
@@ -1482,19 +1530,59 @@ export function Resources() {
                                         <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
                                           {note.file_type === "pdf" && (
                                             <>
-                                              <Button size="sm" variant="secondary" className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3"
+                                              <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                disabled={downloadingId === note.id}
+                                                className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2
+                 bg-purple-50 text-purple-700 hover:bg-purple-100
+                 dark:bg-purple-900/20 dark:text-purple-400
+                 transition-all active:scale-95 border-none
+                 text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3
+                 disabled:opacity-50 disabled:active:scale-100"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleViewNote(note);
-                                                }}>
-                                                {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<Eye className="h-3 w-3 md:h-4 md:w-4" /> View
+                                                }}
+                                              >
+                                                {downloadingId === note.id ? (
+                                                  <>
+                                                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-700" />
+                                                    Loading…
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}
+                                                    <Eye className="h-3 w-3 md:h-4 md:w-4" /> View
+                                                  </>
+                                                )}
                                               </Button>
-                                              <Button size="sm" variant="secondary" onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDownloadNote(note);
-                                              }}
-                                                className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3">
-                                                {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<DownloadCloud className="h-3 w-3 md:h-4 md:w-4" /> Cache
+                                              <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                disabled={downloadingId === note.id}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDownloadNote(note);
+                                                }}
+                                                className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2
+                 bg-blue-50 text-blue-700 hover:bg-blue-100
+                 dark:bg-blue-900/20 dark:text-blue-400
+                 transition-all active:scale-95 border-none
+                 text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3
+                 disabled:opacity-50 disabled:active:scale-100"
+                                              >
+                                                {downloadingId === note.id ? (
+                                                  <>
+                                                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-700" />
+                                                    Saving…
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}
+                                                    <DownloadCloud className="h-3 w-3 md:h-4 md:w-4" /> Cache
+                                                  </>
+                                                )}
                                               </Button>
                                             </>
                                           )}
@@ -1679,197 +1767,203 @@ export function Resources() {
       </AnimatePresence >
 
       {/* DETAILS OVERLAY */}
-      <AnimatePresence>
+      <CenteredModal
+        open={!!detailsOverlayNote}
+        onClose={() => setDetailsOverlayNote(null)}
+        title={detailsOverlayNote?.title || "Resource"}
+        subtitle={detailsOverlayNote?.file_type?.toUpperCase() || "Details"}
+        maxWidthClass="max-w-lg"
+        maxHeight="85vh"
+      >
         {detailsOverlayNote && (
-          <div className="fixed inset-0 z-[250] flex items-center justify-center p-0 md:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDetailsOverlayNote(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800"
-            >
-              {/* Header with gradient bar - sticky on mobile */}
-              <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
-                <div className="flex justify-between items-center p-4">
-                  <div className="flex items-center gap-2">
-                    {getTypeIcon(detailsOverlayNote.file_type)}
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
-                      {detailsOverlayNote.title}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setDetailsOverlayNote(null)}
-                    className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                  </button>
-                </div>
+          <div className="px-4 pb-4 space-y-4">
+            {/* Description */}
+            {detailsOverlayNote.description && (
+              <div className="space-y-1">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Description
+                </h4>
+                <p className="text-[12px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                  {detailsOverlayNote.description}
+                </p>
               </div>
+            )}
 
-              {/* Content - more padding on mobile for readability */}
-              <div className="p-4 md:p-5 space-y-5">
-                {/* Description section */}
-                {detailsOverlayNote.description && (
-                  <div className="space-y-1.5">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                      <Info className="h-3 w-3" /> Description
-                    </h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {detailsOverlayNote.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Details grid - NOW SHOWS ALL COLUMNS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  {detailsOverlayNote.course && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Course</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{detailsOverlayNote.course}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.unit && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Unit</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{detailsOverlayNote.unit}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.block && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Block</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{detailsOverlayNote.block}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.institution && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Institution</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{detailsOverlayNote.institution}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.file_type && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">File Type</p>
-                      <Badge className={getTypeColor(detailsOverlayNote.file_type)}>
-                        {detailsOverlayNote.file_type?.toUpperCase() || "PDF"}
-                      </Badge>
-                    </div>
-                  )}
-                  {detailsOverlayNote.category && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Category</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{detailsOverlayNote.category}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.sub_category && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Sub Category</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{detailsOverlayNote.sub_category}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.usage_type && (
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Usage Type</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{detailsOverlayNote.usage_type}</p>
-                    </div>
-                  )}
-                  <div className="space-y-0.5">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Uploaded</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {new Date(detailsOverlayNote.created_at).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  {detailsOverlayNote.tags && detailsOverlayNote.tags.length > 0 && (
-                    <div className="space-y-0.5 col-span-full">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Tags</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {detailsOverlayNote.tags.map((tag: string, i: number) => (
-                          <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+            {/* Details grid — unchanged fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              {detailsOverlayNote.course && (
+                <DetailField label="Course" value={detailsOverlayNote.course} />
+              )}
+              {detailsOverlayNote.unit && (
+                <DetailField label="Unit" value={detailsOverlayNote.unit} />
+              )}
+              {detailsOverlayNote.block && (
+                <DetailField label="Block" value={detailsOverlayNote.block} />
+              )}
+              {detailsOverlayNote.institution && (
+                <DetailField label="Institution" value={detailsOverlayNote.institution} />
+              )}
+              {detailsOverlayNote.file_type && (
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">File type</p>
+                  <Badge className={getTypeColor(detailsOverlayNote.file_type)}>
+                    {detailsOverlayNote.file_type?.toUpperCase() || "PDF"}
+                  </Badge>
                 </div>
-
-                {/* Stats row */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" /> {viewCounts[detailsOverlayNote.id] || 0} views
-                    </span>
-                    <button
-                      className={`flex items-center gap-1 transition-colors ${bookmarkedItems.includes(detailsOverlayNote.id) ? "text-red-500" : "text-gray-600 dark:text-gray-400"
-                        }`}
-                      onClick={() => toggleLike(detailsOverlayNote.id)}
-                    >
-                      <Heart className={`h-4 w-4 ${bookmarkedItems.includes(detailsOverlayNote.id) ? "fill-current" : ""}`} />
-                      {likeCounts[detailsOverlayNote.id] || 0} likes
-                    </button>
-                    {detailsOverlayNote.download_count > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Download className="h-4 w-4" /> {detailsOverlayNote.download_count} downloads
+              )}
+              {detailsOverlayNote.category && (
+                <DetailField label="Category" value={detailsOverlayNote.category} />
+              )}
+              {detailsOverlayNote.sub_category && (
+                <DetailField label="Sub category" value={detailsOverlayNote.sub_category} />
+              )}
+              {detailsOverlayNote.usage_type && (
+                <DetailField label="Usage type" value={detailsOverlayNote.usage_type} />
+              )}
+              <DetailField
+                label="Uploaded"
+                value={new Date(detailsOverlayNote.created_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              />
+              {detailsOverlayNote.tags && detailsOverlayNote.tags.length > 0 && (
+                <div className="space-y-1 col-span-full">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tags</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {detailsOverlayNote.tags.map((tag: string, i: number) => (
+                      <span
+                        key={i}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full
+                             bg-slate-100 dark:bg-white/[0.06]
+                             text-slate-600 dark:text-slate-300"
+                      >
+                        #{tag}
                       </span>
-                    )}
+                    ))}
                   </div>
-                  {offlineFiles.includes(detailsOverlayNote.id) && (
-                    <Badge variant="outline" className="text-[10px]">Saved Offline</Badge>
-                  )}
                 </div>
+              )}
+            </div>
 
-                {/* Action buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <Button
-                    className="w-full sm:flex-1 rounded-xl"
-                    onClick={() => {
-                      setDetailsOverlayNote(null);
-                      handleViewNote(detailsOverlayNote);
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Full Document
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:flex-1 rounded-xl"
-                    onClick={() => {
-                      setDetailsOverlayNote(null);
-                      handleDownloadNote(detailsOverlayNote);
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Save Offline
-                  </Button>
-                </div>
-
-                {/* Premium note warning */}
-                {!isPremium && (
-                  <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
-                    <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                      <Lock className="h-3 w-3" />
-                      This is a premium resource. Upgrade to view the full document.
-                    </p>
-                  </div>
+            {/* Stats row */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-white/[0.06]">
+              <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3.5 w-3.5" />
+                  {viewCounts[detailsOverlayNote.id] || 0} views
+                </span>
+                <button
+                  className={`flex items-center gap-1 transition-colors ${bookmarkedItems.includes(detailsOverlayNote.id)
+                    ? "text-rose-500"
+                    : "text-slate-600 dark:text-slate-400"
+                    }`}
+                  onClick={() => toggleLike(detailsOverlayNote.id)}
+                >
+                  <Heart className={`h-3.5 w-3.5 ${bookmarkedItems.includes(detailsOverlayNote.id) ? "fill-current" : ""}`} />
+                  {likeCounts[detailsOverlayNote.id] || 0}
+                </button>
+                {detailsOverlayNote.download_count > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Download className="h-3.5 w-3.5" />
+                    {detailsOverlayNote.download_count}
+                  </span>
                 )}
               </div>
-            </motion.div>
+              {offlineFiles.includes(detailsOverlayNote.id) && (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                           text-[10px] font-bold
+                           bg-emerald-50 dark:bg-emerald-400/10
+                           text-emerald-600 dark:text-emerald-400">
+                  Saved offline
+                </span>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                onClick={() => {
+                  if (downloadingId === detailsOverlayNote.id) return;
+                  handleViewNote(detailsOverlayNote);
+                  setDetailsOverlayNote(null);
+                }}
+                disabled={downloadingId === detailsOverlayNote.id}
+                className="w-full sm:flex-1 h-10 rounded-xl bg-blue-600 text-white
+             text-sm font-bold
+             active:scale-[0.97] transition-transform
+             disabled:opacity-50 disabled:active:scale-100
+             flex items-center justify-center gap-1.5"
+                style={{ touchAction: "manipulation" }}
+              >
+                {downloadingId === detailsOverlayNote.id ? (
+                  <>
+                    <span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                    Loading…
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    View full document
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  if (downloadingId === detailsOverlayNote.id) return;
+                  handleDownloadNote(detailsOverlayNote);
+                  setDetailsOverlayNote(null);
+                }}
+                disabled={downloadingId === detailsOverlayNote.id}
+                className="w-full sm:flex-1 h-10 rounded-xl
+             bg-slate-100 dark:bg-white/[0.06]
+             text-slate-700 dark:text-slate-200
+             text-sm font-bold
+             active:scale-[0.97] transition-transform
+             disabled:opacity-50 disabled:active:scale-100
+             flex items-center justify-center gap-1.5"
+                style={{ touchAction: "manipulation" }}
+              >
+                {downloadingId === detailsOverlayNote.id ? (
+                  <>
+                    <span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-slate-700 dark:border-slate-200" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Save offline
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Premium warning */}
+            {!isPremium && (
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-400/10 p-3">
+                <p className="text-[11px] text-amber-700 dark:text-amber-300 flex items-start gap-1.5 leading-relaxed">
+                  <Lock className="h-3 w-3 shrink-0 mt-0.5" />
+                  This is a premium resource. Upgrade to view the full document.
+                </p>
+              </div>
+            )}
           </div>
-        )
-        }
-      </AnimatePresence >
+        )}
+      </CenteredModal>
     </>
+  );
+}
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className="text-[12px] font-bold text-slate-900 dark:text-white break-words">
+        {value}
+      </p>
+    </div>
   );
 }

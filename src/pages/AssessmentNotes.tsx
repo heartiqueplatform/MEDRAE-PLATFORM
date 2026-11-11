@@ -30,6 +30,7 @@ import { UnitPics } from "@/components/deco/UnitPics";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
 import { ChevronLeft } from "lucide-react";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 // SKELETON LOADER COMPONENT
 const SkeletonCard = () => (
   <div className="animate-pulse bg-white dark:bg-gray-800 border-0 sm:rounded-xl p-3 md:p-4">
@@ -165,6 +166,7 @@ export default function AssessmentNotes() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [selectedBlock, setSelectedBlock] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
@@ -557,12 +559,13 @@ export default function AssessmentNotes() {
       return;
     }
 
+    if (downloadingId === note.id) return;
+
+    setDownloadingId(note.id);
     try {
-      // Cache-first: 1st time downloads + saves silently; afterwards reads from IndexedDB
       const url = await resolveFileUrl(note);
       if (isMounted.current) setFullscreenNote({ ...note, file_url: url });
 
-      // Only log a view ONCE per user per note, ever (kills DB write egress on re-opens)
       if (session?.user?.id) {
         const seenKey = `seen_${session.user.id}_${note.id}`;
         if (!localStorage.getItem(seenKey)) {
@@ -587,11 +590,12 @@ export default function AssessmentNotes() {
     } catch (err) {
       console.error("View error:", err);
       alert("Failed to load file. Check your connection.");
+    } finally {
+      if (isMounted.current) setDownloadingId(null);
     }
   };
 
   // ORIGINAL handleDownloadNote - ONLY uses isPremium for access check
-  // handleDownloadNote — now uses the same cache-first resolver
   const handleDownloadNote = async (noteId: string, url: string) => {
     if (!isPremium) {
       const note = notes.find(n => n.id === noteId);
@@ -603,8 +607,10 @@ export default function AssessmentNotes() {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
 
+    if (downloadingId === noteId) return;
+
+    setDownloadingId(noteId);
     try {
-      // resolveFileUrl already saves silently — cached = instant, uncached = 1 download
       await resolveFileUrl(note);
       if (isMounted.current) {
         setOfflineFiles((prev) => prev.includes(noteId) ? prev : [...prev, noteId]);
@@ -613,6 +619,8 @@ export default function AssessmentNotes() {
     } catch (err) {
       console.error("Failed to save offline:", err);
       alert(navigator.onLine ? "Couldn't cache this file. Try again." : "You're offline — can't cache right now.");
+    } finally {
+      if (isMounted.current) setDownloadingId(null);
     }
   };
   const handleDelete = async (note: any) => {
@@ -822,7 +830,7 @@ export default function AssessmentNotes() {
 
   return (
     <>
-      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+      <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden ">
 
         {/* Sticky top bar */}
         <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
@@ -857,10 +865,9 @@ export default function AssessmentNotes() {
         <div
           ref={contentRef}
           className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-              custom-scrollbar overscroll-contain"
+      no-scrollbar overscroll-contain"
         >
-          <div className="w-full mx-auto max-w-5xl px-0 sm:px-4 md:px-6 py-0 sm:py-4 md:py-6 pb-24 safe-bottom">
-            {/* Header Card (kept — the intro text is content, not chrome) */}
+          <div className="w-full mx-auto max-w-5xl px-3 sm:px-4 md:px-6 py-0 sm:py-4 md:py-6 pb-24 safe-bottom">            {/* Header Card (kept — the intro text is content, not chrome) */}
             <div className="relative shadow-none transition-all rounded-xl md:rounded-xl border-0 overflow-hidden bg-white dark:bg-muted/30 mx-0">
               <div className="p-3 md:p-6 pb-2 md:pb-3">
                 <div className="text-xs md:text-sm text-muted-foreground pt-1">
@@ -942,86 +949,157 @@ export default function AssessmentNotes() {
 
 
             {/* Upload Form - NO BORDER ON MOBILE */}
-            <AnimatePresence>
-              {showUploadForm && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="border-0   rounded-xl md:rounded-xl p-3 md:p-4 space-y-3 md:space-y-4 bg-muted/20 mx-0"
-                >
-                  <form onSubmit={handleUpload} className="space-y-3 md:space-y-4">
-                    <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2">
-                      <Input name="title" placeholder="Title *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
-                      <Input name="description" placeholder="Short Description" className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
-                      <Input name="course" placeholder="Course *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
-                      <Input name="institution" placeholder="Institution *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
-                      <Input name="unit" placeholder="Unit *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
-                      <Input name="category" placeholder="Category *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
-                      <select
-                        className="border-0   rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
-                        value={selectedBlock}
-                        onChange={(e) => {
-                          setSelectedBlock(e.target.value);
-                          setSelectedSubcategory("");
-                        }}
-                        required
-                      >
-                        <option value="">Select Block *</option>
-                        {SECTIONS.map((s) => (
-                          <option key={s.title} value={s.title}>{s.title}</option>
-                        ))}
-                      </select>
-                      <select
-                        className="border-0   rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
-                        value={selectedSubcategory}
-                        onChange={(e) => setSelectedSubcategory(e.target.value)}
-                        required
-                        disabled={!selectedBlock}
-                      >
-                        <option value="">Select Subcategory *</option>
-                        {SECTIONS.find((s) => s.title === selectedBlock)?.subcategories.map((sub) => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
-                      <Input
-                        type="file"
-                        name="file"
-                        required
-                        className="rounded-xl md:rounded-xl text-sm h-9 md:h-10"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          setSelectedFile(file);
-                        }}
+            <CenteredModal
+              open={showUploadForm}
+              onClose={() => setShowUploadForm(false)}
+              title="Upload assessment note"
+              subtitle="Share a guide, case study, or research resource"
+              maxWidthClass="max-w-2xl"
+              maxHeight="92vh"
+              locked={uploading}
+            >
+              <form onSubmit={handleUpload} className="p-4 space-y-3">
+                {/* Fields grid */}
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                  <Input
+                    name="title"
+                    placeholder="Title *"
+                    required
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  />
+                  <Input
+                    name="description"
+                    placeholder="Short description"
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  />
+                  <Input
+                    name="course"
+                    placeholder="Course *"
+                    required
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  />
+                  <Input
+                    name="institution"
+                    placeholder="Institution *"
+                    required
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  />
+                  <Input
+                    name="unit"
+                    placeholder="Unit *"
+                    required
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  />
+                  <Input
+                    name="category"
+                    placeholder="Category *"
+                    required
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  />
+
+                  <select
+                    value={selectedBlock}
+                    onChange={(e) => {
+                      setSelectedBlock(e.target.value);
+                      setSelectedSubcategory("");
+                    }}
+                    required
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   px-3 outline-none cursor-pointer
+                   focus:ring-2 focus:ring-blue-500/40"
+                  >
+                    <option value="">Select block *</option>
+                    {SECTIONS.map((s) => (
+                      <option key={s.title} value={s.title}>{s.title}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedSubcategory}
+                    onChange={(e) => setSelectedSubcategory(e.target.value)}
+                    required
+                    disabled={!selectedBlock}
+                    className="h-10 rounded-xl border-0 text-sm
+                   bg-slate-50 dark:bg-[#0d1117]
+                   px-3 outline-none cursor-pointer
+                   focus:ring-2 focus:ring-blue-500/40
+                   disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select subcategory *</option>
+                    {SECTIONS.find((s) => s.title === selectedBlock)?.subcategories.map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* File input */}
+                <Input
+                  type="file"
+                  name="file"
+                  required
+                  className="h-10 rounded-xl border-0 text-sm
+                 bg-slate-50 dark:bg-[#0d1117]
+                 file:mr-3 file:h-8 file:rounded-lg file:border-0
+                 file:bg-slate-200 dark:file:bg-white/[0.1]
+                 file:text-slate-700 dark:file:text-slate-200
+                 file:text-xs file:font-bold file:px-3
+                 focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSelectedFile(file);
+                  }}
+                />
+
+                {/* Progress */}
+                {uploadProgress !== null && selectedFile && (
+                  <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-3 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-blue-700 dark:text-blue-400 tabular-nums">
+                        {uploadProgress}%
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400 tabular-nums">
+                        {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
+                        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-blue-100 dark:bg-blue-400/20 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
+                  </div>
+                )}
 
-                    {uploadProgress !== null && selectedFile && (
-                      <div className="space-y-1">
-                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{uploadProgress}%</span>
-                          <span>
-                            {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
-                            {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button type="submit" disabled={uploading} className="w-full rounded-xl md:rounded-xl text-sm h-9 md:h-10">
-                      <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-2" />
-                      {uploading ? "Uploading..." : "Upload Note"}
-                    </Button>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="w-full h-10 rounded-xl bg-blue-600 text-white
+                 text-sm font-bold
+                 flex items-center justify-center gap-1.5
+                 active:scale-[0.97] transition-transform
+                 disabled:opacity-50 disabled:active:scale-100"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  {uploading ? "Uploading…" : "Upload note"}
+                </button>
+              </form>
+            </CenteredModal>
 
             {/* Accordion Sections - NO BORDER ON MOBILE */}
             {/* Accordion Sections OR Global Search Results */}
@@ -1129,27 +1207,52 @@ export default function AssessmentNotes() {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDownloadNote(note.id, note.file_url);
-                                        }}
-                                      >
-                                        <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
-                                        Cache
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
+                                        disabled={downloadingId === note.id}
+                                        className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg
+               text-[9px] md:text-xs
+               disabled:opacity-50"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleViewNote(note);
                                         }}
                                       >
-                                        <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
-                                        View
+                                        {downloadingId === note.id ? (
+                                          <>
+                                            <span className="animate-spin rounded-full h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 border-b-2 border-current" />
+                                            Loading…
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                            View
+                                          </>
+                                        )}
                                       </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled={downloadingId === note.id}
+                                        className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg
+               text-[9px] md:text-xs
+               disabled:opacity-50"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDownloadNote(note.id, note.file_url);
+                                        }}
+                                      >
+                                        {downloadingId === note.id ? (
+                                          <>
+                                            <span className="animate-spin rounded-full h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 border-b-2 border-current" />
+                                            Saving…
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                            Cache
+                                          </>
+                                        )}
+                                      </Button>
+
                                       {session?.user?.id === note.uploaded_by && (
                                         <Button
                                           size="sm"
@@ -1164,6 +1267,7 @@ export default function AssessmentNotes() {
                                         </Button>
                                       )}
                                     </div>
+
 
                                     <div className="flex justify-between items-center pt-1 md:pt-2 border-t border-gray-100 dark:border-gray-800">
                                       <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-muted-foreground">
@@ -1314,31 +1418,57 @@ export default function AssessmentNotes() {
                                           </div>
 
                                           <div className="pt-1 md:pt-0 space-y-2 md:space-y-3">
+
                                             <div className="flex gap-1 md:gap-2 flex-wrap">
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDownloadNote(note.id, note.file_url);
-                                                }}
-                                              >
-                                                <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
-                                                Cache
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
+                                                disabled={downloadingId === note.id}
+                                                className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg
+                 text-[9px] md:text-xs
+                 disabled:opacity-50"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleViewNote(note);
                                                 }}
                                               >
-                                                <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
-                                                View
+                                                {downloadingId === note.id ? (
+                                                  <>
+                                                    <span className="animate-spin rounded-full h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 border-b-2 border-current" />
+                                                    Loading…
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                                    View
+                                                  </>
+                                                )}
                                               </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                disabled={downloadingId === note.id}
+                                                className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg
+                 text-[9px] md:text-xs
+                 disabled:opacity-50"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDownloadNote(note.id, note.file_url);
+                                                }}
+                                              >
+                                                {downloadingId === note.id ? (
+                                                  <>
+                                                    <span className="animate-spin rounded-full h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 border-b-2 border-current" />
+                                                    Saving…
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                                    Cache
+                                                  </>
+                                                )}
+                                              </Button>
+
                                               {session?.user?.id === note.uploaded_by && (
                                                 <Button
                                                   size="sm"
@@ -1353,6 +1483,7 @@ export default function AssessmentNotes() {
                                                 </Button>
                                               )}
                                             </div>
+
 
                                             <div className="flex justify-between items-center pt-1 md:pt-2 border-t border-gray-100 dark:border-gray-800">
                                               <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-muted-foreground">
@@ -1507,201 +1638,213 @@ export default function AssessmentNotes() {
       </AnimatePresence >
 
       {/* DETAILS OVERLAY - FULL EDGE-TO-EDGE ON MOBILE */}
-      <AnimatePresence>
-        {
-          detailsOverlayNote && (
-            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-0 md:p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setDetailsOverlayNote(null)}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      <CenteredModal
+        open={!!detailsOverlayNote}
+        onClose={() => setDetailsOverlayNote(null)}
+        title={detailsOverlayNote?.title || "Resource"}
+        subtitle={detailsOverlayNote?.file_type?.toUpperCase() || "Details"}
+        maxWidthClass="max-w-lg"
+        maxHeight="85vh"
+      >
+        {detailsOverlayNote && (
+          <div className="px-4 pb-4 space-y-4">
+            {/* Description */}
+            {detailsOverlayNote.description && (
+              <div className="space-y-1">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider
+                         text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Description
+                </h4>
+                <p className="text-[12px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                  {detailsOverlayNote.description}
+                </p>
+              </div>
+            )}
+
+            {/* Details grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {detailsOverlayNote.course && (
+                <DetailField label="Course" value={detailsOverlayNote.course} />
+              )}
+              {detailsOverlayNote.institution && (
+                <DetailField label="Institution" value={detailsOverlayNote.institution} />
+              )}
+              {detailsOverlayNote.unit && (
+                <DetailField label="Unit" value={detailsOverlayNote.unit} />
+              )}
+              {detailsOverlayNote.category && (
+                <DetailField label="Category" value={detailsOverlayNote.category} />
+              )}
+              {detailsOverlayNote.block && (
+                <DetailField label="Block" value={detailsOverlayNote.block} />
+              )}
+              {detailsOverlayNote.sub_category && (
+                <DetailField label="Subcategory" value={detailsOverlayNote.sub_category} />
+              )}
+              {detailsOverlayNote.usage_type && (
+                <DetailField label="Usage type" value={detailsOverlayNote.usage_type} />
+              )}
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider
+                        text-slate-500 dark:text-slate-400">
+                  File type
+                </p>
+                <Badge className={getTypeColor(detailsOverlayNote.file_type)}>
+                  {detailsOverlayNote.file_type?.toUpperCase() || "PDF"}
+                </Badge>
+              </div>
+              <DetailField
+                label="Uploaded"
+                value={new Date(detailsOverlayNote.created_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
               />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0   border-gray-200 dark:border-gray-800 rounded-xl md:rounded-xl"
-              >
-                {/* Header with gradient bar - sticky on mobile */}
-                <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-0">
-                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
-                  <div className="flex justify-between items-center p-3 md:p-4">
-                    <div className="flex items-center gap-1.5 md:gap-2">
-                      {getTypeIcon(detailsOverlayNote.file_type)}
-                      <h3 className="font-bold text-sm md:text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
-                        {detailsOverlayNote.title}
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() => setDetailsOverlayNote(null)}
-                      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <X className="h-5 w-5 md:h-6 md:w-6 text-gray-500 dark:text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Content - more padding on mobile for readability */}
-                <div className="p-4 md:p-5 space-y-4 md:space-y-5">
-                  {/* Description section */}
-                  {detailsOverlayNote.description && (
-                    <div className="space-y-1">
-                      <h4 className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                        <Info className="h-2.5 w-2.5 md:h-3 md:w-3" /> Description
-                      </h4>
-                      <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {detailsOverlayNote.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Details grid - ALL COLUMNS */}
-                  <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
-                    {detailsOverlayNote.course && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Course</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.course}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.institution && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Institution</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.institution}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.unit && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Unit</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.unit}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.category && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Category</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.category}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.block && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Block</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.block}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.sub_category && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Subcategory</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.sub_category}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.usage_type && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Usage Type</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">{detailsOverlayNote.usage_type}</p>
-                      </div>
-                    )}
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">File Type</p>
-                      <Badge className={getTypeColor(detailsOverlayNote.file_type)}>
-                        {detailsOverlayNote.file_type?.toUpperCase() || "PDF"}
-                      </Badge>
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Uploaded</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">
-                        {new Date(detailsOverlayNote.created_at).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                    {detailsOverlayNote.download_count > 0 && (
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Downloads</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">{detailsOverlayNote.download_count}</p>
-                      </div>
-                    )}
-                    {detailsOverlayNote.tags && detailsOverlayNote.tags.length > 0 && (
-                      <div className="space-y-0.5 col-span-full">
-                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Tags</p>
-                        <div className="flex flex-wrap gap-1">
-                          {detailsOverlayNote.tags.map((tag: string, i: number) => (
-                            <span key={i} className="text-[9px] md:text-xs bg-gray-100 dark:bg-gray-800 px-1.5 md:px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="flex items-center justify-between pt-2 md:pt-3 border-0">
-                    <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                      <span className="flex items-center gap-0.5 md:gap-1">
-                        <Eye className="h-3 w-3 md:h-4 md:w-4" /> {viewCounts[detailsOverlayNote.id] || 0} views
-                      </span>
-                      <button
-                        className={`flex items-center gap-0.5 md:gap-1 transition-colors ${bookmarkedItems.includes(detailsOverlayNote.id) ? "text-red-500" : "text-gray-600 dark:text-gray-400"
-                          }`}
-                        onClick={() => toggleLike(detailsOverlayNote.id)}
+              {detailsOverlayNote.download_count > 0 && (
+                <DetailField
+                  label="Downloads"
+                  value={String(detailsOverlayNote.download_count)}
+                />
+              )}
+              {detailsOverlayNote.tags && detailsOverlayNote.tags.length > 0 && (
+                <div className="space-y-1 col-span-full">
+                  <p className="text-[10px] font-bold uppercase tracking-wider
+                          text-slate-500 dark:text-slate-400">
+                    Tags
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailsOverlayNote.tags.map((tag: string, i: number) => (
+                      <span
+                        key={i}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full
+                             bg-slate-100 dark:bg-white/[0.06]
+                             text-slate-600 dark:text-slate-300"
                       >
-                        <Heart className={`h-3 w-3 md:h-4 md:w-4 ${bookmarkedItems.includes(detailsOverlayNote.id) ? "fill-current" : ""}`} />
-                        {likeCounts[detailsOverlayNote.id] || 0} likes
-                      </button>
-                      {detailsOverlayNote.download_count > 0 && (
-                        <span className="flex items-center gap-0.5 md:gap-1">
-                          <Download className="h-3 w-3 md:h-4 md:w-4" /> {detailsOverlayNote.download_count} downloads
-                        </span>
-                      )}
-                    </div>
-                    {offlineFiles.includes(detailsOverlayNote.id) && (
-                      <Badge variant="outline" className="text-[8px] md:text-[10px]">Saved Offline</Badge>
-                    )}
+                        #{tag}
+                      </span>
+                    ))}
                   </div>
-
-                  {/* Action buttons */}
-                  <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-1 md:pt-2">
-                    <Button
-                      className="w-full sm:flex-1 rounded-xl md:rounded-xl text-xs md:text-sm h-9 md:h-10"
-                      onClick={() => {
-                        setDetailsOverlayNote(null);
-                        handleViewNote(detailsOverlayNote);
-                      }}
-                    >
-                      <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      View Full Document
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full sm:flex-1 rounded-xl md:rounded-xl text-xs md:text-sm h-9 md:h-10"
-                      onClick={() => {
-                        setDetailsOverlayNote(null);
-                        handleDownloadNote(detailsOverlayNote.id, detailsOverlayNote.file_url);
-                      }}
-                    >
-                      <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      Save Offline
-                    </Button>
-                  </div>
-
-                  {!isPremium && (
-                    <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl md:rounded-xl border-0">
-                      <p className="text-[10px] md:text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                        <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                        This is a premium resource. Upgrade to view the full document.
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </motion.div>
+              )}
             </div>
-          )
-        }
-      </AnimatePresence>
+
+            {/* Stats row */}
+            <div className="flex items-center justify-between pt-3
+                      border-t border-slate-200/60 dark:border-white/[0.06]">
+              <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3.5 w-3.5" />
+                  {viewCounts[detailsOverlayNote.id] || 0} views
+                </span>
+                <button
+                  className={`flex items-center gap-1 transition-colors ${bookmarkedItems.includes(detailsOverlayNote.id)
+                    ? "text-rose-500"
+                    : "text-slate-600 dark:text-slate-400"
+                    }`}
+                  onClick={() => toggleLike(detailsOverlayNote.id)}
+                >
+                  <Heart className={`h-3.5 w-3.5 ${bookmarkedItems.includes(detailsOverlayNote.id) ? "fill-current" : ""}`} />
+                  {likeCounts[detailsOverlayNote.id] || 0}
+                </button>
+                {detailsOverlayNote.download_count > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Download className="h-3.5 w-3.5" />
+                    {detailsOverlayNote.download_count}
+                  </span>
+                )}
+              </div>
+              {offlineFiles.includes(detailsOverlayNote.id) && (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                           text-[10px] font-bold
+                           bg-emerald-50 dark:bg-emerald-400/10
+                           text-emerald-600 dark:text-emerald-400">
+                  Saved offline
+                </span>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                onClick={() => {
+                  setDetailsOverlayNote(null);
+                  handleViewNote(detailsOverlayNote);
+                }}
+                disabled={downloadingId === detailsOverlayNote.id}
+                className="w-full sm:flex-1 h-10 rounded-xl bg-blue-600 text-white
+       text-sm font-bold
+       flex items-center justify-center gap-1.5
+       active:scale-[0.97] transition-transform
+       disabled:opacity-50 disabled:active:scale-100"
+                style={{ touchAction: "manipulation" }}
+              >
+                {downloadingId === detailsOverlayNote.id ? (
+                  <>
+                    <span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                    Loading…
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    View full document
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setDetailsOverlayNote(null);
+                  handleDownloadNote(detailsOverlayNote.id, detailsOverlayNote.file_url);
+                }}
+                disabled={downloadingId === detailsOverlayNote.id}
+                className="w-full sm:flex-1 h-10 rounded-xl
+       bg-slate-100 dark:bg-white/[0.06]
+       text-slate-700 dark:text-slate-200
+       text-sm font-bold
+       flex items-center justify-center gap-1.5
+       active:scale-[0.97] transition-transform
+       disabled:opacity-50 disabled:active:scale-100"
+                style={{ touchAction: "manipulation" }}
+              >
+                {downloadingId === detailsOverlayNote.id ? (
+                  <>
+                    <span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-slate-700 dark:border-slate-200" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Save offline
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Premium warning */}
+            {!isPremium && (
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-400/10 p-3">
+                <p className="text-[11px] text-amber-700 dark:text-amber-300 flex items-start gap-1.5 leading-relaxed">
+                  <Lock className="h-3 w-3 shrink-0 mt-0.5" />
+                  This is a premium resource. Upgrade to view the full document.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </CenteredModal>
     </>
+  );
+}
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className="text-[12px] font-bold text-slate-900 dark:text-white break-words">
+        {value}
+      </p>
+    </div>
   );
 }

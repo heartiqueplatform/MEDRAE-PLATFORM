@@ -17,11 +17,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
-    ChampionMascot,
-    CoachMascot,
-    SproutMascot,
     MiniChampion,
     MiniCoach,
+    SproutMascot,
 } from "@/components/Algorithm/Mascots";
 import { CoachInsightsOverlay } from "@/components/Algorithm/CoachInsightsOverlay";
 import type { UnitData, RankingItem } from "@/components/Algorithm/types";
@@ -34,13 +32,22 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+import { playSound } from "@/lib/soundManager";
 
-// Lazy-load Lottie so it never blocks first paint
-// lottie-react v3: named import, no lazy needed (already tree-shakeable)
-import { Lottie } from "lottie-react";
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
 
-// Animation JSON — imported as a module so Vite bundles it efficiently
-import nurseAnimation from "@/assets/lottie/Nurse_Hospital.json";
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = () => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    vibrate(15);
+};
 
 interface AlgorithmData {
     user_id: string;
@@ -54,70 +61,52 @@ interface AlgorithmData {
     score_history?: number[];
 }
 
-// --- Skeleton ---
+/* ------------------------------------------------------------------ */
+/*  Skeleton — GitHub palette, matches real card shape                */
+/* ------------------------------------------------------------------ */
+
 function AlgorithmSkeleton() {
     return (
-        <div className="w-full space-y-3 px-2">
-            <div className="relative overflow-hidden rounded-xl border-0 bg-white dark:bg-slate-800/50">
-                <div className="p-6 md:p-8 flex flex-col items-center">
-                    <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse mb-4" />
-                    <div className="h-16 w-40 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse mb-6" />
+        <div className="w-full space-y-3 px-1">
+            {/* Hero card skeleton */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 md:p-4 space-y-3 animate-pulse">
+                <div className="h-5 w-32 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
+                <div className="h-16 w-40 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
+                <div className="h-5 w-24 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
+                <div className="h-4 w-2/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                <div className="h-[140px] w-full bg-slate-200 dark:bg-white/[0.06] rounded-xl" />
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="h-10 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
+                    <div className="h-10 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
                 </div>
-                <div className="h-[130px] w-full bg-slate-100 dark:bg-slate-700/40 animate-pulse" />
-                <div className="p-6 md:p-8 pt-4 flex flex-col items-center">
-                    <div className="h-4 w-28 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+                <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="space-y-1.5">
+                            <div className="h-5 w-10 mx-auto bg-slate-200 dark:bg-white/[0.1] rounded" />
+                            <div className="h-3 w-16 mx-auto bg-slate-200 dark:bg-white/[0.1] rounded" />
+                        </div>
+                    ))}
                 </div>
             </div>
+
+            {/* Unit mastery carousel skeleton */}
             <div className="flex gap-2 overflow-hidden">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="min-w-[62vw] sm:min-w-[240px] h-[140px] rounded-2xl bg-white dark:bg-slate-800/50 animate-pulse" />
+                {[1, 2, 3].map((i) => (
+                    <div
+                        key={i}
+                        className="min-w-[62vw] sm:min-w-[240px] h-[140px]
+                                   rounded-2xl bg-white dark:bg-[#161b22] animate-pulse"
+                    />
                 ))}
             </div>
         </div>
     );
 }
 
-// --- Hero Lottie (isolated so it doesn't re-render the whole card) ---
-function HeroLottie() {
-    const [reducedMotion, setReducedMotion] = useState(false);
-    const [visible, setVisible] = useState(true);
+/* ------------------------------------------------------------------ */
+/*  Tier helpers                                                      */
+/* ------------------------------------------------------------------ */
 
-    useEffect(() => {
-        // Respect prefers-reduced-motion
-        const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-        setReducedMotion(mq.matches);
-        const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-        mq.addEventListener?.("change", onChange);
-        return () => mq.removeEventListener?.("change", onChange);
-    }, []);
-
-    useEffect(() => {
-        // Pause animation when tab hidden — saves CPU
-        const onVis = () => setVisible(!document.hidden);
-        document.addEventListener("visibilitychange", onVis);
-        return () => document.removeEventListener("visibilitychange", onVis);
-    }, []);
-
-    return (
-        <div
-            className="pointer-events-none absolute top-1 right-1
-               w-16 h-16 sm:w-24 sm:h-24 md:w-[150px] md:h-[150px]
-               opacity-70 sm:opacity-85 md:opacity-90
-               -z-0"
-        >
-            <Suspense fallback={null}>
-                <Lottie
-                    src={nurseAnimation}
-                    loop={!reducedMotion && visible}
-                    autoplay={!reducedMotion}
-                    style={{ width: "100%", height: "100%" }}
-                />
-            </Suspense>
-        </div>
-    );
-}
-
-// --- Tier helpers ---
 function scoreTier(s: number) {
     if (s >= 70) return "high";
     if (s >= 50) return "medium";
@@ -130,8 +119,14 @@ function barColorFor(score: number) {
     return "#ef4444";
 }
 
-// --- Horizontal Snap Carousel ---
-function SnapCarousel({ children, itemWidthClass = "w-[48vw] sm:w-[200px]" }: {
+/* ------------------------------------------------------------------ */
+/*  Horizontal Snap Carousel                                          */
+/* ------------------------------------------------------------------ */
+
+function SnapCarousel({
+    children,
+    itemWidthClass = "w-[48vw] sm:w-[200px]",
+}: {
     children: React.ReactNode;
     itemWidthClass?: string;
 }) {
@@ -161,6 +156,7 @@ function SnapCarousel({ children, itemWidthClass = "w-[48vw] sm:w-[200px]" }: {
     const scrollByCards = (dir: 1 | -1) => {
         const el = scrollerRef.current;
         if (!el) return;
+        tap();
         const card = el.querySelector<HTMLElement>("[data-card]");
         const amount = (card?.offsetWidth ?? 240) + 12;
         el.scrollBy({ left: dir * amount, behavior: "smooth" });
@@ -174,12 +170,14 @@ function SnapCarousel({ children, itemWidthClass = "w-[48vw] sm:w-[200px]" }: {
                 onClick={() => scrollByCards(-1)}
                 disabled={!canLeft}
                 className={`hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-20
-                    w-8 h-8 items-center justify-center rounded-full
-                    bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
-                    text-gray-700 dark:text-gray-200 transition-opacity
-                    ${canLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                            h-8 w-8 items-center justify-center rounded-full
+                            bg-white dark:bg-[#161b22]
+                            text-slate-700 dark:text-slate-200
+                            active:scale-[0.92] transition-transform
+                            ${canLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                style={{ touchAction: "manipulation" }}
             >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="h-4 w-4" />
             </button>
             <button
                 type="button"
@@ -187,19 +185,21 @@ function SnapCarousel({ children, itemWidthClass = "w-[48vw] sm:w-[200px]" }: {
                 onClick={() => scrollByCards(1)}
                 disabled={!canRight}
                 className={`hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-20
-                    w-8 h-8 items-center justify-center rounded-full
-                    bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
-                    text-gray-700 dark:text-gray-200 transition-opacity
-                    ${canRight ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                            h-8 w-8 items-center justify-center rounded-full
+                            bg-white dark:bg-[#161b22]
+                            text-slate-700 dark:text-slate-200
+                            active:scale-[0.92] transition-transform
+                            ${canRight ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                style={{ touchAction: "manipulation" }}
             >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="h-4 w-4" />
             </button>
 
             <div
                 ref={scrollerRef}
                 className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth
-                    px-1 pb-2 -mx-1
-                    [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                           px-1 pb-2 -mx-1
+                           [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 {Array.isArray(children)
                     ? children.map((child, i) => (
@@ -217,17 +217,20 @@ function SnapCarousel({ children, itemWidthClass = "w-[48vw] sm:w-[200px]" }: {
     );
 }
 
-// --- Mastery Dots ---
+/* ------------------------------------------------------------------ */
+/*  Mastery Dots                                                      */
+/* ------------------------------------------------------------------ */
+
 function MasteryDots({ score }: { score: number }) {
     const filled = Math.max(0, Math.min(5, Math.round(score / 20)));
     return (
         <div className="flex items-center gap-1">
-            {[0, 1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3, 4].map((i) => (
                 <span
                     key={i}
                     className={`h-1.5 w-1.5 rounded-full ${i < filled
                         ? "bg-current"
-                        : "bg-gray-200 dark:bg-gray-700"
+                        : "bg-slate-200 dark:bg-white/[0.08]"
                         }`}
                 />
             ))}
@@ -235,7 +238,10 @@ function MasteryDots({ score }: { score: number }) {
     );
 }
 
-// --- Custom CSS Bar Chart (scrollable, huge bars, hover/tap tooltip) ---
+/* ------------------------------------------------------------------ */
+/*  Custom CSS Bar Chart                                              */
+/* ------------------------------------------------------------------ */
+
 function HugeBarChart({
     data,
 }: {
@@ -246,15 +252,13 @@ function HugeBarChart({
 
     return (
         <div className="relative">
-            {/* Floating tooltip card — appears above the active bar */}
             {active && (
                 <div
                     className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 z-30
-                        rounded-xl bg-white dark:bg-[#161b22] px-3 py-2
-                        ring-1 ring-gray-200 dark:ring-[#30363d] shadow-lg
-                        min-w-[140px] max-w-[200px]"
+                               rounded-xl bg-white dark:bg-[#161b22] px-3 py-2
+                               min-w-[140px] max-w-[200px]"
                 >
-                    <p className="text-[11px] font-bold text-gray-900 dark:text-[#e6edf3] truncate">
+                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
                         {active.fullName}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
@@ -262,7 +266,7 @@ function HugeBarChart({
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: active.fill }}
                         />
-                        <span className="text-[11px] font-bold tabular-nums text-gray-700 dark:text-[#8b949e]">
+                        <span className="text-[11px] font-bold tabular-nums text-slate-600 dark:text-slate-300">
                             {active.score}% avg · {active.attempts}×
                         </span>
                     </div>
@@ -271,10 +275,10 @@ function HugeBarChart({
 
             <div
                 className="flex gap-3 items-end overflow-x-auto overflow-y-visible pt-14 pb-1 px-1
-        [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
-        snap-x snap-mandatory"
+                           [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+                           snap-x snap-mandatory"
                 style={{
-                    touchAction: "pan-x pan-y",   // ← allow vertical scroll to pass through
+                    touchAction: "pan-x pan-y",
                     WebkitOverflowScrolling: "touch",
                     overscrollBehaviorX: "contain",
                     overscrollBehaviorY: "auto",
@@ -291,44 +295,39 @@ function HugeBarChart({
                             onMouseLeave={() => setActiveIdx(null)}
                             onTouchStart={() => setActiveIdx(i)}
                             onClick={() => {
+                                tap();
                                 setActiveIdx(isActive ? null : i);
                                 if (!isActive) {
                                     setTimeout(() => setActiveIdx((cur) => (cur === i ? null : cur)), 3000);
                                 }
                             }}
                             className="snap-start shrink-0 flex flex-col items-center gap-1.5 w-[58px] outline-none"
+                            style={{ touchAction: "manipulation" }}
                             aria-label={`${d.fullName}: ${d.score}%`}
                         >
-                            {/* Score bubble */}
                             <span
                                 className="text-[11px] font-bold tabular-nums leading-none transition-opacity"
-                                style={{
-                                    color: d.fill,
-                                    opacity: isActive ? 1 : 0.85,
-                                }}
+                                style={{ color: d.fill, opacity: isActive ? 1 : 0.85 }}
                             >
                                 {d.score}%
                             </span>
 
-                            {/* The bar */}
                             <div className="relative w-full h-[140px] flex items-end">
                                 <div
                                     className={`w-full rounded-t-lg transition-all duration-300 ease-out
-                                        ${isActive ? "brightness-110 scale-y-[1.03]" : ""}`}
+                                                ${isActive ? "brightness-110 scale-y-[1.03]" : ""}`}
                                     style={{
                                         height: `${heightPct}%`,
                                         backgroundColor: d.fill,
-                                        boxShadow: `0 -1px 0 0 rgba(255,255,255,0.15) inset`,
                                     }}
                                 />
                             </div>
 
-                            {/* Label */}
                             <span
                                 className={`text-[9px] font-semibold truncate w-full text-center
-                                    ${isActive
-                                        ? "text-gray-900 dark:text-white"
-                                        : "text-gray-500 dark:text-gray-400"}`}
+                                            ${isActive
+                                        ? "text-slate-900 dark:text-white"
+                                        : "text-slate-500 dark:text-slate-400"}`}
                             >
                                 {d.name}
                             </span>
@@ -340,27 +339,26 @@ function HugeBarChart({
     );
 }
 
-// --- Compact Strengths & Focus (opens overlay on tap) ---
+/* ------------------------------------------------------------------ */
+/*  Strengths & Focus                                                 */
+/* ------------------------------------------------------------------ */
+
 interface StrengthsFocusStripProps {
     strongest: { value: UnitData }[];
     weakest: { value: UnitData }[];
     onViewAll: () => void;
 }
 
-function StrengthsFocusStrip({
-    strongest,
-    weakest,
-    onViewAll,
-}: StrengthsFocusStripProps) {
+function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusStripProps) {
     const hasAny = strongest.length > 0 || weakest.length > 0;
 
     if (!hasAny) {
         return (
-            <div className="p-4 rounded-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-md text-center">
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-center">
                 <div className="flex justify-center mb-1">
                     <SproutMascot size={40} />
                 </div>
-                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                     Complete a few units to unlock your coach insights
                 </p>
             </div>
@@ -370,19 +368,20 @@ function StrengthsFocusStrip({
     const totalCount = strongest.length + weakest.length;
 
     return (
-        <div className="rounded-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-3 space-y-2">
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2">
             <div className="flex items-center justify-between px-0.5">
                 <div className="flex items-center gap-1.5">
                     <MiniChampion size={18} />
-                    <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        Your Coach Says
+                    <h4 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Your coach says
                     </h4>
                 </div>
                 {totalCount > 2 && (
                     <button
-                        onClick={onViewAll}
+                        onClick={() => { tap(); onViewAll(); }}
                         className="text-[10px] font-bold text-blue-600 dark:text-blue-400
-                            hover:underline transition-colors"
+                                   active:text-blue-700 dark:active:text-blue-300 transition-colors"
+                        style={{ touchAction: "manipulation" }}
                     >
                         View all ({totalCount}) →
                     </button>
@@ -393,42 +392,41 @@ function StrengthsFocusStrip({
                 <div className="space-y-1">
                     <div className="flex items-center gap-1 px-0.5">
                         <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                            Champion Areas
+                            Champion areas
                         </span>
-                        <div className="flex-1 h-px bg-emerald-200/50 dark:bg-emerald-900/40" />
+                        <div className="flex-1 h-px bg-slate-200/60 dark:bg-white/[0.06]" />
                     </div>
                     <div className="space-y-1">
                         {strongest.slice(0, 2).map((item, i) => (
                             <motion.button
                                 key={`s-${i}`}
-                                onClick={onViewAll}
+                                onClick={() => { tap(); onViewAll(); }}
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: i * 0.06, duration: 0.25 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-xl text-left
-                                    bg-gradient-to-r from-emerald-50 to-emerald-50/40
-                                    dark:from-emerald-900/20 dark:to-emerald-900/5
-                                    hover:from-emerald-100/80 hover:to-emerald-50/60
-                                    dark:hover:from-emerald-900/30 dark:hover:to-emerald-900/10
-                                    transition-colors"
+                                           bg-emerald-50 dark:bg-emerald-400/10
+                                           active:bg-emerald-100 dark:active:bg-emerald-400/20
+                                           transition-colors"
+                                style={{ touchAction: "manipulation" }}
                             >
                                 <div className="shrink-0">
                                     <MiniChampion size={20} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 truncate">
+                                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
                                         {item.value.unit_name}
                                     </p>
-                                    <p className="text-[9px] font-medium text-emerald-700/70 dark:text-emerald-400/80">
+                                    <p className="text-[9px] font-medium text-emerald-700 dark:text-emerald-400">
                                         Your best zone
                                     </p>
                                 </div>
                                 <div className="shrink-0 flex items-center gap-1.5">
-                                    <span className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
+                                    <span className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                                         {item.value.average_score.toFixed(0)}%
                                     </span>
-                                    <ChevronRight className="w-3 h-3 text-emerald-500/60 dark:text-emerald-400/50" />
+                                    <ChevronRight className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                             </motion.button>
                         ))}
@@ -440,42 +438,41 @@ function StrengthsFocusStrip({
                 <div className="space-y-1">
                     <div className="flex items-center gap-1 px-0.5">
                         <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                            Needs Love
+                            Needs love
                         </span>
-                        <div className="flex-1 h-px bg-rose-200/50 dark:bg-rose-900/40" />
+                        <div className="flex-1 h-px bg-slate-200/60 dark:bg-white/[0.06]" />
                     </div>
                     <div className="space-y-1">
                         {weakest.slice(0, 2).map((item, i) => (
                             <motion.button
                                 key={`w-${i}`}
-                                onClick={onViewAll}
+                                onClick={() => { tap(); onViewAll(); }}
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-xl text-left
-                                    bg-gradient-to-r from-rose-50 to-rose-50/40
-                                    dark:from-rose-900/20 dark:to-rose-900/5
-                                    hover:from-rose-100/80 hover:to-rose-50/60
-                                    dark:hover:from-rose-900/30 dark:hover:to-rose-900/10
-                                    transition-colors"
+                                           bg-rose-50 dark:bg-rose-400/10
+                                           active:bg-rose-100 dark:active:bg-rose-400/20
+                                           transition-colors"
+                                style={{ touchAction: "manipulation" }}
                             >
                                 <div className="shrink-0">
                                     <MiniCoach size={20} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-rose-900 dark:text-rose-200 truncate">
+                                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
                                         {item.value.unit_name}
                                     </p>
-                                    <p className="text-[9px] font-medium text-rose-700/70 dark:text-rose-400/80">
+                                    <p className="text-[9px] font-medium text-rose-700 dark:text-rose-400">
                                         Practice to level up
                                     </p>
                                 </div>
                                 <div className="shrink-0 flex items-center gap-1.5">
-                                    <span className="text-sm font-bold tabular-nums text-rose-700 dark:text-rose-300">
+                                    <span className="text-sm font-bold tabular-nums text-rose-700 dark:text-rose-400">
                                         {item.value.average_score.toFixed(0)}%
                                     </span>
-                                    <ChevronRight className="w-3 h-3 text-rose-500/60 dark:text-rose-400/50" />
+                                    <ChevronRight className="h-3 w-3 text-rose-600 dark:text-rose-400" />
                                 </div>
                             </motion.button>
                         ))}
@@ -486,7 +483,10 @@ function StrengthsFocusStrip({
     );
 }
 
-// --- Main Component ---
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
+
 export default function Algorithm() {
     const navigate = useNavigate();
     const [data, setData] = useState<AlgorithmData | null>(null);
@@ -502,7 +502,7 @@ export default function Algorithm() {
                 const parsed = JSON.parse(cached);
                 setData(parsed);
                 setLoading(false);
-            } catch (e) { }
+            } catch (e) { /* ignore */ }
         }
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -540,7 +540,6 @@ export default function Algorithm() {
     const units = useMemo(() => data?.unit_predictions || [], [data?.unit_predictions]);
     const visibleUnitsData = useMemo(() => units.slice(0, visibleUnits), [units]);
 
-    // LINE chart series
     const scoreSeries = useMemo(() => {
         if (!data) return [];
         if (Array.isArray(data.score_history) && data.score_history.length >= 2) {
@@ -556,7 +555,6 @@ export default function Algorithm() {
         return s != null ? [0, s] : [];
     }, [data]);
 
-    // Smart labels for the line chart X-axis
     const lineChartData = useMemo(() => {
         if (!data) return [];
 
@@ -596,7 +594,6 @@ export default function Algorithm() {
         return [];
     }, [data]);
 
-    // BAR chart data
     const barData = useMemo(() => {
         const u = data?.unit_predictions || [];
         return u.map(x => ({
@@ -610,7 +607,10 @@ export default function Algorithm() {
     }, [data]);
 
     const handleUnitClick = useCallback(
-        (unitId: string) => navigate(`/Medrae-quizzes?unit=${unitId}`),
+        (unitId: string) => {
+            tap();
+            navigate(`/Medrae-quizzes?unit=${unitId}`);
+        },
         [navigate]
     );
 
@@ -622,189 +622,183 @@ export default function Algorithm() {
     const isHighScore = score >= 70;
     const isMediumScore = score >= 50 && score < 70;
 
-    const theme = isHighScore
-        ? { colors: ["#10b981", "#059669", "#0d9488"] as [string, string, string], glow: "#10b981" }
-        : isMediumScore
-            ? { colors: ["#f59e0b", "#f97316", "#ef4444"] as [string, string, string], glow: "#f97316" }
-            : { colors: ["#ef4444", "#dc2626", "#b91c1c"] as [string, string, string], glow: "#ef4444" };
+    const tier =
+        isHighScore ? "high" : isMediumScore ? "medium" : "low";
+    const accent =
+        tier === "high"
+            ? {
+                bg: "bg-emerald-50 dark:bg-emerald-400/10",
+                text: "text-emerald-700 dark:text-emerald-400",
+                bar: "bg-emerald-600",
+                stroke: "#10b981",
+            }
+            : tier === "medium"
+                ? {
+                    bg: "bg-amber-50 dark:bg-amber-400/10",
+                    text: "text-amber-700 dark:text-amber-400",
+                    bar: "bg-amber-500",
+                    stroke: "#f59e0b",
+                }
+                : {
+                    bg: "bg-rose-50 dark:bg-rose-400/10",
+                    text: "text-rose-700 dark:text-rose-400",
+                    bar: "bg-rose-600",
+                    stroke: "#ef4444",
+                };
 
     return (
-        <div className="w-full space-y-2 px-1">
-            {/* HERO CARD */}
-            <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-muted/30">
-                <div className="px-3 md:px-6 pt-3 md:pt-6">
-                    <div
-                        className={`relative overflow-hidden rounded-2xl p-4 md:p-6
-${isHighScore
-                                ? "bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600"
-                                : isMediumScore
-                                    ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500"
-                                    : "bg-gradient-to-br from-red-500 via-red-600 to-rose-700"}`}
-                    >
-                        {/* Ambient blobs */}
-                        <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-                        <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-black/10 blur-3xl pointer-events-none" />
-
-                        {/* 🩺 NURSE LOTTIE — top-right corner */}
-                        <HeroLottie />
-
-                        <div className="relative z-10 flex flex-col items-center text-center">
-                            <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
-                                <Brain className="w-3.5 h-3.5 text-white/70" />
-                                <span className="text-[9px] md:text-[10px] font-medium tracking-[0.18em] text-white/70 ">
-                                    Exam Prediction Readiness
-                                </span>
-                            </div>
-                            <div className="flex items-baseline gap-0.5 text-white drop-shadow-sm">
-                                <span className="text-4xl md:text-5xl font-semibold tracking-tight leading-none tabular-nums">
-                                    {score.toFixed(1)}
-                                </span>
-                                <span className="text-xl md:text-2xl font-normal">%</span>
-                            </div>
-                            <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm
-    bg-white/20 backdrop-blur-sm text-white text-[10px] md:text-[11px] font-bold tracking-wide">
-                                {readiness} readiness
-                            </div>
-                            <p className="mt-2 text-[11px] md:text-xs font-medium text-white/85 max-w-xs leading-relaxed">
-                                {isHighScore
-                                    ? "Strong performance — keep it up"
-                                    : isMediumScore
-                                        ? "On track — a few more sessions to peak"
-                                        : "Focus on weak units to raise this score"}
-                            </p>
+        <div className="w-full space-y-3 px-1">
+            {/* ── HERO CARD ──────────────────────────────────────── */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+                {/* Score section */}
+                <div className="p-4 md:p-6">
+                    <div className="flex flex-col items-center text-center">
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                            <Brain className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider
+                                             text-slate-500 dark:text-slate-400">
+                                Exam prediction readiness
+                            </span>
                         </div>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-5xl font-bold tabular-nums leading-none tracking-tight
+                                             text-slate-900 dark:text-white">
+                                {score.toFixed(1)}
+                            </span>
+                            <span className="text-2xl font-normal text-slate-500 dark:text-slate-400">
+                                %
+                            </span>
+                        </div>
+                        <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1
+                                         ${accent.bg} ${accent.text}
+                                         text-[11px] font-bold`}>
+                            {readiness} readiness
+                        </div>
+                        <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                            {isHighScore
+                                ? "Strong performance — keep it up"
+                                : isMediumScore
+                                    ? "On track — a few more sessions to peak"
+                                    : "Focus on weak units to raise this score"}
+                        </p>
                     </div>
                 </div>
 
-                {/* CHART WITH TOGGLE */}
+                {/* Chart panel */}
                 {(scoreSeries.length >= 2 || barData.length >= 1) && (
-                    <div className="px-3 md:px-6 mt-2">
-                        <div
-                            className={`relative overflow-hidden rounded-2xl p-3 pt-3
-                ${isHighScore
-                                    ? "bg-emerald-50/70 dark:bg-emerald-950/20"
-                                    : isMediumScore
-                                        ? "bg-amber-50/70 dark:bg-amber-950/20"
-                                        : "bg-red-50/70 dark:bg-red-950/20"}`}
-                        >
-                            <div className={`absolute -top-16 -left-10 h-40 w-40 rounded-full blur-3xl pointer-events-none
-                    ${isHighScore
-                                    ? "bg-emerald-400/20"
-                                    : isMediumScore
-                                        ? "bg-amber-400/20"
-                                        : "bg-red-400/20"}`}
-                            />
-
-                            <div className="relative z-10 flex items-center justify-between mb-1 px-1">
-                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                                    {chartMode === "bars" ? "Unit Performance" : "Score Trend"}
+                    <div className="px-3 md:px-6 pb-3">
+                        <div className={`rounded-xl p-3 ${accent.bg}`}>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[10px] font-bold uppercase tracking-wider
+                                                 text-slate-500 dark:text-slate-400">
+                                    {chartMode === "bars" ? "Unit performance" : "Score trend"}
                                 </span>
-                                <div className="flex items-center gap-1 p-0.5 rounded-full
-                                    bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                                <div className="flex items-center gap-0.5 rounded-full
+                                                bg-white dark:bg-white/[0.06] p-0.5">
                                     <button
-                                        onClick={() => setChartMode("bars")}
+                                        onClick={() => { tap(); setChartMode("bars"); }}
                                         aria-label="Bar chart"
                                         className={`flex items-center gap-1 px-2.5 py-1 rounded-full
-                                            text-[10px] font-bold transition-all
-                                            ${chartMode === "bars"
-                                                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                                                : "text-gray-600 dark:text-gray-400"}`}
+                                                    text-[10px] font-bold transition-colors
+                                                    ${chartMode === "bars"
+                                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                                                : "text-slate-500 dark:text-slate-400"}`}
+                                        style={{ touchAction: "manipulation" }}
                                     >
-                                        <BarChart3 className="w-3 h-3" />
+                                        <BarChart3 className="h-3 w-3" />
                                         Bars
                                     </button>
                                     <button
-                                        onClick={() => setChartMode("line")}
+                                        onClick={() => { tap(); setChartMode("line"); }}
                                         aria-label="Line chart"
                                         className={`flex items-center gap-1 px-2.5 py-1 rounded-full
-                                            text-[10px] font-bold transition-all
-                                            ${chartMode === "line"
-                                                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                                                : "text-gray-600 dark:text-gray-400"}`}
+                                                    text-[10px] font-bold transition-colors
+                                                    ${chartMode === "line"
+                                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                                                : "text-slate-500 dark:text-slate-400"}`}
+                                        style={{ touchAction: "manipulation" }}
                                     >
-                                        <LineChartIcon className="w-3 h-3" />
+                                        <LineChartIcon className="h-3 w-3" />
                                         Line
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="relative z-10 w-full">
-                                {chartMode === "line" && scoreSeries.length >= 2 && (
-                                    <div className="w-full h-[200px]" style={{ touchAction: "pan-y" }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart
-                                                data={lineChartData}
-                                                margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
-                                            >
-                                                <defs>
-                                                    <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="0%" stopColor={theme.colors[1]} stopOpacity={0.35} />
-                                                        <stop offset="100%" stopColor={theme.colors[1]} stopOpacity={0} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid
-                                                    strokeDasharray="3 3"
-                                                    stroke="currentColor"
-                                                    className="text-slate-200 dark:text-slate-700/60"
-                                                    vertical={false}
-                                                />
-                                                <XAxis
-                                                    dataKey="name"
-                                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    interval="preserveStartEnd"
-                                                />
-                                                <YAxis
-                                                    domain={[0, 100]}
-                                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    width={40}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        borderRadius: 10,
-                                                        border: "none",
-                                                        boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-                                                        fontSize: 12,
-                                                        padding: "8px 10px",
-                                                        backgroundColor: "rgba(255,255,255,0.98)",
-                                                    }}
-                                                    labelStyle={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}
-                                                    formatter={(value: number) => [`${value}%`, "Score"]}
-                                                />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="score"
-                                                    stroke={theme.colors[1]}
-                                                    strokeWidth={2.5}
-                                                    fill="url(#scoreFill)"
-                                                    dot={{ r: 3, fill: theme.colors[1] }}
-                                                    activeDot={{ r: 6 }}
-                                                />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                )}
+                            {chartMode === "line" && scoreSeries.length >= 2 && (
+                                <div className="w-full h-[200px]" style={{ touchAction: "pan-y" }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart
+                                            data={lineChartData}
+                                            margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
+                                        >
+                                            <defs>
+                                                <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor={accent.stroke} stopOpacity={0.35} />
+                                                    <stop offset="100%" stopColor={accent.stroke} stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid
+                                                strokeDasharray="3 3"
+                                                stroke="currentColor"
+                                                className="text-slate-200 dark:text-white/[0.06]"
+                                                vertical={false}
+                                            />
+                                            <XAxis
+                                                dataKey="name"
+                                                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                interval="preserveStartEnd"
+                                            />
+                                            <YAxis
+                                                domain={[0, 100]}
+                                                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                width={40}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    borderRadius: 10,
+                                                    border: "none",
+                                                    fontSize: 12,
+                                                    padding: "8px 10px",
+                                                    backgroundColor: "rgba(255,255,255,0.98)",
+                                                    color: "#0f172a",
+                                                }}
+                                                labelStyle={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}
+                                                formatter={(value: number) => [`${value}%`, "Score"]}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="score"
+                                                stroke={accent.stroke}
+                                                strokeWidth={2.5}
+                                                fill="url(#scoreFill)"
+                                                dot={{ r: 3, fill: accent.stroke }}
+                                                activeDot={{ r: 6 }}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
 
-                                {chartMode === "bars" && barData.length > 0 && (
-                                    <HugeBarChart data={barData} />
-                                )}
-                            </div>
+                            {chartMode === "bars" && barData.length > 0 && (
+                                <HugeBarChart data={barData} />
+                            )}
 
                             {chartMode === "bars" && (
-                                <div className="relative z-10 flex items-center justify-center gap-3 mt-2 text-[9px] font-bold">
+                                <div className="flex items-center justify-center gap-3 mt-2 text-[9px] font-bold">
                                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
                                         70%+
                                     </span>
                                     <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                        <span className="h-2 w-2 rounded-full bg-amber-500" />
                                         50–69%
                                     </span>
                                     <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-                                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                        <span className="h-2 w-2 rounded-full bg-rose-500" />
                                         &lt;50%
                                     </span>
                                 </div>
@@ -813,69 +807,79 @@ ${isHighScore
                     </div>
                 )}
 
-                <div className="px-4 md:px-8 pb-4 md:pb-6">
-                    <div className="h-px bg-gray-100 dark:bg-gray-800 my-4" />
-                    <div className="grid grid-cols-2 gap-2">
+                {/* Actions + stats */}
+                <div className="px-4 md:px-6 pb-4 md:pb-6">
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
                         <button
-                            onClick={() => navigate("/Medrae-quizzes")}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5
-                                bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100
-                                text-white dark:text-gray-900 text-xs md:text-sm font-normal rounded-xl
-                                transition-colors active:scale-[0.98]"
+                            onClick={() => { tap(); navigate("/Medrae-quizzes"); }}
+                            className="h-10 rounded-xl bg-slate-900 dark:bg-white
+                                       text-white dark:text-slate-900
+                                       text-sm font-bold
+                                       flex items-center justify-center gap-1.5
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <PlayCircle className="w-4 h-4" />
+                            <PlayCircle className="h-4 w-4" />
                             Practice
                         </button>
                         <button
-                            onClick={() => navigate("/simulation/latest")}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5
-                                bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700
-                                text-gray-900 dark:text-white text-xs md:text-sm font-normal rounded-xl
-                                transition-colors active:scale-[0.98]"
+                            onClick={() => { tap(); navigate("/simulation/latest"); }}
+                            className="h-10 rounded-xl
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-700 dark:text-slate-200
+                                       text-sm font-bold
+                                       flex items-center justify-center gap-1.5
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <Target className="w-4 h-4" />
+                            <Target className="h-4 w-4" />
                             Simulate
                         </button>
                     </div>
-                    <div className="grid grid-cols-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+
+                    <div className="grid grid-cols-3 mt-4 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
                         <div className="text-center">
-                            <p className="text-base md:text-lg font-semibold tabular-nums text-gray-900 dark:text-white">
+                            <p className="text-base font-bold tabular-nums text-slate-900 dark:text-white">
                                 {data.simulation_analysis?.attempts || 0}
                             </p>
-                            <p className="text-[10px] md:text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                          text-slate-500 dark:text-slate-400 mt-0.5">
                                 Simulations
                             </p>
                         </div>
-                        <div className="text-center border-x border-gray-100 dark:border-gray-800">
-                            <p className="text-base md:text-lg font-semibold tabular-nums text-gray-900 dark:text-white">
+                        <div className="text-center border-x border-slate-100 dark:border-white/[0.06]">
+                            <p className="text-base font-bold tabular-nums text-slate-900 dark:text-white">
                                 {data.simulation_analysis?.average_score?.toFixed(1) || 0}%
                             </p>
-                            <p className="text-[10px] md:text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">
-                                Avg Score
+                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                          text-slate-500 dark:text-slate-400 mt-0.5">
+                                Avg score
                             </p>
                         </div>
                         <div className="text-center">
-                            <p className="text-base md:text-lg font-semibold tabular-nums text-gray-900 dark:text-white">
+                            <p className="text-base font-bold tabular-nums text-slate-900 dark:text-white">
                                 {data.unit_predictions?.length || 0}
                             </p>
-                            <p className="text-[10px] md:text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">
-                                Units Tracked
+                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                          text-slate-500 dark:text-slate-400 mt-0.5">
+                                Units
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* UNIT MASTERY */}
-            <div className="space-y-1.5">
+            {/* ── UNIT MASTERY ─────────────────────────────────── */}
+            <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                            Unit Mastery
+                        <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <h3 className="text-[11px] font-bold uppercase tracking-wider
+                                       text-slate-500 dark:text-slate-400">
+                            Unit mastery
                         </h3>
                     </div>
-                    <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                         Swipe to explore →
                     </span>
                 </div>
@@ -884,42 +888,38 @@ ${isHighScore
                     <SnapCarousel>
                         {visibleUnitsData.map((unit, idx) => {
                             const isWeak = unit.average_score < 60;
-                            const tier = scoreTier(unit.average_score);
-                            const tierBg =
-                                tier === "high"
-                                    ? "bg-emerald-50/80 dark:bg-emerald-950/30"
-                                    : tier === "medium"
-                                        ? "bg-amber-50/80 dark:bg-amber-950/30"
-                                        : "bg-red-50/80 dark:bg-red-950/30";
+                            const unitTier = scoreTier(unit.average_score);
                             const tierText =
-                                tier === "high"
+                                unitTier === "high"
                                     ? "text-emerald-600 dark:text-emerald-400"
-                                    : tier === "medium"
+                                    : unitTier === "medium"
                                         ? "text-amber-600 dark:text-amber-400"
-                                        : "text-red-600 dark:text-red-400";
+                                        : "text-rose-600 dark:text-rose-400";
                             const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : null;
 
                             return (
                                 <div
                                     key={unit.quiz_id}
                                     onClick={() => handleUnitClick(unit.quiz_id)}
-                                    className={`relative h-full p-2.5 rounded-2xl cursor-pointer
-                                        transition-transform active:scale-[0.98]
-                                        bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
-                                        ${tierBg}`}
+                                    className="relative h-full p-2.5 rounded-2xl cursor-pointer
+                                               bg-white dark:bg-[#161b22]
+                                               active:scale-[0.98] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
                                 >
                                     <div className="flex items-center justify-between mb-1.5">
                                         <div className="flex items-center gap-1.5">
                                             {medal ? (
                                                 <span className="text-base leading-none">{medal}</span>
                                             ) : (
-                                                <span className="text-[10px] font-bold text-gray-400 tabular-nums">
+                                                <span className="text-[10px] font-bold tabular-nums
+                                                                 text-slate-400 dark:text-slate-500">
                                                     #{idx + 1}
                                                 </span>
                                             )}
                                             {isWeak && (
                                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full
-                                                    bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                                                                 bg-rose-50 dark:bg-rose-400/10
+                                                                 text-rose-700 dark:text-rose-400">
                                                     Focus
                                                 </span>
                                             )}
@@ -928,7 +928,8 @@ ${isHighScore
                                             {unit.trend === "Improving" ? "▲" : unit.trend === "Declining" ? "▼" : "—"}
                                         </span>
                                     </div>
-                                    <h4 className="text-[12.5px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1.5 min-h-[2em]">
+                                    <h4 className="text-[12px] font-bold text-slate-900 dark:text-white
+                                                   line-clamp-2 leading-tight mb-1.5 min-h-[2em]">
                                         {unit.unit_name}
                                     </h4>
                                     <div className="flex items-end justify-between mb-1.5">
@@ -939,17 +940,25 @@ ${isHighScore
                                             <MasteryDots score={unit.average_score} />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-0.5 text-[8.5px] font-semibold">
-                                        <span className="px-1.5 py-0.5 rounded bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                                    <div className="flex items-center gap-0.5 text-[8px] font-semibold">
+                                        <span className="px-1.5 py-0.5 rounded
+                                                         bg-emerald-50 dark:bg-emerald-400/10
+                                                         text-emerald-700 dark:text-emerald-400">
                                             B{unit.best_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded bg-blue-100/70 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                        <span className="px-1.5 py-0.5 rounded
+                                                         bg-blue-50 dark:bg-blue-400/10
+                                                         text-blue-700 dark:text-blue-400">
                                             L{unit.latest_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded bg-rose-100/70 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300">
+                                        <span className="px-1.5 py-0.5 rounded
+                                                         bg-rose-50 dark:bg-rose-400/10
+                                                         text-rose-700 dark:text-rose-400">
                                             W{unit.worst_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded bg-purple-100/70 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 ml-auto">
+                                        <span className="px-1.5 py-0.5 rounded ml-auto
+                                                         bg-slate-100 dark:bg-white/[0.06]
+                                                         text-slate-600 dark:text-slate-300">
                                             {unit.attempts}×
                                         </span>
                                     </div>
@@ -958,35 +967,36 @@ ${isHighScore
                         })}
                     </SnapCarousel>
                 ) : (
-                    <div className="p-4 rounded-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-md text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-center">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
                             No units tracked yet — practice a quiz to start.
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* STRENGTHS & FOCUS */}
+            {/* ── STRENGTHS & FOCUS ────────────────────────────── */}
             <StrengthsFocusStrip
                 strongest={data.rankings?.strongest || []}
                 weakest={data.rankings?.weakest || []}
                 onViewAll={() => setOverlayOpen(true)}
             />
 
-            {/* STUDY PLAN */}
+            {/* ── STUDY PLAN ───────────────────────────────────── */}
             {data.recommendations?.length > 0 && (
-                <div className="p-3 rounded-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-md">
-                    <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
                         <MiniChampion size={18} />
-                        <h3 className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                            Study Plan
+                        <h3 className="text-[10px] font-bold uppercase tracking-wider
+                                       text-blue-600 dark:text-blue-400">
+                            Study plan
                         </h3>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                         {data.recommendations.map((rec, i) => (
                             <div key={i} className="flex gap-2 items-start">
-                                <CheckCircle2 className="w-3 h-3 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                                     {rec}
                                 </p>
                             </div>
@@ -995,7 +1005,7 @@ ${isHighScore
                 </div>
             )}
 
-            {/* OVERLAY */}
+            {/* ── OVERLAY ──────────────────────────────────────── */}
             <CoachInsightsOverlay
                 open={overlayOpen}
                 onClose={() => setOverlayOpen(false)}

@@ -2,17 +2,9 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { grouppayService } from '@/services/grouppayService';
-import { Button } from '@/components/ui/button';
+import { CenteredModal } from '@/components/ui/CenteredModal';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     Search,
     UserPlus,
@@ -24,6 +16,24 @@ import {
     GraduationCap,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { playSound } from '@/lib/soundManager';
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper — matches sibling GroupPay files                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: 'light' | 'success' | 'warning' = 'light') => {
+    playSound('ui-tap');
+    if (type === 'success') vibrate([15, 30, 15]);
+    else if (type === 'warning') vibrate(60);
+    else vibrate(15);
+};
 
 interface AddMemberProps {
     /** Group id to add members to */
@@ -202,107 +212,118 @@ export function AddMember({
     return (
         <>
             {/* TRIGGER BUTTON */}
-            <Button
+            <button
                 type="button"
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                    tap();
+                    setOpen(true);
+                }}
                 disabled={isFull}
-                className="gap-2 text-sm border-0 h-11 rounded-xl
-                    bg-indigo-100 text-indigo-700
-                    dark:bg-muted/100 dark:text-indigo-400
-                    hover:bg-indigo-200 dark:hover:bg-indigo-900/40
-                    font-normal disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isFull ? 'Group is full' : 'Add a member'}
+                className="h-10 px-4 rounded-xl
+                           bg-violet-600 text-white
+                           text-sm font-bold
+                           flex items-center justify-center gap-1.5
+                           active:scale-[0.97] transition-transform
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           disabled:active:scale-100"
+                style={{ touchAction: 'manipulation' }}
             >
-                <UserPlus className="w-4 h-4" />
+                <UserPlus className="h-4 w-4" />
                 {triggerLabel}
-            </Button>
+            </button>
 
             {/* DIALOG */}
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent
-                    className="sm:max-w-lg border-0 rounded-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden custom-scrollbar
-                        bg-white dark:bg-[#0d1117]"
-                    overlayClassName="bg-white/80 dark:bg-[#0d1117]/80"
-                >
-                    <DialogHeader className="px-5 pt-5 pb-3 border-0">
-                        <DialogTitle className="flex items-center gap-2">
-                            <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                            Add Members
-                        </DialogTitle>
-                        <DialogDescription>
-                            Invite classmates to join your study group
-                        </DialogDescription>
-                    </DialogHeader>
+            <CenteredModal
+                open={open}
+                onClose={() => setOpen(false)}
+                title="Add members"
+                maxWidthClass="max-w-lg"
+                maxHeight="90vh"
+            >
+                <div className="px-4 pb-4 space-y-3">
+                    {/* SUBTITLE */}
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug -mt-1">
+                        Invite classmates to join your study group.
+                    </p>
 
                     {/* CAPACITY BANNER */}
-                    <div className="px-5 pb-3">
-                        <div
-                            className={`flex items-center justify-between gap-2 p-3 rounded-xl border-0 ${isFull
-                                ? 'bg-amber-50 dark:bg-amber-950/20'
-                                : 'bg-indigo-50 dark:bg-indigo-950/20'
+                    <div
+                        className={`flex items-center justify-between gap-2 rounded-xl p-3 ${isFull
+                            ? 'bg-amber-50 dark:bg-amber-400/10'
+                            : 'bg-violet-50 dark:bg-violet-400/10'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Users
+                                className={`h-4 w-4 shrink-0 ${isFull
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : 'text-violet-600 dark:text-violet-400'
+                                    }`}
+                            />
+                            <span
+                                className={`text-[11px] font-bold ${isFull
+                                    ? 'text-amber-700 dark:text-amber-300'
+                                    : 'text-violet-700 dark:text-violet-300'
+                                    }`}
+                            >
+                                {localCount} / {maxMembers} members
+                            </span>
+                        </div>
+                        <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5
+                                        text-[10px] font-bold shrink-0 ${isFull
+                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400'
+                                    : 'bg-violet-100 text-violet-700 dark:bg-violet-400/10 dark:text-violet-400'
                                 }`}
                         >
-                            <div className="flex items-center gap-2">
-                                <Users
-                                    className={`w-4 h-4 flex-shrink-0 ${isFull
-                                        ? 'text-amber-600 dark:text-amber-400'
-                                        : 'text-indigo-600 dark:text-indigo-400'
-                                        }`}
-                                />
-                                <span
-                                    className={`text-xs font-medium ${isFull
-                                        ? 'text-amber-700 dark:text-amber-400'
-                                        : 'text-indigo-700 dark:text-indigo-400'
-                                        }`}
-                                >
-                                    Group: {localCount} / {maxMembers} members
-                                </span>
-                            </div>
-                            {!isFull ? (
-                                <Badge className="border-0 bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold">
-                                    {remainingSlots} slot{remainingSlots !== 1 ? 's' : ''} left
-                                </Badge>
-                            ) : (
-                                <Badge className="border-0 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold">
-                                    Full
-                                </Badge>
-                            )}
-                        </div>
+                            {isFull
+                                ? 'Full'
+                                : `${remainingSlots} slot${remainingSlots !== 1 ? 's' : ''} left`}
+                        </span>
                     </div>
 
                     {/* SEARCH BAR */}
-                    <div className="px-5 pb-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                            <Input
-                                type="text"
-                                placeholder="Search by name, email, or phone..."
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                className="pl-9 h-11 rounded-xl border-0 bg-slate-50 dark:bg-slate-900/50 focus-visible:ring-2 focus-visible:ring-indigo-500/40"
-                                autoFocus
-                            />
-                            {searching && (
-                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
-                            )}
-                        </div>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4
+                                           text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <Input
+                            type="text"
+                            placeholder="Search by name, email, or phone…"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            className="pl-9 h-10 rounded-xl border-0 text-sm
+                                       bg-slate-50 dark:bg-[#0d1117]
+                                       focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                            autoFocus
+                        />
+                        {searching && (
+                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4
+                                                text-slate-400 dark:text-slate-500 animate-spin" />
+                        )}
                     </div>
 
-                    {/* RESULTS LIST — scrollable */}
-                    <div className="overflow-y-auto flex-1 px-5 pb-5 custom-scrollbar">
+                    {/* RESULTS LIST */}
+                    <div className="space-y-1.5">
                         {searching && visibleResults.length === 0 && (
                             <div className="py-10 text-center">
-                                <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-2" />
-                                <p className="text-xs text-muted-foreground">Searching...</p>
+                                <Loader2 className="h-8 w-8 animate-spin text-violet-500 mx-auto mb-2" />
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    Searching…
+                                </p>
                             </div>
                         )}
 
                         {!searching && visibleResults.length === 0 && emptyMessage && (
                             <div className="py-10 text-center">
-                                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3">
-                                    <Search className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                <div className="h-12 w-12 rounded-full
+                                                bg-slate-100 dark:bg-white/[0.06]
+                                                flex items-center justify-center mx-auto mb-3">
+                                    <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                                 </div>
-                                <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {emptyMessage}
+                                </p>
                             </div>
                         )}
 
@@ -318,15 +339,17 @@ export function AddMember({
                                     return (
                                         <div
                                             key={user.user_id}
-                                            className={`flex items-center gap-3 p-2.5 rounded-xl border-0 transition-colors ${isJustAdded
-                                                ? 'bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'hover:bg-slate-50 dark:hover:bg-slate-900/40'
+                                            className={`flex items-center gap-3 p-2.5 rounded-xl ${isJustAdded
+                                                ? 'bg-emerald-50 dark:bg-emerald-400/10'
+                                                : 'bg-slate-50 dark:bg-[#0d1117]'
                                                 }`}
                                         >
                                             {/* AVATAR */}
-                                            <Avatar className="h-10 w-10 flex-shrink-0">
+                                            <Avatar className="h-9 w-9 shrink-0">
                                                 <AvatarImage src={user.avatar_url} />
-                                                <AvatarFallback className="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 font-semibold">
+                                                <AvatarFallback className="text-[11px] font-bold
+                                                                           bg-slate-200 dark:bg-white/[0.1]
+                                                                           text-slate-600 dark:text-slate-300">
                                                     {user.name?.charAt(0)?.toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
@@ -334,33 +357,38 @@ export function AddMember({
                                             {/* INFO */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <p className="text-sm font-semibold truncate text-slate-900 dark:text-white">
+                                                    <p className="text-[12px] font-bold truncate
+                                                                  text-slate-900 dark:text-white">
                                                         {user.name || 'Unknown'}
                                                     </p>
                                                     {user.role && (
-                                                        <Badge className="border-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-medium capitalize">
+                                                        <span className="inline-flex items-center rounded-full px-1.5 py-0.5
+                                                                         text-[9px] font-bold capitalize
+                                                                         bg-slate-100 text-slate-600
+                                                                         dark:bg-white/[0.06] dark:text-slate-300">
                                                             {user.role}
-                                                        </Badge>
+                                                        </span>
                                                     )}
                                                 </div>
 
                                                 {/* Contact line */}
-                                                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                                                     {user.email || user.phone || 'No contact info'}
                                                 </p>
 
                                                 {/* Institution / County / Course line — only if any exists */}
                                                 {(user.institution || user.county || user.course) && (
-                                                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/80 flex-wrap">
+                                                    <div className="flex items-center gap-2 mt-0.5
+                                                                    text-[10px] text-slate-400 dark:text-slate-500 flex-wrap">
                                                         {user.institution && (
                                                             <span className="flex items-center gap-0.5 truncate">
-                                                                <GraduationCap className="w-2.5 h-2.5 flex-shrink-0" />
+                                                                <GraduationCap className="h-2.5 w-2.5 shrink-0" />
                                                                 <span className="truncate">{user.institution}</span>
                                                             </span>
                                                         )}
                                                         {user.county && (
-                                                            <span className="flex items-center gap-0.5 flex-shrink-0">
-                                                                <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                                                            <span className="flex items-center gap-0.5 shrink-0">
+                                                                <MapPin className="h-2.5 w-2.5 shrink-0" />
                                                                 {user.county}
                                                             </span>
                                                         )}
@@ -370,37 +398,48 @@ export function AddMember({
 
                                             {/* ACTION BUTTON */}
                                             {isJustAdded ? (
-                                                <Badge className="border-0 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-1 flex-shrink-0">
-                                                    <CheckCircle className="w-3 h-3" />
+                                                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                                                 text-[10px] font-bold shrink-0
+                                                                 bg-emerald-50 text-emerald-700
+                                                                 dark:bg-emerald-400/10 dark:text-emerald-400">
+                                                    <CheckCircle className="h-3 w-3" />
                                                     Added
-                                                </Badge>
+                                                </span>
                                             ) : isAlreadyInGroup ? (
-                                                <Badge className="border-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium flex-shrink-0">
-                                                    In Group
-                                                </Badge>
+                                                <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                                                 text-[10px] font-bold shrink-0
+                                                                 bg-slate-100 text-slate-600
+                                                                 dark:bg-white/[0.06] dark:text-slate-300">
+                                                    In group
+                                                </span>
                                             ) : (
-                                                <Button
+                                                <button
                                                     type="button"
-                                                    onClick={() => handleAdd(user)}
+                                                    onClick={() => {
+                                                        tap();
+                                                        handleAdd(user);
+                                                    }}
                                                     disabled={isDisabled}
-                                                    size="sm"
-                                                    className="gap-1.5 text-xs border-0 rounded-lg h-8 px-3 flex-shrink-0
-                                                        bg-indigo-600 hover:bg-indigo-700
-                                                        text-white font-semibold
-                                                        disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="h-8 px-3 rounded-full shrink-0
+                                                               bg-violet-600 text-white text-[11px] font-bold
+                                                               flex items-center gap-1
+                                                               active:scale-[0.95] transition-transform
+                                                               disabled:opacity-50 disabled:cursor-not-allowed
+                                                               disabled:active:scale-100"
+                                                    style={{ touchAction: 'manipulation' }}
                                                 >
                                                     {isAdding ? (
                                                         <>
-                                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                                            Adding...
+                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                            Adding…
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <UserPlus className="w-3 h-3" />
+                                                            <UserPlus className="h-3 w-3" />
                                                             Add
                                                         </>
                                                     )}
-                                                </Button>
+                                                </button>
                                             )}
                                         </div>
                                     );
@@ -410,17 +449,18 @@ export function AddMember({
 
                         {/* FOOTER HINT */}
                         {visibleResults.length > 0 && !searching && (
-                            <div className="mt-4 flex items-start gap-2 p-2.5 bg-blue-50 dark:bg-blue-950/20 rounded-xl border-0">
-                                <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                                <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-relaxed">
-                                    Only users who are not already covered by a subscription are
+                            <div className="mt-2 flex items-start gap-2 p-2.5 rounded-xl
+                                            bg-blue-50 dark:bg-blue-400/10">
+                                <Info className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                                    Only users who aren't already covered by a subscription are
                                     shown here. Add a member to give them access through this group.
                                 </p>
                             </div>
                         )}
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </CenteredModal>
         </>
     );
 }

@@ -1,11 +1,29 @@
 // src/pages/assessment/AssessmentHistory.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Filter, Calendar, ArrowLeft, Clock, Award, Search, X, ChevronLeft } from 'lucide-react';
+import {
+    Filter, Calendar, Clock, Award, Search, X, ChevronLeft,
+} from 'lucide-react';
 import { assessmentService } from '@/services/assessmentService';
 import { AssessmentAttempt } from '@/types/assessmentTypes';
 import { HistoryCard, ErrorState, EmptyState } from '@/components/assessment';
 import { useAuth } from '@/context/AuthProvider';
+import { playSound } from '@/lib/soundManager';
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = () => {
+    try { playSound('ui-tap'); } catch { /* no-op */ }
+    vibrate(15);
+};
 
 const CACHE_CONFIG = {
     TTL: 5 * 60 * 1000,
@@ -14,7 +32,6 @@ const CACHE_CONFIG = {
 
 class DataCache {
     private cache: Map<string, { data: any; timestamp: number }> = new Map();
-
     set(key: string, data: any) {
         this.cache.set(key, { data, timestamp: Date.now() });
     }
@@ -158,25 +175,40 @@ export const AssessmentHistory: React.FC = () => {
     }, [user, loadHistory]);
 
     const handleViewReport = (attempt: AssessmentAttempt) => {
+        tap();
         if (attempt.assessment?.slug) {
             navigate(`/assessments/${attempt.assessment.slug}/results/${attempt.id}`);
         }
     };
 
     const handleResume = (attempt: AssessmentAttempt) => {
+        tap();
         if (attempt.assessment?.slug) {
             navigate(`/assessments/${attempt.assessment.slug}`);
         }
     };
 
     const handleRetake = (attempt: AssessmentAttempt) => {
+        tap();
         if (attempt.assessment?.slug) {
             navigate(`/assessments/${attempt.assessment.slug}`);
         }
     };
 
-    const handleBack = () => navigate('/assessments');
-    const clearSearch = () => setSearchQuery('');
+    const handleBack = () => {
+        tap();
+        navigate('/assessments');
+    };
+
+    const clearSearch = () => {
+        tap();
+        setSearchQuery('');
+    };
+
+    const handleFilterChange = (value: string) => {
+        tap();
+        setFilter(value as any);
+    };
 
     const totalAttempts = attempts.length;
     const completedAttempts = attempts.filter(a => a.status === 'completed').length;
@@ -190,264 +222,304 @@ export const AssessmentHistory: React.FC = () => {
     const totalTimeSpent = attempts.reduce((sum, a) => sum + a.time_spent_seconds, 0);
     const totalMinutes = Math.round(totalTimeSpent / 60);
 
-    // ─── Loading skeleton — mirrors real page structure exactly ───
+    /* ─── Loading skeleton ─────────────────────────────────────────── */
     if (loading && !cache.get(getCacheKey(user?.id || ''))) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
-
-                {/* Header skeleton */}
-                <div className="px-2 md:px-0">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 animate-pulse">
-                            <div className="h-8 w-8 bg-gray-100 dark:bg-[#21262d] rounded-xl" />
-                            <div>
-                                <div className="h-6 w-48 bg-gray-200 dark:bg-[#21262d] rounded mb-1.5" />
-                                <div className="h-3 w-28 bg-gray-100 dark:bg-[#21262d] rounded" />
-                            </div>
-                        </div>
-                        <div className="h-9 w-32 bg-gray-200 dark:bg-[#21262d] rounded-xl animate-pulse" />
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   safe-top">
+                    <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="h-4 w-40 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                        <div className="h-3 w-24 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
                     </div>
-                </div>
-
-                {/* Search skeleton */}
-                <div className="px-2 md:px-0">
-                    <div className="h-12 w-full bg-white dark:bg-[#161b22] rounded-2xl shadow-sm animate-pulse" />
-                </div>
-
-                {/* Stats skeleton */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm animate-pulse">
-                            <div className="h-3 w-1/2 bg-gray-100 dark:bg-[#21262d] rounded mb-2" />
-                            <div className="h-5 w-1/3 bg-gray-200 dark:bg-[#30363d] rounded" />
+                    <div className="h-8 w-24 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3 pb-24 safe-bottom">
+                    <div className="w-full max-w-[880px] mx-auto space-y-3">
+                        <div className="h-10 rounded-xl bg-white dark:bg-[#161b22] animate-pulse" />
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
+                                    <div className="h-3 w-1/2 bg-slate-200 dark:bg-white/[0.1] rounded mb-2" />
+                                    <div className="h-5 w-1/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-
-                {/* Cards grid skeleton — same grid + same card shape (with image) */}
-                <div className="px-2 md:px-0 space-y-3 md:space-y-4">
-                    <div className="h-4 w-56 bg-gray-100 dark:bg-[#21262d] rounded animate-pulse" />
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <div
-                                key={i}
-                                className="bg-white dark:bg-[#161b22] rounded-2xl shadow-sm overflow-hidden flex flex-col h-full animate-pulse"
-                            >
-                                {/* Cover image — exact same height as real HistoryCard */}
-                                <div className="h-40 md:h-44 bg-gray-200 dark:bg-[#21262d] shrink-0" />
-
-                                <div className="p-4 flex flex-col flex-1">
-                                    {/* Title + status pill */}
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 space-y-1.5">
-                                            <div className="h-3.5 w-full bg-gray-200 dark:bg-[#30363d] rounded" />
-                                            <div className="h-3.5 w-2/3 bg-gray-200 dark:bg-[#30363d] rounded" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden animate-pulse"
+                                >
+                                    <div className="h-36 bg-slate-200 dark:bg-white/[0.1] shrink-0" />
+                                    <div className="p-3 space-y-2">
+                                        <div className="h-3.5 w-3/4 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                        <div className="h-3 w-1/2 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                        <div className="flex gap-1.5 pt-1">
+                                            <div className="h-5 w-14 bg-slate-200 dark:bg-white/[0.1] rounded-lg" />
+                                            <div className="h-5 w-16 bg-slate-200 dark:bg-white/[0.1] rounded-lg" />
                                         </div>
-                                        <div className="h-4 w-14 bg-gray-100 dark:bg-[#30363d] rounded-full shrink-0" />
-                                    </div>
-
-                                    {/* Date row */}
-                                    <div className="mt-2">
-                                        <div className="h-3 w-32 bg-gray-100 dark:bg-[#30363d] rounded" />
-                                    </div>
-
-                                    {/* Stats pills */}
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                        <div className="h-5 w-12 bg-gray-50 dark:bg-[#30363d] rounded-lg" />
-                                        <div className="h-5 w-16 bg-gray-50 dark:bg-[#30363d] rounded-lg" />
-                                        <div className="h-5 w-20 bg-gray-50 dark:bg-[#30363d] rounded-lg" />
-                                    </div>
-
-                                    {/* Actions row */}
-                                    <div className="flex items-center gap-2 mt-auto pt-3">
-                                        <div className="flex-1 h-8 bg-gray-100 dark:bg-[#30363d] rounded-xl" />
-                                        <div className="h-8 w-10 bg-gray-50 dark:bg-[#30363d] rounded-xl" />
+                                        <div className="h-8 w-full bg-slate-200 dark:bg-white/[0.1] rounded-xl mt-2" />
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
+                </main>
             </div>
         );
     }
 
     const showRefreshIndicator = refreshing && cache.get(getCacheKey(user?.id || ''));
 
+    /* ─── Error ────────────────────────────────────────────────────── */
     if (error && !cache.get(getCacheKey(user?.id || ''))) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-2 md:px-2 lg:px-6 py-4 md:py-8">
-                <ErrorState
-                    message={error}
-                    onRetry={() => {
-                        cache.clear();
-                        loadHistory(true);
-                    }}
-                />
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   safe-top">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors"
+                        style={{ touchAction: 'manipulation' }}
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                            History
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Something went wrong
+                        </p>
+                    </div>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-6 safe-bottom">
+                    <div className="w-full max-w-[880px] mx-auto">
+                        <ErrorState
+                            message={error}
+                            onRetry={() => {
+                                tap();
+                                cache.clear();
+                                loadHistory(true);
+                            }}
+                        />
+                    </div>
+                </main>
             </div>
         );
     }
 
+    /* ─── Real page ───────────────────────────────────────────────── */
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+            {/* ── HEADER ──────────────────────────────────────────── */}
+            <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                               bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <button
+                    onClick={handleBack}
+                    aria-label="Go back"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors shrink-0"
+                    style={{ touchAction: 'manipulation' }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                        History
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        {totalAttempts} {totalAttempts === 1 ? 'attempt' : 'attempts'}
+                    </p>
+                </div>
+                <div className="relative shrink-0">
+                    <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3
+                                       text-slate-500 dark:text-slate-400 pointer-events-none" />
+                    <select
+                        value={filter}
+                        onChange={(e) => handleFilterChange(e.target.value)}
+                        aria-label="Filter attempts"
+                        className="h-9 pl-7 pr-7 rounded-full
+                                   bg-slate-100 dark:bg-white/[0.06]
+                                   text-[11px] font-bold uppercase tracking-wider
+                                   text-slate-700 dark:text-slate-200
+                                   border-0 outline-none appearance-none
+                                   focus:ring-2 focus:ring-blue-500/40
+                                   transition-shadow cursor-pointer"
+                        style={{ touchAction: 'manipulation' }}
+                    >
+                        <option value="all">All</option>
+                        <option value="completed">Completed</option>
+                        <option value="in_progress">In progress</option>
+                        <option value="abandoned">Abandoned</option>
+                    </select>
+                </div>
+            </header>
 
+            {/* ── REFRESHING PILL ─────────────────────────────────── */}
             {showRefreshIndicator && (
-                <div className="fixed top-0 right-0 m-4 z-50">
-                    <div className="bg-gray-800 dark:bg-[#21262d] text-white text-xs px-3 py-1 rounded-full animate-pulse">
+                <div className="pointer-events-none absolute top-16 right-4 z-50">
+                    <div className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider
+                                    bg-slate-900 text-white dark:bg-white/[0.1] animate-pulse">
                         Refreshing…
                     </div>
                 </div>
             )}
 
-            {/* Header */}
-            <div className="px-2 md:px-0">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleBack}
-                            className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400 flex items-center justify-center -ml-1 transition-colors"
-                            aria-label="Go back"
-                        >
-                            <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg md:text-2xl font-bold text-gray-800 dark:text-gray-200">
-                                Assessment history
-                            </h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {totalAttempts} total {totalAttempts === 1 ? 'attempt' : 'attempts'}
-                            </p>
+            {/* ── SCROLLING BODY ──────────────────────────────────── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+                <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
+
+                    {/* Search */}
+                    <section>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4
+                                               text-slate-400 dark:text-slate-500 pointer-events-none" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search by title or category…"
+                                className="w-full h-10 pl-9 pr-9 rounded-xl text-sm
+                                           bg-white dark:bg-[#161b22]
+                                           border-0 outline-none
+                                           text-slate-900 dark:text-white
+                                           placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                           focus:ring-2 focus:ring-blue-500/40
+                                           transition-shadow"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={clearSearch}
+                                    aria-label="Clear search"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2
+                                               h-6 w-6 rounded-full flex items-center justify-center
+                                               text-slate-400 dark:text-slate-500
+                                               active:bg-slate-100 dark:active:bg-white/5
+                                               transition-colors"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                </button>
+                            )}
                         </div>
-                    </div>
+                    </section>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                        <select
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value as any)}
-                            className="text-sm bg-white dark:bg-[#161b22] text-gray-800 dark:text-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#30363d] w-full sm:w-auto transition-all"
-                        >
-                            <option value="all">All</option>
-                            <option value="completed">Completed</option>
-                            <option value="in_progress">In progress</option>
-                            <option value="abandoned">Abandoned</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+                    {/* Stats summary */}
+                    {totalAttempts > 0 && (
+                        <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <StatTile icon={Award} label="Completed" value={String(completedAttempts)} />
+                            <StatTile icon={Clock} label="In progress" value={String(inProgressAttempts)} />
+                            <StatTile
+                                icon={Award}
+                                label="Avg score"
+                                value={completedAttempts > 0 ? `${Math.round(averageScore)}%` : '—'}
+                            />
+                            <StatTile
+                                icon={Clock}
+                                label="Total time"
+                                value={totalMinutes > 0 ? `${totalMinutes}m` : '—'}
+                            />
+                        </section>
+                    )}
 
-            {/* Search */}
-            <div className="px-2 md:px-0">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by assessment title or category…"
-                        className="w-full pl-10 pr-10 py-3 border-0 bg-white dark:bg-[#161b22] text-gray-800 dark:text-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#30363d] shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={clearSearch}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
+                    {/* Content */}
+                    {filtered.length === 0 ? (
+                        <section>
+                            <EmptyState
+                                title={searchQuery ? 'No matching assessments' : 'No assessments found'}
+                                description={
+                                    searchQuery
+                                        ? `No assessments match "${searchQuery}". Try a different search term.`
+                                        : filter !== 'all'
+                                            ? `You don't have any ${filter} assessments.`
+                                            : "You haven't taken any assessments yet. Start your first assessment today!"
+                                }
+                                icon={<Calendar className="w-16 h-16 text-slate-300 dark:text-slate-600" />}
+                                action={
+                                    searchQuery ? {
+                                        label: 'Clear search',
+                                        onClick: clearSearch
+                                    } : filter !== 'all' ? {
+                                        label: 'View all assessments',
+                                        onClick: () => setFilter('all')
+                                    } : {
+                                        label: 'Browse assessments',
+                                        onClick: () => { tap(); navigate('/assessments'); }
+                                    }
+                                }
+                            />
+                        </section>
+                    ) : (
+                        <section>
+                            <div className="text-[11px] font-bold uppercase tracking-wider
+                                            text-slate-500 dark:text-slate-400 mb-2">
+                                Showing {filtered.length} of {attempts.length}
+                                {searchQuery && ` matching "${searchQuery}"`}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                                {filtered.map((attempt) => (
+                                    <HistoryCard
+                                        key={attempt.id}
+                                        attempt={attempt}
+                                        onViewReport={attempt.status === 'completed' ? handleViewReport : undefined}
+                                        onResume={attempt.status === 'in_progress' ? handleResume : undefined}
+                                        onRetake={attempt.status === 'completed' ? handleRetake : undefined}
+                                    />
+                                ))}
+                            </div>
+                        </section>
                     )}
                 </div>
-            </div>
-
-            {/* Stats summary */}
-            {totalAttempts > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
-                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
-                            <Award className="w-3.5 h-3.5" />
-                            <span>Completed</span>
-                        </div>
-                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
-                            {completedAttempts}
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
-                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>In progress</span>
-                        </div>
-                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
-                            {inProgressAttempts}
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
-                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
-                            <Award className="w-3.5 h-3.5" />
-                            <span>Avg score</span>
-                        </div>
-                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
-                            {completedAttempts > 0 ? Math.round(averageScore) + '%' : '—'}
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
-                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Total time</span>
-                        </div>
-                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
-                            {totalMinutes > 0 ? `${totalMinutes}m` : '—'}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Content */}
-            {filtered.length === 0 ? (
-                <div className="px-2 md:px-0">
-                    <EmptyState
-                        title={searchQuery ? 'No matching assessments' : 'No assessments found'}
-                        description={
-                            searchQuery
-                                ? `No assessments match "${searchQuery}". Try a different search term.`
-                                : filter !== 'all'
-                                    ? `You don't have any ${filter} assessments.`
-                                    : "You haven't taken any assessments yet. Start your first assessment today!"
-                        }
-                        icon={<Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600" />}
-                        action={
-                            searchQuery ? {
-                                label: 'Clear search',
-                                onClick: clearSearch
-                            } : filter !== 'all' ? {
-                                label: 'View all assessments',
-                                onClick: () => setFilter('all')
-                            } : {
-                                label: 'Browse assessments',
-                                onClick: () => navigate('/assessments')
-                            }
-                        }
-                    />
-                </div>
-            ) : (
-                <div className="px-2 md:px-0 space-y-3 md:space-y-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Showing {filtered.length} of {attempts.length} {attempts.length === 1 ? 'attempt' : 'attempts'}
-                        {searchQuery && ` matching "${searchQuery}"`}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
-                        {filtered.map((attempt) => (
-                            <HistoryCard
-                                key={attempt.id}
-                                attempt={attempt}
-                                onViewReport={attempt.status === 'completed' ? handleViewReport : undefined}
-                                onResume={attempt.status === 'in_progress' ? handleResume : undefined}
-                                onRetake={attempt.status === 'completed' ? handleRetake : undefined}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
+            </main>
         </div>
     );
 };
+
+/* ------------------------------------------------------------------ */
+/*  Subcomponent                                                      */
+/* ------------------------------------------------------------------ */
+
+function StatTile({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: any;
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider
+                            text-slate-500 dark:text-slate-400 mb-1">
+                <Icon className="h-3 w-3 shrink-0" />
+                <span className="truncate">{label}</span>
+            </div>
+            <div className="text-lg font-bold tabular-nums text-slate-900 dark:text-white leading-none">
+                {value}
+            </div>
+        </div>
+    );
+}

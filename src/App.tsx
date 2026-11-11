@@ -299,6 +299,8 @@ const BottomBarWrapper = () => {
       "/resources",
       "/assessment-notes",
       "/last-minute",
+      "/challenge",
+      "/assessments",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -644,7 +646,7 @@ const AppContent = () => {
                           <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
                           <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
                           <Route path="/exam/results" element={<ResultsListPage />} />
-                          <Route path="/challenge" element={<ChallengePage />} />
+
 
 
                           {/* Tutor Exam Control */}
@@ -709,16 +711,6 @@ const AppContent = () => {
                           <Route path="/simulation/candidate" element={<CandidateInfo />} />
 
 
-                          {/* ASSESSMENT ROUTES */}
-                          <Route path="/assessments">
-                            <Route index element={<AssessmentHome />} />
-                            <Route path="search" element={<AssessmentHome />} />
-                            <Route path="history" element={<AssessmentHistory />} />
-                            <Route path=":slug" element={<AssessmentQuestion />} />
-                            <Route path=":slug/results/:attemptId" element={<AssessmentResults />} />
-                          </Route>
-
-
                         </Route>
                         <Route
                           path="/survival-hub"
@@ -741,13 +733,22 @@ const AppContent = () => {
                         <Route path="/Medrae-quizzes" element={<PrivateRoute><MedraeQuizzes /></PrivateRoute>} />
                         <Route path="/progress" element={<StudyProgress />} />
                         {/* Survival Hub — full-screen, no header */}
-
+                        <Route path="/challenge" element={<PrivateRoute><ChallengePage /></PrivateRoute>} />   {/* ← moved here */}
                         {/* Market — full-screen, no header */}
                         <Route path="/market" element={<PrivateRoute><MarketFeed user={user} profile={profile} /></PrivateRoute>} />
                         <Route path="/market/create" element={<PrivateRoute><CreateListingPage user={user} profile={profile} /></PrivateRoute>} />
                         <Route path="/market/my-listings" element={<PrivateRoute><MyListings /></PrivateRoute>} />
                         <Route path="/market/:id" element={<PrivateRoute><ListingDetail /></PrivateRoute>} />
                         {/* NURSING CURRICULUM — full-screen, same treatment as /quiz */}
+                        {/* ═══════════════════════════════════════════════════════════
+                            ASSESSMENTS — full-screen, standalone (like /nursing, /grouppay)
+                            ═══════════════════════════════════════════════════════════ */}
+                        <Route path="/assessments" element={<PrivateRoute><AssessmentHome /></PrivateRoute>} />
+                        <Route path="/assessments/search" element={<PrivateRoute><AssessmentHome /></PrivateRoute>} />
+                        <Route path="/assessments/history" element={<PrivateRoute><AssessmentHistory /></PrivateRoute>} />
+                        <Route path="/assessments/:slug" element={<PrivateRoute><AssessmentQuestion /></PrivateRoute>} />
+                        <Route path="/assessments/:slug/results/:attemptId" element={<PrivateRoute><AssessmentResults /></PrivateRoute>} />
+
                         <Route path="/nursing" element={<PrivateRoute><NursingHome /></PrivateRoute>} />
                         <Route path="/nursing/:yearId" element={<PrivateRoute><NursingSemester /></PrivateRoute>} />
                         <Route path="/nursing/:yearId/:semId" element={<PrivateRoute><NursingModule /></PrivateRoute>} />

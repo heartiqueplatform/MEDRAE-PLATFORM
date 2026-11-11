@@ -1,6 +1,5 @@
 // src/components/grouppay/GroupPaySubscriptionCard.tsx
 
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Users,
@@ -10,25 +9,25 @@ import {
     TrendingDown,
     Sparkles,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
     GROUPPAY_CONFIG,
     getGroupPricePerMember,
     getIndividualPrice,
     getSavingsPerMember,
 } from "@/types/grouppay";
+import { playSound } from "@/lib/soundManager";   // matches your other files
 
-// ============================================================
-// DERIVED PRICING — no hardcoded numbers
-// ============================================================
-const CURRENCY = GROUPPAY_CONFIG.CURRENCY;
-const GROUP_1MO = getGroupPricePerMember("1-month");
-const GROUP_2MO = getGroupPricePerMember("2-months");
-const IND_1MO = getIndividualPrice("1-month");
-const IND_2MO = getIndividualPrice("2-months");
-const SAVE_2MO = getSavingsPerMember("2-months");
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: "light" | "success" = "light") => {
+    playSound("ui-tap");
+    if (type === "success") vibrate([15, 30, 15]);
+    else vibrate(15);
+};
 
 interface GroupPaySubscriptionCardProps {
     className?: string;
@@ -40,53 +39,66 @@ export function GroupPaySubscriptionCard({
     compact = false,
 }: GroupPaySubscriptionCardProps) {
     const navigate = useNavigate();
-    const handleClick = () => navigate("/grouppay");
+
+    const handleClick = () => {
+        tap();
+        navigate("/grouppay");
+    };
 
     // ═══════════════════════════════════════════════════════════
     // COMPACT — one row, quiet, informative
     // ═══════════════════════════════════════════════════════════
     if (compact) {
         return (
-            <Card
+            <div
                 onClick={handleClick}
-                className={`group cursor-pointer rounded-2xl border-border/60 bg-card hover:bg-muted/40 transition-colors shadow-none ${className}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleClick();
+                    }
+                }}
+                className={`cursor-pointer rounded-2xl bg-white dark:bg-[#161b22]
+                            active:bg-slate-50 dark:active:bg-white/[0.04]
+                            transition-colors ${className}`}
+                style={{ touchAction: "manipulation" }}
             >
-                <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5 text-primary" strokeWidth={2.2} />
+                <div className="p-3">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-violet-50 dark:bg-violet-400/10 flex items-center justify-center shrink-0">
+                            <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" strokeWidth={2.2} />
                         </div>
 
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="text-sm font-semibold tracking-tight">
+                                <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
                                     GroupPay
                                 </h4>
-                                <Badge
-                                    variant="secondary"
-                                    className="border-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold"
-                                >
+                                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold
+                                                 bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
                                     Save {CURRENCY} {SAVE_2MO}
-                                </Badge>
+                                </span>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                                 Split the cost with your study group.
                             </p>
                         </div>
 
                         <div className="hidden sm:flex items-baseline gap-2 shrink-0">
-                            <span className="text-sm font-semibold tabular-nums">
+                            <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-white">
                                 {CURRENCY} {GROUP_2MO}
                             </span>
-                            <span className="text-xs text-muted-foreground line-through tabular-nums">
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 line-through tabular-nums">
                                 {CURRENCY} {IND_2MO}
                             </span>
                         </div>
 
-                        <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        <ArrowRight className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         );
     }
 
@@ -94,69 +106,78 @@ export function GroupPaySubscriptionCard({
     // FULL — one card shell, no inner borders, no shadows
     // ═══════════════════════════════════════════════════════════
     return (
-        <Card
+        <div
             onClick={handleClick}
-            className={`group cursor-pointer rounded-3xl border-border/60 bg-card shadow-none overflow-hidden ${className}`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleClick();
+                }
+            }}
+            className={`cursor-pointer rounded-2xl bg-white dark:bg-[#161b22]
+                        active:bg-slate-50 dark:active:bg-white/[0.04]
+                        transition-colors overflow-hidden ${className}`}
+            style={{ touchAction: "manipulation" }}
         >
-            <CardContent className="p-6 md:p-7 space-y-6">
+            <div className="p-4 space-y-4">
                 {/* ── Header ─────────────────────────────────────── */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                            <Users className="w-6 h-6 text-primary" strokeWidth={2.2} />
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-violet-50 dark:bg-violet-400/10 flex items-center justify-center shrink-0">
+                            <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" strokeWidth={2.2} />
                         </div>
                         <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-base md:text-lg font-semibold tracking-tight">
+                                <h3 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
                                     GroupPay
                                 </h3>
-                                <Badge
-                                    variant="secondary"
-                                    className="border-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold"
-                                >
+                                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold
+                                                 bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
                                     Save {CURRENCY} {SAVE_2MO}
-                                </Badge>
+                                </span>
                             </div>
-                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                 Unlock premium together and split the cost.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* ── Price block — no border, matches subscription's muted/30 ── */}
-                <div className="rounded-2xl bg-muted/30 p-5 space-y-4">
-                    <div className="flex flex-wrap items-end justify-between gap-4">
+                {/* ── Price block — inner surface, no border ── */}
+                <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-4 space-y-3">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
                         <div>
-                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                                 Per member · 2 months
                             </p>
                             <div className="flex items-baseline gap-2 flex-wrap">
-                                <span className="text-3xl md:text-4xl font-semibold tracking-tight tabular-nums">
+                                <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
                                     {CURRENCY} {GROUP_2MO}
                                 </span>
-                                <span className="text-sm text-muted-foreground line-through tabular-nums">
+                                <span className="text-xs text-slate-400 dark:text-slate-500 line-through tabular-nums">
                                     {CURRENCY} {IND_2MO}
                                 </span>
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                                 Per member · 1 month
                             </p>
                             <div className="flex items-baseline gap-2 justify-end flex-wrap">
-                                <span className="text-base font-semibold tabular-nums">
+                                <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-white">
                                     {CURRENCY} {GROUP_1MO}
                                 </span>
-                                <span className="text-xs text-muted-foreground line-through tabular-nums">
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 line-through tabular-nums">
                                     {CURRENCY} {IND_1MO}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Mini benefit row — no top border, spacing carries the divider */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 pt-1">
+                    {/* Mini benefit row — spacing carries the divider */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5 pt-1">
                         {[
                             { icon: TrendingDown, label: "Lower per-member cost" },
                             { icon: Users, label: "Study with your group" },
@@ -165,10 +186,10 @@ export function GroupPaySubscriptionCard({
                         ].map(({ icon: Icon, label }, i) => (
                             <div key={i} className="flex items-center gap-2">
                                 <Icon
-                                    className="w-3.5 h-3.5 text-muted-foreground shrink-0"
+                                    className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0"
                                     strokeWidth={2.2}
                                 />
-                                <span className="text-[11px] md:text-xs text-muted-foreground leading-tight">
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                                     {label}
                                 </span>
                             </div>
@@ -177,21 +198,23 @@ export function GroupPaySubscriptionCard({
                 </div>
 
                 {/* ── How it works ───────────────────────────────── */}
-                <div className="space-y-3">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         How it works
                     </p>
-                    <ol className="space-y-2.5">
+                    <ol className="space-y-2">
                         {[
                             "Create a group and invite classmates.",
                             "Each member pays their share via M-Pesa.",
                             "Once the group is full, everyone unlocks premium.",
                         ].map((step, i) => (
-                            <li key={i} className="flex items-start gap-3 text-sm">
-                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                            <li key={i} className="flex items-start gap-2.5 text-xs">
+                                <span className="h-5 w-5 rounded-full bg-violet-50 dark:bg-violet-400/10
+                                                 text-violet-600 dark:text-violet-400
+                                                 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
                                     {i + 1}
                                 </span>
-                                <span className="text-foreground/90 leading-relaxed">
+                                <span className="text-slate-700 dark:text-slate-300 leading-relaxed">
                                     {step}
                                 </span>
                             </li>
@@ -199,26 +222,32 @@ export function GroupPaySubscriptionCard({
                     </ol>
                 </div>
 
-                {/* ── Savings strip — no border, bg-only (matches badge style) ── */}
-                <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-500/[0.08] px-4 py-3">
+                {/* ── Savings strip — bg-only, no border ── */}
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-400/[0.08] px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
-                        <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="text-xs md:text-sm font-medium truncate">
+                        <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span className="text-[11px] font-semibold truncate text-emerald-700 dark:text-emerald-300">
                             You save {CURRENCY} {SAVE_2MO} per member vs. paying solo.
                         </span>
                     </div>
                 </div>
 
                 {/* ── CTA ────────────────────────────────────────── */}
-                <Button
-                    className="w-full h-12 rounded-xl text-sm font-semibold group/btn"
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleClick();
+                    }}
+                    className="w-full h-10 rounded-xl bg-violet-600 text-white text-sm font-bold
+                               active:scale-[0.97] transition-transform
+                               flex items-center justify-center gap-1.5"
+                    style={{ touchAction: "manipulation" }}
                 >
-                    <span className="flex items-center">
-                        Create or join a group
-                        <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover/btn:translate-x-0.5" />
-                    </span>
-                </Button>
-            </CardContent>
-        </Card>
+                    Create or join a group
+                    <ArrowRight className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
     );
 }

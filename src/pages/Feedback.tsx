@@ -2,10 +2,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +15,23 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+  playSound("ui-tap");
+  if (type === "success") vibrate([15, 30, 15]);
+  else if (type === "warning") vibrate(60);
+  else vibrate(15);
+};
 
 // Confetti animation component (unchanged)
 const Confetti = () => {
@@ -90,8 +103,7 @@ export function Feedback() {
   const home = useHomeRoute();
 
   const handleBack = useCallback(() => {
-    playSound("tap");
-    if (navigator.vibrate) navigator.vibrate(20);
+    tap();
     navigate(home, { replace: true });
   }, [navigate, home]);
 
@@ -262,189 +274,249 @@ export function Feedback() {
     Array.from({ length: 5 }).map((_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 cursor-pointer ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
+        className={`h-5 w-5 cursor-pointer transition-colors ${i < rating
+          ? "text-amber-500 fill-current"
+          : "text-slate-300 dark:text-slate-600"
           }`}
-        onClick={() => setFeedback((prev) => ({ ...prev, rating: i + 1 }))}
+        onClick={() => {
+          tap();
+          setFeedback((prev) => ({ ...prev, rating: i + 1 }));
+        }}
+        style={{ touchAction: "manipulation" }}
       />
     ));
 
   const getStatusBadge = (status: string) => {
+    const base =
+      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold";
     switch (status) {
       case 'Resolved':
-        return <span className="flex items-center gap-1 text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full text-xs"><CheckCircle size={12} /> Resolved</span>;
+        return <span className={`${base} bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400`}><CheckCircle size={11} /> Resolved</span>;
       case 'Submitted':
-        return <span className="flex items-center gap-1 text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full text-xs"><Clock size={12} /> Submitted</span>;
+        return <span className={`${base} bg-blue-50 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400`}><Clock size={11} /> Submitted</span>;
       case 'In Review':
-        return <span className="flex items-center gap-1 text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full text-xs"><Clock size={12} /> In Review</span>;
+        return <span className={`${base} bg-amber-50 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400`}><Clock size={11} /> In Review</span>;
       case 'Rejected':
-        return <span className="flex items-center gap-1 text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full text-xs">Rejected</span>;
+        return <span className={`${base} bg-rose-50 text-rose-600 dark:bg-rose-400/10 dark:text-rose-400`}>Rejected</span>;
       default:
-        return <span className="text-xs text-muted-foreground">{status}</span>;
+        return <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{status}</span>;
     }
   };
 
   const pendingCount = allFeedback.filter(f => f.status === 'Submitted' || f.status === 'In Review').length;
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+    <div className="h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-[#0d1117] overflow-hidden"
+      style={{ WebkitTapHighlightColor: "transparent" }}>
       {showConfetti && <Confetti />}
       {showCelebration && <Celebration />}
 
-      {/* ── Sticky top bar with back arrow ─────────────────── */}
-      <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
-          border-b border-gray-100 dark:border-gray-800
-          bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
-          z-30 safe-top">
+      {/* ── Sticky top bar ─────────────────────────────────── */}
+      <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                         bg-white dark:bg-[#0d1117]
+                         border-b border-slate-200/70 dark:border-white/[0.06]
+                         z-30 safe-top">
         <button
           onClick={handleBack}
           aria-label="Go back"
-          className="flex items-center justify-center h-10 w-10 rounded-full
-              bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
-              active:scale-95 transition-all touch-manipulation"
+          className="h-10 w-10 rounded-full flex items-center justify-center
+                     text-slate-700 dark:text-slate-200
+                     active:bg-slate-100 dark:active:bg-white/5
+                     transition-colors"
+          style={{ touchAction: "manipulation" }}
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
         </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
             Feedback
           </h1>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
             Share your thoughts and view replies
           </p>
         </div>
       </header>
 
-      {/* ── Internally-scrolling content ───────────────────── */}
-      <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-          custom-scrollbar overscroll-contain">
-        <div className="w-full max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 pb-24 safe-bottom space-y-4">
+      {/* ── Scrolling body ─────────────────────────────────── */}
+      <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain">
+        <div className="w-full max-w-[880px] mx-auto px-4 py-4 pb-24 safe-bottom space-y-3">
 
-          {/* Submit Feedback Card */}
-          <Card className="border border-slate-100 dark:border-gray-800 rounded-2xl shadow-sm dark:bg-muted/30">
-            <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-4">
-              <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                <Sparkles className="text-blue-500" size={20} />
-                Submit New Feedback
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Help us improve by sharing your thoughts and suggestions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="anonymous"
-                    checked={isAnonymous}
-                    onCheckedChange={setIsAnonymous}
-                    className="data-[state=checked]:bg-blue-600"
-                  />
-                  <Label htmlFor="anonymous" className="text-sm">Submit anonymously</Label>
-                </div>
+          {/* ── Submit Feedback Card ─────────────────────── */}
+          <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-400/10
+                              flex items-center justify-center shrink-0">
+                <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider
+                              text-blue-600 dark:text-blue-400 leading-none mb-1">
+                  New
+                </p>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                  Submit feedback
+                </h2>
+              </div>
+            </div>
 
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium">Category *</Label>
-                  <Select
-                    value={feedback.category}
-                    onValueChange={(value) =>
-                      setFeedback((prev) => ({ ...prev, category: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full rounded-lg md:rounded-xl border-gray-200 dark:border-gray-700">
-                      <SelectValue placeholder="Select feedback category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bug">Bug</SelectItem>
-                      <SelectItem value="suggestion">Suggestion</SelectItem>
-                      <SelectItem value="complaint">Complaint</SelectItem>
-                      <SelectItem value="general">General</SelectItem>
-                      <SelectItem value="feature-request">Feature Request</SelectItem>
-                      <SelectItem value="performance">Performance Issue</SelectItem>
-                      <SelectItem value="ui-ux">UI/UX Feedback</SelectItem>
-                      <SelectItem value="data-error">Data Error</SelectItem>
-                      <SelectItem value="security">Security Concern</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug -mt-1">
+              Help us improve by sharing your thoughts and suggestions.
+            </p>
 
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="subject" className="text-sm font-medium">Subject *</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Brief description of your feedback"
-                    value={feedback.subject}
-                    onChange={(e) =>
-                      setFeedback((prev) => ({ ...prev, subject: e.target.value }))
-                    }
-                    className="rounded-lg md:rounded-xl border-gray-200 dark:border-gray-700"
-                  />
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Anonymous toggle */}
+              <div className="flex items-center justify-between gap-2 rounded-xl
+                              bg-slate-50 dark:bg-[#0d1117] px-3 py-2.5">
+                <Label htmlFor="anonymous" className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Submit anonymously
+                </Label>
+                <Switch
+                  id="anonymous"
+                  checked={isAnonymous}
+                  onCheckedChange={setIsAnonymous}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+              </div>
 
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label className="text-sm font-medium">Rating (1-5) *</Label>
-                  <div className="flex items-center gap-0.5 md:gap-1">
+              {/* Category */}
+              <Field label="Category" required>
+                <Select
+                  value={feedback.category}
+                  onValueChange={(value) =>
+                    setFeedback((prev) => ({ ...prev, category: value }))
+                  }
+                >
+                  <SelectTrigger className="w-full h-10 rounded-xl border-0
+                                             bg-slate-50 dark:bg-[#0d1117]
+                                             text-sm
+                                             focus:ring-2 focus:ring-blue-500/40">
+                    <SelectValue placeholder="Select feedback category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bug">Bug</SelectItem>
+                    <SelectItem value="suggestion">Suggestion</SelectItem>
+                    <SelectItem value="complaint">Complaint</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="feature-request">Feature Request</SelectItem>
+                    <SelectItem value="performance">Performance Issue</SelectItem>
+                    <SelectItem value="ui-ux">UI/UX Feedback</SelectItem>
+                    <SelectItem value="data-error">Data Error</SelectItem>
+                    <SelectItem value="security">Security Concern</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              {/* Subject */}
+              <Field label="Subject" required>
+                <Input
+                  id="subject"
+                  placeholder="Brief description of your feedback"
+                  value={feedback.subject}
+                  onChange={(e) =>
+                    setFeedback((prev) => ({ ...prev, subject: e.target.value }))
+                  }
+                  className="h-10 rounded-xl border-0 text-sm
+                             bg-slate-50 dark:bg-[#0d1117]
+                             focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                />
+              </Field>
+
+              {/* Rating */}
+              <Field label="Rating" required>
+                <div className="flex items-center gap-1 rounded-xl
+                                bg-slate-50 dark:bg-[#0d1117] px-3 py-2.5">
+                  <div className="flex items-center gap-0.5">
                     {renderStars(feedback.rating)}
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      {feedback.rating > 0 ? `${feedback.rating}/5` : "Click a star"}
-                    </span>
                   </div>
-                  {feedback.rating === 0 && (
-                    <p className="text-xs text-red-500 mt-1">Please select a rating</p>
-                  )}
+                  <span className="ml-auto text-[11px] font-bold
+                                   text-slate-500 dark:text-slate-400 tabular-nums">
+                    {feedback.rating > 0 ? `${feedback.rating}/5` : "Tap a star"}
+                  </span>
                 </div>
+                {feedback.rating === 0 && (
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 leading-snug">
+                    Please select a rating
+                  </p>
+                )}
+              </Field>
 
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="message" className="text-sm font-medium">Message *</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Your detailed feedback"
-                    className="min-h-[100px] md:min-h-[120px] rounded-lg md:rounded-xl border-gray-200 dark:border-gray-700"
-                    value={feedback.message}
-                    onChange={(e) =>
-                      setFeedback((prev) => ({ ...prev, message: e.target.value }))
-                    }
-                  />
-                </div>
+              {/* Message */}
+              <Field label="Message" required>
+                <Textarea
+                  id="message"
+                  placeholder="Your detailed feedback"
+                  className="min-h-[100px] rounded-xl border-0 text-sm resize-none
+                             bg-slate-50 dark:bg-[#0d1117]
+                             focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  value={feedback.message}
+                  onChange={(e) =>
+                    setFeedback((prev) => ({ ...prev, message: e.target.value }))
+                  }
+                />
+              </Field>
 
-                <div className="flex justify-center">
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || feedback.rating === 0}
-                    className="flex items-center gap-2 w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg md:rounded-xl py-2.5 md:py-2 px-6 transition-all duration-300 disabled:opacity-50"
-                  >
-                    <Send className="h-4 w-4" />
-                    {isSubmitting ? "Sending..." : isConfirming ? "Click again to confirm & send" : "Submit Feedback ✨"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+              <button
+                type="submit"
+                disabled={isSubmitting || feedback.rating === 0}
+                className="w-full h-10 rounded-xl
+                           bg-blue-600 text-white
+                           text-sm font-bold
+                           flex items-center justify-center gap-1.5
+                           active:scale-[0.97] transition-transform
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           disabled:active:scale-100"
+                style={{ touchAction: "manipulation" }}
+              >
+                <Send className="h-4 w-4" />
+                {isSubmitting
+                  ? "Sending…"
+                  : isConfirming
+                    ? "Tap again to confirm"
+                    : "Submit feedback"}
+              </button>
+            </form>
+          </section>
 
-          {/* Tabs for My Feedback / Admin Panel */}
-          <div className="flex justify-center gap-2">
+          {/* ── Tab switcher ─────────────────────────────── */}
+          <div className="flex gap-2">
             <button
-              onClick={() => setActiveTab("my")}
-              className={`flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-sm font-bold transition-all ${activeTab === "my"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+              onClick={() => {
+                tap();
+                setActiveTab("my");
+              }}
+              className={`flex-1 h-10 rounded-xl text-sm font-bold
+                          flex items-center justify-center gap-1.5
+                          active:scale-[0.97] transition-all
+                          ${activeTab === "my"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
                 }`}
+              style={{ touchAction: "manipulation" }}
             >
-              <User size={16} className="inline mr-2" />
-              My Feedback
+              <User size={15} />
+              My feedback
             </button>
             {isAdmin && (
               <button
-                onClick={() => setActiveTab("admin")}
-                className={`flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-sm font-bold transition-all ${activeTab === "admin"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                onClick={() => {
+                  tap();
+                  setActiveTab("admin");
+                }}
+                className={`flex-1 h-10 rounded-xl text-sm font-bold
+                            flex items-center justify-center gap-1.5
+                            active:scale-[0.97] transition-all
+                            ${activeTab === "admin"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
                   }`}
+                style={{ touchAction: "manipulation" }}
               >
-                <Shield size={16} className="inline mr-2" />
-                Admin Panel
+                <Shield size={15} />
+                Admin
                 {pendingCount > 0 && (
-                  <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  <span className="ml-1 bg-rose-600 text-white text-[10px] font-bold
+                                   px-1.5 py-0.5 rounded-full tabular-nums min-w-[18px] text-center">
                     {pendingCount}
                   </span>
                 )}
@@ -452,178 +524,278 @@ export function Feedback() {
             )}
           </div>
 
-          {/* My Feedback History */}
+          {/* ── My Feedback history ──────────────────────── */}
           {activeTab === "my" && (
-            <Card className="border border-slate-100 dark:border-gray-800 rounded-2xl shadow-sm dark:bg-muted/30">
-              <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-4">
-                <CardTitle className="text-lg md:text-xl">My Feedback</CardTitle>
-                <CardDescription className="text-sm">See what you sent and admin replies.</CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-                <div className="space-y-3 md:space-y-4 max-h-[400px] md:max-h-[500px] overflow-y-auto custom-scrollbar pr-1 md:pr-2">
-                  {myFeedback.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8 md:py-12">No feedback submitted yet. Be the first! 🌟</p>
-                  ) : (
-                    myFeedback.map((fb, index) => (
-                      <div key={fb.id} className="p-3 md:p-4 border border-slate-100 dark:border-gray-800 rounded-lg md:rounded-xl space-y-2 bg-white dark:bg-muted/30">
-                        {index > 0 && (
-                          <div className="block md:hidden h-px bg-gray-200 dark:bg-gray-800 -mx-3" />
-                        )}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-white/[0.06]
+                                flex items-center justify-center shrink-0">
+                  <User className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider
+                                text-slate-500 dark:text-slate-400 leading-none mb-1">
+                    History
+                  </p>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                    My feedback
+                  </h2>
+                </div>
+              </div>
 
-                        <div className="flex justify-between items-center flex-wrap gap-1">
-                          <p className="font-medium text-sm md:text-base">{fb.subject}</p>
-                          <span className="text-[10px] md:text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                            {fb.category}
+              <div className="space-y-2">
+                {myFeedback.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center py-10 leading-relaxed">
+                    No feedback submitted yet. Be the first! 🌟
+                  </p>
+                ) : (
+                  myFeedback.map((fb) => (
+                    <div key={fb.id}
+                      className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <p className="text-[12px] font-bold text-slate-900 dark:text-white leading-snug flex-1 min-w-0 truncate">
+                          {fb.subject}
+                        </p>
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                         text-[10px] font-bold shrink-0
+                                         bg-slate-100 text-slate-600
+                                         dark:bg-white/[0.06] dark:text-slate-300 capitalize">
+                          {fb.category}
+                        </span>
+                      </div>
+
+                      <div className="rounded-lg bg-white dark:bg-[#161b22] p-2.5">
+                        <p className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">You:</span>{" "}
+                          {fb.message}
+                        </p>
+                      </div>
+
+                      {fb.admin_response ? (
+                        <div className="rounded-lg bg-emerald-50 dark:bg-emerald-400/10 p-2.5">
+                          <p className="text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-300">
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">Admin:</span>{" "}
+                            {fb.admin_response}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] italic text-slate-400 dark:text-slate-500
+                                      flex items-center gap-1">
+                          <Clock size={11} /> No reply yet
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2
+                                      text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
+                        <span className="tabular-nums">
+                          Rating: {fb.rating ? `${fb.rating}/5` : "N/A"}
+                        </span>
+                        <span>·</span>
+                        {getStatusBadge(fb.status)}
+                        <span>·</span>
+                        <span>{new Date(fb.submitted_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* ── Admin panel ──────────────────────────────── */}
+          {activeTab === "admin" && isAdmin && (
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-400/10
+                                flex items-center justify-center shrink-0">
+                  <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider
+                                text-blue-600 dark:text-blue-400 leading-none mb-1">
+                    Admin
+                  </p>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                    All feedback
+                  </h2>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug -mt-1">
+                Review and respond to user feedback. {pendingCount} pending repl{pendingCount === 1 ? "y" : "ies"}.
+              </p>
+
+              <div className="space-y-2">
+                {allFeedback.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center py-10">
+                    No feedback submitted yet.
+                  </p>
+                ) : (
+                  allFeedback.map((fb) => (
+                    <div key={fb.id}
+                      className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-400/10
+                                          flex items-center justify-center
+                                          text-blue-600 dark:text-blue-400 font-bold text-[12px] shrink-0">
+                            {fb.is_anonymous
+                              ? '👤'
+                              : (fb.user?.email?.[0]?.toUpperCase() || 'U')}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate">
+                              {fb.subject}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                              {fb.is_anonymous ? 'Anonymous' : fb.user?.email || 'User'} · {fb.category}
+                            </p>
+                          </div>
+                        </div>
+                        {getStatusBadge(fb.status)}
+                      </div>
+
+                      <div className="rounded-lg bg-white dark:bg-[#161b22] p-2.5">
+                        <p className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">User:</span>{" "}
+                          {fb.message}
+                        </p>
+                      </div>
+
+                      {fb.rating > 0 && (
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${i < fb.rating
+                                ? "text-amber-500 fill-current"
+                                : "text-slate-300 dark:text-slate-600"
+                                }`}
+                            />
+                          ))}
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1 tabular-nums">
+                            ({fb.rating}/5)
                           </span>
                         </div>
+                      )}
 
-                        <div className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-l-4 border-blue-500 p-2.5 md:p-3 text-sm rounded-r-lg">
-                          <strong className="text-blue-600 dark:text-blue-400">You:</strong> {fb.message}
-                        </div>
-
-                        {fb.admin_response ? (
-                          <div className="bg-green-50 dark:bg-green-900/20 text-gray-900 dark:text-green-100 border-l-4 border-green-500 p-2.5 md:p-3 text-sm rounded-r-lg">
-                            <strong className="text-green-600 dark:text-green-400">Admin:</strong> {fb.admin_response}
-                          </div>
-                        ) : (
-                          <p className="text-xs italic text-muted-foreground flex items-center gap-1">
-                            <Clock size={12} /> No reply yet
+                      {fb.admin_response ? (
+                        <div className="rounded-lg bg-emerald-50 dark:bg-emerald-400/10 p-2.5">
+                          <p className="text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-300">
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">Admin:</span>{" "}
+                            {fb.admin_response}
                           </p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] md:text-xs text-muted-foreground pt-1">
-                          <span>Rating: {fb.rating ? `${fb.rating}/5` : "N/A"}</span>
-                          <span className="hidden md:inline">•</span>
-                          <span>{getStatusBadge(fb.status)}</span>
-                          <span className="hidden md:inline">•</span>
-                          <span>{new Date(fb.submitted_at).toLocaleDateString()}</span>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Admin Panel */}
-          {activeTab === "admin" && isAdmin && (
-            <Card className="border border-slate-100 dark:border-gray-800 rounded-2xl shadow-sm dark:bg-muted/30">
-              <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-4">
-                <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                  <Shield className="text-blue-600" size={20} />
-                  Admin - All Feedback
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Review and respond to user feedback. {pendingCount} pending replies.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-                <div className="space-y-3 md:space-y-4 max-h-[500px] md:max-h-[600px] overflow-y-auto custom-scrollbar pr-1 md:pr-2">
-                  {allFeedback.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8 md:py-12">No feedback submitted yet.</p>
-                  ) : (
-                    allFeedback.map((fb, index) => (
-                      <div key={fb.id} className="p-3 md:p-4 border border-slate-100 dark:border-gray-800 rounded-lg md:rounded-xl space-y-2 bg-white dark:bg-muted/30">
-                        {index > 0 && (
-                          <div className="block md:hidden h-px bg-gray-200 dark:bg-gray-800 -mx-3" />
-                        )}
-
-                        <div className="flex justify-between items-center flex-wrap gap-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-sm">
-                              {fb.is_anonymous ? '👤' : (fb.user?.email?.[0]?.toUpperCase() || 'U')}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm md:text-base">{fb.subject}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {fb.is_anonymous ? 'Anonymous' : fb.user?.email || 'User'} • {fb.category}
-                              </p>
-                            </div>
-                          </div>
-                          {getStatusBadge(fb.status)}
-                        </div>
-
-                        <div className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-l-4 border-blue-500 p-2.5 md:p-3 text-sm rounded-r-lg">
-                          <strong>User:</strong> {fb.message}
-                        </div>
-
-                        {fb.rating > 0 && (
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className={`h-3 w-3 ${i < fb.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
-                            ))}
-                            <span className="text-xs text-muted-foreground ml-1">({fb.rating}/5)</span>
-                          </div>
-                        )}
-
-                        {fb.admin_response ? (
-                          <div className="bg-green-50 dark:bg-green-900/20 text-gray-900 dark:text-green-100 border-l-4 border-green-500 p-2.5 md:p-3 text-sm rounded-r-lg">
-                            <strong className="text-green-600 dark:text-green-400">Admin Reply:</strong> {fb.admin_response}
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <Textarea
-                              placeholder="Write your reply..."
-                              value={replyingTo === fb.id ? replyMessage : ""}
-                              onChange={(e) => {
-                                setReplyingTo(fb.id);
-                                setReplyMessage(e.target.value);
-                              }}
-                              className="min-h-[60px] rounded-lg border-gray-200 dark:border-gray-700 text-sm"
-                            />
-                            {replyingTo === fb.id && (
-                              <div className="flex gap-2">
-                                <Button
-                                  onClick={() => handleReply(fb.id)}
-                                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg"
-                                >
-                                  <Reply size={14} />
-                                  Send Reply
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    setReplyingTo(null);
-                                    setReplyMessage("");
-                                  }}
-                                  variant="outline"
-                                  className="text-sm"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            )}
-                            {replyingTo !== fb.id && (
-                              <Button
-                                onClick={() => setReplyingTo(fb.id)}
-                                variant="outline"
-                                className="text-sm"
+                      ) : (
+                        <div className="space-y-2">
+                          <Textarea
+                            placeholder="Write your reply…"
+                            value={replyingTo === fb.id ? replyMessage : ""}
+                            onChange={(e) => {
+                              setReplyingTo(fb.id);
+                              setReplyMessage(e.target.value);
+                            }}
+                            className="min-h-[60px] rounded-xl border-0 text-sm resize-none
+                                       bg-white dark:bg-[#161b22]
+                                       focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                          />
+                          {replyingTo === fb.id ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  tap("success");
+                                  handleReply(fb.id);
+                                }}
+                                className="flex-1 h-9 rounded-xl
+                                           bg-emerald-600 text-white
+                                           text-[11px] font-bold
+                                           flex items-center justify-center gap-1.5
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                               >
-                                <Reply size={14} className="mr-2" />
-                                Reply
-                              </Button>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] md:text-xs text-muted-foreground pt-1">
-                          <span>Submitted: {new Date(fb.submitted_at).toLocaleString()}</span>
-                          {fb.resolved_at && (
-                            <>
-                              <span className="hidden md:inline">•</span>
-                              <span>Resolved: {new Date(fb.resolved_at).toLocaleString()}</span>
-                            </>
+                                <Reply size={13} />
+                                Send reply
+                              </button>
+                              <button
+                                onClick={() => {
+                                  tap();
+                                  setReplyingTo(null);
+                                  setReplyMessage("");
+                                }}
+                                className="h-9 px-4 rounded-xl
+                                           bg-slate-100 dark:bg-white/[0.06]
+                                           text-slate-700 dark:text-slate-200
+                                           text-[11px] font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                tap();
+                                setReplyingTo(fb.id);
+                              }}
+                              className="h-9 px-4 rounded-xl
+                                         bg-slate-100 dark:bg-white/[0.06]
+                                         text-slate-700 dark:text-slate-200
+                                         text-[11px] font-bold
+                                         flex items-center gap-1.5
+                                         active:scale-[0.97] transition-transform"
+                              style={{ touchAction: "manipulation" }}
+                            >
+                              <Reply size={13} />
+                              Reply
+                            </button>
                           )}
                         </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2
+                                      text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
+                        <span>Submitted: {new Date(fb.submitted_at).toLocaleString()}</span>
+                        {fb.resolved_at && (
+                          <>
+                            <span>·</span>
+                            <span>Resolved: {new Date(fb.resolved_at).toLocaleString()}</span>
+                          </>
+                        )}
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
           )}
         </div>
-      </div>
+      </main>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Subcomponents                                                     */
+/* ------------------------------------------------------------------ */
+
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-wider
+                    text-slate-500 dark:text-slate-400">
+        {label}
+        {required && <span className="ml-0.5 text-rose-500 dark:text-rose-400">*</span>}
+      </p>
+      {children}
     </div>
   );
 }

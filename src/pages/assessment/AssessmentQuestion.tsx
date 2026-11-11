@@ -1,40 +1,55 @@
 // src/pages/assessment/AssessmentQuestion.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Send, AlertCircle, Award, TrendingUp, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import {
+    ChevronLeft, Send, AlertCircle, Award, TrendingUp, Clock,
+    CheckCircle, XCircle, ChevronRight,
+} from 'lucide-react';
 import { assessmentService } from '@/services/assessmentService';
 import { useAuth } from '@/context/AuthProvider';
+import { playSound } from '@/lib/soundManager';
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 20) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: 'light' | 'success' | 'warning' = 'light') => {
+    try { playSound('ui-tap'); } catch { /* no-op */ }
+    if (type === 'success') vibrate([15, 30, 15]);
+    else if (type === 'warning') vibrate(60);
+    else vibrate(15);
+};
 
 // Cache configuration - same as AssessmentHome
 const CACHE_CONFIG = {
-    TTL: 5 * 60 * 1000, // 5 minutes
+    TTL: 5 * 60 * 1000,
     STALE_WHILE_REVALIDATE: true,
 };
 
-// Simple in-memory cache
 class DataCache {
     private cache: Map<string, { data: any; timestamp: number }> = new Map();
-
     set(key: string, data: any) {
         this.cache.set(key, { data, timestamp: Date.now() });
     }
-
     get(key: string) {
         const entry = this.cache.get(key);
         if (!entry) return null;
         return entry.data;
     }
-
     getAge(key: string): number {
         const entry = this.cache.get(key);
         if (!entry) return Infinity;
         return Date.now() - entry.timestamp;
     }
-
     isStale(key: string, ttl: number): boolean {
         return this.getAge(key) > ttl;
     }
-
     clear() {
         this.cache.clear();
     }
@@ -42,75 +57,6 @@ class DataCache {
 
 const cache = new DataCache();
 
-// ═══════════════════════════════════════════════════════════════
-// SKELETON — mirrors the real page structure
-// ═══════════════════════════════════════════════════════════════
-const QuestionSkeleton: React.FC = () => {
-    return (
-        <div className="w-full min-h-screen bg-gray-50 dark:bg-[#0d1117] overflow-x-hidden">
-            <div className="flex flex-col min-h-screen">
-                {/* Header */}
-                <div className="flex-shrink-0 bg-white dark:bg-[#161b22] px-4 py-3">
-                    <div className="flex items-center justify-between animate-pulse">
-                        <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 bg-gray-200 dark:bg-[#21262d] rounded" />
-                            <div className="w-16 h-4 bg-gray-200 dark:bg-[#21262d] rounded hidden sm:block" />
-                        </div>
-                        <div className="w-24 h-4 bg-gray-200 dark:bg-[#21262d] rounded" />
-                        <div className="flex items-center gap-2">
-                            <div className="w-14 h-6 bg-gray-200 dark:bg-[#21262d] rounded-full" />
-                            <div className="w-14 h-6 bg-gray-200 dark:bg-[#21262d] rounded-full" />
-                            <div className="w-14 h-6 bg-gray-200 dark:bg-[#21262d] rounded-full" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Progress */}
-                <div className="flex-shrink-0 bg-white dark:bg-[#161b22] px-4 py-2">
-                    <div className="flex items-center justify-between text-xs mb-1 animate-pulse">
-                        <div className="w-12 h-3 bg-gray-200 dark:bg-[#21262d] rounded" />
-                        <div className="w-8 h-3 bg-gray-200 dark:bg-[#21262d] rounded" />
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-100 dark:bg-[#21262d] rounded-full animate-pulse" />
-                </div>
-
-                {/* Main */}
-                {/* Main */}
-                <div className="flex-1 overflow-y-auto px-4 py-4">
-                    <div className="w-full bg-white dark:bg-[#161b22] rounded-2xl p-5 md:p-6 animate-pulse">
-                        <div className="h-4 w-1/2 bg-gray-200 dark:bg-[#21262d] rounded mb-3" />
-                        <div className="h-4 w-3/4 bg-gray-200 dark:bg-[#21262d] rounded mb-6" />
-                        <div className="w-full h-32 bg-gray-100 dark:bg-[#21262d] rounded-xl mb-4" />
-                        <div className="h-10 w-full bg-gray-200 dark:bg-[#21262d] rounded-xl" />
-                    </div>
-
-                    <div className="w-full mt-4 grid grid-cols-3 gap-2">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="bg-white dark:bg-[#161b22] rounded-2xl p-3 text-center animate-pulse">
-                                <div className="w-10 h-6 bg-gray-200 dark:bg-[#21262d] rounded mx-auto mb-1" />
-                                <div className="w-14 h-3 bg-gray-100 dark:bg-[#21262d] rounded mx-auto" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex-shrink-0 bg-white dark:bg-[#161b22] px-4 py-3">
-                    <div className="flex items-center justify-between animate-pulse">
-                        <div className="w-24 h-3 bg-gray-200 dark:bg-[#21262d] rounded" />
-                        <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="w-2 h-2 bg-gray-200 dark:bg-[#21262d] rounded-full" />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Helper to format explanation with bullet points and line breaks
 const formatExplanation = (text: string): string => {
     if (!text) return '';
     let formatted = text.replace(/\n/g, '<br />');
@@ -121,6 +67,52 @@ const formatExplanation = (text: string): string => {
 };
 
 const getCacheKey = (slug: string, userId: string) => `assessment_${slug}_${userId}`;
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton                                                          */
+/* ------------------------------------------------------------------ */
+
+const QuestionSkeleton: React.FC = () => (
+    <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+        <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           safe-top">
+            <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="h-4 w-32 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-24 rounded bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+            </div>
+            <div className="h-9 w-24 rounded-full bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+        </header>
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3">
+            <div className="w-full max-w-[880px] mx-auto space-y-3">
+                <div className="h-1 bg-slate-200 dark:bg-white/[0.06] rounded-full animate-pulse" />
+                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2 animate-pulse">
+                    <div className="h-3 w-1/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                    <div className="h-4 w-3/4 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                    <div className="h-4 w-2/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                </div>
+                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2 animate-pulse">
+                    <div className="h-28 w-full bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
+                    <div className="h-10 w-full bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
+                            <div className="h-5 w-10 mx-auto bg-slate-200 dark:bg-white/[0.1] rounded mb-1" />
+                            <div className="h-3 w-14 mx-auto bg-slate-200 dark:bg-white/[0.1] rounded" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </main>
+    </div>
+);
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
 
 export const AssessmentQuestion: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -150,13 +142,12 @@ export const AssessmentQuestion: React.FC = () => {
 
     const isLoadingRef = useRef(false);
     const initialLoadDoneRef = useRef(false);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         timerRef.current = setInterval(() => {
             setTimeSpent(prev => prev + 1);
         }, 1000);
-
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
@@ -317,11 +308,24 @@ export const AssessmentQuestion: React.FC = () => {
         return () => window.removeEventListener('pageshow', handlePageShow);
     }, [slug, user, loadAssessmentData]);
 
+    const handleBack = () => {
+        if (slug && user && !showResults) {
+            const cacheKey = getCacheKey(slug, user.id);
+            cache.set(cacheKey, {
+                assessment, attempt, steps: allSteps, responses,
+                currentStepIndex, correctCount, wrongCount, totalPoints, maxPoints,
+            });
+        }
+        tap();
+        navigate('/assessments');
+    };
+
     const handleSubmitAnswer = async () => {
         if (!answer.trim() || !currentStep || !attempt) return;
 
         setSubmitting(true);
         setShowFeedback(false);
+        tap();
 
         try {
             const expectedKeywords = currentStep.expected_keywords || [];
@@ -410,6 +414,7 @@ export const AssessmentQuestion: React.FC = () => {
     };
 
     const handleNextQuestion = () => {
+        tap();
         const nextIndex = currentStepIndex + 1;
         if (nextIndex >= allSteps.length) {
             const finalScore = Math.round((correctCount / allSteps.length) * 100);
@@ -447,238 +452,351 @@ export const AssessmentQuestion: React.FC = () => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    /* ─── Loading ─────────────────────────────────────────────────── */
     if (loading && !cache.get(getCacheKey(slug || '', user?.id || ''))) {
         return <QuestionSkeleton />;
     }
 
     const showRefreshIndicator = isRefreshing && cache.get(getCacheKey(slug || '', user?.id || ''));
 
+    /* ─── Error ───────────────────────────────────────────────────── */
     if (error && !cache.get(getCacheKey(slug || '', user?.id || ''))) {
         return (
-            <div className="w-full min-h-screen bg-gray-50 dark:bg-[#0d1117] flex items-center justify-center overflow-x-hidden px-4">
-                <div className="max-w-md w-full bg-white dark:bg-[#161b22] rounded-2xl p-6 md:p-8 text-center">
-                    <AlertCircle className="w-14 h-14 text-rose-500 mx-auto mb-4" />
-                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">Something went wrong</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 break-words">{error}</p>
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   safe-top">
                     <button
-                        onClick={() => {
-                            if (slug && user) {
-                                cache.clear();
-                                loadAssessmentData(true);
-                            }
-                        }}
-                        className="px-5 py-2.5 bg-gray-800 hover:bg-gray-900 dark:bg-[#21262d] dark:hover:bg-[#30363d] text-white rounded-xl text-sm font-semibold transition-all active:scale-[0.98]"
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors"
+                        style={{ touchAction: 'manipulation' }}
                     >
-                        Try again
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                     </button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                            Assessment
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Something went wrong
+                        </p>
+                    </div>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex items-center justify-center px-4">
+                    <div className="max-w-md w-full rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center">
+                        <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-3" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">
+                            Something went wrong
+                        </h2>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5 break-words leading-relaxed">
+                            {error}
+                        </p>
+                        <button
+                            onClick={() => {
+                                tap();
+                                if (slug && user) {
+                                    cache.clear();
+                                    loadAssessmentData(true);
+                                }
+                            }}
+                            className="w-full h-10 rounded-xl bg-blue-600 text-white
+                                       text-sm font-bold
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: 'manipulation' }}
+                        >
+                            Try again
+                        </button>
+                    </div>
+                </main>
             </div>
         );
     }
 
+    /* ─── Not found ───────────────────────────────────────────────── */
     if (!assessment || !attempt) {
         return (
-            <div className="w-full min-h-screen bg-gray-50 dark:bg-[#0d1117] flex items-center justify-center overflow-x-hidden px-4">
-                <div className="text-center">
-                    <AlertCircle className="w-14 h-14 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Assessment not found</h2>
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   safe-top">
                     <button
-                        onClick={() => navigate('/assessments')}
-                        className="mt-4 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline transition-colors"
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors"
+                        style={{ touchAction: 'manipulation' }}
                     >
-                        Return to assessments
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                     </button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                            Assessment
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Not found
+                        </p>
+                    </div>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex items-center justify-center px-4">
+                    <div className="text-center">
+                        <AlertCircle className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">
+                            Assessment not found
+                        </h2>
+                        <button
+                            onClick={() => { tap(); navigate('/assessments'); }}
+                            className="mt-3 h-10 px-4 rounded-xl
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-700 dark:text-slate-200
+                                       text-sm font-bold
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: 'manipulation' }}
+                        >
+                            Return to assessments
+                        </button>
+                    </div>
+                </main>
             </div>
         );
     }
 
+    /* ─── Completion ──────────────────────────────────────────────── */
     if (showResults || attempt.status === 'completed') {
         const percentage = Math.round((score / allSteps.length) * 100);
 
         return (
-            <div className="w-full min-h-screen bg-gray-50 dark:bg-[#0d1117] flex items-center justify-center overflow-x-hidden px-4 py-8">
-                <div className="max-w-md w-full bg-white dark:bg-[#161b22] rounded-2xl p-6 md:p-8 text-center">
-                    <div className="text-5xl mb-4">🎉</div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Assessment complete
-                    </h2>
-
-                    <div className="my-6">
-                        <div className="text-5xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
-                            {percentage}%
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            {score} of {allSteps.length} questions correct
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {totalPoints} / {maxPoints} points
+            <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
+                <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                                   bg-white dark:bg-[#0d1117]
+                                   border-b border-slate-200/70 dark:border-white/[0.06]
+                                   safe-top">
+                    <div className="flex-1 min-w-0 px-2">
+                        <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                            Assessment complete
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            {assessment.title}
                         </p>
                     </div>
+                </header>
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-4">
+                    <div className="w-full max-w-md mx-auto space-y-3">
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-5 text-center">
+                            <div className="h-14 w-14 rounded-2xl
+                                            bg-emerald-50 dark:bg-emerald-400/10
+                                            flex items-center justify-center mx-auto mb-3">
+                                <Award className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                          text-emerald-600 dark:text-emerald-400 mb-1">
+                                Result
+                            </p>
+                            <div className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white">
+                                {percentage}%
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                                {score} of {allSteps.length} correct
+                            </p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                {totalPoints} / {maxPoints} points
+                            </p>
+                        </section>
 
-                    <div className="grid grid-cols-3 gap-2 mb-6">
-                        <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3">
-                            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                {correctCount}
+                        <section className="grid grid-cols-3 gap-2">
+                            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 text-center">
+                                <div className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                    {correctCount}
+                                </div>
+                                <div className="text-[10px] font-bold uppercase tracking-wider
+                                                text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Correct
+                                </div>
                             </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Correct</div>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3">
-                            <div className="text-xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-                                {wrongCount}
+                            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 text-center">
+                                <div className="text-lg font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                                    {wrongCount}
+                                </div>
+                                <div className="text-[10px] font-bold uppercase tracking-wider
+                                                text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Wrong
+                                </div>
                             </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Wrong</div>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-3">
-                            <div className="text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
-                                {formatTime(timeSpent)}
+                            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 text-center">
+                                <div className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">
+                                    {formatTime(timeSpent)}
+                                </div>
+                                <div className="text-[10px] font-bold uppercase tracking-wider
+                                                text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Time
+                                </div>
                             </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Time</div>
-                        </div>
+                        </section>
+
+                        <button
+                            onClick={() => {
+                                tap('success');
+                                if (slug && user) cache.clear();
+                                navigate('/assessments');
+                            }}
+                            className="w-full h-10 rounded-xl bg-blue-600 text-white
+                                       text-sm font-bold
+                                       active:scale-[0.97] transition-transform"
+                            style={{ touchAction: 'manipulation' }}
+                        >
+                            Back to assessments
+                        </button>
                     </div>
-
-                    <button
-                        onClick={() => {
-                            if (slug && user) cache.clear();
-                            navigate('/assessments');
-                        }}
-                        className="w-full px-5 py-3 bg-gray-800 hover:bg-gray-900 dark:bg-[#21262d] dark:hover:bg-[#30363d] text-white rounded-xl text-sm font-semibold transition-all active:scale-[0.98]"
-                    >
-                        Back to assessments
-                    </button>
-                </div>
+                </main>
             </div>
         );
     }
 
-    const progress = Math.round((currentStepIndex / allSteps.length) * 100);
+    const progress = allSteps.length > 0
+        ? Math.round((currentStepIndex / allSteps.length) * 100)
+        : 0;
 
+    /* ─── Active question ─────────────────────────────────────────── */
     return (
-        <div className="w-full min-h-screen flex flex-col bg-gray-50 dark:bg-[#0d1117] overflow-x-hidden">
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+            {/* ── HEADER ──────────────────────────────────────────── */}
+            <header className="shrink-0 bg-white dark:bg-[#0d1117]
+                               border-b border-slate-200/70 dark:border-white/[0.06]
+                               z-30 safe-top">
+                <div className="flex items-center gap-2 px-2 h-14">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="h-10 w-10 rounded-full flex items-center justify-center
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors shrink-0"
+                        style={{ touchAction: 'manipulation' }}
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                            Assessment
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            {assessment.title}
+                            {assessment.tutor_personality ? ` · ${assessment.tutor_personality}` : ''}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                        <HeaderPill icon={Award} value={String(totalPoints)} />
+                        <HeaderPill icon={TrendingUp} value={`${currentStepIndex + 1}/${allSteps.length}`} />
+                        <HeaderPill icon={Clock} value={formatTime(timeSpent)} />
+                    </div>
+                </div>
+                {/* Progress bar */}
+                <div className="px-2 pb-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider
+                                    text-slate-500 dark:text-slate-400 mb-1">
+                        <span>Progress</span>
+                        <span className="tabular-nums">{progress}%</span>
+                    </div>
+                    <div className="w-full h-1 bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+                </div>
+            </header>
+
+            {/* ── REFRESHING PILL ─────────────────────────────────── */}
             {showRefreshIndicator && (
-                <div className="fixed top-0 right-0 m-4 z-50">
-                    <div className="bg-gray-800 dark:bg-[#21262d] text-white text-xs px-3 py-1 rounded-full animate-pulse">
+                <div className="pointer-events-none absolute top-16 right-4 z-50">
+                    <div className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider
+                                    bg-slate-900 text-white dark:bg-white/[0.1] animate-pulse">
                         Refreshing…
                     </div>
                 </div>
             )}
 
-            {/* Header */}
-            <div className="flex-shrink-0 bg-white dark:bg-[#161b22] px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                    <button
-                        onClick={() => {
-                            if (slug && user && !showResults) {
-                                const cacheKey = getCacheKey(slug, user.id);
-                                cache.set(cacheKey, {
-                                    assessment, attempt, steps: allSteps, responses,
-                                    currentStepIndex, correctCount, wrongCount, totalPoints, maxPoints,
-                                });
-                            }
-                            navigate('/assessments');
-                        }}
-                        className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0"
-                        aria-label="Go back"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium hidden sm:inline">Back</span>
-                    </button>
-
-                    <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
-                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-1">
-                            {assessment.title}
-                        </span>
-                        {assessment.tutor_personality && (
-                            <span className="text-[11px] px-2 py-0.5 bg-gray-100 dark:bg-[#21262d] rounded-full text-gray-500 dark:text-gray-400 hidden sm:inline flex-shrink-0">
-                                {assessment.tutor_personality}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#21262d] px-2 py-1 rounded-full">
-                            <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500 dark:text-gray-400" />
-                            <span className="text-[11px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
-                                {totalPoints}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#21262d] px-2 py-1 rounded-full">
-                            <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500 dark:text-gray-400" />
-                            <span className="text-[11px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
-                                {currentStepIndex + 1}/{allSteps.length}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#21262d] px-2 py-1 rounded-full">
-                            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500 dark:text-gray-400" />
-                            <span className="text-[11px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
-                                {formatTime(timeSpent)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="flex-shrink-0 bg-white dark:bg-[#161b22] px-4 py-2">
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-1">
-                    <span>Progress</span>
-                    <span className="tabular-nums">{progress}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-gray-100 dark:bg-[#21262d] rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-gray-800 dark:bg-gray-500 rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
-            </div>
-
-            {/* Main content */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-                <div className="w-full">
+            {/* ── SCROLL BODY ─────────────────────────────────────── */}
+            <main
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+                <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
 
                     {/* Question card */}
-                    <div className={`bg-white dark:bg-[#161b22] rounded-2xl p-5 md:p-6 mb-4 transition-all duration-300 ${showFeedback ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#21262d] flex items-center justify-center text-gray-700 dark:text-gray-300 text-sm font-bold tabular-nums shrink-0">
+                    <section
+                        className={`rounded-2xl bg-white dark:bg-[#161b22] p-4 transition-opacity duration-300 ${showFeedback ? 'opacity-50 pointer-events-none' : ''
+                            }`}
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="h-7 w-7 rounded-lg
+                                            bg-slate-100 dark:bg-white/[0.06]
+                                            flex items-center justify-center
+                                            text-[11px] font-bold tabular-nums shrink-0">
                                 {currentStepIndex + 1}
                             </div>
-                            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                            <span className="text-[11px] font-bold uppercase tracking-wider
+                                             text-slate-500 dark:text-slate-400">
                                 Question {currentStepIndex + 1} of {allSteps.length}
                             </span>
                             {currentStep?.points && (
-                                <span className="ml-auto text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#21262d] px-2 py-0.5 rounded-full">
+                                <span className="ml-auto text-[10px] font-bold uppercase tracking-wider
+                                                 text-slate-500 dark:text-slate-400
+                                                 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full">
                                     {currentStep.points} pts
                                 </span>
                             )}
                         </div>
-
-                        <p className="text-base font-medium text-gray-800 dark:text-gray-200 leading-relaxed break-words">
+                        <p className="text-[13px] font-medium leading-relaxed break-words text-slate-900 dark:text-white">
                             {currentStep?.message || 'Question not available'}
                         </p>
-                    </div>
+                    </section>
 
                     {/* Answer input */}
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-5 md:p-6 mb-4">
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                         <textarea
                             value={answer}
                             onChange={(e) => setAnswer(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Type your answer here…"
-                            className="w-full min-h-[120px] sm:min-h-[140px] p-4 bg-gray-50 dark:bg-[#21262d] rounded-xl focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#30363d] focus:outline-none resize-y text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm leading-relaxed"
+                            className="w-full min-h-[120px] p-3 rounded-xl text-sm leading-relaxed resize-y
+                                       bg-slate-50 dark:bg-[#0d1117]
+                                       border-0 outline-none
+                                       text-slate-900 dark:text-white
+                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                       focus:ring-2 focus:ring-blue-500/40"
                             disabled={submitting || showFeedback}
                         />
-
                         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mt-3">
-                            <span className="text-[11px] text-gray-400 dark:text-gray-500 text-center sm:text-left">
-                                Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-[#21262d] rounded text-[10px] font-mono">Enter</kbd> to submit
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 text-center sm:text-left">
+                                Press{' '}
+                                <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-white/[0.06] rounded text-[10px] font-mono">
+                                    Enter
+                                </kbd>{' '}
+                                to submit
                             </span>
                             <button
                                 onClick={handleSubmitAnswer}
                                 disabled={!answer.trim() || submitting || showFeedback}
-                                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${answer.trim() && !submitting && !showFeedback
-                                    ? 'bg-gray-800 hover:bg-gray-900 dark:bg-[#21262d] dark:hover:bg-[#30363d] text-white'
-                                    : 'bg-gray-200 dark:bg-[#21262d] text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                className={`w-full sm:w-auto h-10 px-4 rounded-xl
+                                            text-sm font-bold
+                                            flex items-center justify-center gap-1.5
+                                            active:scale-[0.97] transition-transform
+                                            ${answer.trim() && !submitting && !showFeedback
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-400 dark:text-slate-500 cursor-not-allowed'
                                     }`}
+                                style={{ touchAction: 'manipulation' }}
                             >
                                 {submitting ? (
                                     <>
@@ -688,40 +806,40 @@ export const AssessmentQuestion: React.FC = () => {
                                 ) : (
                                     <>
                                         Submit answer
-                                        <Send className="w-3.5 h-3.5" />
+                                        <Send className="h-3.5 w-3.5" />
                                     </>
                                 )}
                             </button>
                         </div>
-                    </div>
+                    </section>
 
                     {/* Feedback card */}
                     {showFeedback && lastResponse && (
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl p-5 md:p-6 mb-4">
-                            <div className="flex items-start gap-3">
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                            <div className="flex items-start gap-2.5">
                                 <div className="shrink-0 mt-0.5">
                                     {lastResponse.isCorrect ? (
-                                        <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                                        <CheckCircle className="h-5 w-5 text-emerald-500" />
                                     ) : (
-                                        <XCircle className="w-5 h-5 text-rose-500 dark:text-rose-400" />
+                                        <XCircle className="h-5 w-5 text-rose-500" />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                    <h3 className="text-[12px] font-bold mb-1.5">
                                         {lastResponse.isCorrect ? 'Correct' : 'Not quite right'}
                                     </h3>
-
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 break-words leading-relaxed">
+                                    <p className="text-[12px] text-slate-700 dark:text-slate-300 mb-2.5 break-words leading-relaxed">
                                         {lastResponse.feedback}
                                     </p>
 
                                     {lastResponse.explanation && (
-                                        <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-4 mb-3">
-                                            <p className="text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 mb-2.5">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 mb-1.5">
                                                 Correct answer
                                             </p>
                                             <div
-                                                className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words"
+                                                className="text-[12px] text-slate-700 dark:text-slate-300 leading-relaxed break-words"
                                                 dangerouslySetInnerHTML={{
                                                     __html: formatExplanation(lastResponse.explanation)
                                                 }}
@@ -730,8 +848,9 @@ export const AssessmentQuestion: React.FC = () => {
                                     )}
 
                                     {lastResponse.expected_keywords && lastResponse.expected_keywords.length > 0 && (
-                                        <div className="bg-gray-50 dark:bg-[#21262d] rounded-xl p-4">
-                                            <p className="text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-2">
+                                        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider
+                                                          text-slate-500 dark:text-slate-400 mb-2">
                                                 Key concepts
                                             </p>
                                             <div className="flex flex-wrap gap-1.5">
@@ -740,9 +859,9 @@ export const AssessmentQuestion: React.FC = () => {
                                                     return (
                                                         <span
                                                             key={idx}
-                                                            className={`px-2.5 py-1 rounded-full text-xs break-words ${isMatched
-                                                                ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400'
-                                                                : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400'
+                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold break-words ${isMatched
+                                                                ? 'bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400'
+                                                                : 'bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400'
                                                                 }`}
                                                         >
                                                             {isMatched ? '✓' : '×'} {kw}
@@ -753,62 +872,83 @@ export const AssessmentQuestion: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
-                                        <Award className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                    <div className="mt-3 flex items-center gap-2 text-[11px] flex-wrap">
+                                        <Award className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                                        <span className="font-bold text-slate-700 dark:text-slate-300">
                                             {lastResponse.isCorrect ? `+${currentStep?.points || 10} points` : '0 points'}
                                         </span>
-                                        <span className="text-gray-400 dark:text-gray-500">
+                                        <span className="text-slate-400 dark:text-slate-500">
                                             (Max: {currentStep?.points || 10})
                                         </span>
                                     </div>
 
                                     <button
                                         onClick={handleNextQuestion}
-                                        className="mt-4 w-full px-5 py-2.5 bg-gray-800 hover:bg-gray-900 dark:bg-[#21262d] dark:hover:bg-[#30363d] text-white rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                                        className="mt-3 w-full h-10 rounded-xl bg-blue-600 text-white
+                                                   text-sm font-bold
+                                                   flex items-center justify-center gap-1.5
+                                                   active:scale-[0.97] transition-transform"
+                                        style={{ touchAction: 'manipulation' }}
                                     >
                                         {currentStepIndex + 1 >= allSteps.length ? (
                                             'See results'
                                         ) : (
                                             <>
                                                 Next question
-                                                <ChevronRight className="w-3.5 h-3.5" />
+                                                <ChevronRight className="h-3.5 w-3.5" />
                                             </>
                                         )}
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     )}
 
                     {/* Progress stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl p-3 text-center">
-                            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    <section className="grid grid-cols-3 gap-2">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 text-center">
+                            <div className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                                 {correctCount}
                             </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Correct</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider
+                                            text-slate-500 dark:text-slate-400 mt-0.5">
+                                Correct
+                            </div>
                         </div>
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl p-3 text-center">
-                            <div className="text-lg font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 text-center">
+                            <div className="text-lg font-bold tabular-nums text-rose-600 dark:text-rose-400">
                                 {wrongCount}
                             </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Wrong</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider
+                                            text-slate-500 dark:text-slate-400 mt-0.5">
+                                Wrong
+                            </div>
                         </div>
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl p-3 text-center">
-                            <div className="text-lg font-bold text-gray-800 dark:text-gray-200 tabular-nums">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 text-center">
+                            <div className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">
                                 {totalPoints}
                             </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Points</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider
+                                            text-slate-500 dark:text-slate-400 mt-0.5">
+                                Points
+                            </div>
                         </div>
-                    </div>
+                    </section>
                 </div>
-            </div>
+            </main>
 
-            {/* Sticky footer */}
-            <div className="flex-shrink-0 bg-white dark:bg-[#161b22] px-4 py-3">
-                <div className="w-full flex items-center justify-between">
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 tabular-nums">
+            {/* ── STICKY FOOTER ──────────────────────────────────── */}
+            <footer
+                className="shrink-0 bg-white dark:bg-[#0d1117]
+               border-t border-slate-200/70 dark:border-white/[0.06]"
+                style={{
+                    paddingBottom:
+                        "calc(env(safe-area-inset-bottom, 0px) + 72px)",
+                }}
+            >
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                    <div className="text-[11px] font-bold uppercase tracking-wider
+                        text-slate-500 dark:text-slate-400 tabular-nums">
                         {currentStepIndex + 1} of {allSteps.length}
                     </div>
                     <div className="flex items-center gap-1">
@@ -816,16 +956,32 @@ export const AssessmentQuestion: React.FC = () => {
                             <div
                                 key={idx}
                                 className={`h-1.5 rounded-full transition-all ${idx === currentStepIndex
-                                    ? 'w-5 bg-gray-800 dark:bg-gray-400'
+                                    ? 'w-5 bg-blue-600'
                                     : idx < currentStepIndex
-                                        ? 'w-1.5 bg-emerald-500 dark:bg-emerald-400'
-                                        : 'w-1.5 bg-gray-200 dark:bg-[#21262d]'
+                                        ? 'w-1.5 bg-emerald-500'
+                                        : 'w-1.5 bg-slate-200 dark:bg-white/[0.06]'
                                     }`}
                             />
                         ))}
                     </div>
                 </div>
-            </div>
+            </footer>
         </div>
     );
 };
+
+/* ------------------------------------------------------------------ */
+/*  Subcomponent                                                      */
+/* ------------------------------------------------------------------ */
+
+function HeaderPill({ icon: Icon, value }: { icon: any; value: string }) {
+    return (
+        <div className="flex items-center gap-1 rounded-full px-2 py-1
+                        bg-slate-100 dark:bg-white/[0.06]">
+            <Icon className="h-3 w-3 text-slate-500 dark:text-slate-400" />
+            <span className="text-[11px] font-bold tabular-nums text-slate-700 dark:text-slate-300">
+                {value}
+            </span>
+        </div>
+    );
+}
