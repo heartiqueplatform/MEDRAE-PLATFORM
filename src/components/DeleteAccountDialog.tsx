@@ -49,13 +49,25 @@ export function DeleteAccountDialog({
         setIsDeleting(true);
         setTimeout(async () => {
             try {
+                // 🔧 Reset theme to LIGHT before account deletion completes.
+                // Ensures the /login (or /) page's loader paints in light mode,
+                // even if the user had dark mode on during this session.
+                try {
+                    localStorage.removeItem("medrae_dark_mode");
+                    document.documentElement.classList.remove("dark");
+                    document.documentElement.classList.add("light");
+                    document.documentElement.style.setProperty("--bg-color", "#ffffff");
+                    if (document.body) {
+                        document.body.style.backgroundColor = "#ffffff";
+                    }
+                } catch { /* never block deletion */ }
+
                 await onConfirm();
             } finally {
                 setIsDeleting(false);
             }
         }, 1100);
     };
-
     const title =
         isDeleting
             ? "Erasing everything…"

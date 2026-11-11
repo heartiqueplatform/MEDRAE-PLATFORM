@@ -1,28 +1,61 @@
 // src/staff-cpd/admin/ActivitiesListPage.tsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Plus, Search, Trash2, BookOpen, Calendar, Clock, Award, Archive } from "lucide-react";
+    Plus, Search, Trash2, BookOpen, Calendar, Clock, Award, Archive,
+} from "lucide-react";
 import { useAdminActivities, useCreateActivity, useRemoveActivity } from "../lib/admin-hooks";
 import { CpdEmptyState } from "../components";
 import { fmtDate, fmtHours, fmtPoints } from "../lib";
+import { playSound } from "@/lib/soundManager";
 
-// Status pill styling
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (p: number | number[] = 15) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
+};
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    if (type === "success") vibrate([15, 30, 15]);
+    else if (type === "warning") vibrate(40);
+    else vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Status tones                                                      */
+/* ------------------------------------------------------------------ */
+
 const STATUS_TONES: Record<string, string> = {
-    draft: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    review: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-    published: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    archived: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+    draft: "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300",
+    review: "bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400",
+    published: "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400",
+    archived: "bg-rose-50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-400",
 };
 
 const getStatusTone = (status?: string) =>
     STATUS_TONES[(status ?? "").toLowerCase()] ?? STATUS_TONES.draft;
 
+/* ------------------------------------------------------------------ */
+/*  Shared styles                                                     */
+/* ------------------------------------------------------------------ */
+
+const InputBase =
+    "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
+    "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
+
+const PrimaryBtn =
+    "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold " +
+    "flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
+
+const SecondaryBtn =
+    "h-10 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 " +
+    "text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN
+   ═══════════════════════════════════════════════════════════════ */
 export default function ActivitiesListPage() {
     const [status, setStatus] = useState<string>("");
     const [search, setSearch] = useState("");
@@ -34,219 +67,236 @@ export default function ActivitiesListPage() {
     const items = (q.data?.pages.flatMap(p => p.items) ?? [])
         .filter(a => !search || a.title.toLowerCase().includes(search.toLowerCase()));
 
+    const statusOptions = [
+        { value: "", label: "All statuses" },
+        { value: "draft", label: "Draft" },
+        { value: "review", label: "Review" },
+        { value: "published", label: "Published" },
+        { value: "archived", label: "Archived" },
+    ];
+
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8">
+        <div className="px-4 pt-4 pb-16 space-y-3 max-w-[880px] mx-auto">
 
-                {/* HERO HEADER CARD */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-                                    <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                                </div>
-                                <div className="min-w-0">
-                                    <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                                        CPD <span className="text-blue-600">Activities</span>
-                                    </h1>
-                                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                        Create and publish CPD activities
-                                    </p>
-                                </div>
-                            </div>
-
-                            <Button
-                                onClick={async () => {
-                                    const a = await create.mutateAsync({ title: "Untitled Activity" });
-                                    nav(`/cpd/admin/activities/${a.id}`);
-                                }}
-                                disabled={create.isPending}
-                                className="h-11 md:h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-4 md:px-5 flex items-center gap-2"
-                            >
-                                <Plus className="h-4 w-4" />
-                                New Activity
-                            </Button>
-                        </div>
+            {/* Intro + New Activity */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                    <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        <BookOpen className="h-4 w-4" strokeWidth={2.4} />
                     </div>
-                </Card>
-
-                {/* FILTER BAR */}
-                <div className="px-[4px] md:px-0">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                        <div className="relative flex-1 min-w-0 group">
-                            <Input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search title…"
-                                className="w-full h-11 md:h-12 pl-9 md:pl-11 pr-4 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-sm md:text-base text-gray-900 dark:text-white placeholder-gray-400 font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none shadow-inner"
-                            />
-                            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
-                        </div>
-
-                        <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-                            <SelectTrigger className="w-full sm:w-44 h-11 md:h-12 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-sm md:text-base font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50">
-                                <SelectValue placeholder="All statuses" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-0 shadow-xl">
-                                <SelectItem value="all">All statuses</SelectItem>
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="review">Review</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
-                                <SelectItem value="archived">Archived</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-[14px] font-bold text-slate-900 dark:text-white leading-tight">
+                            CPD Activities
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                            Create and publish CPD activities
+                        </p>
                     </div>
                 </div>
 
-                {/* LIST */}
-                {q.isLoading ? (
-                    <div className="space-y-[8px] sm:space-y-2 px-[4px] md:px-0">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="h-20 md:h-16 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                        ))}
-                    </div>
-                ) : items.length ? (
-                    <div className="space-y-[8px] sm:space-y-2 px-[4px] md:px-0">
+                <button
+                    onClick={async () => {
+                        tap("success");
+                        const a = await create.mutateAsync({ title: "Untitled Activity" });
+                        nav(`/cpd/admin/activities/${a.id}`);
+                    }}
+                    disabled={create.isPending}
+                    className={PrimaryBtn + " w-full"}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Plus className="h-3.5 w-3.5" />
+                    New Activity
+                </button>
+            </section>
+
+            {/* Filter bar */}
+            <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1 min-w-0">
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search title…"
+                        className={InputBase + " pl-9"}
+                    />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2
+                                       h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+
+                <select
+                    value={status}
+                    onChange={(e) => { tap(); setStatus(e.target.value); }}
+                    className={InputBase + " sm:w-44 shrink-0"}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    {statusOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                            {o.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* List */}
+            {q.isLoading ? (
+                <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-20 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                    ))}
+                </div>
+            ) : items.length ? (
+                <>
+                    <div className="space-y-2">
                         {items.map(a => (
-                            <Card
+                            <div
                                 key={a.id}
-                                className="group relative overflow-hidden transition-all duration-300 rounded-xl border-0 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl p-0"
+                                className="rounded-2xl bg-white dark:bg-[#161b22] p-3
+                                           flex items-center gap-2.5"
                             >
-                                <CardContent className="p-3 md:p-4 flex items-center justify-between gap-3">
-                                    <Link
-                                        to={`/cpd/admin/activities/${a.id}`}
-                                        className="flex items-center gap-3 min-w-0 flex-1"
-                                    >
-                                        {/* Thumbnail */}
-                                        {a.thumbnail_url ? (
-                                            <img
-                                                src={a.thumbnail_url}
-                                                alt=""
-                                                className="h-14 w-20 md:h-12 md:w-16 rounded-lg object-cover flex-shrink-0"
-                                            />
-                                        ) : (
-                                            <div className="h-14 w-20 md:h-12 md:w-16 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                                                <BookOpen className="w-5 h-5 text-white/80" />
-                                            </div>
-                                        )}
-
-                                        {/* Meta */}
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 truncate leading-tight">
-                                                {a.title}
-                                            </p>
-                                            <div className="flex items-center gap-2 md:gap-3 mt-1 flex-wrap">
-                                                <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                    <Clock className="w-3 h-3" />
-                                                    {fmtHours(a.learning_hours)}
-                                                </span>
-                                                <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                    <Award className="w-3 h-3" />
-                                                    {fmtPoints(a.configured_cpd_points)} pts
-                                                </span>
-                                                <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                    <Calendar className="w-3 h-3" />
-                                                    {fmtDate(a.created_at)}
-                                                </span>
-                                            </div>
+                                {/* Left: thumbnail + meta (tap target) */}
+                                <Link
+                                    to={`/cpd/admin/activities/${a.id}`}
+                                    onClick={() => tap()}
+                                    className="flex items-center gap-2.5 min-w-0 flex-1
+                                               active:scale-[0.99] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    {/* Thumbnail */}
+                                    {a.thumbnail_url ? (
+                                        <img
+                                            src={a.thumbnail_url}
+                                            alt=""
+                                            className="h-12 w-16 rounded-lg object-cover shrink-0
+                                                       bg-slate-100 dark:bg-white/[0.06]"
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-16 rounded-lg bg-slate-100 dark:bg-white/[0.06]
+                                                        flex items-center justify-center shrink-0">
+                                            <BookOpen className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                                         </div>
-                                    </Link>
+                                    )}
 
-                                    <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
-                                        <span
-                                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${getStatusTone(a.status)}`}
-                                        >
-                                            {a.status}
-                                        </span>
+                                    {/* Meta */}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate leading-tight">
+                                            {a.title}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                                             text-slate-500 dark:text-slate-400">
+                                                <Clock className="h-3 w-3" />
+                                                {fmtHours(a.learning_hours)}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                                             text-slate-500 dark:text-slate-400">
+                                                <Award className="h-3 w-3" />
+                                                {fmtPoints(a.configured_cpd_points)} pts
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                                             text-slate-500 dark:text-slate-400">
+                                                <Calendar className="h-3 w-3" />
+                                                {fmtDate(a.created_at)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
 
-                                        {/* Archive (visible only when not already archived) */}
-                                        {a.status !== "archived" && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                title="Archive (safe — nurses keep their records)"
-                                                disabled={remove.isPending}
-                                                className="h-9 w-9 p-0 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                                                onClick={() => {
-                                                    const ok = confirm(
-                                                        `Archive "${a.title}"?\n\n` +
-                                                        `It will disappear from the nurse catalog, but every nurse who completed it keeps their certificate, points, and verification code.`
-                                                    );
-                                                    if (!ok) return;
-                                                    remove.mutate(a.id, {
-                                                        onSuccess: () => {
-                                                            alert(`"${a.title}" was archived.`);
-                                                        },
-                                                        onError: (e: any) => {
-                                                            alert(`Couldn't archive "${a.title}":\n${e?.message ?? "Unknown error"}`);
-                                                        },
-                                                    });
-                                                }}
-                                            >
-                                                <Archive className="h-4 w-4 text-amber-600" />
-                                            </Button>
-                                        )}
+                                {/* Right: status + actions */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5
+                                                      text-[9px] font-bold capitalize ${getStatusTone(a.status)}`}>
+                                        {a.status}
+                                    </span>
 
-                                        {/* Remove (intelligently archives or deletes) */}
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            title="Remove activity"
+                                    {/* Archive (only if not archived) */}
+                                    {a.status !== "archived" && (
+                                        <button
+                                            title="Archive (nurses keep their records)"
                                             disabled={remove.isPending}
-                                            className="h-9 w-9 p-0 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
                                             onClick={() => {
+                                                tap("warning");
                                                 const ok = confirm(
-                                                    `Remove "${a.title}"?\n\n` +
-                                                    `• If nurses have completed it → the activity is ARCHIVED (their records are preserved).\n` +
-                                                    `• If nobody has completed it → the activity is PERMANENTLY DELETED.`
+                                                    `Archive "${a.title}"?\n\n` +
+                                                    `It will disappear from the nurse catalog, but every nurse who completed it keeps their certificate, points, and verification code.`
                                                 );
                                                 if (!ok) return;
                                                 remove.mutate(a.id, {
-                                                    onSuccess: (res) => {
-                                                        if (res.action === "archived") {
-                                                            alert(`"${a.title}" was archived.\n\nNurses who completed it keep their certificates and points.`);
-                                                        } else {
-                                                            alert(`"${a.title}" was permanently deleted.`);
-                                                        }
-                                                    },
-                                                    onError: (e: any) => {
-                                                        alert(`Couldn't remove "${a.title}":\n${e?.message ?? "Unknown error"}`);
-                                                    },
+                                                    onSuccess: () => alert(`"${a.title}" was archived.`),
+                                                    onError: (e: any) =>
+                                                        alert(`Couldn't archive "${a.title}":\n${e?.message ?? "Unknown error"}`),
                                                 });
                                             }}
+                                            className="h-9 w-9 rounded-xl
+                                                       bg-amber-50 dark:bg-amber-400/10
+                                                       text-amber-600 dark:text-amber-400
+                                                       flex items-center justify-center
+                                                       active:scale-[0.92] transition-transform
+                                                       disabled:opacity-50"
+                                            style={{ touchAction: "manipulation" }}
                                         >
-                                            <Trash2 className="h-4 w-4 text-rose-600" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                            <Archive className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
 
-                        {q.hasNextPage && (
-                            <div className="flex justify-center pt-3">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => q.fetchNextPage()}
-                                    disabled={q.isFetchingNextPage}
-                                    className="h-11 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-6"
-                                >
-                                    {q.isFetchingNextPage ? "Loading…" : "Load more"}
-                                </Button>
+                                    {/* Remove (archive or delete) */}
+                                    <button
+                                        title="Remove activity"
+                                        disabled={remove.isPending}
+                                        onClick={() => {
+                                            tap("warning");
+                                            const ok = confirm(
+                                                `Remove "${a.title}"?\n\n` +
+                                                `• If nurses have completed it → the activity is ARCHIVED (their records are preserved).\n` +
+                                                `• If nobody has completed it → the activity is PERMANENTLY DELETED.`
+                                            );
+                                            if (!ok) return;
+                                            remove.mutate(a.id, {
+                                                onSuccess: (res: any) => {
+                                                    if (res.action === "archived") {
+                                                        alert(
+                                                            `"${a.title}" was archived.\n\nNurses who completed it keep their certificates and points.`
+                                                        );
+                                                    } else {
+                                                        alert(`"${a.title}" was permanently deleted.`);
+                                                    }
+                                                },
+                                                onError: (e: any) =>
+                                                    alert(`Couldn't remove "${a.title}":\n${e?.message ?? "Unknown error"}`),
+                                            });
+                                        }}
+                                        className="h-9 w-9 rounded-xl
+                                                   bg-rose-50 dark:bg-rose-400/10
+                                                   text-rose-600 dark:text-rose-400
+                                                   flex items-center justify-center
+                                                   active:scale-[0.92] transition-transform
+                                                   disabled:opacity-50"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
                             </div>
-                        )}
+                        ))}
                     </div>
-                ) : (
-                    <div className="px-[4px] md:px-0">
-                        <CpdEmptyState
-                            title="No activities yet"
-                            hint="Click 'New Activity' to create your first one."
-                        />
-                    </div>
-                )}
-            </div>
+
+                    {q.hasNextPage && (
+                        <div className="flex justify-center pt-2">
+                            <button
+                                onClick={() => { tap(); q.fetchNextPage(); }}
+                                disabled={q.isFetchingNextPage}
+                                className={SecondaryBtn}
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                {q.isFetchingNextPage ? "Loading…" : "Load more"}
+                            </button>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <CpdEmptyState
+                    title="No activities yet"
+                    hint="Tap 'New Activity' to create your first one."
+                />
+            )}
         </div>
     );
 }

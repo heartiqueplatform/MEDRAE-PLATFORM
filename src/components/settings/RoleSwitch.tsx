@@ -343,11 +343,15 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
             }
 
             setTimeout(() => {
-                // Cache-busted hard reload — prevents the SW / HTTP cache
-                // from serving the pre-switch app shell.
-                window.location.replace(
-                    window.location.pathname + "?role-switch=" + Date.now()
-                );
+                // 🔧 Navigate to the NEW role's home route — NOT the current URL.
+                // Reloading the current URL leaves the user on their old role's page.
+                const roleHome =
+                    selectedRole === "tutor" ? "/dashboard/tutor"
+                        : selectedRole === "staff" ? "/dashboard/staff"
+                            : "/dashboard/student";
+
+                // Cache-busted hard reload at the correct route.
+                window.location.replace(roleHome + "?role-switch=" + Date.now());
             }, 500);
         } catch (error: any) {
             console.error("Role change error:", error);

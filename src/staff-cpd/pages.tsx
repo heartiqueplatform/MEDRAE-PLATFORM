@@ -1,13 +1,11 @@
 // src/staff-cpd/pages.tsx
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
     Award, BookOpen, Clock, TrendingUp, GraduationCap, ChevronLeft, ShieldCheck,
-    XCircle, CheckCircle2, ArrowRight, PlayCircle, FileText, Headphones, ExternalLink,
-    Calendar, Search, Sparkles, Lock, ClipboardCheck, Trophy, HelpCircle, Download,
+    XCircle, CheckCircle2, ArrowRight, Sparkles, Lock, ClipboardCheck, Trophy,
+    Search, Calendar, Download,
 } from "lucide-react";
 import {
     useDashboardStats, useActivities, useActivityTree, useMyEnrollment, useEnroll,
@@ -24,107 +22,197 @@ import { useEffect, useMemo, useState } from "react";
 import type { CpdContentItem } from "./lib";
 import { CpdCertificatePdf } from "./certificate-pdf";
 import { supabase } from "@/lib/supabaseClient";
-// ═══════════════════════════════════════════════════════════════
-// SHARED — input + pill styling
-// ═══════════════════════════════════════════════════════════════
-const inputCls =
-    "h-11 md:h-12 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-sm md:text-base font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none shadow-inner";
+import { playSound } from "@/lib/soundManager";
+import { useHomeRoute } from "@/hooks/useHomeRoute";
+
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (pattern: number | number[] = 15) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+};
+
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    if (type === "success") vibrate([15, 30, 15]);
+    else if (type === "warning") vibrate(40);
+    else vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Status tones                                                      */
+/* ------------------------------------------------------------------ */
 
 const STATUS_TONES: Record<string, string> = {
-    verified: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-    revoked: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
-    not_started: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-    completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    verified: "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400",
+    pending: "bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400",
+    revoked: "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400",
+    not_started: "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300",
+    in_progress: "bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400",
+    completed: "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400",
 };
 
 const getStatusTone = (s?: string) =>
     STATUS_TONES[(s ?? "").toLowerCase()] ?? STATUS_TONES.not_started;
 
-// ═══════════════════════════════════════════════════════════════
-// 1. DASHBOARD  /cpd
-// ═══════════════════════════════════════════════════════════════
-export function CpdDashboard() {
-    const { data, isLoading } = useDashboardStats();
+/* ------------------------------------------------------------------ */
+/*  Reusable: PageHeader (sticky, back button, title, subtitle)       */
+/* ------------------------------------------------------------------ */
 
+function PageHeader({
+    title,
+    subtitle,
+    onBack,
+    rightSlot,
+}: {
+    title: string;
+    subtitle?: string;
+    onBack?: () => void;
+    rightSlot?: React.ReactNode;
+}) {
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8">
-
-                {/* HERO */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-                                    <GraduationCap className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                                </div>
-                                <div className="min-w-0">
-                                    <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                                        My <span className="text-blue-600">CPD</span>
-                                    </h1>
-                                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                        {data?.current_period
-                                            ? `${data.current_period.name} · ends ${fmtDate(data.current_period.end_date)}`
-                                            : "Continuing Professional Development"}
-                                    </p>
-                                </div>
-                            </div>
-                            <Button
-                                asChild
-                                className="h-11 md:h-12 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-4 md:px-5"
-                            >
-                                <Link to="/cpd/catalog">
-                                    <BookOpen className="h-4 w-4 mr-2" /> Browse Catalog
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* STATS */}
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-[8px] sm:gap-3 md:gap-4 px-[4px] md:px-0">
-                    <CpdStatTile label="CPD Points" value={isLoading ? "…" : fmtPoints(data?.total_points)} icon={Award} tone="amber" />
-                    <CpdStatTile label="Learning Hours" value={isLoading ? "…" : fmtHours(data?.total_hours)} icon={Clock} tone="blue" />
-                    <CpdStatTile label="Completed" value={isLoading ? "…" : data?.completed_count ?? 0} icon={CheckCircle2} tone="green" />
-                    <CpdStatTile label="In Progress" value={isLoading ? "…" : data?.in_progress_count ?? 0} icon={TrendingUp} tone="violet" />
-                    <CpdStatTile label="Certificates" value={isLoading ? "…" : data?.certificates_count ?? 0} icon={GraduationCap} tone="rose" />
-                </div>
-
-                {/* RECENT COMPLETIONS */}
-                <div className="px-[4px] md:px-0">
-                    <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                        <CardHeader className="pb-3 px-4 md:px-6 pt-4 md:pt-5 flex flex-row items-center justify-between">
-                            <CardTitle className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100">
-                                Recent Completions
-                            </CardTitle>
-                            <Link
-                                to="/cpd/progress"
-                                className="inline-flex items-center gap-1 text-[11px] md:text-xs font-bold text-blue-600 dark:text-blue-400 hover:gap-2 transition-all"
-                            >
-                                View all <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                        </CardHeader>
-                        <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-                            {data?.recent_completions?.length ? (
-                                data.recent_completions.map((c) => <CpdCompletionRow key={c.id} completion={c} />)
-                            ) : (
-                                <CpdEmptyState title="No completions yet" hint="Enroll in a CPD activity from the catalog to get started." />
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+        <header className="shrink-0 flex items-center gap-2 px-2 h-14
+                           bg-white dark:bg-[#0d1117]
+                           border-b border-slate-200/70 dark:border-white/[0.06]
+                           z-30 safe-top">
+            {onBack && (
+                <button
+                    onClick={onBack}
+                    aria-label="Back"
+                    className="h-10 w-10 rounded-full flex items-center justify-center
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+            )}
+            <div className="flex-1 min-w-0">
+                <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                    {title}
+                </h1>
+                {subtitle && (
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        {subtitle}
+                    </p>
+                )}
             </div>
+            {rightSlot}
+        </header>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Reusable: FullScreen shell                                        */
+/* ------------------------------------------------------------------ */
+
+function FullScreen({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}>
+            {children}
         </div>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 2. CATALOG  /cpd/catalog
-// ═══════════════════════════════════════════════════════════════
+function ScrollBody({ children }: { children: React.ReactNode }) {
+    return (
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar"
+            style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="w-full max-w-[880px] mx-auto pb-16">
+                {children}
+            </div>
+        </main>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   1. DASHBOARD  /cpd
+   ═══════════════════════════════════════════════════════════════ */
+
+export function CpdDashboard() {
+    const { data, isLoading } = useDashboardStats();
+    const nav = useNavigate();
+    const home = useHomeRoute();
+
+    return (
+        <FullScreen>
+            <PageHeader
+                title="My CPD"
+                subtitle={
+                    data?.current_period
+                        ? `${data.current_period.name} · ends ${fmtDate(data.current_period.end_date)}`
+                        : "Continuing Professional Development"
+                }
+                onBack={() => { tap(); nav(home); }}
+                rightSlot={
+                    <Link
+                        to="/cpd/catalog"
+                        onClick={() => tap()}
+                        className="h-9 px-3 rounded-xl shrink-0
+                                   bg-blue-600 text-white text-[11px] font-bold
+                                   flex items-center gap-1.5
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <BookOpen className="h-3.5 w-3.5" />
+                        Catalog
+                    </Link>
+                }
+            />
+
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-4">
+                    {/* Stats grid */}
+                    <section className="grid grid-cols-2 gap-2">
+                        <CpdStatTile label="CPD Points" value={isLoading ? "…" : fmtPoints(data?.total_points)} icon={Award} tone="amber" />
+                        <CpdStatTile label="Learning Hours" value={isLoading ? "…" : fmtHours(data?.total_hours)} icon={Clock} tone="blue" />
+                        <CpdStatTile label="Completed" value={isLoading ? "…" : data?.completed_count ?? 0} icon={CheckCircle2} tone="green" />
+                        <CpdStatTile label="In Progress" value={isLoading ? "…" : data?.in_progress_count ?? 0} icon={TrendingUp} tone="violet" />
+                        <CpdStatTile label="Certificates" value={isLoading ? "…" : data?.certificates_count ?? 0} icon={GraduationCap} tone="rose" />
+                    </section>
+
+                    {/* Recent completions */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="text-[10px] font-bold uppercase tracking-wider
+                                           text-slate-500 dark:text-slate-400">
+                                Recent Completions
+                            </h2>
+                            <Link
+                                to="/cpd/progress"
+                                onClick={() => tap()}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold
+                                           text-blue-600 dark:text-blue-400
+                                           active:scale-[0.97] transition-transform"
+                            >
+                                View all <ArrowRight className="h-3 w-3" />
+                            </Link>
+                        </div>
+                        {data?.recent_completions?.length ? (
+                            <div className="space-y-2">
+                                {data.recent_completions.map((c) => (
+                                    <CpdCompletionRow key={c.id} completion={c} />
+                                ))}
+                            </div>
+                        ) : (
+                            <CpdEmptyState title="No completions yet" hint="Enroll in a CPD activity from the catalog to get started." />
+                        )}
+                    </section>
+                </div>
+            </ScrollBody>
+        </FullScreen>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. CATALOG  /cpd/catalog
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdCatalogPage() {
+    const nav = useNavigate();
     const [search, setSearch] = useState("");
     const [debounced, setDebounced] = useState("");
     useEffect(() => {
@@ -136,83 +224,75 @@ export function CpdCatalogPage() {
     const items = useMemo(() => q.data?.pages.flatMap(p => p.items) ?? [], [q.data]);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8">
+        <FullScreen>
+            <PageHeader
+                title="CPD Catalog"
+                subtitle="Published activities you can enrol in"
+                onBack={() => nav(-1)}
+            />
 
-                {/* HERO */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-                                <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                            </div>
-                            <div className="min-w-0">
-                                <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                                    CPD <span className="text-blue-600">Catalog</span>
-                                </h1>
-                                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                    Published activities you can enrol in and earn points from
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* SEARCH */}
-                <div className="px-[4px] md:px-0">
-                    <div className="relative w-full group">
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-4">
+                    {/* Search pill */}
+                    <div className="relative">
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search activities…"
-                            className={`w-full pl-9 md:pl-11 pr-4 ${inputCls}`}
+                            className="w-full h-10 rounded-xl bg-white dark:bg-[#161b22]
+                                       pl-9 pr-3 text-[13px] font-medium
+                                       text-slate-900 dark:text-white
+                                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                       outline-none"
                         />
-                        <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4
+                                          text-slate-400 pointer-events-none" />
                     </div>
-                </div>
 
-                {/* GRID */}
-                {q.isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[8px] sm:gap-4 px-[4px] md:px-0">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="h-64 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                        ))}
-                    </div>
-                ) : items.length ? (
-                    <div className="space-y-4 px-[4px] md:px-0">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[8px] sm:gap-4">
-                            {items.map((a) => <CpdActivityCard key={a.id} activity={a} />)}
+                    {q.isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="h-64 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                            ))}
                         </div>
-                        {q.hasNextPage && (
-                            <div className="flex justify-center pt-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => q.fetchNextPage()}
-                                    disabled={q.isFetchingNextPage}
-                                    className="h-11 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-6"
-                                >
-                                    {q.isFetchingNextPage ? "Loading…" : "Load more"}
-                                </Button>
+                    ) : items.length ? (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {items.map((a) => <CpdActivityCard key={a.id} activity={a} />)}
                             </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="px-[4px] md:px-0">
+                            {q.hasNextPage && (
+                                <div className="flex justify-center pt-2">
+                                    <button
+                                        onClick={() => { tap(); q.fetchNextPage(); }}
+                                        disabled={q.isFetchingNextPage}
+                                        className="h-10 px-4 rounded-xl
+                                                   bg-slate-100 dark:bg-white/[0.06]
+                                                   text-slate-700 dark:text-slate-200
+                                                   text-[12px] font-bold
+                                                   active:scale-[0.97] transition-transform
+                                                   disabled:opacity-50"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        {q.isFetchingNextPage ? "Loading…" : "Load more"}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
                         <CpdEmptyState
                             title={debounced ? "No matching activities" : "No activities yet"}
                             hint={debounced ? "Try a different search term." : "Once staff publish CPD activities they'll appear here."}
                         />
-                    </div>
-                )}
-            </div>
-        </div>
+                    )}
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 3. ACTIVITY DETAIL  /cpd/activity/:id
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   3. ACTIVITY DETAIL  /cpd/activity/:id
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdActivityDetailPage() {
     const { id = "" } = useParams();
     const nav = useNavigate();
@@ -223,22 +303,28 @@ export function CpdActivityDetailPage() {
 
     if (tree.isLoading) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 space-y-3 px-[4px] md:px-0">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-32 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                    ))}
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4 space-y-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="h-32 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                        ))}
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
     if (!tree.data) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <CpdEmptyState title="Activity not found" hint="The activity may have been removed." />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Activity" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <CpdEmptyState title="Activity not found" hint="The activity may have been removed." />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
 
@@ -260,139 +346,130 @@ export function CpdActivityDetailPage() {
     const shownProgress = enrollment.data ? Math.max(enrollment.data.progress_percentage, fallbackProgress) : 0;
 
     const handleEnroll = async () => {
+        tap("success");
         await enroll.mutateAsync(activity.id);
     };
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
+        <FullScreen>
+            <PageHeader
+                title={activity.title}
+                subtitle={activity.category || "CPD Activity"}
+                onBack={() => { tap(); nav("/cpd/catalog"); }}
+            />
 
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => nav("/cpd/catalog")}
-                    className="rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold -ml-2"
-                >
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Back to catalog
-                </Button>
-
-                {/* HERO CARD */}
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden p-0">
-                    {activity.thumbnail_url ? (
-                        <div className="relative aspect-[16/7]">
-                            <img src={activity.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                                <h1 className="text-lg md:text-2xl font-bold text-white tracking-tight leading-tight">
-                                    {activity.title}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-2 mt-2">
-                                    {activity.category && (
-                                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md text-gray-800 shadow-md">
-                                            {activity.category}
-                                        </span>
-                                    )}
-                                    {activity.difficulty && (
-                                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white capitalize shadow-md">
-                                            {activity.difficulty}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-600" />
-                    )}
-
-                    <CardContent className="p-4 md:p-6 space-y-4">
-                        {!activity.thumbnail_url && (
-                            <div className="flex items-start justify-between gap-3 flex-wrap">
-                                <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-                                    {activity.title}
-                                </h1>
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-3">
+                    {/* Activity meta card */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+                        {activity.thumbnail_url && (
+                            <div className="relative aspect-[16/9] bg-slate-100 dark:bg-white/[0.06]">
+                                <img src={activity.thumbnail_url} alt="" className="w-full h-full object-cover" />
                             </div>
                         )}
+                        <div className="p-4 space-y-3">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                {activity.category && (
+                                    <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                                     text-[10px] font-bold
+                                                     bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
+                                        {activity.category}
+                                    </span>
+                                )}
+                                {activity.difficulty && (
+                                    <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                                     text-[10px] font-bold capitalize
+                                                     bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
+                                        {activity.difficulty}
+                                    </span>
+                                )}
+                                {enrollment.data && (
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5
+                                                      text-[10px] font-bold capitalize ${getStatusTone(enrollment.data.status)}`}>
+                                        {enrollment.data.status.replace("_", " ")}
+                                    </span>
+                                )}
+                            </div>
 
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                            <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                <Clock className="w-3 h-3" />
-                                {fmtHours(activity.learning_hours)}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                <Award className="w-3 h-3" />
-                                {fmtPoints(activity.configured_cpd_points)} points
-                            </span>
-                            {enrollment.data && (
-                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${getStatusTone(enrollment.data.status)}`}>
-                                    {enrollment.data.status.replace("_", " ")}
+                            <div className="flex items-center gap-3 text-[11px] font-medium
+                                            text-slate-500 dark:text-slate-400">
+                                <span className="inline-flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {fmtHours(activity.learning_hours)}
                                 </span>
+                                <span className="inline-flex items-center gap-1">
+                                    <Award className="h-3 w-3" />
+                                    {fmtPoints(activity.configured_cpd_points)} pts
+                                </span>
+                            </div>
+
+                            {activity.description && (
+                                <p className="text-[12px] text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">
+                                    {activity.description}
+                                </p>
+                            )}
+
+                            {!enrollment.data ? (
+                                <button
+                                    onClick={handleEnroll}
+                                    disabled={enroll.isPending}
+                                    className="w-full h-11 rounded-xl bg-blue-600 text-white
+                                               text-[13px] font-bold
+                                               active:scale-[0.97] transition-transform
+                                               disabled:opacity-60"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    {enroll.isPending ? "Enrolling…" : "Enrol in this activity"}
+                                </button>
+                            ) : (
+                                <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            Progress
+                                        </span>
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                                            {shownProgress}%
+                                        </span>
+                                    </div>
+                                    <Progress value={shownProgress} className="h-1.5" />
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        {doneItems} of {totalItems} items completed
+                                        {allRequired.length > 0 && ` · ${doneRequired}/${allRequired.length} required`}
+                                    </p>
+                                </div>
                             )}
                         </div>
+                    </section>
 
-                        {activity.description && (
-                            <p className="text-sm md:text-[15px] text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
-                                {activity.description}
-                            </p>
-                        )}
-
-                        {!enrollment.data ? (
-                            <Button
-                                onClick={handleEnroll}
-                                disabled={enroll.isPending}
-                                className="w-full sm:w-auto h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-6"
-                            >
-                                {enroll.isPending ? "Enrolling…" : "Enroll in this activity"}
-                            </Button>
-                        ) : (
-                            <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</span>
-                                    <span className="text-sm md:text-base font-bold text-gray-900 dark:text-white">{shownProgress}%</span>
-                                </div>
-                                <Progress value={shownProgress} className="h-2" />
-                                <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                    {doneItems} of {totalItems} items completed
-                                    {allRequired.length > 0 && ` · ${doneRequired}/${allRequired.length} required`}
-                                </p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* MODULES */}
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                    <CardHeader className="pb-3 px-4 md:px-6 pt-4 md:pt-5">
-                        <CardTitle className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-blue-600" />
-                            Modules
-                            <span className="text-gray-400 dark:text-gray-500 font-medium">({modules.length})</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 md:px-6 pb-4 md:pb-6 space-y-4">
-                        {modules.length === 0 && <CpdEmptyState title="No modules yet" hint="Content hasn't been added to this activity." />}
+                    {/* Modules */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <h2 className="text-[10px] font-bold uppercase tracking-wider
+                                       text-slate-500 dark:text-slate-400">
+                            Modules ({modules.length})
+                        </h2>
+                        {modules.length === 0 && <CpdEmptyState title="No modules yet" hint="Content hasn't been added yet." />}
                         {modules.map((m) => {
                             const items = contentByModule[m.id] ?? [];
                             return (
                                 <div key={m.id} className="space-y-2">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <h3 className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-gray-100">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <h3 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
                                             Module {m.position + 1} · {m.title}
                                         </h3>
-                                        {m.estimated_minutes ? (
-                                            <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium flex-shrink-0">
-                                                <Clock className="w-3 h-3" />
+                                        {m.estimated_minutes && (
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
                                                 {m.estimated_minutes} min
                                             </span>
-                                        ) : null}
+                                        )}
                                     </div>
                                     {m.description && (
-                                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                                             {m.description}
                                         </p>
                                     )}
                                     <div className="space-y-1">
                                         {items.length === 0 && (
-                                            <p className="text-xs text-gray-400 px-3 py-2">No content yet.</p>
+                                            <p className="text-[11px] text-slate-400 px-2 py-1">No content yet.</p>
                                         )}
                                         {items.map((c) => {
                                             const p = progressByItem.get(c.id);
@@ -402,36 +479,41 @@ export function CpdActivityDetailPage() {
                                                 <Link
                                                     key={c.id}
                                                     to={`/cpd/activity/${activity.id}/module/${m.id}?item=${c.id}`}
-                                                    className="group flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 px-3 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:ring-2 hover:ring-blue-500/30 transition-all"
+                                                    onClick={() => tap()}
+                                                    className="flex items-center justify-between gap-2 rounded-xl
+                                                               bg-slate-50 dark:bg-[#0d1117] px-3 py-2.5
+                                                               active:bg-slate-100 dark:active:bg-white/[0.08]
+                                                               transition-colors"
+                                                    style={{ touchAction: "manipulation" }}
                                                 >
-                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 min-w-0 flex-1">
                                                         <ContentTypeChip type={c.content_type} />
-                                                        <span className={`text-sm font-medium truncate ${done ? "text-gray-400 line-through" : "text-gray-900 dark:text-gray-100"}`}>
+                                                        <span className={`text-[12px] font-medium truncate ${done ? "text-slate-400 line-through" : "text-slate-900 dark:text-white"}`}>
                                                             {c.title}
                                                         </span>
                                                         {c.is_required && !done && (
-                                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0">
-                                                                REQUIRED
+                                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full
+                                                                             bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400 shrink-0">
+                                                                REQ
                                                             </span>
                                                         )}
                                                         {started && !done && (
-                                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 flex-shrink-0">
-                                                                IN PROGRESS
+                                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full
+                                                                             bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400 shrink-0">
+                                                                IN
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <div className="flex items-center gap-1.5 shrink-0">
                                                         {c.duration_seconds && (
-                                                            <span className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
                                                                 {fmtDuration(c.duration_seconds)}
                                                             </span>
                                                         )}
                                                         {done ? (
-                                                            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm shadow-emerald-500/30">
-                                                                <CheckCircle2 className="w-4 h-4 text-white" strokeWidth={2.6} />
-                                                            </div>
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-500" strokeWidth={2.6} />
                                                         ) : (
-                                                            <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                                            <ArrowRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
                                                         )}
                                                     </div>
                                                 </Link>
@@ -441,63 +523,62 @@ export function CpdActivityDetailPage() {
                                 </div>
                             );
                         })}
-                    </CardContent>
-                </Card>
+                    </section>
 
-                {/* ASSESSMENTS */}
-                {assessments.length > 0 && (
-                    <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                        <CardHeader className="pb-3 px-4 md:px-6 pt-4 md:pt-5">
-                            <CardTitle className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+                    {/* Assessments */}
+                    {assessments.length > 0 && (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                            <h2 className="text-[10px] font-bold uppercase tracking-wider
+                                           text-slate-500 dark:text-slate-400">
                                 Assessments
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-4 md:px-6 pb-4 md:pb-6 space-y-3">
+                            </h2>
                             {assessments.map((a) => (
-                                <div
-                                    key={a.id}
-                                    className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-4 flex items-center justify-between gap-3 flex-wrap"
-                                >
+                                <div key={a.id} className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3
+                                                          flex items-center justify-between gap-2 flex-wrap">
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-gray-100 truncate">
+                                        <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate">
                                             {a.title}
                                         </p>
-                                        <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                                             Pass mark: {a.pass_mark}%
                                             {a.attempt_limit ? ` · max ${a.attempt_limit} attempt${a.attempt_limit > 1 ? "s" : ""}` : ""}
                                         </p>
                                     </div>
-                                    <Button
+                                    <button
                                         disabled={!enrollment.data || !allDone}
-                                        onClick={() => nav(`/cpd/activity/${activity.id}/assessment?assessment=${a.id}`)}
-                                        className="flex-shrink-0 h-11 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-5 disabled:opacity-40 disabled:shadow-none"
+                                        onClick={() => { tap("success"); nav(`/cpd/activity/${activity.id}/assessment?assessment=${a.id}`); }}
+                                        className="h-9 px-3 rounded-xl shrink-0
+                                                   bg-blue-600 text-white text-[11px] font-bold
+                                                   flex items-center gap-1.5
+                                                   active:scale-[0.97] transition-transform
+                                                   disabled:opacity-40"
+                                        style={{ touchAction: "manipulation" }}
                                     >
                                         {allDone ? (
                                             <>
-                                                <Sparkles className="w-4 h-4 mr-2" />
-                                                Start Assessment
+                                                <Sparkles className="h-3.5 w-3.5" />
+                                                Start
                                             </>
                                         ) : (
                                             <>
-                                                <Lock className="w-4 h-4 mr-2" />
-                                                Complete required content
+                                                <Lock className="h-3.5 w-3.5" />
+                                                Locked
                                             </>
                                         )}
-                                    </Button>
+                                    </button>
                                 </div>
                             ))}
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-        </div>
+                        </section>
+                    )}
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 4. PLAYER  /cpd/activity/:id/module/:moduleId?item=:itemId
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   4. PLAYER  /cpd/activity/:id/module/:moduleId?item=:itemId
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdPlayerPage() {
     const { id = "", moduleId = "" } = useParams();
     const [searchParams] = useSearchParams();
@@ -531,31 +612,28 @@ export function CpdPlayerPage() {
 
     if (tree.isLoading) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0 space-y-3">
-                    {Array.from({ length: 2 }).map((_, i) => (
-                        <div key={i} className="h-40 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                    ))}
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4 space-y-3">
+                        {Array.from({ length: 2 }).map((_, i) => (
+                            <div key={i} className="h-40 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                        ))}
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
-    if (!tree.data) {
+    if (!tree.data || !item) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <CpdEmptyState title="Activity not found" />
-                </div>
-            </div>
-        );
-    }
-    if (!item) {
-        return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <CpdEmptyState title="No content in this module" hint="Ask an admin to add content items." />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Player" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <CpdEmptyState title="Content not found" />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
 
@@ -564,6 +642,7 @@ export function CpdPlayerPage() {
 
     const handleMarkComplete = () => {
         if (!enrollment.data) return;
+        tap("success");
         upsert.mutate({
             enrollment_id: enrollment.data.id,
             content_item_id: item.id,
@@ -576,64 +655,52 @@ export function CpdPlayerPage() {
     };
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
+        <FullScreen>
+            <PageHeader
+                title={moduleObj?.title || "Module"}
+                subtitle={item.title}
+                onBack={() => { tap(); nav(`/cpd/activity/${id}`); }}
+            />
 
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => nav(`/cpd/activity/${id}`)}
-                    className="rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold -ml-2"
-                >
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Back to activity
-                </Button>
-
-                {/* PLAYER CARD */}
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden p-0">
-                    {/* Top accent bar */}
-                    <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-600" />
-
-                    <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
-
-                        {/* Module context */}
-                        {moduleObj && (
-                            <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                Module {moduleObj.position + 1} · {moduleObj.title}
-                            </p>
-                        )}
-
-                        {/* Meta chips */}
-                        <div className="flex items-center gap-2 flex-wrap">
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-3">
+                    {/* Player card */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
                             <ContentTypeChip type={item.content_type} />
                             {item.external_provider && (
-                                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 capitalize">
+                                <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                                 text-[10px] font-bold capitalize
+                                                 bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
                                     {item.external_provider.replace("_", " ")}
                                 </span>
                             )}
-                            {item.duration_seconds && (
-                                <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                    <Clock className="w-3 h-3" /> {fmtDuration(item.duration_seconds)}
+                            {item.is_required && (
+                                <span className="inline-flex items-center rounded-full px-2 py-0.5
+                                                 text-[10px] font-bold
+                                                 bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400">
+                                    REQUIRED
                                 </span>
                             )}
-                            {item.is_required && (
-                                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                    REQUIRED
+                            {item.duration_seconds && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                                 text-slate-500 dark:text-slate-400">
+                                    <Clock className="h-3 w-3" /> {fmtDuration(item.duration_seconds)}
                                 </span>
                             )}
                         </div>
 
-                        <h1 className="text-base md:text-xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
+                        <h2 className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug">
                             {item.title}
-                        </h1>
+                        </h2>
                         {item.description && (
-                            <p className="text-sm md:text-[15px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                            <p className="text-[12px] text-slate-600 dark:text-slate-400 leading-relaxed">
                                 {item.description}
                             </p>
                         )}
 
-                        {/* Thumbnail */}
                         {item.content_type !== "video" && item.content_type !== "podcast" && (item.metadata?.thumbnail || item.metadata?.artwork) && (
-                            <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-sm">
+                            <div className="aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-white/[0.06]">
                                 <img
                                     src={item.metadata.thumbnail || item.metadata.artwork}
                                     alt=""
@@ -642,104 +709,106 @@ export function CpdPlayerPage() {
                             </div>
                         )}
 
-                        {/* Content */}
                         <ContentRenderer item={item} />
 
-                        {/* Actions */}
-                        <div className="flex items-center justify-between pt-3 gap-3 flex-wrap border-t border-gray-100 dark:border-gray-800">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] md:text-xs font-bold">
+                        <div className="flex items-center justify-between pt-3 gap-2 flex-wrap
+                                        border-t border-slate-100 dark:border-white/[0.04]">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold">
                                 {done ? (
                                     <>
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                                         <span className="text-emerald-600 dark:text-emerald-400">Completed</span>
                                     </>
                                 ) : (
-                                    <span className="text-gray-500 dark:text-gray-400">Mark as complete to continue</span>
+                                    <span className="text-slate-500 dark:text-slate-400">
+                                        Mark as complete to continue
+                                    </span>
                                 )}
                             </span>
                             <div className="flex items-center gap-2">
                                 {nextItem && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => nav(`/cpd/activity/${id}/module/${moduleId}?item=${nextItem.id}`)}
-                                        className="h-11 rounded-2xl font-bold border-2 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-5"
+                                    <button
+                                        onClick={() => { tap(); nav(`/cpd/activity/${id}/module/${moduleId}?item=${nextItem.id}`); }}
+                                        className="h-10 px-3 rounded-xl
+                                                   bg-slate-100 dark:bg-white/[0.06]
+                                                   text-slate-700 dark:text-slate-200
+                                                   text-[12px] font-bold
+                                                   flex items-center gap-1.5
+                                                   active:scale-[0.97] transition-transform"
+                                        style={{ touchAction: "manipulation" }}
                                     >
-                                        Skip <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                                    </Button>
+                                        Skip <ArrowRight className="h-3.5 w-3.5" />
+                                    </button>
                                 )}
-                                <Button
+                                <button
                                     onClick={handleMarkComplete}
                                     disabled={upsert.isPending || done}
-                                    className={`h-11 rounded-2xl font-bold px-5 shadow-lg transition-all disabled:opacity-40 disabled:shadow-none ${done
-                                        ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
-                                        : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-blue-500/20"
+                                    className={`h-10 px-3 rounded-xl text-[12px] font-bold
+                                                flex items-center gap-1.5
+                                                active:scale-[0.97] transition-transform
+                                                disabled:opacity-40
+                                                ${done
+                                            ? "bg-emerald-600 text-white"
+                                            : "bg-blue-600 text-white"
                                         }`}
+                                    style={{ touchAction: "manipulation" }}
                                 >
-                                    {done ? (
-                                        <>
-                                            <CheckCircle2 className="h-4 w-4 mr-2" /> Completed
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 className="h-4 w-4 mr-2" /> Mark as Complete
-                                        </>
-                                    )}
-                                </Button>
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    {done ? "Completed" : "Mark complete"}
+                                </button>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </section>
 
-                {/* IN THIS MODULE */}
-                {items.length > 1 && (
-                    <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                        <CardHeader className="pb-3 px-4 md:px-6 pt-4 md:pt-5">
-                            <CardTitle className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100">
-                                In this module <span className="text-gray-400 dark:text-gray-500 font-medium">({items.length})</span>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-4 md:px-6 pb-4 md:pb-6 space-y-1">
-                            {items.map((c, idx) => {
-                                const p = progress.data?.find(x => x.content_item_id === c.id);
-                                const cDone = p?.status === "completed";
-                                const isCurrent = c.id === item.id;
-                                return (
-                                    <button
-                                        key={c.id}
-                                        onClick={() => nav(`/cpd/activity/${id}/module/${moduleId}?item=${c.id}`)}
-                                        className={`w-full text-left flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition-all ${isCurrent
-                                            ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/30"
-                                            : "bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                            <span className={`text-[10px] md:text-[11px] font-mono font-bold flex-shrink-0 ${isCurrent ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
-                                                {String(idx + 1).padStart(2, "0")}
-                                            </span>
-                                            <ContentTypeChip type={c.content_type} />
-                                            <span className={`text-sm font-medium truncate ${cDone ? "text-gray-400 line-through" : "text-gray-900 dark:text-gray-100"}`}>
-                                                {c.title}
-                                            </span>
-                                        </div>
-                                        {cDone && (
-                                            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm shadow-emerald-500/30 flex-shrink-0">
-                                                <CheckCircle2 className="w-3 h-3 text-white" strokeWidth={3} />
+                    {/* In this module */}
+                    {items.length > 1 && (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                            <h2 className="text-[10px] font-bold uppercase tracking-wider
+                                           text-slate-500 dark:text-slate-400">
+                                In this module ({items.length})
+                            </h2>
+                            <div className="space-y-1">
+                                {items.map((c, idx) => {
+                                    const p = progress.data?.find(x => x.content_item_id === c.id);
+                                    const cDone = p?.status === "completed";
+                                    const isCurrent = c.id === item.id;
+                                    return (
+                                        <button
+                                            key={c.id}
+                                            onClick={() => { tap(); nav(`/cpd/activity/${id}/module/${moduleId}?item=${c.id}`); }}
+                                            className={`w-full text-left flex items-center justify-between gap-2
+                                                        rounded-xl px-3 py-2 transition-colors
+                                                        ${isCurrent
+                                                    ? "bg-blue-50 dark:bg-blue-400/10"
+                                                    : "bg-slate-50 dark:bg-[#0d1117] active:bg-slate-100 dark:active:bg-white/[0.08]"
+                                                }`}
+                                            style={{ touchAction: "manipulation" }}
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                <span className={`text-[10px] font-mono font-bold shrink-0 ${isCurrent ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>
+                                                    {String(idx + 1).padStart(2, "0")}
+                                                </span>
+                                                <ContentTypeChip type={c.content_type} />
+                                                <span className={`text-[12px] font-medium truncate ${cDone ? "text-slate-400 line-through" : "text-slate-900 dark:text-white"}`}>
+                                                    {c.title}
+                                                </span>
                                             </div>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-        </div>
+                                            {cDone && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={3} />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    )}
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 5. ASSESSMENT PAGE  /cpd/activity/:id/assessment?assessment=:assessmentId
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   5. ASSESSMENT  /cpd/activity/:id/assessment?assessment=:assessmentId
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdAssessmentPage() {
     const { id = "" } = useParams();
     const [sp] = useSearchParams();
@@ -772,22 +841,28 @@ export function CpdAssessmentPage() {
 
     if (bundle.isLoading || !enrollment.data) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0 space-y-3">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-24 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                    ))}
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4 space-y-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                        ))}
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
     if (!bundle.data) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <CpdEmptyState title="Assessment not found" />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Assessment" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <CpdEmptyState title="Assessment not found" />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
 
@@ -801,61 +876,31 @@ export function CpdAssessmentPage() {
 
     const submit = async () => {
         if (!attemptId) return;
+        tap("success");
         await submitAttempt.mutateAsync({ attemptId, answers });
         nav(`/cpd/activity/${id}/assessment/${attemptId}/results`);
     };
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
+        <FullScreen>
+            <PageHeader
+                title={assessment.title}
+                subtitle={`Pass mark ${assessment.pass_mark}% · ${answered}/${totalQuestions} answered`}
+                onBack={() => { tap(); nav(`/cpd/activity/${id}`); }}
+            />
 
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => nav(`/cpd/activity/${id}`)}
-                    className="rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold -ml-2"
-                >
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Back
-                </Button>
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-3">
+                    {/* Progress card */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                        <Progress
+                            value={totalQuestions > 0 ? (answered / totalQuestions) * 100 : 0}
+                            className="h-1.5"
+                        />
+                    </section>
 
-                {/* STICKY PROGRESS HEADER */}
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                    <CardContent className="p-4 md:p-6 space-y-4">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-2.5 md:gap-3 min-w-0">
-                                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 flex-shrink-0">
-                                    <ClipboardCheck className="w-5 h-5 text-white" strokeWidth={2.4} />
-                                </div>
-                                <div className="min-w-0">
-                                    <h1 className="text-base md:text-xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
-                                        {assessment.title}
-                                    </h1>
-                                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
-                                        Pass mark {assessment.pass_mark}%
-                                    </p>
-                                </div>
-                            </div>
-                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${answered === totalQuestions
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                }`}>
-                                {answered} / {totalQuestions} answered
-                            </span>
-                        </div>
-
-                        {/* Progress bar */}
-                        <div className="space-y-2">
-                            <Progress
-                                value={totalQuestions > 0 ? (answered / totalQuestions) * 100 : 0}
-                                className="h-2"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* QUESTIONS */}
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                    <CardContent className="p-4 md:p-6 space-y-5">
+                    {/* Questions */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-5">
                         {questions.map((q: any, i: number) => {
                             const qAnswered = (() => {
                                 const v = answers[q.id];
@@ -864,27 +909,30 @@ export function CpdAssessmentPage() {
                             })();
 
                             return (
-                                <div key={q.id} className="space-y-3 pb-5 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] md:text-xs font-bold ${qAnswered
-                                            ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/30"
-                                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                                <div key={q.id} className="space-y-3 pb-5 border-b border-slate-100 dark:border-white/[0.04] last:border-0 last:pb-0">
+                                    <div className="flex items-start gap-2">
+                                        <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0
+                                                        text-[11px] font-bold
+                                                        ${qAnswered
+                                                ? "bg-emerald-500 text-white"
+                                                : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
                                             }`}>
                                             {i + 1}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-gray-100 leading-snug">
+                                            <p className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug">
                                                 {q.question}
                                             </p>
                                             {q.points && q.points !== 1 && (
-                                                <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 mt-1.5">
+                                                <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full
+                                                                 bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">
                                                     {q.points} pts
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 pl-10">
+                                    <div className="space-y-1.5 pl-8">
                                         {q.options?.map((opt: any) => {
                                             const checked = q.question_type === "multiple_select"
                                                 ? Array.isArray(answers[q.id]) && answers[q.id].includes(opt.id)
@@ -892,10 +940,14 @@ export function CpdAssessmentPage() {
                                             return (
                                                 <label
                                                     key={opt.id}
-                                                    className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm cursor-pointer transition-all ${checked
-                                                        ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/40"
-                                                        : "bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+                                                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5
+                                                                text-[12px] cursor-pointer
+                                                                transition-colors
+                                                                ${checked
+                                                            ? "bg-blue-50 dark:bg-blue-400/10 text-blue-900 dark:text-blue-100"
+                                                            : "bg-slate-50 dark:bg-[#0d1117] text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[0.08]"
                                                         }`}
+                                                    style={{ touchAction: "manipulation" }}
                                                 >
                                                     <input
                                                         type={q.question_type === "multiple_select" ? "checkbox" : "radio"}
@@ -912,9 +964,9 @@ export function CpdAssessmentPage() {
                                                                 setAnswers((a) => ({ ...a, [q.id]: opt.id }));
                                                             }
                                                         }}
-                                                        className="w-4 h-4 accent-blue-600 flex-shrink-0"
+                                                        className="w-4 h-4 accent-blue-600 shrink-0"
                                                     />
-                                                    <span className={`text-sm font-medium ${checked ? "text-blue-900 dark:text-blue-100" : "text-gray-700 dark:text-gray-300"}`}>
+                                                    <span className="font-medium">
                                                         {opt.option_text}
                                                     </span>
                                                 </label>
@@ -925,7 +977,10 @@ export function CpdAssessmentPage() {
                                             <textarea
                                                 value={answers[q.id] ?? ""}
                                                 onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                                                className="w-full rounded-xl bg-gray-50 dark:bg-gray-900/50 border-2 border-transparent p-3 text-sm font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none resize-y shadow-inner"
+                                                className="w-full rounded-xl bg-slate-50 dark:bg-[#0d1117]
+                                                           p-3 text-[12px] font-medium
+                                                           text-slate-900 dark:text-white
+                                                           outline-none resize-y"
                                                 rows={3}
                                                 placeholder="Type your answer…"
                                             />
@@ -934,34 +989,40 @@ export function CpdAssessmentPage() {
                                 </div>
                             );
                         })}
-                    </CardContent>
-                </Card>
+                    </section>
 
-                {/* SUBMIT BAR */}
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                    <CardContent className="p-4 md:p-6 flex items-center justify-between gap-3 flex-wrap">
-                        <span className="text-[11px] md:text-xs font-bold text-gray-500 dark:text-gray-400">
-                            {answered < totalQuestions
-                                ? `${totalQuestions - answered} unanswered`
-                                : "All questions answered"}
-                        </span>
-                        <Button
-                            onClick={submit}
-                            disabled={submitAttempt.isPending || !attemptId}
-                            className="h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-6 disabled:opacity-40 disabled:shadow-none"
-                        >
-                            {submitAttempt.isPending ? "Submitting…" : "Submit Assessment"}
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
+                    {/* Submit bar */}
+                    <div className="sticky bottom-2">
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3
+                                        flex items-center justify-between gap-2 flex-wrap
+                                        border border-slate-200/70 dark:border-white/[0.06]">
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                {answered < totalQuestions
+                                    ? `${totalQuestions - answered} unanswered`
+                                    : "All questions answered"}
+                            </span>
+                            <button
+                                onClick={submit}
+                                disabled={submitAttempt.isPending || !attemptId}
+                                className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                           text-[12px] font-bold
+                                           active:scale-[0.97] transition-transform
+                                           disabled:opacity-40"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                {submitAttempt.isPending ? "Submitting…" : "Submit"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 6. ATTEMPT RESULTS  /cpd/activity/:id/assessment/:attemptId/results
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   6. ATTEMPT RESULTS  /cpd/activity/:id/assessment/:attemptId/results
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdAssessmentResultsPage() {
     const { id = "", attemptId = "" } = useParams();
     const nav = useNavigate();
@@ -969,20 +1030,26 @@ export function CpdAssessmentResultsPage() {
 
     if (q.isLoading) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <div className="h-64 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <div className="h-64 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
     if (!q.data) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <CpdEmptyState title="Results not found" />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Results" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <CpdEmptyState title="Results not found" />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
 
@@ -991,271 +1058,279 @@ export function CpdAssessmentResultsPage() {
     const score = Math.round(a.score ?? 0);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
+        <FullScreen>
+            <PageHeader
+                title="Assessment Result"
+                subtitle={passed ? "You passed" : "Not yet"}
+                onBack={() => nav(`/cpd/activity/${id}`)}
+            />
 
-                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden p-0">
-                    {/* Top accent bar */}
-                    <div className={`h-1 w-full bg-gradient-to-r ${passed ? "from-emerald-500 to-teal-600" : "from-rose-500 to-pink-600"}`} />
-
-                    <CardContent className="p-6 md:p-8 text-center space-y-4">
-                        <div className={`w-16 h-16 md:w-20 md:h-20 mx-auto rounded-2xl flex items-center justify-center shadow-lg ${passed
-                            ? "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/30"
-                            : "bg-gradient-to-br from-rose-500 to-pink-600 shadow-rose-500/30"
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-3">
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-4">
+                        <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center
+                                        ${passed
+                                ? "bg-emerald-50 dark:bg-emerald-400/10"
+                                : "bg-rose-50 dark:bg-rose-400/10"
                             }`}>
                             {passed ? (
-                                <Trophy className="w-8 h-8 md:w-10 md:h-10 text-white" strokeWidth={2.4} />
+                                <Trophy className="h-8 w-8 text-emerald-600 dark:text-emerald-400" strokeWidth={2.4} />
                             ) : (
-                                <XCircle className="w-8 h-8 md:w-10 md:h-10 text-white" strokeWidth={2.4} />
+                                <XCircle className="h-8 w-8 text-rose-600 dark:text-rose-400" strokeWidth={2.4} />
                             )}
                         </div>
 
                         <div>
-                            <h1 className={`text-xl md:text-2xl font-bold tracking-tight ${passed ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                            <h2 className={`text-lg font-bold ${passed ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                                 {passed ? "Passed" : "Not Yet"}
-                            </h1>
-                            <p className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
+                            </h2>
+                            <p className="text-4xl font-bold text-slate-900 dark:text-white mt-2 tabular-nums">
                                 {score}%
                             </p>
                         </div>
 
-                        <p className="text-sm md:text-[15px] text-gray-500 dark:text-gray-400 leading-relaxed max-w-md mx-auto">
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
                             {passed
                                 ? "Great work — your completion and certificate have been recorded."
                                 : "You can retry the assessment. Review the module content first."}
                         </p>
 
                         <div className="flex justify-center gap-2 pt-3 flex-wrap">
-                            <Button
-                                variant="outline"
-                                onClick={() => nav(`/cpd/activity/${id}`)}
-                                className="h-11 rounded-2xl font-bold border-2 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-5"
+                            <button
+                                onClick={() => { tap(); nav(`/cpd/activity/${id}`); }}
+                                className="h-10 px-4 rounded-xl
+                                           bg-slate-100 dark:bg-white/[0.06]
+                                           text-slate-700 dark:text-slate-200
+                                           text-[12px] font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
                                 Back to Activity
-                            </Button>
+                            </button>
                             {!passed && (
-                                <Button
-                                    onClick={() => nav(`/cpd/activity/${id}/assessment?assessment=${a.assessment_id}`)}
-                                    className="h-11 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-5"
+                                <button
+                                    onClick={() => { tap(); nav(`/cpd/activity/${id}/assessment?assessment=${a.assessment_id}`); }}
+                                    className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                               text-[12px] font-bold
+                                               active:scale-[0.97] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
                                 >
                                     Retry
-                                </Button>
+                                </button>
                             )}
                             {passed && (
                                 <>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => nav(`/cpd/certificates`)}
-                                        className="h-11 rounded-2xl font-bold border-2 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-amber-400 hover:text-amber-600 transition-all px-5"
+                                    <button
+                                        onClick={() => { tap(); nav("/cpd/certificates"); }}
+                                        className="h-10 px-4 rounded-xl
+                                                   bg-amber-50 dark:bg-amber-400/10
+                                                   text-amber-700 dark:text-amber-400
+                                                   text-[12px] font-bold
+                                                   flex items-center gap-1.5
+                                                   active:scale-[0.97] transition-transform"
+                                        style={{ touchAction: "manipulation" }}
                                     >
-                                        <Award className="h-4 w-4 mr-2" />
-                                        View Certificates
-                                    </Button>
-                                    <Button
-                                        onClick={() => nav(`/cpd/progress`)}
-                                        className="h-11 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-5"
+                                        <Award className="h-3.5 w-3.5" />
+                                        Certificates
+                                    </button>
+                                    <button
+                                        onClick={() => { tap(); nav("/cpd/progress"); }}
+                                        className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                                   text-[12px] font-bold
+                                                   active:scale-[0.97] transition-transform"
+                                        style={{ touchAction: "manipulation" }}
                                     >
                                         My Progress
-                                    </Button>
+                                    </button>
                                 </>
                             )}
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
+                    </section>
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 7. MY PROGRESS  /cpd/progress
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   7. MY PROGRESS  /cpd/progress
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdMyProgressPage() {
+    const nav = useNavigate();
     const q = useMyEnrollments();
     const items = useMemo(() => q.data?.pages.flatMap(p => p.items) ?? [], [q.data]);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8">
+        <FullScreen>
+            <PageHeader
+                title="My Progress"
+                subtitle="Every CPD activity you've enrolled in"
+                onBack={() => nav(-1)}
+                rightSlot={
+                    <Link
+                        to="/cpd/catalog"
+                        onClick={() => tap()}
+                        className="h-9 px-3 rounded-xl shrink-0
+                                   bg-slate-100 dark:bg-white/[0.06]
+                                   text-slate-700 dark:text-slate-200
+                                   text-[11px] font-bold
+                                   flex items-center gap-1.5
+                                   active:scale-[0.97] transition-transform"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <BookOpen className="h-3.5 w-3.5" />
+                        Catalog
+                    </Link>
+                }
+            />
 
-                {/* HERO */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20 flex-shrink-0">
-                                    <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                                </div>
-                                <div className="min-w-0">
-                                    <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                                        My <span className="text-violet-600">Progress</span>
-                                    </h1>
-                                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                        Every CPD activity you have enrolled in
-                                    </p>
-                                </div>
-                            </div>
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="h-11 md:h-12 rounded-2xl font-bold border-2 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-4 md:px-5"
-                            >
-                                <Link to="/cpd/catalog">
-                                    <BookOpen className="h-4 w-4 mr-2" /> Browse catalog
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* LIST */}
-                {q.isLoading ? (
-                    <div className="space-y-[8px] sm:space-y-2 px-[4px] md:px-0">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-24 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                        ))}
-                    </div>
-                ) : items.length ? (
-                    <div className="space-y-[8px] sm:space-y-2 px-[4px] md:px-0">
-                        {items.map((e) => (
-                            <Link key={e.id} to={`/cpd/activity/${e.activity_id}`} className="block group">
-                                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 hover:shadow-xl transition-all p-0">
-                                    <CardContent className="p-4 md:p-5 space-y-3">
-                                        <div className="flex items-start justify-between gap-3">
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-2">
+                    {q.isLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                        ))
+                    ) : items.length ? (
+                        <>
+                            {items.map((e) => (
+                                <Link
+                                    key={e.id}
+                                    to={`/cpd/activity/${e.activity_id}`}
+                                    onClick={() => tap()}
+                                    className="block rounded-2xl bg-white dark:bg-[#161b22] p-4
+                                               active:scale-[0.99] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    <div className="space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 truncate leading-tight">
+                                                <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate leading-tight">
                                                     {e.activity?.title ?? "Activity"}
                                                 </p>
-                                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${getStatusTone(e.status)}`}>
+                                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5
+                                                                      text-[10px] font-bold capitalize ${getStatusTone(e.status)}`}>
                                                         {e.status.replace("_", " ")}
                                                     </span>
                                                     {e.completed_at && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                            <Calendar className="w-3 h-3" />
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                                                         text-slate-500 dark:text-slate-400">
+                                                            <Calendar className="h-3 w-3" />
                                                             {fmtDate(e.completed_at)}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
-                                            <span className="text-sm md:text-base font-bold text-gray-900 dark:text-white flex-shrink-0">
+                                            <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums shrink-0">
                                                 {Math.round(e.progress_percentage)}%
                                             </span>
                                         </div>
-                                        <Progress value={e.progress_percentage} className="h-2" />
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        ))}
-                        {q.hasNextPage && (
-                            <div className="flex justify-center pt-3">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => q.fetchNextPage()}
-                                    disabled={q.isFetchingNextPage}
-                                    className="h-11 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-6"
-                                >
-                                    {q.isFetchingNextPage ? "Loading…" : "Load more"}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="px-[4px] md:px-0">
+                                        <Progress value={e.progress_percentage} className="h-1.5" />
+                                    </div>
+                                </Link>
+                            ))}
+                            {q.hasNextPage && (
+                                <div className="flex justify-center pt-2">
+                                    <button
+                                        onClick={() => { tap(); q.fetchNextPage(); }}
+                                        disabled={q.isFetchingNextPage}
+                                        className="h-10 px-4 rounded-xl
+                                                   bg-slate-100 dark:bg-white/[0.06]
+                                                   text-slate-700 dark:text-slate-200
+                                                   text-[12px] font-bold
+                                                   active:scale-[0.97] transition-transform
+                                                   disabled:opacity-50"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        {q.isFetchingNextPage ? "Loading…" : "Load more"}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
                         <CpdEmptyState
                             title="No enrollments yet"
                             hint="Browse the CPD catalog to get started."
                             icon={BookOpen}
                         />
-                    </div>
-                )}
-            </div>
-        </div>
+                    )}
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 8. CERTIFICATES  /cpd/certificates
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   8. CERTIFICATES  /cpd/certificates
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdCertificatesPage() {
+    const nav = useNavigate();
     const q = useMyCertificates();
     const items = useMemo(() => q.data?.pages.flatMap(p => p.items) ?? [], [q.data]);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8">
+        <FullScreen>
+            <PageHeader
+                title="My Certificates"
+                subtitle="Verified CPD certificates"
+                onBack={() => nav(-1)}
+            />
 
-                {/* HERO */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0">
-                                <Award className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                            </div>
-                            <div className="min-w-0">
-                                <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                                    My <span className="text-amber-600">Certificates</span>
-                                </h1>
-                                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                    Verified CPD certificates with public verification codes
-                                </p>
-                            </div>
+            <ScrollBody>
+                <div className="px-4 pt-4 space-y-3">
+                    {q.isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="h-28 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                            ))}
                         </div>
-                    </div>
-                </Card>
-
-                {/* GRID */}
-                {q.isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[8px] sm:gap-3 px-[4px] md:px-0">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-28 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                        ))}
-                    </div>
-                ) : items.length ? (
-                    <div className="space-y-4 px-[4px] md:px-0">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[8px] sm:gap-3">
-                            {items.map((c) => <CpdCertificateCard key={c.id} certificate={c} />)}
-                        </div>
-                        {q.hasNextPage && (
-                            <div className="flex justify-center pt-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => q.fetchNextPage()}
-                                    disabled={q.isFetchingNextPage}
-                                    className="h-11 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all px-6"
-                                >
-                                    {q.isFetchingNextPage ? "Loading…" : "Load more"}
-                                </Button>
+                    ) : items.length ? (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {items.map((c) => <CpdCertificateCard key={c.id} certificate={c} />)}
                             </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="px-[4px] md:px-0">
+                            {q.hasNextPage && (
+                                <div className="flex justify-center pt-2">
+                                    <button
+                                        onClick={() => { tap(); q.fetchNextPage(); }}
+                                        disabled={q.isFetchingNextPage}
+                                        className="h-10 px-4 rounded-xl
+                                                   bg-slate-100 dark:bg-white/[0.06]
+                                                   text-slate-700 dark:text-slate-200
+                                                   text-[12px] font-bold
+                                                   active:scale-[0.97] transition-transform
+                                                   disabled:opacity-50"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        {q.isFetchingNextPage ? "Loading…" : "Load more"}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
                         <CpdEmptyState
                             title="No certificates yet"
                             hint="Complete a CPD activity to earn your first certificate."
                             icon={Award}
                         />
-                    </div>
-                )}
-            </div>
-        </div>
+                    )}
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 9. CERTIFICATE VIEW  /cpd/certificates/:id
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   9. CERTIFICATE VIEW  /cpd/certificates/:id
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdCertificateViewPage() {
     const { id = "" } = useParams();
+    const nav = useNavigate();
     const q = useCertificate(id);
     const [profile, setProfile] = useState<any>(null);
     const [activity, setActivity] = useState<any>(null);
     const [completion, setCompletion] = useState<any>(null);
 
-    // Fetch the nurse profile + activity + completion for the certificate
     useEffect(() => {
         let cancelled = false;
         (async () => {
@@ -1289,70 +1364,71 @@ export function CpdCertificateViewPage() {
 
     if (q.isLoading) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <div className="h-96 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Certificate" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <div className="h-96 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
     if (!q.data) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
-                    <CpdEmptyState title="Certificate not found" />
-                </div>
-            </div>
+            <FullScreen>
+                <PageHeader title="Certificate" onBack={() => nav(-1)} />
+                <ScrollBody>
+                    <div className="px-4 pt-4">
+                        <CpdEmptyState title="Certificate not found" />
+                    </div>
+                </ScrollBody>
+            </FullScreen>
         );
     }
     const c: any = q.data;
 
     const handleDownloadPdf = () => {
+        tap();
         window.print();
     };
 
     return (
         <>
-            <div className="min-h-screen w-full flex flex-col items-center print:hidden">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0">
+            <FullScreen>
+                <PageHeader
+                    title="Certificate"
+                    subtitle="Verified CPD completion"
+                    onBack={() => { tap(); nav(-1); }}
+                />
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.history.back()}
-                        className="rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold -ml-2"
-                    >
-                        <ChevronLeft className="h-4 w-4 mr-1" /> Back
-                    </Button>
-
-                    <Card className="border-0 shadow-xl rounded-xl bg-white dark:bg-muted/70 overflow-hidden p-0">
-                        {/* Top accent bar */}
-                        <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 to-orange-600" />
-
-                        <CardContent className="p-6 md:p-10 text-center space-y-5">
-                            <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                                <Award className="w-8 h-8 md:w-10 md:h-10 text-white" strokeWidth={2.4} />
+                <ScrollBody>
+                    <div className="px-4 pt-4 print:hidden">
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-4">
+                            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center
+                                            bg-amber-50 dark:bg-amber-400/10">
+                                <Award className="h-8 w-8 text-amber-600 dark:text-amber-400" strokeWidth={2.4} />
                             </div>
 
                             <div>
-                                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">
+                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                              text-amber-600 dark:text-amber-400">
                                     Certificate of Completion
                                 </p>
-                                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1.5">
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                                     Medrae Nursing — Continuing Professional Development
                                 </p>
                             </div>
 
-                            {/* Recipient name — visible preview */}
-                            <div className="border-t border-b border-gray-100 dark:border-gray-800 py-5 space-y-2">
-                                <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            <div className="border-t border-b border-slate-100 dark:border-white/[0.04] py-4 space-y-1.5">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     Awarded to
                                 </p>
-                                <p className="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                <p className="text-lg font-bold text-slate-900 dark:text-white">
                                     {profile?.name || "—"}
                                 </p>
                                 {(profile?.nck_number || profile?.institution) && (
-                                    <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400">
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                                         {profile?.nck_number ? `NCK: ${profile.nck_number}` : ""}
                                         {profile?.nck_number && profile?.institution ? " · " : ""}
                                         {profile?.institution || ""}
@@ -1362,62 +1438,68 @@ export function CpdCertificateViewPage() {
 
                             {activity?.title && (
                                 <div>
-                                    <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Activity
                                     </p>
-                                    <p className="text-base md:text-lg font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+                                    <p className="text-[14px] font-bold text-slate-900 dark:text-white mt-1">
                                         {activity.title}
                                     </p>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-4 text-left">
-                                <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-4">
-                                    <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            <div className="grid grid-cols-2 gap-2 text-left">
+                                <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Issued
                                     </p>
-                                    <p className="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">
+                                    <p className="text-[12px] font-bold text-slate-900 dark:text-white mt-1">
                                         {fmtDate(c.issued_at)}
                                     </p>
                                 </div>
-                                <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-4">
-                                    <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Status
                                     </p>
-                                    <p className="text-sm md:text-base font-bold text-gray-900 dark:text-white capitalize mt-1">
+                                    <p className="text-[12px] font-bold text-slate-900 dark:text-white capitalize mt-1">
                                         {c.status}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 space-y-1.5">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                            <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-3 space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-wider
+                                              text-blue-600 dark:text-blue-400">
                                     Verification Code
                                 </p>
-                                <p className="text-sm md:text-base font-mono font-bold text-gray-900 dark:text-white break-all">
+                                <p className="text-[12px] font-mono font-bold text-slate-900 dark:text-white break-all">
                                     {c.verification_code}
                                 </p>
-                                <p className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                    Anyone can verify at /cpd/verify/{c.verification_code}
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                    Verify at /cpd/verify/{c.verification_code}
                                 </p>
                             </div>
 
-                            <Button
+                            <button
                                 onClick={handleDownloadPdf}
-                                className="w-full sm:w-auto h-12 rounded-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20 px-6"
+                                className="w-full h-11 rounded-xl bg-amber-600 text-white
+                                           text-[13px] font-bold
+                                           flex items-center justify-center gap-2
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
-                                <Download className="h-4 w-4 mr-2" /> Download PDF
-                            </Button>
+                                <Download className="h-4 w-4" />
+                                Download PDF
+                            </button>
 
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
                                 In the print dialog, choose <b>Save as PDF</b> and set layout to <b>Landscape</b>.
                             </p>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                        </section>
+                    </div>
+                </ScrollBody>
+            </FullScreen>
 
-            {/* Print-only certificate — hidden in the browser, shown when printing */}
+            {/* Print-only certificate */}
             <CpdCertificatePdf
                 certificate={c}
                 completion={completion}
@@ -1427,109 +1509,94 @@ export function CpdCertificateViewPage() {
         </>
     );
 }
-// ═══════════════════════════════════════════════════════════════
-// 10. VERIFY  /cpd/verify/:code
-// ═══════════════════════════════════════════════════════════════
+
+/* ═══════════════════════════════════════════════════════════════
+   10. VERIFY  /cpd/verify/:code
+   ═══════════════════════════════════════════════════════════════ */
 export function CpdVerifyPage() {
     const { code = "" } = useParams();
+    const nav = useNavigate();
     const q = useVerifyCertificate(code);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 px-[4px] md:px-0 md:max-w-lg md:mx-auto">
+        <FullScreen>
+            <PageHeader
+                title="Certificate Verification"
+                subtitle={`Code: ${code}`}
+                onBack={() => nav(-1)}
+            />
 
-                {/* HERO */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-                                <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                            </div>
-                            <div className="min-w-0">
-                                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-                                    Certificate <span className="text-blue-600">Verification</span>
-                                </h1>
-                                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                    Verifying code: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{code}</span>
-                                </p>
-                            </div>
+            <ScrollBody>
+                <div className="px-4 pt-4">
+                    {q.isLoading ? (
+                        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center">
+                            <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400">
+                                Checking…
+                            </p>
                         </div>
-                    </div>
-                </Card>
-
-                {q.isLoading ? (
-                    <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-                        <CardContent className="p-8 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-                            Checking…
-                        </CardContent>
-                    </Card>
-                ) : q.data?.valid ? (
-                    <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden p-0">
-                        <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
-                        <CardContent className="p-6 md:p-8 text-center space-y-4">
-                            <div className="w-14 h-14 md:w-16 md:h-16 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                                <CheckCircle2 className="w-7 h-7 md:w-8 md:h-8 text-white" strokeWidth={2.6} />
+                    ) : q.data?.valid ? (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-4">
+                            <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center
+                                            bg-emerald-50 dark:bg-emerald-400/10">
+                                <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" strokeWidth={2.6} />
                             </div>
-                            <p className="text-base md:text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                            <p className="text-[14px] font-bold text-emerald-600 dark:text-emerald-400">
                                 Valid Certificate
                             </p>
 
-                            <div className="text-left space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <div className="text-left space-y-3 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Activity
                                     </span>
-                                    <span className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-white text-right truncate">
+                                    <span className="text-[12px] font-bold text-slate-900 dark:text-white text-right truncate">
                                         {q.data.activity?.title}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Issued
                                     </span>
-                                    <span className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-white">
+                                    <span className="text-[12px] font-bold text-slate-900 dark:text-white">
                                         {fmtDate(q.data.certificate?.issued_at)}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Points
                                     </span>
-                                    <span className="inline-flex items-center gap-1 text-sm md:text-[15px] font-bold text-amber-600 dark:text-amber-400">
-                                        <Award className="w-4 h-4" />
+                                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-amber-600 dark:text-amber-400">
+                                        <Award className="h-3.5 w-3.5" />
                                         {fmtPoints(q.data.completion?.points_awarded)}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                         Hours
                                     </span>
-                                    <span className="inline-flex items-center gap-1 text-sm md:text-[15px] font-bold text-blue-600 dark:text-blue-400">
-                                        <Clock className="w-4 h-4" />
+                                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-blue-600 dark:text-blue-400">
+                                        <Clock className="h-3.5 w-3.5" />
                                         {fmtHours(q.data.completion?.learning_hours_completed)}
                                     </span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden p-0">
-                        <div className="h-1 w-full bg-gradient-to-r from-rose-500 to-pink-600" />
-                        <CardContent className="p-6 md:p-8 text-center space-y-4">
-                            <div className="w-14 h-14 md:w-16 md:h-16 mx-auto rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/30">
-                                <XCircle className="w-7 h-7 md:w-8 md:h-8 text-white" strokeWidth={2.6} />
+                        </section>
+                    ) : (
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-3">
+                            <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center
+                                            bg-rose-50 dark:bg-rose-400/10">
+                                <XCircle className="h-7 w-7 text-rose-600 dark:text-rose-400" strokeWidth={2.6} />
                             </div>
-                            <p className="text-base md:text-lg font-bold text-rose-600 dark:text-rose-400">
+                            <p className="text-[14px] font-bold text-rose-600 dark:text-rose-400">
                                 Certificate Not Found
                             </p>
-                            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                            <p className="text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
                                 The verification code could not be matched to a valid certificate.
                             </p>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-        </div>
+                        </section>
+                    )}
+                </div>
+            </ScrollBody>
+        </FullScreen>
     );
 }

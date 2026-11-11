@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { ReflectionSheet } from "@/components/QuizPage/ReflectionSheet";
 import { getMyReferralCode, getMyReferralStats, type ReferralStats } from "@/lib/referrals";
-
+import { CenteredModal } from "@/components/ui/CenteredModal";
 interface Question {
   id: string;
   quiz_id: string;
@@ -1721,234 +1721,81 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
           </div>
         </div>
       </main>
-      {pendingBack && (() => {
-        const answeredCount = Object.keys(answers).length;
-        const pending = Math.max(0, answeredCount - lastCheckpoint);
-        const progressPct = Math.min(100, (pending / 10) * 100);
-        const remaining = Math.max(0, 10 - pending);
-        const isAlmostThere = pending >= 7;
-        const isHalfway = pending >= 5 && pending < 7;
-        const unanswered = Math.max(0, filteredQuestions.length - answeredCount);
+      <CenteredModal
+        open={pendingBack}
+        onClose={() => setPendingBack(false)}
+        title="Leaving so soon?"
+        maxWidthClass="max-w-sm"
+      >
+        <div className="px-4 pb-4 pt-1 space-y-4">
+          {/* Copy */}
+          <div className="text-center space-y-2">
+            <div className="h-14 w-14 rounded-full bg-teal-50 dark:bg-teal-400/10
+                            flex items-center justify-center mx-auto">
+              <Timer className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+            </div>
+            <p className="text-[13px] font-bold text-slate-900 dark:text-white">
+              Serious nurses finish what they start.
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+              You've answered {Object.keys(answers).length - lastCheckpoint} this batch.
+              Finish all 10 to save your streak.
+            </p>
+          </div>
 
-        const R = 22;
-        const C = 2 * Math.PI * R;
-        const dash = (progressPct / 100) * C;
-
-        const motivation = isAlmostThere
-          ? {
-            kicker: "ONE LAST PUSH",
-            headline: "You're 3 questions from done.",
-            body: (
-              <>
-                Your brain is already{" "}
-                <span className="text-emerald-600 dark:text-emerald-400">warmed up</span>.
-                This is the moment nurses remember — the last 3 questions, not the
-                first 7. Finish strong.
-              </>
-            ),
-            cta: "Finish the batch",
-            leaveLabel: `Quit with ${remaining} left`,
-          }
-          : isHalfway
-            ? {
-              kicker: "MOMENTUM",
-              headline: "You're in the zone.",
-              body: (
-                <>
-                  Half the batch is done. The hardest part —{" "}
-                  <span className="text-amber-600 dark:text-amber-400">starting</span> —
-                  is already behind you. Don't let the momentum die.
-                </>
-              ),
-              cta: "Keep going",
-              leaveLabel: "Break the flow",
-            }
-            : {
-              kicker: "IDENTITY CHECK",
-              headline: "Serious nurses finish what they start.",
-              body: (
-                <>
-                  You've already answered{" "}
-                  <span className="text-rose-600 dark:text-rose-400">{pending}</span>{" "}
-                  today. Every question builds the reflex you'll need at 3 AM in the
-                  ward — when no one's watching, and it matters most.
-                </>
-              ),
-              cta: "Stay and finish",
-              leaveLabel: "Not today",
-            };
-
-        return (
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4
-                 bg-black/65 backdrop-blur-sm
-                 animate-[fadeIn_180ms_ease-out]"
-            onClick={() => setPendingBack(false)}
-          >
-            <div
-              className="relative w-full max-w-sm rounded-3xl overflow-hidden
-                   bg-white dark:bg-[#0d1117]
-                   shadow-2xl shadow-black/50
-                   border border-slate-200/60 dark:border-white/10
-                   animate-[popIn_260ms_cubic-bezier(0.34,1.56,0.64,1)]"
-              onClick={(e) => e.stopPropagation()}
+          {/* Actions */}
+          <div className="space-y-2">
+            <button
+              onClick={() => {
+                setPendingBack(false);
+                if (navigator.vibrate) navigator.vibrate(20);
+                if (!isMuted) playSound("tap");
+              }}
+              className="w-full h-11 rounded-xl bg-blue-600 text-white text-[13px] font-bold
+                         flex items-center justify-center
+                         active:scale-[0.97] transition-transform"
+              style={{ touchAction: "manipulation" }}
             >
-              <div className="absolute top-0 left-0 right-0 h-1.5
-                        bg-gradient-to-r from-teal-500 via-cyan-500 to-rose-500" />
+              Stay and finish
+            </button>
 
-              <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full
-                        bg-teal-500/10 dark:bg-teal-500/20 blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full
-                        bg-rose-500/10 dark:bg-rose-500/20 blur-3xl pointer-events-none" />
-
-              <div className="relative p-6 pt-7">
-                <p className="text-center text-[11px] uppercase tracking-wider mb-3
-                        text-teal-600 dark:text-teal-400">
-                  {motivation.kicker}
-                </p>
-
-                <div className="flex justify-center mb-4">
-                  <div className="relative w-16 h-16">
-                    <svg className="w-16 h-16 -rotate-90" viewBox="0 0 56 56">
-                      <circle
-                        cx="28" cy="28" r={R}
-                        fill="none"
-                        strokeWidth="4"
-                        className="stroke-slate-200 dark:stroke-white/10"
-                      />
-                      <circle
-                        cx="28" cy="28" r={R}
-                        fill="none"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeDasharray={`${dash} ${C}`}
-                        className={
-                          isAlmostThere
-                            ? "stroke-emerald-500"
-                            : isHalfway
-                              ? "stroke-amber-500"
-                              : "stroke-teal-500"
-                        }
-                        style={{
-                          transition: "stroke-dasharray 420ms cubic-bezier(0.34,1.56,0.64,1)",
-                        }}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-lg font-bold leading-none
-                                 text-slate-900 dark:text-white">
-                        {pending}
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                        /10
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="text-center text-xl mb-2
-                         text-slate-900 dark:text-white">
-                  {motivation.headline}
-                </h3>
-
-                <p className="text-center text-sm leading-relaxed mb-1
-                        text-slate-600 dark:text-slate-400">
-                  {motivation.body}
-                </p>
-
-                <div className="flex items-center justify-center gap-3 my-4 text-xs
-                          text-slate-400 dark:text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {answeredCount} answered
-                  </span>
-                  <span className="w-px h-3 bg-slate-300 dark:bg-white/10" />
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                    {unanswered} left in unit
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setPendingBack(false);
-                    if (navigator.vibrate) navigator.vibrate(20);
-                    if (!isMuted) playSound("tap");
-                  }}
-                  className="w-full h-12 rounded-2xl text-white text-sm
-                       bg-gradient-to-r from-teal-500 to-cyan-500
-                       hover:from-teal-600 hover:to-cyan-600
-                       active:scale-[0.98]
-                       shadow-lg shadow-teal-500/30
-                       transition-all mb-2
-                       flex items-center justify-center gap-2"
-                >
-                  {motivation.cta}
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (leavingQuiz) return;
-                    setLeavingQuiz(true);
-                    if (navigator.vibrate) navigator.vibrate(15);
-                    // 🍼 Let the spinner paint BEFORE we close the modal + navigate.
-                    // 150ms is enough for the frame to render — feels instant, not laggy.
+            <button
+              onClick={() => {
+                if (leavingQuiz) return;
+                setLeavingQuiz(true);
+                // Strong vibration — three pulses
+                if (navigator.vibrate) navigator.vibrate([30, 20, 80, 20, 30]);
+                if (!isMuted) playSound("tap");
+                // Two frames, then 250ms — spinner paints before navigating
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
                     setTimeout(() => {
                       setPendingBack(false);
                       navigate(-1);
-                    }, 150);
-                  }}
-                  disabled={leavingQuiz}
-                  className="w-full h-9 rounded-xl text-sm
-       bg-rose-50 dark:bg-rose-500/10
-       text-rose-600 dark:text-rose-400
-       hover:bg-rose-100 dark:hover:bg-rose-500/20
-       active:scale-[0.98]
-       disabled:opacity-70 disabled:cursor-not-allowed
-       transition-all
-       flex items-center justify-center gap-2"
-                >
-                  {leavingQuiz ? (
-                    <>
-                      <svg
-                        className="animate-spin h-3.5 w-3.5"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8H4z"
-                        />
-                      </svg>
-                      <span>Going…</span>
-                    </>
-                  ) : (
-                    motivation.leaveLabel
-                  )}
-                </button>
-              </div>
-
-              <div className="relative px-6 pb-4 pt-2 text-center">
-                <p className="text-xs text-slate-400 dark:text-slate-600">
-                  {isAlmostThere
-                    ? "The last 3 questions are where nurses are made."
-                    : "Small wins, stacked daily. That's how NCK is passed."}
-                </p>
-              </div>
-            </div>
+                    }, 250);
+                  });
+                });
+              }}
+              disabled={leavingQuiz}
+              className="w-full h-10 rounded-xl bg-rose-50 dark:bg-rose-400/10
+                         text-rose-700 dark:text-rose-400 text-[13px] font-bold
+                         flex items-center justify-center gap-1.5
+                         active:scale-[0.97] transition-transform
+                         disabled:opacity-70"
+              style={{ touchAction: "manipulation" }}
+            >
+              {leavingQuiz ? (
+                <>
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+                  Going…
+                </>
+              ) : (
+                "Not today"
+              )}
+            </button>
           </div>
-        );
-      })()}
+        </div>
+      </CenteredModal>
     </div>
 
 

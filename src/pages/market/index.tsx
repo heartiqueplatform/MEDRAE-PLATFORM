@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useHomeRoute } from "@/hooks/useHomeRoute";
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
 /* ------------------------------------------------------------------ */
@@ -125,7 +125,7 @@ export default function MarketFeed({ user }: any) {
     const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
     const [conditionFilter, setConditionFilter] = useState<string | null>(null);
     const [deletingIds, setDeletingIds] = useState<string[]>([]);
-
+    const home = useHomeRoute();
     useEffect(() => {
         if (user?.id) fetchSaved();
     }, [user]);
@@ -310,10 +310,10 @@ export default function MarketFeed({ user }: any) {
         }
     };
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         tap();
-        navigate("/dashboard", { replace: true });
-    };
+        navigate(home, { replace: false });
+    }, [navigate, home]);
 
     const hasActiveFilter = !!(categoryFilter || conditionFilter);
 

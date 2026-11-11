@@ -12,7 +12,7 @@ import {
 import { HubCard } from "../../components/survival-hub/HubCard";
 import { survivalApi } from "../../lib/survivalApi";
 import { playSound } from "@/lib/soundManager";
-
+import { useHomeRoute } from "@/hooks/useHomeRoute";
 const tap = () => {
     playSound("ui-tap");
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -22,6 +22,7 @@ const tap = () => {
 
 const SurvivalHubDashboard = () => {
     const navigate = useNavigate();
+    const home = useHomeRoute();
     const [stats, setStats] = useState({
         centersCount: 0,
         housingCount: 0,
@@ -46,9 +47,8 @@ const SurvivalHubDashboard = () => {
 
     const handleBack = () => {
         tap();
-        navigate("/dashboard", { replace: true });
+        navigate(home, { replace: false });
     };
-
     return (
         <div className="h-full w-full flex flex-col bg-slate-50 dark:bg-[#0d1117]">
             {/* ── Header ──────────────────────────────────────── */}

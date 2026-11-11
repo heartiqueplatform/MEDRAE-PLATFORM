@@ -1,15 +1,6 @@
 // src/staff-cpd/admin/ActivityEditorPage.tsx
 import { useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
     ChevronLeft, Plus, Trash2, Upload, ShieldCheck, AlertCircle, GripVertical,
     Image as ImageIcon, CheckCircle2, Clock, Award, BookOpen,
@@ -27,22 +18,55 @@ import { useAdminQuestions } from "../lib/admin-hooks";
 import { ContentTypeChip, CpdEmptyState } from "../components";
 import { CONTENT_LABEL, validateContentItem, fmtHours, fmtPoints } from "../lib";
 import type { ContentType, ExternalProvider } from "../lib";
+import { playSound } from "@/lib/soundManager";
 
-// Status pill tones — mirrors ActivitiesListPage
+/* ------------------------------------------------------------------ */
+/*  Tap helper                                                        */
+/* ------------------------------------------------------------------ */
+
+const vibrate = (p: number | number[] = 15) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
+};
+const tap = (type: "light" | "success" | "warning" = "light") => {
+    try { playSound("ui-tap"); } catch { /* no-op */ }
+    if (type === "success") vibrate([15, 30, 15]);
+    else if (type === "warning") vibrate(40);
+    else vibrate(12);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Status tones                                                      */
+/* ------------------------------------------------------------------ */
+
 const STATUS_TONES: Record<string, string> = {
-    draft: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    review: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-    published: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    archived: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+    draft: "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300",
+    review: "bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400",
+    published: "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400",
+    archived: "bg-rose-50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-400",
 };
 
 const getStatusTone = (status?: string) =>
     STATUS_TONES[(status ?? "").toLowerCase()] ?? STATUS_TONES.draft;
 
-// Shared input styling for consistency
-const inputCls =
-    "h-11 md:h-12 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-sm md:text-base font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none shadow-inner";
+/* ------------------------------------------------------------------ */
+/*  Shared styles                                                     */
+/* ------------------------------------------------------------------ */
 
+const InputBase = "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
+const TextareaBase = "w-full rounded-xl bg-white dark:bg-[#161b22] px-3 py-2 text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
+const PrimaryBtn = "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
+const SecondaryBtn = "h-10 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
+const DangerBtn = "h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-[0.92] transition-transform";
+
+const Label = ({ children }: { children: React.ReactNode }) => (
+    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
+        {children}
+    </label>
+);
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN
+   ═══════════════════════════════════════════════════════════════ */
 export default function ActivityEditorPage() {
     const { id = "" } = useParams();
     const nav = useNavigate();
@@ -50,132 +74,101 @@ export default function ActivityEditorPage() {
 
     if (q.isLoading || !q.data) {
         return (
-            <div className="min-h-screen w-full flex flex-col items-center">
-                <div className="w-full md:max-w-full md:px-4 lg:px-6 px-0 sm:px-6 pt-4 sm:pt-8 pb-8 space-y-3 px-[4px] md:px-0">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="h-24 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                    ))}
-                </div>
+            <div className="px-4 pt-4 space-y-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                ))}
             </div>
         );
     }
 
     const { activity, modules, contentByModule, assessments } = q.data;
 
+    return <ActivityEditorBody activity={activity} modules={modules} contentByModule={contentByModule} assessments={assessments} />;
+}
+
+function ActivityEditorBody({ activity, modules, contentByModule, assessments }: any) {
+    const nav = useNavigate();
+    const [tab, setTab] = useState<"basics" | "modules" | "assessments" | "publish">("basics");
+
+    const tabs = [
+        { id: "basics", label: "Basics" },
+        { id: "modules", label: "Modules" },
+        { id: "assessments", label: "Assessments" },
+        { id: "publish", label: "Publish" },
+    ] as const;
+
     return (
-        <div className="min-h-screen w-full flex flex-col items-center">
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-4 md:space-y-5 px-0 sm:px-6 pt-4 sm:pt-8 pb-8">
-
-                {/* BACK LINK */}
-                <div className="px-[4px] md:px-0">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => nav("/cpd/admin/activities")}
-                        className="rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold -ml-2"
-                    >
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        All activities
-                    </Button>
-                </div>
-
-                {/* HERO HEADER CARD */}
-                <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
-                    <div className="relative px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-6">
-                        <div className="flex items-start gap-3 md:gap-4 min-w-0">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-                                <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.4} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight truncate">
-                                    {activity.title || "Untitled Activity"}
-                                </h1>
-                                <div className="flex items-center gap-2 md:gap-3 mt-1.5 flex-wrap">
-                                    <span
-                                        className={`text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-full capitalize ${getStatusTone(activity.status)}`}
-                                    >
-                                        {activity.status}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                        <Clock className="w-3 h-3" />
-                                        {fmtHours(activity.learning_hours)}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                        <Award className="w-3 h-3" />
-                                        {fmtPoints(activity.configured_cpd_points)} pts
-                                    </span>
-                                </div>
-                            </div>
+        <div className="px-4 pt-3 pb-16 space-y-3 max-w-[880px] mx-auto">
+            {/* Header card */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                <div className="flex items-start gap-2.5">
+                    <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        <BookOpen className="h-4 w-4" strokeWidth={2.4} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-[14px] font-bold text-slate-900 dark:text-white leading-tight truncate">
+                            {activity.title || "Untitled Activity"}
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5
+                                              text-[10px] font-bold capitalize ${getStatusTone(activity.status)}`}>
+                                {activity.status}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                             text-slate-500 dark:text-slate-400">
+                                <Clock className="h-3 w-3" />
+                                {fmtHours(activity.learning_hours)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium
+                                             text-slate-500 dark:text-slate-400">
+                                <Award className="h-3 w-3" />
+                                {fmtPoints(activity.configured_cpd_points)} pts
+                            </span>
                         </div>
                     </div>
-                </Card>
+                </div>
+            </section>
 
-                {/* TABS */}
-                <Tabs defaultValue="basics" className="px-[4px] md:px-0">
-                    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                        <TabsList className="inline-flex w-auto h-11 md:h-12 rounded-xl md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent p-1 gap-1">
-                            <TabsTrigger
-                                value="basics"
-                                className="rounded-lg md:rounded-xl px-3 md:px-4 h-full text-xs md:text-sm font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
-                            >
-                                Basics
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="modules"
-                                className="rounded-lg md:rounded-xl px-3 md:px-4 h-full text-xs md:text-sm font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
-                            >
-                                Modules & Content
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="assessments"
-                                className="rounded-lg md:rounded-xl px-3 md:px-4 h-full text-xs md:text-sm font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
-                            >
-                                Assessments
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="publish"
-                                className="rounded-lg md:rounded-xl px-3 md:px-4 h-full text-xs md:text-sm font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
-                            >
-                                Publish
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
-
-                    <TabsContent value="basics" className="mt-4 md:mt-5">
-                        <BasicsTab activity={activity} />
-                    </TabsContent>
-
-                    <TabsContent value="modules" className="mt-4 md:mt-5">
-                        <ModulesTab activityId={activity.id} modules={modules} contentByModule={contentByModule} />
-                    </TabsContent>
-
-                    <TabsContent value="assessments" className="mt-4 md:mt-5">
-                        <AssessmentsTab activityId={activity.id} assessments={assessments} />
-                    </TabsContent>
-
-                    <TabsContent value="publish" className="mt-4 md:mt-5">
-                        <PublishTab activity={activity} />
-                    </TabsContent>
-                </Tabs>
+            {/* Tab strip */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
+                {tabs.map((t) => {
+                    const active = tab === t.id;
+                    return (
+                        <button
+                            key={t.id}
+                            onClick={() => { tap(); setTab(t.id); }}
+                            className={`shrink-0 h-9 px-3 rounded-xl text-[11px] font-bold
+                                        active:scale-[0.97] transition-transform
+                                        ${active
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                                }`}
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            {t.label}
+                        </button>
+                    );
+                })}
             </div>
+
+            {/* Tab content */}
+            {tab === "basics" && <BasicsTab activity={activity} />}
+            {tab === "modules" && <ModulesTab activityId={activity.id} modules={modules} contentByModule={contentByModule} />}
+            {tab === "assessments" && <AssessmentsTab activityId={activity.id} assessments={assessments} />}
+            {tab === "publish" && <PublishTab activity={activity} />}
         </div>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BASICS
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// BASICS
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   BASICS
+   ═══════════════════════════════════════════════════════════════ */
 function BasicsTab({ activity }: { activity: any }) {
     const update = useUpdateActivity();
     const upload = useUploadThumbnail();
     const fileRef = useRef<HTMLInputElement>(null);
 
-    // ── Local draft state — no network calls while typing ──
     const [draft, setDraft] = useState({
         title: activity.title ?? "",
         short_description: activity.short_description ?? "",
@@ -186,7 +179,6 @@ function BasicsTab({ activity }: { activity: any }) {
         configured_cpd_points: activity.configured_cpd_points ?? 0,
     });
 
-    // Reset draft if the underlying activity id changes (switching activities)
     const lastIdRef = useRef<string>(activity.id);
     if (lastIdRef.current !== activity.id) {
         lastIdRef.current = activity.id;
@@ -210,10 +202,10 @@ function BasicsTab({ activity }: { activity: any }) {
         Number(draft.learning_hours) !== Number(activity.learning_hours ?? 0) ||
         Number(draft.configured_cpd_points) !== Number(activity.configured_cpd_points ?? 0);
 
-    const set = (patch: Partial<typeof draft>) =>
-        setDraft((d) => ({ ...d, ...patch }));
+    const set = (patch: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...patch }));
 
     const handleSave = async () => {
+        tap("success");
         await update.mutateAsync({
             id: activity.id,
             patch: {
@@ -231,165 +223,173 @@ function BasicsTab({ activity }: { activity: any }) {
     const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        tap();
         const url = await upload.mutateAsync({ file, activityId: activity.id });
         await update.mutateAsync({ id: activity.id, patch: { thumbnail_url: url } });
     };
 
     return (
-        <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-            <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
-
-                {/* Thumbnail */}
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                    <div className="w-full sm:w-40 h-32 sm:h-24 rounded-xl bg-gray-100 dark:bg-gray-900 overflow-hidden flex items-center justify-center flex-shrink-0">
+        <div className="space-y-3">
+            {/* Thumbnail card */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                <div className="flex flex-col sm:flex-row items-start gap-3">
+                    <div className="w-full sm:w-36 h-28 sm:h-24 rounded-xl bg-slate-100 dark:bg-white/[0.06] overflow-hidden flex items-center justify-center shrink-0">
                         {activity.thumbnail_url ? (
                             <img src={activity.thumbnail_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                                <ImageIcon className="h-6 w-6 text-white/70" />
-                            </div>
+                            <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                         )}
                     </div>
-                    <div className="space-y-2 flex-1 min-w-0">
-                        <p className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100">Cover image</p>
-                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">JPG, PNG, WebP. Max 5 MB.</p>
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                        <p className="text-[12px] font-bold text-slate-900 dark:text-white">
+                            Cover image
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            JPG, PNG, WebP · Max 5 MB
+                        </p>
                         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => fileRef.current?.click()}
+                        <button
+                            onClick={() => { tap(); fileRef.current?.click(); }}
                             disabled={upload.isPending}
-                            className="h-10 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all"
+                            className={SecondaryBtn}
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <Upload className="h-3.5 w-3.5 mr-1" />
+                            <Upload className="h-3.5 w-3.5" />
                             {upload.isPending ? "Uploading…" : "Upload image"}
-                        </Button>
+                        </button>
                     </div>
                 </div>
+            </section>
 
-                {/* Fields */}
-                <div className="space-y-3 md:space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
-                    <div>
-                        <label className="text-xs md:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</label>
-                        <Input
-                            value={draft.title}
-                            onChange={(e) => set({ title: e.target.value })}
-                            placeholder="Activity title"
-                            className={`mt-1.5 ${inputCls}`}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs md:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Short description</label>
-                        <Input
-                            value={draft.short_description}
-                            onChange={(e) => set({ short_description: e.target.value })}
-                            placeholder="A one-line summary"
-                            className={`mt-1.5 ${inputCls}`}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs md:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Full description</label>
-                        <Textarea
-                            value={draft.description}
-                            onChange={(e) => set({ description: e.target.value })}
-                            placeholder="Detailed description of the activity…"
-                            rows={5}
-                            className="mt-1.5 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-sm md:text-base font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none shadow-inner resize-y"
-                        />
-                    </div>
+            {/* Fields card */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                <div>
+                    <Label>Title</Label>
+                    <input
+                        value={draft.title}
+                        onChange={(e) => set({ title: e.target.value })}
+                        placeholder="Activity title"
+                        className={InputBase}
+                    />
                 </div>
 
-                {/* Meta grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div>
+                    <Label>Short description</Label>
+                    <input
+                        value={draft.short_description}
+                        onChange={(e) => set({ short_description: e.target.value })}
+                        placeholder="A one-line summary"
+                        className={InputBase}
+                    />
+                </div>
+
+                <div>
+                    <Label>Full description</Label>
+                    <textarea
+                        value={draft.description}
+                        onChange={(e) => set({ description: e.target.value })}
+                        placeholder="Detailed description of the activity…"
+                        rows={5}
+                        className={TextareaBase}
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
                     <div>
-                        <label className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Learning hours</label>
-                        <Input
-                            type="number" step="0.25" min={0}
+                        <Label>Learning hours</Label>
+                        <input
+                            type="number"
+                            step="0.25"
+                            min={0}
                             value={draft.learning_hours}
                             onChange={(e) => set({ learning_hours: Number(e.target.value) })}
-                            className={`mt-1.5 ${inputCls}`}
+                            className={InputBase}
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">CPD points</label>
-                        <Input
-                            type="number" step="0.25" min={0}
+                        <Label>CPD points</Label>
+                        <input
+                            type="number"
+                            step="0.25"
+                            min={0}
                             value={draft.configured_cpd_points}
                             onChange={(e) => set({ configured_cpd_points: Number(e.target.value) })}
-                            className={`mt-1.5 ${inputCls}`}
+                            className={InputBase}
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</label>
-                        <Input
+                        <Label>Category</Label>
+                        <input
                             value={draft.category}
                             onChange={(e) => set({ category: e.target.value })}
                             placeholder="e.g. Infection Control"
-                            className={`mt-1.5 ${inputCls}`}
+                            className={InputBase}
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Difficulty</label>
-                        <Select value={draft.difficulty} onValueChange={(v) => set({ difficulty: v })}>
-                            <SelectTrigger className={`mt-1.5 ${inputCls}`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-0 shadow-xl">
-                                <SelectItem value="beginner">Beginner</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="advanced">Advanced</SelectItem>
-                                <SelectItem value="expert">Expert</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Label>Difficulty</Label>
+                        <select
+                            value={draft.difficulty}
+                            onChange={(e) => set({ difficulty: e.target.value })}
+                            className={InputBase}
+                        >
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                            <option value="expert">Expert</option>
+                        </select>
                     </div>
                 </div>
+            </section>
 
-                {/* Sticky Save bar */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800 flex-wrap gap-3">
-                    <span className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {update.isPending
-                            ? "Saving…"
-                            : isDirty
-                                ? "You have unsaved changes"
-                                : "All changes saved"}
-                    </span>
-                    <Button
-                        onClick={handleSave}
-                        disabled={!isDirty || update.isPending}
-                        className="h-11 md:h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-5 disabled:opacity-40 disabled:shadow-none"
-                    >
-                        {update.isPending ? "Saving…" : "Save changes"}
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+            {/* Save bar */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3
+                                flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    {update.isPending
+                        ? "Saving…"
+                        : isDirty
+                            ? "You have unsaved changes"
+                            : "All changes saved"}
+                </span>
+                <button
+                    onClick={handleSave}
+                    disabled={!isDirty || update.isPending}
+                    className={PrimaryBtn}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    {update.isPending ? "Saving…" : "Save changes"}
+                </button>
+            </section>
+        </div>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MODULES & CONTENT
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   MODULES
+   ═══════════════════════════════════════════════════════════════ */
 function ModulesTab({ activityId, modules, contentByModule }: any) {
     const createModule = useCreateModule();
     const deleteModule = useDeleteModule();
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-end">
-                <Button
-                    onClick={() => createModule.mutate({
+        <div className="space-y-3">
+            <button
+                onClick={() => {
+                    tap("success");
+                    createModule.mutate({
                         activity_id: activityId,
                         title: `Module ${modules.length + 1}`,
                         position: modules.length,
-                    })}
-                    disabled={createModule.isPending}
-                    className="h-11 md:h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-4 md:px-5 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4" /> Add Module
-                </Button>
-            </div>
+                    });
+                }}
+                disabled={createModule.isPending}
+                className={PrimaryBtn + " w-full"}
+                style={{ touchAction: "manipulation" }}
+            >
+                <Plus className="h-3.5 w-3.5" />
+                Add Module
+            </button>
 
             {modules.length === 0 && (
                 <CpdEmptyState
@@ -407,6 +407,7 @@ function ModulesTab({ activityId, modules, contentByModule }: any) {
                     contentItems={contentByModule[m.id] ?? []}
                     onDelete={() => {
                         if (confirm(`Delete "${m.title}"? All content inside will be removed.`)) {
+                            tap("warning");
                             deleteModule.mutate({ id: m.id, activity_id: activityId });
                         }
                     }}
@@ -422,84 +423,94 @@ function ModuleCard({ activityId, module: m, contentItems, onDelete }: any) {
     const [adding, setAdding] = useState(false);
 
     return (
-        <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden">
-            <CardHeader className="pb-3 px-4 md:px-5 pt-4 md:pt-5">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <ModuleTitleInput module={m} activityId={activityId} />
-                    </div>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={onDelete}
-                        className="h-9 w-9 p-0 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 flex-shrink-0"
-                    >
-                        <Trash2 className="h-4 w-4 text-rose-600" />
-                    </Button>
+        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <GripVertical className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 shrink-0" />
+                    <ModuleTitleInput module={m} activityId={activityId} />
                 </div>
-                {m.description && (
-                    <CardDescription className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        {m.description}
-                    </CardDescription>
-                )}
-            </CardHeader>
-            <CardContent className="space-y-2 px-4 md:px-5 pb-4 md:pb-5">
+                <button
+                    onClick={onDelete}
+                    className={DangerBtn}
+                    aria-label="Delete module"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Trash2 className="h-3.5 w-3.5" />
+                </button>
+            </div>
+
+            {m.description && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                    {m.description}
+                </p>
+            )}
+
+            {/* Content items */}
+            <div className="space-y-1.5">
                 {contentItems.map((c: any) => (
                     <div
                         key={c.id}
-                        className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3 border-0"
+                        className="flex items-center justify-between gap-2 rounded-xl
+                                   bg-slate-50 dark:bg-[#0d1117] px-3 py-2"
                     >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                             <ContentTypeChip type={c.content_type} />
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{c.title}</p>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate">
+                                    {c.title}
+                                </p>
                                 {c.external_url && (
-                                    <p className="text-[10px] md:text-[11px] text-gray-400 dark:text-gray-500 truncate">{c.external_url}</p>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500 truncate">
+                                        {c.external_url}
+                                    </p>
                                 )}
                             </div>
                             {c.is_required && (
-                                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0">
-                                    REQUIRED
+                                <span className="inline-flex items-center rounded-full px-1.5 py-0.5
+                                                 text-[9px] font-bold shrink-0
+                                                 bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400">
+                                    REQ
                                 </span>
                             )}
                         </div>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 flex-shrink-0"
-                            onClick={() => deleteItem.mutate({ id: c.id, activity_id: activityId })}
+                        <button
+                            onClick={() => { tap("warning"); deleteItem.mutate({ id: c.id, activity_id: activityId }); }}
+                            className={DangerBtn + " !h-8 !w-8"}
+                            aria-label="Delete content"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-                        </Button>
+                            <Trash2 className="h-3 w-3" />
+                        </button>
                     </div>
                 ))}
+            </div>
 
-                {adding ? (
-                    <NewContentForm
-                        onCancel={() => setAdding(false)}
-                        onSubmit={(input) => {
-                            createItem.mutate({
-                                ...input,
-                                module_id: m.id,
-                                activity_id: activityId,
-                                position: contentItems.length,
-                            });
-                            setAdding(false);
-                        }}
-                    />
-                ) : (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setAdding(true)}
-                        className="h-10 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all w-full"
-                    >
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add content item
-                    </Button>
-                )}
-            </CardContent>
-        </Card>
+            {/* Add content */}
+            {adding ? (
+                <NewContentForm
+                    onCancel={() => setAdding(false)}
+                    onSubmit={(input) => {
+                        createItem.mutate({
+                            ...input,
+                            module_id: m.id,
+                            activity_id: activityId,
+                            position: contentItems.length,
+                        });
+                        setAdding(false);
+                    }}
+                />
+            ) : (
+                <button
+                    onClick={() => { tap(); setAdding(true); }}
+                    className={SecondaryBtn + " w-full !h-9"}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add content item
+                </button>
+            )}
+        </section>
     );
 }
 
@@ -533,115 +544,121 @@ function NewContentForm({ onSubmit, onCancel }: { onSubmit: (v: any) => void; on
         };
         const check = validateContentItem(payload);
         if (!check.ok) { setErr(check.reason ?? "Invalid"); return; }
+        tap("success");
         onSubmit({ ...payload, ...(check.normalized ?? {}) });
     };
 
     return (
-        <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3 md:p-4 space-y-3 border-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                <Select value={type} onValueChange={(v) => handleTypeChange(v as ContentType)}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-xl border-0 shadow-xl">
-                        {Object.entries(CONTENT_LABEL).map(([k, label]) => (
-                            <SelectItem key={k} value={k}>{label}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={provider} onValueChange={(v) => setProvider(v as ExternalProvider)}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-xl border-0 shadow-xl">
-                        <SelectItem value="youtube">YouTube</SelectItem>
-                        <SelectItem value="apple_podcasts">Apple Podcasts</SelectItem>
-                        <SelectItem value="external">External URL</SelectItem>
-                        <SelectItem value="internal">Internal (text)</SelectItem>
-                    </SelectContent>
-                </Select>
+        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+                <select
+                    value={type}
+                    onChange={(e) => handleTypeChange(e.target.value as ContentType)}
+                    className={InputBase + " !h-9"}
+                >
+                    {Object.entries(CONTENT_LABEL).map(([k, label]) => (
+                        <option key={k} value={k}>{label}</option>
+                    ))}
+                </select>
+                <select
+                    value={provider}
+                    onChange={(e) => setProvider(e.target.value as ExternalProvider)}
+                    className={InputBase + " !h-9"}
+                >
+                    <option value="youtube">YouTube</option>
+                    <option value="apple_podcasts">Apple Podcasts</option>
+                    <option value="external">External URL</option>
+                    <option value="internal">Internal (text)</option>
+                </select>
             </div>
 
-            <Input
+            <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Content title"
-                className={inputCls}
+                className={InputBase + " !h-9"}
             />
-            <Input
+            <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://…"
-                className={inputCls}
+                className={InputBase + " !h-9"}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 items-center">
-                <Input
-                    type="number" min={0}
+            <div className="grid grid-cols-2 gap-2 items-center">
+                <input
+                    type="number"
+                    min={0}
                     value={duration}
                     onChange={(e) => setDuration(e.target.value === "" ? "" : Number(e.target.value))}
-                    placeholder="Duration (seconds, optional)"
-                    className={inputCls}
+                    placeholder="Duration (s)"
+                    className={InputBase + " !h-9"}
                 />
-                <label className="flex items-center gap-2 text-xs md:text-sm font-medium cursor-pointer px-1">
+                <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer px-1">
                     <input
                         type="checkbox"
                         checked={required}
                         onChange={(e) => setRequired(e.target.checked)}
-                        className="rounded"
+                        className="w-4 h-4 accent-blue-600"
                     />
-                    Required to complete activity
+                    Required
                 </label>
             </div>
 
             {err && (
-                <p className="text-[11px] md:text-xs text-rose-600 flex items-center gap-1 font-medium">
+                <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
                     <AlertCircle className="h-3 w-3" /> {err}
                 </p>
             )}
 
             <div className="flex justify-end gap-2 pt-1">
-                <Button
-                    size="sm"
-                    variant="ghost"
+                <button
                     onClick={onCancel}
-                    className="h-10 rounded-xl font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className={SecondaryBtn + " !h-9"}
+                    style={{ touchAction: "manipulation" }}
                 >
                     Cancel
-                </Button>
-                <Button
-                    size="sm"
+                </button>
+                <button
                     onClick={handle}
                     disabled={!title}
-                    className="h-10 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 px-5"
+                    className={PrimaryBtn + " !h-9"}
+                    style={{ touchAction: "manipulation" }}
                 >
                     Add
-                </Button>
+                </button>
             </div>
         </div>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ASSESSMENTS
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   ASSESSMENTS
+   ═══════════════════════════════════════════════════════════════ */
 function AssessmentsTab({ activityId, assessments }: any) {
     const createAssessment = useCreateAssessment();
     const deleteAssessment = useDeleteAssessment();
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-end">
-                <Button
-                    onClick={() => createAssessment.mutate({
+        <div className="space-y-3">
+            <button
+                onClick={() => {
+                    tap("success");
+                    createAssessment.mutate({
                         activity_id: activityId,
                         title: "Final Assessment",
                         pass_mark: 70,
                         attempt_limit: null,
                         randomize_questions: true,
-                    })}
-                    disabled={createAssessment.isPending}
-                    className="h-11 md:h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-4 md:px-5 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4" /> Add Assessment
-                </Button>
-            </div>
+                    });
+                }}
+                disabled={createAssessment.isPending}
+                className={PrimaryBtn + " w-full"}
+                style={{ touchAction: "manipulation" }}
+            >
+                <Plus className="h-3.5 w-3.5" />
+                Add Assessment
+            </button>
 
             {assessments.length === 0 && (
                 <CpdEmptyState
@@ -657,6 +674,7 @@ function AssessmentsTab({ activityId, assessments }: any) {
                     activityId={activityId}
                     onDelete={() => {
                         if (confirm("Delete this assessment?")) {
+                            tap("warning");
                             deleteAssessment.mutate({ id: a.id, activity_id: activityId });
                         }
                     }}
@@ -675,83 +693,86 @@ function AssessmentCard({ assessment, activityId, onDelete }: any) {
     const attached = (q.data ?? []) as any[];
 
     return (
-        <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70 overflow-hidden">
-            <CardHeader className="pb-3 px-4 md:px-5 pt-4 md:pt-5">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <CardTitle className="text-base md:text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                            {assessment.title}
-                        </CardTitle>
-                        <CardDescription className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Pass mark {assessment.pass_mark}% · {attached.length} question{attached.length === 1 ? "" : "s"}
-                            {assessment.attempt_limit ? ` · max ${assessment.attempt_limit} attempts` : ""}
-                        </CardDescription>
-                    </div>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={onDelete}
-                        className="h-9 w-9 p-0 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 flex-shrink-0"
-                    >
-                        <Trash2 className="h-4 w-4 text-rose-600" />
-                    </Button>
+        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                        {assessment.title}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Pass mark {assessment.pass_mark}% · {attached.length} question{attached.length === 1 ? "" : "s"}
+                        {assessment.attempt_limit ? ` · max ${assessment.attempt_limit} attempts` : ""}
+                    </p>
                 </div>
-            </CardHeader>
-            <CardContent className="space-y-2 px-4 md:px-5 pb-4 md:pb-5">
+                <button
+                    onClick={onDelete}
+                    className={DangerBtn}
+                    aria-label="Delete assessment"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Trash2 className="h-3.5 w-3.5" />
+                </button>
+            </div>
+
+            <div className="space-y-1.5">
                 {attached.map((row) => (
                     <div
                         key={row.id}
-                        className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3 border-0"
+                        className="flex items-center justify-between gap-2 rounded-xl
+                                   bg-slate-50 dark:bg-[#0d1117] px-3 py-2"
                     >
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            <p className="text-[12px] font-medium text-slate-900 dark:text-white truncate">
                                 {row.question?.question}
                             </p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 capitalize">
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <span className="inline-flex items-center rounded-full px-1.5 py-0.5
+                                                 text-[9px] font-bold capitalize
+                                                 bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
                                     {row.question?.question_type?.replace("_", " ")}
                                 </span>
-                                <span className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">
                                     {row.points} pt
                                 </span>
                             </div>
                         </div>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 flex-shrink-0"
-                            onClick={() => detach.mutate({ id: row.id, assessment_id: assessment.id })}
+                        <button
+                            onClick={() => { tap("warning"); detach.mutate({ id: row.id, assessment_id: assessment.id }); }}
+                            className={DangerBtn + " !h-8 !w-8"}
+                            aria-label="Detach question"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-                        </Button>
+                            <Trash2 className="h-3 w-3" />
+                        </button>
                     </div>
                 ))}
+            </div>
 
-                {picking ? (
-                    <QuestionPicker
-                        onCancel={() => setPicking(false)}
-                        onPick={(questionId) => {
-                            attach.mutate({
-                                assessment_id: assessment.id,
-                                question_id: questionId,
-                                position: attached.length,
-                                points: 1,
-                            });
-                            setPicking(false);
-                        }}
-                    />
-                ) : (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setPicking(true)}
-                        className="h-10 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-800 font-bold text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 transition-all w-full"
-                    >
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Attach question from bank
-                    </Button>
-                )}
-            </CardContent>
-        </Card>
+            {picking ? (
+                <QuestionPicker
+                    onCancel={() => setPicking(false)}
+                    onPick={(questionId) => {
+                        tap("success");
+                        attach.mutate({
+                            assessment_id: assessment.id,
+                            question_id: questionId,
+                            position: attached.length,
+                            points: 1,
+                        });
+                        setPicking(false);
+                    }}
+                />
+            ) : (
+                <button
+                    onClick={() => { tap(); setPicking(true); }}
+                    className={SecondaryBtn + " w-full !h-9"}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <Plus className="h-3.5 w-3.5" />
+                    Attach question from bank
+                </button>
+            )}
+        </section>
     );
 }
 
@@ -761,56 +782,53 @@ function QuestionPicker({ onPick, onCancel }: { onPick: (id: string) => void; on
     const items = q.data?.pages.flatMap(p => p.items) ?? [];
 
     return (
-        <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3 md:p-4 space-y-3 border-0">
-            <div className="relative group">
-                <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search question bank…"
-                    className={`pl-9 md:pl-11 ${inputCls}`}
-                />
-                <svg
-                    className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-                </svg>
-            </div>
+        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
+            <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search question bank…"
+                className={InputBase + " !h-9"}
+            />
 
-            <div className="max-h-64 overflow-y-auto space-y-1.5">
+            <div className="max-h-64 overflow-y-auto no-scrollbar space-y-1.5">
                 {items.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => onPick(item.id)}
-                        className="w-full text-left rounded-xl bg-white dark:bg-gray-800 border-0 p-3 text-sm hover:shadow-md hover:ring-2 hover:ring-blue-500/30 transition-all"
+                        className="w-full text-left rounded-xl bg-white dark:bg-[#161b22] p-2.5
+                                   active:bg-slate-100 dark:active:bg-white/[0.08]
+                                   transition-colors"
+                        style={{ touchAction: "manipulation" }}
                     >
-                        <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{item.question}</p>
-                        <p className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 capitalize mt-1">
+                        <p className="text-[12px] font-medium text-slate-900 dark:text-white truncate">
+                            {item.question}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 capitalize mt-0.5">
                             {item.question_type.replace("_", " ")}
                         </p>
                     </button>
                 ))}
                 {!items.length && !q.isLoading && (
-                    <p className="text-xs text-gray-400 text-center py-6">No questions match.</p>
+                    <p className="text-[11px] text-slate-400 text-center py-4">No questions match.</p>
                 )}
             </div>
 
             <div className="flex justify-end">
-                <Button
-                    size="sm"
-                    variant="ghost"
+                <button
                     onClick={onCancel}
-                    className="h-10 rounded-xl font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className={SecondaryBtn + " !h-9"}
+                    style={{ touchAction: "manipulation" }}
                 >
-                    Cancel                </Button>
+                    Cancel
+                </button>
             </div>
         </div>
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PUBLISH
-// ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   PUBLISH
+   ═══════════════════════════════════════════════════════════════ */
 function PublishTab({ activity }: { activity: any }) {
     const publish = usePublishActivity();
     const update = useUpdateActivity();
@@ -818,6 +836,7 @@ function PublishTab({ activity }: { activity: any }) {
 
     const handlePublish = async () => {
         setError(null);
+        tap("success");
         try {
             await publish.mutateAsync(activity.id);
         } catch (e: any) {
@@ -826,86 +845,96 @@ function PublishTab({ activity }: { activity: any }) {
     };
 
     return (
-        <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-muted/70">
-            <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
-
-                <div className="flex items-center gap-3 flex-wrap">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20 flex-shrink-0">
-                        <ShieldCheck className="h-5 w-5 text-white" strokeWidth={2.4} />
+        <div className="space-y-3">
+            {/* Status card */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                    <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        <ShieldCheck className="h-4 w-4" strokeWidth={2.4} />
                     </div>
                     <div>
-                        <p className="text-xs md:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Current status
                         </p>
-                        <span
-                            className={`inline-block text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-full capitalize mt-0.5 ${getStatusTone(activity.status)}`}
-                        >
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 mt-0.5
+                                          text-[10px] font-bold capitalize ${getStatusTone(activity.status)}`}>
                             {activity.status}
                         </span>
                     </div>
                 </div>
 
-                <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4">
-                    <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-3">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                         Publishing validates: at least one module, at least one content item,
                         all external URLs start with http(s). On success, status becomes{" "}
-                        <b className="text-blue-700 dark:text-blue-300">published</b> and the
+                        <b className="text-blue-700 dark:text-blue-400">published</b> and the
                         activity appears in the nurse catalog.
                     </p>
                 </div>
 
                 {error && (
-                    <div className="flex items-start gap-2 text-xs md:text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/20 rounded-xl p-3 md:p-4">
-                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span className="font-medium">{error}</span>
+                    <div className="flex items-start gap-2 rounded-xl bg-rose-50 dark:bg-rose-400/10 p-3">
+                        <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-rose-700 dark:text-rose-300 leading-snug">
+                            {error}
+                        </p>
                     </div>
                 )}
-
-                <div className="flex gap-2 flex-wrap pt-1">
-                    <Button
-                        onClick={handlePublish}
-                        disabled={publish.isPending}
-                        className="h-11 md:h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/20 px-5"
-                    >
-                        {publish.isPending ? "Publishing…" : "Publish"}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => update.mutate({ id: activity.id, patch: { status: "review" } })}
-                        className="h-11 md:h-12 rounded-2xl font-bold border-2 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-amber-400 hover:text-amber-600 transition-all px-5"
-                    >
-                        Submit for review
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => update.mutate({
-                            id: activity.id,
-                            patch: { status: "archived", archived_at: new Date().toISOString() },
-                        })}
-                        className="h-11 md:h-12 rounded-2xl font-bold border-2 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-rose-400 hover:text-rose-600 transition-all px-5"
-                    >
-                        Archive
-                    </Button>
-                </div>
 
                 {activity.status === "published" && (
-                    <div className="flex items-center gap-2 text-xs md:text-sm text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Live in catalog since {new Date(activity.published_at).toLocaleDateString()}
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-400/10 p-3">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                            Live in catalog since {new Date(activity.published_at).toLocaleDateString()}
+                        </p>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </section>
+
+            {/* Actions card */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2">
+                <button
+                    onClick={handlePublish}
+                    disabled={publish.isPending}
+                    className={PrimaryBtn + " w-full"}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    {publish.isPending ? "Publishing…" : "Publish"}
+                </button>
+                <button
+                    onClick={() => { tap(); update.mutate({ id: activity.id, patch: { status: "review" } }); }}
+                    className={SecondaryBtn + " w-full"}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    Submit for review
+                </button>
+                <button
+                    onClick={() => {
+                        tap("warning");
+                        update.mutate({
+                            id: activity.id,
+                            patch: { status: "archived", archived_at: new Date().toISOString() },
+                        });
+                    }}
+                    className="w-full h-10 px-4 rounded-xl bg-rose-50 dark:bg-rose-400/10
+                               text-rose-700 dark:text-rose-400 text-[13px] font-bold
+                               active:scale-[0.97] transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    Archive
+                </button>
+            </section>
+        </div>
     );
 }
-// ─────────────────────────────────────────────────────────────
-// Inline-editable module title — saves on blur / Enter
-// ─────────────────────────────────────────────────────────────
+
+/* ─────────────────────────────────────────────────────────────
+   Inline-editable module title
+   ───────────────────────────────────────────────────────────── */
 function ModuleTitleInput({ module: m, activityId }: { module: any; activityId: string }) {
     const update = useUpdateModule();
     const [local, setLocal] = useState(m.title);
 
-    // Sync when switching between modules or when server data changes
     const lastIdRef = useRef(m.id);
     if (lastIdRef.current !== m.id) {
         lastIdRef.current = m.id;
@@ -919,7 +948,7 @@ function ModuleTitleInput({ module: m, activityId }: { module: any; activityId: 
     };
 
     return (
-        <Input
+        <input
             value={local}
             onChange={(e) => setLocal(e.target.value)}
             onBlur={commit}
@@ -930,7 +959,10 @@ function ModuleTitleInput({ module: m, activityId }: { module: any; activityId: 
                     (e.target as HTMLInputElement).blur();
                 }
             }}
-            className="h-10 md:h-11 text-sm md:text-base font-bold rounded-xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none shadow-inner max-w-md"
+            className="flex-1 h-9 rounded-lg bg-transparent px-2 text-[13px] font-bold
+                       text-slate-900 dark:text-white
+                       outline-none focus:bg-slate-50 dark:focus:bg-white/[0.06]
+                       transition-colors max-w-md"
         />
     );
 }

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import { playSound } from "@/lib/soundManager";
-
+import { useHomeRoute } from "@/hooks/useHomeRoute";
 const tap = () => {
     playSound("ui-tap");
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -67,7 +67,7 @@ export default function SurvivalLayout() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [drawerOpen, setDrawerOpen] = useState(false);
-
+    const home = useHomeRoute();
     const isHubHome = location.pathname === "/survival-hub";
 
     /* Close drawer on route change */
@@ -97,14 +97,7 @@ export default function SurvivalLayout() {
 
     const goToDashboard = () => {
         tap();
-        const role = user?.user_metadata?.role || user?.role;
-        const path =
-            role === "tutor"
-                ? "/dashboard/tutor"
-                : role === "staff"
-                    ? "/dashboard/staff"
-                    : "/dashboard/student";
-        navigate(path, { replace: true });
+        navigate(home, { replace: false });
     };
 
     const renderNav = (onNavigate?: () => void) => (

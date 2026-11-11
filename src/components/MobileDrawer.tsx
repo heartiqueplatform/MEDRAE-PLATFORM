@@ -41,6 +41,7 @@ import {
     Headphones,
     ShoppingBag,
     Zap,
+    Loader2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useProfileData } from "@/hooks/useProfileData";
@@ -48,16 +49,7 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 import { useUserRole } from "@/context/UserRoleContext";
 import { getProfileCache, setProfileCache, clearProfileCache } from "@/lib/profileCache";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
@@ -316,8 +308,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     const profile = useProfileData();
     const { role: contextRole } = useUserRole();
 
-    const userRole = (contextRole || propUserRole || preloadUserRole() || 'student') as 'student' | 'tutor' | 'staff';
-
+    const userRole = (propUserRole || contextRole || preloadUserRole() || 'student') as 'student' | 'tutor' | 'staff';
     const isStudent = userRole === 'student';
     const isTutor = userRole === 'tutor';
     const isStaff = userRole === 'staff';
@@ -623,6 +614,20 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         localStorage.removeItem(`avatar_cache_${user?.id}`);
         localStorage.removeItem("readAnnouncements");
         localStorage.removeItem("userProfile");
+
+        // 🔧 Reset theme to LIGHT before signing out.
+        // Ensures the /login page's loader paints in light mode,
+        // even if the user had dark mode on during this session.
+        try {
+            localStorage.removeItem("medrae_dark_mode");
+            document.documentElement.classList.remove("dark");
+            document.documentElement.classList.add("light");
+            document.documentElement.style.setProperty("--bg-color", "#ffffff");
+            if (document.body) {
+                document.body.style.backgroundColor = "#ffffff";
+            }
+        } catch { /* never block logout */ }
+
         await supabase.auth.signOut();
         navigate("/login");
         setIsOpen(false);
@@ -1236,36 +1241,74 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             </AnimatePresence>
 
             {/* Logout Dialog */}
-            <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                <AlertDialogContent className="bg-white dark:bg-[#161b22] border border-slate-200 dark:border-[#30363d] rounded-3xl shadow-2xl max-w-sm">
-                    <AlertDialogHeader className="text-center space-y-3">
-                        <div className="mx-auto w-14 h-14 rounded-full bg-red-100 dark:bg-[#2d1418] flex items-center justify-center">
-                            <LogOut className="w-6 h-6 text-red-600 dark:text-[#f85149]" />
+            {/* Logout Confirmation — CenteredModal */}
+            <CenteredModal
+                open={showLogoutDialog}
+                onClose={() => {
+                    if (isLoggingOut) return;     // don't close mid-logout
+                    tapFeedback();
+                    setShowLogoutDialog(false);
+                }}
+                title="Sign out?"
+                maxWidthClass="max-w-sm"
+            >
+                <div className="px-4 pb-4 pt-1 space-y-4">
+                    {/* Icon + copy */}
+                    <div className="flex flex-col items-center text-center gap-3 pt-1">
+                        <div className="h-14 w-14 rounded-full flex items-center justify-center
+                            bg-rose-50 dark:bg-rose-400/10">
+                            <LogOut className="h-6 w-6 text-rose-600 dark:text-rose-400" strokeWidth={2.25} />
                         </div>
-                        <AlertDialogTitle className="text-xl font-bold text-slate-900 dark:text-[#f0f6fc]">
-                            Sign out of Medrae?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-slate-600 dark:text-[#8b949e] text-sm leading-relaxed">
-                            You'll need to sign in again to access your dashboard, quizzes, and progress.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="flex gap-2 mt-5">
-                        <AlertDialogCancel
-                            onClick={() => tapFeedback()}
-                            className="flex-1 bg-slate-100 dark:bg-[#21262d] hover:bg-slate-200 dark:hover:bg-[#30363d]
-                                       border-0 text-slate-700 dark:text-[#c9d1d9] rounded-2xl py-5 font-medium"
+                        <div>
+                            <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-snug max-w-[260px]">
+                                You'll need to sign in again to access your dashboard, quizzes, and progress.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-1">
+                        <button
+                            onClick={() => {
+                                if (isLoggingOut) return;
+                                tapFeedback();
+                                setShowLogoutDialog(false);
+                            }}
+                            disabled={isLoggingOut}
+                            className="flex-1 h-10 rounded-xl
+                           bg-slate-100 dark:bg-white/[0.06]
+                           text-slate-700 dark:text-slate-200
+                           text-[13px] font-bold
+                           active:scale-[0.97] transition-transform
+                           disabled:opacity-50"
+                            style={{ touchAction: "manipulation" }}
                         >
                             Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
+                        </button>
+
+                        <button
                             onClick={() => { tapFeedback("warning"); handleLogout(); }}
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-2xl py-5 font-medium shadow-md"
+                            disabled={isLoggingOut}
+                            className="flex-1 h-10 rounded-xl
+                           bg-rose-600 text-white
+                           text-[13px] font-bold
+                           flex items-center justify-center gap-1.5
+                           active:scale-[0.97] transition-transform
+                           disabled:opacity-70"
+                            style={{ touchAction: "manipulation" }}
                         >
-                            Sign out
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                            {isLoggingOut ? (
+                                <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    Signing out...
+                                </>
+                            ) : (
+                                "Sign out"
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </CenteredModal>
 
         </>
     );

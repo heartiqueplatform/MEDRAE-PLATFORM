@@ -302,6 +302,7 @@ const BottomBarWrapper = () => {
       "/challenge",
       "/assessments",
       "/exam",
+      "/cpd",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -350,7 +351,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/survival-hub",
   "/quiz-simulation",
   "/tutor/exams",
-  "/cpd",
+
   "/live-classes",
   "/nursing/quiz",
   "/streak/restore",
@@ -596,7 +597,6 @@ const AppContent = () => {
             <GlobalRealtimeListener />
             <NavProgressBar />
             <AdminNotificationPanel />
-            <GlobalDuelManager />
 
             <TooltipProvider>
               <Toaster />
@@ -604,6 +604,8 @@ const AppContent = () => {
               <SidebarProvider>
                 <MusicPlayerProvider>
                   <UserRoleProvider>
+                    <GlobalDuelManager />
+
                     <AIWrapper>
                       <FirstTimeGuide />
                       <RouteScrollManager />
@@ -659,7 +661,7 @@ const AppContent = () => {
     These routes exist so URL changes fire properly. The actual element
     rendering happens in TabStack, not here. */}
                           <Route path="/listen" element={null} />
-                          <Route path="/menu" element={null} />
+                          <Route path="/menu" element={<MenuPage />} />
                           {/* Core features */}
                           {/* Core features */}
 
@@ -682,28 +684,7 @@ const AppContent = () => {
                               Students / tutors hitting these get redirected to their dashboard
                               ═══════════════════════════════════════════════════════════ */}
 
-                          {/* Nurse-facing CPD */}
-                          <Route path="/cpd" element={<StaffOnlyRoute><CpdDashboard /></StaffOnlyRoute>} />
-                          <Route path="/cpd/catalog" element={<StaffOnlyRoute><CpdCatalogPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/activity/:id" element={<StaffOnlyRoute><CpdActivityDetailPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/activity/:id/module/:moduleId" element={<StaffOnlyRoute><CpdPlayerPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/activity/:id/assessment" element={<StaffOnlyRoute><CpdAssessmentPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/activity/:id/assessment/:attemptId/results" element={<StaffOnlyRoute><CpdAssessmentResultsPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/progress" element={<StaffOnlyRoute><CpdMyProgressPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/certificates" element={<StaffOnlyRoute><CpdCertificatesPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/certificates/:id" element={<StaffOnlyRoute><CpdCertificateViewPage /></StaffOnlyRoute>} />
-                          <Route path="/cpd/verify/:code" element={<StaffOnlyRoute><CpdVerifyPage /></StaffOnlyRoute>} />
 
-                          {/* Staff authoring (still staff-only) */}
-                          {/* CPD Admin (staff-only, nested under admin layout) */}
-                          <Route path="/cpd/admin" element={<StaffOnlyRoute><AdminLayout /></StaffOnlyRoute>}>
-                            <Route index element={<AdminHomePage />} />
-                            <Route path="activities" element={<ActivitiesListPage />} />
-                            <Route path="activities/:id" element={<ActivityEditorPage />} />
-                            <Route path="questions" element={<QuestionsPage />} />
-                            <Route path="completions" element={<CompletionsPage />} />
-                            <Route path="periods" element={<PeriodsPage />} />
-                          </Route>
                           {/* Quiz Simulation */}
                           <Route path="/simulation/candidate" element={<CandidateInfo />} />
 
@@ -713,6 +694,7 @@ const AppContent = () => {
                           path="/survival-hub"
                           element={<PrivateRoute><SurvivalLayout /></PrivateRoute>}
                         >
+
                           <Route index element={<SurvivalHubDashboard />} />
                           <Route path="exam-centers" element={<ExamCenters />} />
                           <Route path="housing" element={<HousingPage />} />
@@ -723,6 +705,35 @@ const AppContent = () => {
                           <Route path="add-placement" element={<AddPlacementPage />} />
                           <Route path="placements/:id" element={<PlacementDetailPage />} />
                           <Route path="buddies" element={<ExamBuddiesPage />} />
+                        </Route>
+
+
+
+                        {/* ═══════════════════════════════════════════════════════════
+    STAFF CPD MODULE — full-screen, no dashboard shell
+    (moved OUT of DashboardLayout so each page owns its viewport)
+    ═══════════════════════════════════════════════════════════ */}
+
+                        {/* Nurse-facing CPD */}
+                        <Route path="/cpd" element={<StaffOnlyRoute><CpdDashboard /></StaffOnlyRoute>} />
+                        <Route path="/cpd/catalog" element={<StaffOnlyRoute><CpdCatalogPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/activity/:id" element={<StaffOnlyRoute><CpdActivityDetailPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/activity/:id/module/:moduleId" element={<StaffOnlyRoute><CpdPlayerPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/activity/:id/assessment" element={<StaffOnlyRoute><CpdAssessmentPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/activity/:id/assessment/:attemptId/results" element={<StaffOnlyRoute><CpdAssessmentResultsPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/progress" element={<StaffOnlyRoute><CpdMyProgressPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/certificates" element={<StaffOnlyRoute><CpdCertificatesPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/certificates/:id" element={<StaffOnlyRoute><CpdCertificateViewPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/verify/:code" element={<StaffOnlyRoute><CpdVerifyPage /></StaffOnlyRoute>} />
+
+                        {/* CPD Admin — full-screen nested layout */}
+                        <Route path="/cpd/admin" element={<StaffOnlyRoute><AdminLayout /></StaffOnlyRoute>}>
+                          <Route index element={<AdminHomePage />} />
+                          <Route path="activities" element={<ActivitiesListPage />} />
+                          <Route path="activities/:id" element={<ActivityEditorPage />} />
+                          <Route path="questions" element={<QuestionsPage />} />
+                          <Route path="completions" element={<CompletionsPage />} />
+                          <Route path="periods" element={<PeriodsPage />} />
                         </Route>
                         {/* Full-screen / Independent Pages */}
                         <Route path="/medtube" element={<PrivateRoute><MedTube /></PrivateRoute>} />
@@ -804,6 +815,7 @@ const AppContent = () => {
                       <BottomBarWrapper />
                     </AIWrapper>
                   </UserRoleProvider>
+
                 </MusicPlayerProvider>
               </SidebarProvider>
             </TooltipProvider>

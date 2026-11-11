@@ -16,6 +16,7 @@ import { getYears, getUserYearProgress, UserYearProgress } from "@/lib/nursingQu
 import { useSession } from "@supabase/auth-helpers-react";
 import { academicProgress } from "@/lib/academicProgress";
 import { playSound } from "@/lib/soundManager";
+import { useHomeRoute } from "@/hooks/useHomeRoute";
 
 /* ------------------------------------------------------------------ */
 /*  GitHub dark palette constants                                      */
@@ -189,6 +190,7 @@ function StatsSkeleton() {
 
 function ProgressCard() {
     const navigate = useNavigate();
+
     const session = useSession();
     const userId = session?.user?.id;
     const [summary, setSummary] = useState<any>(null);
@@ -324,7 +326,7 @@ export default function NursingHome() {
     const [loading, setLoading] = useState(true);
     const [yearProgress, setYearProgress] = useState<Record<string, UserYearProgress>>({});
     const navigate = useNavigate();
-
+    const home = useHomeRoute();
     useEffect(() => {
         let cancelled = false;
 
@@ -383,8 +385,8 @@ export default function NursingHome() {
 
     const handleBack = useCallback(() => {
         tap();
-        navigate("/dashboard/student", { replace: false });
-    }, [navigate]);
+        navigate(home, { replace: false });
+    }, [navigate, home]);
 
     const openYear = useCallback(
         (yearId: string) => {

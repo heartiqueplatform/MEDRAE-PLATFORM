@@ -265,8 +265,15 @@ const PlayFilledIcon = ({ className = "h-5 w-5", ...props }: any) => (
 );
 
 export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
-  const { role: contextRole } = useUserRole();
-  const userRole = (contextRole || propUserRole || 'student') as 'student' | 'tutor' | 'staff';
+  const { role: contextRole, isLoading } = useUserRole();
+  // ✅ Use prop as an extra hint (e.g. from a layout that already knows the role),
+  //    then context (cache-seeded), then fall back to 'student' only when
+  //    we genuinely have nothing — prevents wrong-role UI from painting.
+  const userRole = (
+    propUserRole ||
+    contextRole ||
+    'student'
+  ) as 'student' | 'tutor' | 'staff';
 
   const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
