@@ -272,3 +272,32 @@ export function useRevokeCompletion() {
         onSuccess: () => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "completions"] }),
     });
 }
+// ─────────────────────────────────────────────────────────────
+// MEDRAE COIN CONFIG — single source of truth
+// ─────────────────────────────────────────────────────────────
+
+export interface MedraeCoinConfig {
+    coin_to_kes_rate: number;
+    coins_per_completion: number;
+    minimum_withdrawal: number;
+    max_activities_per_user: number;
+    max_submissions_per_month: number;
+    updated_at: string;
+}
+
+export function useMedraeCoinConfig() {
+    return useQuery({
+        queryKey: ["medrae", "coin-config"],
+        queryFn: async (): Promise<MedraeCoinConfig> => {
+            const { data, error } = await supabase
+                .from("medrae_coin_config")
+                .select("*")
+                .eq("id", 1)
+                .single();
+            if (error) throw error;
+            return data as MedraeCoinConfig;
+        },
+        staleTime: 5 * 60 * 1000,   // 5 min
+        gcTime: 30 * 60 * 1000,     // 30 min
+    });
+}

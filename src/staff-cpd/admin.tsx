@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
     ChevronLeft, Plus, Trash2, ShieldCheck, AlertCircle, BookOpen,
     ClipboardCheck, Calendar, ListChecks, Users,
+    Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,6 +17,8 @@ import { validateContentItem, fmtDate, fmtHours, fmtPoints, CONTENT_LABEL } from
 import type { ContentType, ExternalProvider } from "./lib";
 import { playSound } from "@/lib/soundManager";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
+import SelectField from "@/components/ui/SelectField";
+
 /* ------------------------------------------------------------------ */
 /*  Tap helper                                                        */
 /* ------------------------------------------------------------------ */
@@ -101,6 +104,41 @@ function ScrollBody({ children }: { children: React.ReactNode }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Fullscreen loading overlay (reusable across admin)                */
+/* ------------------------------------------------------------------ */
+
+function LoadingOverlay({
+    open,
+    title,
+    subtitle,
+}: {
+    open: boolean;
+    title: string;
+    subtitle?: string;
+}) {
+    if (!open) return null;
+    return (
+        <div
+            className="fixed inset-0 z-[99999] flex items-center justify-center
+                       bg-slate-50/95 dark:bg-[#0d1117]/95 backdrop-blur-sm
+                       animate-in fade-in-0 duration-150"
+        >
+            <div className="flex flex-col items-center gap-3 px-6 text-center">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
+                <p className="text-[13px] font-bold text-slate-900 dark:text-white">
+                    {title}
+                </p>
+                {subtitle && (
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug max-w-[260px]">
+                        {subtitle}
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Common inputs (design-system)                                     */
 /* ------------------------------------------------------------------ */
 
@@ -112,19 +150,32 @@ const PrimaryBtn = "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font
 
 const SecondaryBtn = "h-10 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
 
-const DangerBtn = "h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-[0.92] transition-transform";
+const DangerBtn = "h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-[0.92] transition-transform disabled:opacity-50";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN — ACTIVITIES LIST  /cpd/admin/activities
    ═══════════════════════════════════════════════════════════════ */
 export function CpdAdminActivitiesPage() {
     const [status, setStatus] = useState<string>("");
+    const [creating, setCreating] = useState(false);
     const q = useAdminActivities({ status: status || undefined });
     const items = q.data?.pages.flatMap(p => p.items) ?? [];
     const create = useCreateActivity();
     const nav = useNavigate();
 
     const statuses = ["", "draft", "review", "published", "archived"];
+
+    const handleCreate = async () => {
+        if (creating) return;
+        tap("success");
+        setCreating(true);
+        try {
+            const a = await create.mutateAsync({ title: "Untitled Activity" });
+            nav(`/cpd/admin/activities/${a.id}`);
+        } catch {
+            setCreating(false);
+        }
+    };
 
     return (
         <FullScreen>
@@ -134,17 +185,22 @@ export function CpdAdminActivitiesPage() {
                 onBack={() => { tap(); nav(-1); }}
                 rightSlot={
                     <button
-                        onClick={async () => {
-                            tap("success");
-                            const a = await create.mutateAsync({ title: "Untitled Activity" });
-                            nav(`/cpd/admin/activities/${a.id}`);
-                        }}
-                        disabled={create.isPending}
+                        onClick={handleCreate}
+                        disabled={creating || create.isPending}
                         className={PrimaryBtn + " shrink-0"}
                         style={{ touchAction: "manipulation" }}
                     >
-                        <Plus className="h-3.5 w-3.5" />
-                        New
+                        {creating ? (
+                            <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Creating…
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="h-3.5 w-3.5" />
+                                New
+                            </>
+                        )}
                     </button>
                 }
             />
@@ -219,7 +275,14 @@ export function CpdAdminActivitiesPage() {
                                         className={SecondaryBtn}
                                         style={{ touchAction: "manipulation" }}
                                     >
-                                        {q.isFetchingNextPage ? "Loading…" : "Load more"}
+                                        {q.isFetchingNextPage ? (
+                                            <>
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                Loading…
+                                            </>
+                                        ) : (
+                                            "Load more"
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -229,6 +292,12 @@ export function CpdAdminActivitiesPage() {
                     )}
                 </div>
             </ScrollBody>
+
+            <LoadingOverlay
+                open={creating}
+                title="Creating activity…"
+                subtitle="Setting up your new CPD activity"
+            />
         </FullScreen>
     );
 }
@@ -384,16 +453,16 @@ export function CpdAdminActivityEditorPage() {
                                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
                                         Difficulty
                                     </label>
-                                    <select
+                                    <SelectField
                                         value={activity.difficulty ?? "intermediate"}
-                                        onChange={(e) => patch({ difficulty: e.target.value })}
-                                        className={InputBase}
-                                    >
-                                        <option value="beginner">Beginner</option>
-                                        <option value="intermediate">Intermediate</option>
-                                        <option value="advanced">Advanced</option>
-                                        <option value="expert">Expert</option>
-                                    </select>
+                                        onValueChange={(v) => { tap(); patch({ difficulty: v }); }}
+                                        options={[
+                                            { value: "beginner", label: "Beginner" },
+                                            { value: "intermediate", label: "Intermediate" },
+                                            { value: "advanced", label: "Advanced" },
+                                            { value: "expert", label: "Expert" },
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         </section>
@@ -411,11 +480,21 @@ export function CpdAdminActivityEditorPage() {
                                         position: modules.length,
                                     });
                                 }}
+                                disabled={createModule.isPending}
                                 className={PrimaryBtn + " w-full"}
                                 style={{ touchAction: "manipulation" }}
                             >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add Module
+                                {createModule.isPending ? (
+                                    <>
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        Adding…
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Add Module
+                                    </>
+                                )}
                             </button>
 
                             {modules.length === 0 && (
@@ -430,11 +509,16 @@ export function CpdAdminActivityEditorPage() {
                                         </h3>
                                         <button
                                             onClick={() => { tap("warning"); deleteModule.mutate({ id: m.id, activityId: activity.id }); }}
+                                            disabled={deleteModule.isPending}
                                             className={DangerBtn}
                                             aria-label="Delete module"
                                             style={{ touchAction: "manipulation" }}
                                         >
-                                            <Trash2 className="h-3.5 w-3.5" />
+                                            {deleteModule.isPending ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            )}
                                         </button>
                                     </div>
 
@@ -452,17 +536,23 @@ export function CpdAdminActivityEditorPage() {
                                             </div>
                                             <button
                                                 onClick={() => { tap("warning"); deleteItem.mutate({ id: c.id, activityId: activity.id }); }}
+                                                disabled={deleteItem.isPending}
                                                 className={DangerBtn + " !h-8 !w-8"}
                                                 aria-label="Delete content"
                                                 style={{ touchAction: "manipulation" }}
                                             >
-                                                <Trash2 className="h-3 w-3" />
+                                                {deleteItem.isPending ? (
+                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-3 w-3" />
+                                                )}
                                             </button>
                                         </div>
                                     ))}
 
                                     <NewContentItemForm
                                         onSubmit={(input) => createItem.mutate({ ...input, module_id: m.id, activity_id: activity.id })}
+                                        isSubmitting={createItem.isPending}
                                     />
                                 </div>
                             ))}
@@ -514,18 +604,34 @@ export function CpdAdminActivityEditorPage() {
                                     className={PrimaryBtn}
                                     style={{ touchAction: "manipulation" }}
                                 >
-                                    {publish.isPending ? "Publishing…" : "Publish Activity"}
+                                    {publish.isPending ? (
+                                        <>
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Publishing…
+                                        </>
+                                    ) : (
+                                        "Publish Activity"
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => { tap(); patch({ status: "review" }); }}
+                                    disabled={update.isPending}
                                     className={SecondaryBtn}
                                     style={{ touchAction: "manipulation" }}
                                 >
-                                    Submit for Review
+                                    {update.isPending ? (
+                                        <>
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Updating…
+                                        </>
+                                    ) : (
+                                        "Submit for Review"
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => { tap("warning"); patch({ status: "archived", archived_at: new Date().toISOString() }); }}
-                                    className="h-10 px-4 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400 text-[13px] font-bold active:scale-[0.97] transition-transform"
+                                    disabled={update.isPending}
+                                    className="h-10 px-4 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400 text-[13px] font-bold active:scale-[0.97] transition-transform disabled:opacity-50"
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     Archive
@@ -535,6 +641,12 @@ export function CpdAdminActivityEditorPage() {
                     )}
                 </div>
             </ScrollBody>
+
+            <LoadingOverlay
+                open={publish.isPending}
+                title="Publishing activity…"
+                subtitle="Running content validation and going live"
+            />
         </FullScreen>
     );
 }
@@ -542,7 +654,13 @@ export function CpdAdminActivityEditorPage() {
 /* ─────────────────────────────────────────────────────────────
    New content item form (inline)
    ───────────────────────────────────────────────────────────── */
-function NewContentItemForm({ onSubmit }: { onSubmit: (v: any) => void }) {
+function NewContentItemForm({
+    onSubmit,
+    isSubmitting = false,
+}: {
+    onSubmit: (v: any) => void;
+    isSubmitting?: boolean;
+}) {
     const [type, setType] = useState<ContentType>("video");
     const [provider, setProvider] = useState<ExternalProvider>("youtube");
     const [title, setTitle] = useState("");
@@ -562,25 +680,26 @@ function NewContentItemForm({ onSubmit }: { onSubmit: (v: any) => void }) {
     return (
         <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
             <div className="grid grid-cols-2 gap-2">
-                <select
+                <SelectField
                     value={type}
-                    onChange={(e) => setType(e.target.value as ContentType)}
-                    className={InputBase + " !h-9"}
-                >
-                    {Object.keys(CONTENT_LABEL).map(k => (
-                        <option key={k} value={k}>{CONTENT_LABEL[k as ContentType]}</option>
-                    ))}
-                </select>
-                <select
+                    onValueChange={(v) => setType(v as ContentType)}
+                    options={Object.keys(CONTENT_LABEL).map(k => ({
+                        value: k,
+                        label: CONTENT_LABEL[k as ContentType],
+                    }))}
+                    triggerClassName="!h-9"
+                />
+                <SelectField
                     value={provider}
-                    onChange={(e) => setProvider(e.target.value as ExternalProvider)}
-                    className={InputBase + " !h-9"}
-                >
-                    <option value="youtube">YouTube</option>
-                    <option value="apple_podcasts">Apple Podcasts</option>
-                    <option value="external">External URL</option>
-                    <option value="internal">Internal (text)</option>
-                </select>
+                    onValueChange={(v) => setProvider(v as ExternalProvider)}
+                    options={[
+                        { value: "youtube", label: "YouTube" },
+                        { value: "apple_podcasts", label: "Apple Podcasts" },
+                        { value: "external", label: "External URL" },
+                        { value: "internal", label: "Internal (text)" },
+                    ]}
+                    triggerClassName="!h-9"
+                />
             </div>
             <input
                 value={title}
@@ -597,12 +716,21 @@ function NewContentItemForm({ onSubmit }: { onSubmit: (v: any) => void }) {
             {err && <p className="text-[10px] text-rose-600 dark:text-rose-400">{err}</p>}
             <button
                 onClick={handle}
-                disabled={!title}
+                disabled={!title || isSubmitting}
                 className={SecondaryBtn + " w-full !h-9"}
                 style={{ touchAction: "manipulation" }}
             >
-                <Plus className="h-3.5 w-3.5" />
-                Add Content
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Adding…
+                    </>
+                ) : (
+                    <>
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Content
+                    </>
+                )}
             </button>
         </div>
     );
@@ -660,16 +788,16 @@ export function CpdAdminQuestionsPage() {
                             rows={2}
                             className={TextareaBase}
                         />
-                        <select
+                        <SelectField
                             value={qType}
-                            onChange={(e) => setQType(e.target.value)}
-                            className={InputBase}
-                        >
-                            <option value="multiple_choice">Multiple Choice</option>
-                            <option value="multiple_select">Multiple Select</option>
-                            <option value="true_false">True / False</option>
-                            <option value="short_answer">Short Answer</option>
-                        </select>
+                            onValueChange={setQType}
+                            options={[
+                                { value: "multiple_choice", label: "Multiple Choice" },
+                                { value: "multiple_select", label: "Multiple Select" },
+                                { value: "true_false", label: "True / False" },
+                                { value: "short_answer", label: "Short Answer" },
+                            ]}
+                        />
 
                         {(qType === "multiple_choice" || qType === "multiple_select" || qType === "true_false") && (
                             <div className="space-y-2">
@@ -714,7 +842,14 @@ export function CpdAdminQuestionsPage() {
                             className={PrimaryBtn + " w-full"}
                             style={{ touchAction: "manipulation" }}
                         >
-                            {create.isPending ? "Saving…" : "Save Question"}
+                            {create.isPending ? (
+                                <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    Saving…
+                                </>
+                            ) : (
+                                "Save Question"
+                            )}
                         </button>
                     </section>
 
@@ -746,10 +881,18 @@ export function CpdAdminQuestionsPage() {
                             <div className="flex justify-center pt-2">
                                 <button
                                     onClick={() => { tap(); q.fetchNextPage(); }}
+                                    disabled={q.isFetchingNextPage}
                                     className={SecondaryBtn}
                                     style={{ touchAction: "manipulation" }}
                                 >
-                                    Load more
+                                    {q.isFetchingNextPage ? (
+                                        <>
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Loading…
+                                        </>
+                                    ) : (
+                                        "Load more"
+                                    )}
                                 </button>
                             </div>
                         )}
@@ -828,10 +971,18 @@ export function CpdAdminCompletionsPage() {
                             <div className="flex justify-center pt-2">
                                 <button
                                     onClick={() => { tap(); q.fetchNextPage(); }}
+                                    disabled={q.isFetchingNextPage}
                                     className={SecondaryBtn}
                                     style={{ touchAction: "manipulation" }}
                                 >
-                                    Load more
+                                    {q.isFetchingNextPage ? (
+                                        <>
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Loading…
+                                        </>
+                                    ) : (
+                                        "Load more"
+                                    )}
                                 </button>
                             </div>
                         )}
@@ -908,7 +1059,14 @@ export function CpdAdminPeriodsPage() {
                             className={PrimaryBtn + " w-full"}
                             style={{ touchAction: "manipulation" }}
                         >
-                            {create.isPending ? "Creating…" : "Create Period"}
+                            {create.isPending ? (
+                                <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    Creating…
+                                </>
+                            ) : (
+                                "Create Period"
+                            )}
                         </button>
                     </section>
 

@@ -95,7 +95,7 @@ let fetchInProgress = false;
 let lastFetchTime = 0;
 const CACHE_DURATION = 120000;
 const MIN_FETCH_INTERVAL = 5000;
-
+const SIDEBAR_HIDDEN_PREFIXES = ["/cpd"];
 const getCached = (key: string) => {
   try {
     const cached = localStorage.getItem(key);
@@ -309,7 +309,9 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const isFooterMounted = windowWidth < 768;
 
   const footerRoutes = [`/dashboard/${userRole}`, "/Medrae-quizzes", "/my-mistakes", "/progress", "/assessments", "/assessments/history"];
-
+  if (SIDEBAR_HIDDEN_PREFIXES.some((p) => location.pathname.startsWith(p))) {
+    return null;
+  }
   const formatNumber = useCallback((num: number): string => {
     if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
     if (num >= 1_000) return (num / 1_000).toFixed(0) + "k";

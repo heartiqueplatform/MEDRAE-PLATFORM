@@ -177,6 +177,12 @@ import InstallPrompt from "./components/pwa/InstallPrompt";
 import Guide from "./pages/Guide";
 import { RoutePrefetcher } from "./components/RoutePrefetcher";
 import UnitSearch from "./pages/nursing/UnitSearch";
+import ContributorReviewsPage from "./staff-cpd/admin/ContributorReviewsPage";
+import ContributorApplyPage from "./staff-cpd/pages/ContributorApplyPage";
+import MedraeCoinsPolicyPage from "./staff-cpd/pages/MedraeCoinsPolicyPage";
+import CpdRedeemPage from "./staff-cpd/pages/CpdRedeemPage";
+import RedemptionsPage from "./staff-cpd/admin/RedemptionsPage";
+import CoinConfigPage from "./staff-cpd/admin/CoinConfigPage";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -336,7 +342,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/medtube",
   "/quiz",
   "/Medrae-quizzes",
-
+  "/cpd",
   "/subscription",
   "/grouppay",
   "/settings",
@@ -725,15 +731,20 @@ const AppContent = () => {
                         <Route path="/cpd/certificates" element={<StaffOnlyRoute><CpdCertificatesPage /></StaffOnlyRoute>} />
                         <Route path="/cpd/certificates/:id" element={<StaffOnlyRoute><CpdCertificateViewPage /></StaffOnlyRoute>} />
                         <Route path="/cpd/verify/:code" element={<StaffOnlyRoute><CpdVerifyPage /></StaffOnlyRoute>} />
-
+                        <Route path="/cpd/apply" element={<PrivateRoute><ContributorApplyPage /></PrivateRoute>} />
+                        <Route path="/cpd/coins-policy" element={<PrivateRoute><MedraeCoinsPolicyPage /></PrivateRoute>} />
+                        <Route path="/cpd/redeem" element={<StaffOnlyRoute><CpdRedeemPage /></StaffOnlyRoute>} />
                         {/* CPD Admin — full-screen nested layout */}
                         <Route path="/cpd/admin" element={<StaffOnlyRoute><AdminLayout /></StaffOnlyRoute>}>
                           <Route index element={<AdminHomePage />} />
                           <Route path="activities" element={<ActivitiesListPage />} />
                           <Route path="activities/:id" element={<ActivityEditorPage />} />
+                          <Route path="contributors" element={<ContributorReviewsPage />} />  {/* ⬅️ relative — no slash, no prefix */}
                           <Route path="questions" element={<QuestionsPage />} />
                           <Route path="completions" element={<CompletionsPage />} />
                           <Route path="periods" element={<PeriodsPage />} />
+                          <Route path="redemptions" element={<RedemptionsPage />} />
+                          <Route path="coin-config" element={<CoinConfigPage />} />
                         </Route>
                         {/* Full-screen / Independent Pages */}
                         <Route path="/medtube" element={<PrivateRoute><MedTube /></PrivateRoute>} />

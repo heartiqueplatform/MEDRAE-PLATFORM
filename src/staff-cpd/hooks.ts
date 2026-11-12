@@ -430,3 +430,124 @@ export function useCreatePeriod() {
         onSuccess: () => qc.invalidateQueries({ queryKey: ["cpd", "admin", "periods"] }),
     });
 }
+
+// ─────────────────────────────────────────────────────────────
+// CONTRIBUTOR VERIFICATION HOOKS
+// ─────────────────────────────────────────────────────────────
+
+export function useContributorVerifications(status?: "submitted" | "approved" | "rejected") {
+    return useQuery({
+        queryKey: ["cpd", "contributor-verifications", status],
+        queryFn: async () => {
+            let q = supabase
+                .from("contributor_verifications")
+                .select(`
+                    *,
+                    profile:profiles!contributor_verifications_user_id_fkey (
+                        user_id, name, email, nck_number, years_experience, workplace, specialization
+                    )
+                `)
+                .order("submitted_at", { ascending: false });
+            if (status) q = q.eq("status", status);
+            const { data, error } = await q;
+            if (error) throw error;
+            return data ?? [];
+        },
+    });
+}
+
+export function useMyContributorVerification() {
+    return useQuery({
+        queryKey: ["cpd", "my-contributor-verification"],
+        queryFn: async () => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("contributor_verifications")
+                .select("*")
+                .eq("user_id", uid)
+                .order("submitted_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useSubmitContributorApplication() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: {
+            nck_license_url: string;
+            employer_letter_url?: string | null;
+            cv_url: string;
+            additional_notes?: string | null;
+        }) => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("contributor_verifications")
+                .insert({
+                    user_id: uid,
+                    nck_license_url: input.nck_license_url,
+                    employer_letter_url: input.employer_letter_url || null,
+                    cv_url: input.cv_url,
+                    additional_notes: input.additional_notes || null,
+                    status: "submitted",
+                })
+                .select("*")
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["cpd", "my-contributor-verification"] });
+            qc.invalidateQueries({ queryKey: ["cpd", "contributor-verifications"] });
+        },
+    });
+}
+
+export function useReviewContributorApplication() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: {
+            verificationId: string;
+            userId: string;
+            action: "approve" | "reject";
+            tier?: "contributor" | "senior_contributor";
+            reviewNotes?: string;
+        }) => {
+            const reviewerId = await currentUserId();
+
+            // 1. Update verification row
+            const { error: vErr } = await supabase
+                .from("contributor_verifications")
+                .update({
+                    status: input.action === "approve" ? "approved" : "rejected",
+                    reviewer_id: reviewerId,
+                    reviewed_at: new Date().toISOString(),
+                    review_notes: input.reviewNotes || null,
+                })
+                .eq("id", input.verificationId);
+            if (vErr) throw vErr;
+
+            // 2. If approved, update profile
+            if (input.action === "approve") {
+                const { error: pErr } = await supabase
+                    .from("profiles")
+                    .update({
+                        is_verified_contributor: true,
+                        contributor_tier: input.tier || "contributor",
+                        contributor_approved_at: new Date().toISOString(),
+                        contributor_approved_by: reviewerId,
+                        nck_license_verified: true,
+                    })
+                    .eq("user_id", input.userId);
+                if (pErr) throw pErr;
+            }
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["cpd", "contributor-verifications"] });
+            qc.invalidateQueries({ queryKey: ["cpd", "admin"] });
+        },
+    });
+}
