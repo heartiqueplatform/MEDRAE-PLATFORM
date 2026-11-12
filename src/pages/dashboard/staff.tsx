@@ -7,41 +7,22 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   CalendarDays, Bell, Briefcase, Users, ShieldCheck, BookOpen,
   GraduationCap, Award, Clock, TrendingUp, CheckCircle2, ArrowRight,
-  PlayCircle, PenTool, Sparkles, UserCheck, Coins, ArrowDownLeft, ArrowUpRight,
+  PlayCircle, PenTool, Sparkles, UserCheck,
 } from "lucide-react";
 
 import { useDashboardStats } from "@/staff-cpd/hooks";
-import { useMedraeCoinConfig } from "@/staff-cpd/lib/admin-hooks";
 import { fmtHours, fmtPoints } from "@/staff-cpd/lib";
 import { playSound } from "@/lib/soundManager";
 import DailyDose from "@/components/DailyDose";
-import {
-  useWallet, useRecentTransactions, useStaffProfile,
-} from "@/staff-cpd/lib/contributor-hooks";
+import { useWallet, useStaffProfile } from "@/staff-cpd/lib/contributor-hooks";
+import { ContributorEarningsCard } from "@/staff-cpd/components/ContributorEarningsCard";
 
 /* ------------------------------------------------------------------ */
 /*  Module-level cache — survives route changes / remounts            */
 /*  so userId is non-null on the FIRST render after navigating back.  */
 /* ------------------------------------------------------------------ */
 let cachedUserId: string | null = null;
-/* ------------------------------------------------------------------ */
-/*  Contributor flag cache — read synchronously on first render       */
-/*  so non-contributors NEVER see the skeleton after their first visit */
-/* ------------------------------------------------------------------ */
-const CONTRIB_FLAG_KEY = "medrae.isContributor";
-let cachedIsContributor: boolean | null = (() => {
-  try {
-    const raw = localStorage.getItem(CONTRIB_FLAG_KEY);
-    if (raw === "1") return true;
-    if (raw === "0") return false;
-  } catch { /* ignore */ }
-  return null;
-})();
 
-function writeContributorFlag(is: boolean) {
-  cachedIsContributor = is;
-  try { localStorage.setItem(CONTRIB_FLAG_KEY, is ? "1" : "0"); } catch { /* ignore */ }
-}
 /* ------------------------------------------------------------------ */
 /*  Tap helper                                                        */
 /* ------------------------------------------------------------------ */
@@ -121,211 +102,6 @@ function StatTile({
   }
   return content;
 }
-/* ═══════════════════════════════════════════════════════════════
-   SkeletonEarningsCard
-   Same footprint as the real card. Renders whenever we don't yet
-   know if this user is a contributor, so there's never a jump.
-   ═══════════════════════════════════════════════════════════════ */
-const Sk = "rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse";
-
-function SkeletonEarningsCard() {
-  return (
-    <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-start gap-2.5">
-        <div className={`h-10 w-10 rounded-xl shrink-0 ${Sk}`} />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className={`h-3 w-40 ${Sk}`} />
-          <div className={`h-2.5 w-52 ${Sk}`} />
-        </div>
-        <div className={`h-6 w-16 rounded-full shrink-0 ${Sk}`} />
-      </div>
-
-      {/* Balance block */}
-      <div className="rounded-xl bg-white/80 dark:bg-[#0d1117]/70 p-3 space-y-2">
-        <div>
-          <div className={`h-2 w-24 ${Sk}`} />
-          <div className={`mt-1 h-7 w-32 ${Sk}`} />
-          <div className={`mt-1 h-3 w-20 ${Sk}`} />
-        </div>
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-white/[0.06]">
-          <div>
-            <div className={`h-2 w-16 ${Sk}`} />
-            <div className={`mt-1 h-3 w-20 ${Sk}`} />
-          </div>
-          <div>
-            <div className={`h-2 w-20 ${Sk}`} />
-            <div className={`mt-1 h-3 w-16 ${Sk}`} />
-          </div>
-        </div>
-      </div>
-
-      {/* Transaction slot — fixed height matches real card */}
-      <div className="space-y-1 min-h-[4.5rem]">
-        <div className={`h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse`} />
-        <div className={`h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse`} />
-        <div className={`h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse`} />
-      </div>
-
-      {/* Two-button footer */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className={`h-9 rounded-xl bg-white/70 dark:bg-[#0d1117]/60 animate-pulse`} />
-        <div className={`h-9 rounded-xl bg-amber-600/40 animate-pulse`} />
-      </div>
-    </section>
-  );
-}
-/* ═══════════════════════════════════════════════════════════════
-   Contributor Earnings Card
-   — ALWAYS renders once userId exists.
-   — Only digits/list show loading state.
-   — Fixed-height transaction slot so nothing below ever moves.
-   ═══════════════════════════════════════════════════════════════ */
-function ContributorEarningsCard({
-  userId, tier, loadingProfile,
-}: {
-  userId: string;
-  tier: string;
-  loadingProfile: boolean;
-}) {
-  const { data: wallet, isLoading: walletLoading } = useWallet(userId);
-  const { data: transactions = [], isLoading: txLoading } = useRecentTransactions(userId, 3);
-
-  const { data: coinConfig } = useMedraeCoinConfig();
-  const coinToKes = coinConfig?.coin_to_kes_rate ?? 0.01;
-  const minWithdrawal = coinConfig?.minimum_withdrawal ?? 1000;
-  const coinsPerCompletion = coinConfig?.coins_per_completion ?? 20;
-
-  const numbersLoading = walletLoading && txLoading && !wallet && transactions.length === 0;
-  const txLoadingOnly = txLoading && transactions.length === 0;
-
-  const balance = wallet?.balance ?? 0;
-  const lifetimeEarned = wallet?.lifetime_earned ?? 0;
-  const balanceKes = (balance * coinToKes).toFixed(2);
-  const canWithdraw = balance >= minWithdrawal;
-
-  const tierLabel = (tier || "contributor")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-
-  return (
-    <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4 space-y-3">
-      <div className="flex items-start gap-2.5">
-        <div className="h-10 w-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
-          <Coins className="h-5 w-5" strokeWidth={2.4} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-[14px] font-bold text-amber-800 dark:text-amber-300 leading-tight">
-            Your MedraeCoins
-          </h2>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80 mt-0.5">
-            {loadingProfile ? "Verified contributor" : `${tierLabel} · Verified contributor`}
-          </p>
-        </div>
-        <Link to="/cpd/redeem" onClick={() => tap()}
-          className="inline-flex items-center gap-1 rounded-full px-2 py-1 shrink-0
-             bg-white/70 dark:bg-[#0d1117]/60 text-[10px] font-bold
-             text-amber-700 dark:text-amber-300 active:scale-[0.97] transition-transform"
-          style={{ touchAction: "manipulation" }}>
-          Redeem <ArrowRight className="h-3 w-3" />
-        </Link>
-      </div>
-
-      <div className="rounded-xl bg-white/80 dark:bg-[#0d1117]/70 p-3 space-y-2">
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Wallet balance
-          </p>
-          <p className="h-8 text-2xl font-bold text-slate-900 dark:text-white tabular-nums leading-tight mt-0.5">
-            {numbersLoading ? (
-              <span className="inline-block h-6 w-24 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse align-middle" />
-            ) : (
-              <>{balance.toLocaleString()}
-                <span className="text-sm ml-1 text-amber-600 dark:text-amber-400">MC</span></>
-            )}
-          </p>
-          <p className="h-4 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-            {numbersLoading ? (
-              <span className="inline-block h-3 w-20 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse" />
-            ) : `≈ KSh ${balanceKes}`}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-white/[0.06]">
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Lifetime</p>
-            <p className="h-4 text-[12px] font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
-              {numbersLoading ? (
-                <span className="inline-block h-3 w-16 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse" />
-              ) : `${lifetimeEarned.toLocaleString()} MC`}
-            </p>
-          </div>
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Withdrawable</p>
-            <p className={`h-4 text-[12px] font-bold tabular-nums mt-0.5 ${canWithdraw ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"
-              }`}>
-              {numbersLoading ? (
-                <span className="inline-block h-3 w-12 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse" />
-              ) : canWithdraw ? "Yes" : `Need ${(minWithdrawal - balance).toLocaleString()}`}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-1 min-h-[4.5rem]">
-        {txLoadingOnly ? (
-          <>
-            <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-            <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-            <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-          </>
-        ) : transactions.length > 0 ? (
-          transactions.map((tx) => {
-            const isEarn = tx.amount > 0;
-            return (
-              <div key={tx.id}
-                className="flex items-center gap-2 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 px-2 py-1.5">
-                <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${isEarn ? "bg-emerald-50 dark:bg-emerald-400/10" : "bg-rose-50 dark:bg-rose-400/10"}`}>
-                  {isEarn ? (
-                    <ArrowDownLeft className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
-                  ) : (
-                    <ArrowUpRight className="h-2.5 w-2.5 text-rose-600 dark:text-rose-400" />
-                  )}
-                </div>
-                <p className="flex-1 text-[10px] font-bold text-slate-900 dark:text-white truncate">
-                  {tx.reason || tx.kind.replace(/_/g, " ")}
-                </p>
-                <span className={`text-[10px] font-bold tabular-nums shrink-0 ${isEarn ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {isEarn ? "+" : ""}{tx.amount}
-                </span>
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 leading-snug text-center py-3">
-            No earnings yet — publish an activity to start earning {coinsPerCompletion} MC per completion.
-          </p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Link to="/cpd/admin/activities" onClick={() => tap()}
-          className="h-9 rounded-xl bg-white/70 dark:bg-[#0d1117]/60 text-amber-700 dark:text-amber-300
-               text-[11px] font-bold flex items-center justify-center gap-1.5
-               active:scale-[0.97] transition-transform"
-          style={{ touchAction: "manipulation" }}>
-          <BookOpen className="h-3.5 w-3.5" /> Activities
-        </Link>
-        <Link to="/cpd/redeem" onClick={() => tap()}
-          className="h-9 rounded-xl bg-amber-600 text-white text-[11px] font-bold
-               flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
-          style={{ touchAction: "manipulation" }}>
-          <Coins className="h-3.5 w-3.5" /> Redeem
-        </Link>
-      </div>
-    </section>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN
@@ -393,37 +169,14 @@ export default function StaffDashboard() {
     ? Math.ceil((new Date(license.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
+  /* ------------------------------------------------------------------ */
+  /*  Contributor status — used ONLY for the badge + tool card swap    */
+  /*  The coin card has its own gating internally (shared component).  */
+  /* ------------------------------------------------------------------ */
   const profileSaysContributor = !!profile?.is_verified_contributor;
   const hasCachedWallet = cachedWallet != null;
-  const profileLoaded = !profileLoading && !!profile;
-
-  // Once the profile has resolved, persist the verdict for next time.
-  if (profileLoaded) {
-    writeContributorFlag(profileSaysContributor || hasCachedWallet);
-  }
-
-  // What do we *know* right now?
-  const knownContributor =
-    profileSaysContributor ||
-    hasCachedWallet ||
-    cachedIsContributor === true;
-
-  const knownNotContributor =
-    !knownContributor &&
-    (
-      // Profile resolved as non-contributor and no wallet
-      (profileLoaded && !profileSaysContributor && !hasCachedWallet) ||
-      // OR we remembered from last visit that they aren't
-      cachedIsContributor === false
-    );
-
-  // Render decision — three states, not two
-  const showContributorCard = !!userId && knownContributor;
-  const showSkeleton = !!userId && !knownContributor && !knownNotContributor;
-
-  // `isVerifiedContributor` still gates the "Verified" badge and the
-  // "CPD Authoring" vs "Apply to Contribute" tool card — keep it as-is
   const isVerifiedContributor = profileSaysContributor || hasCachedWallet;
+
   const liveTools = [
     {
       icon: BookOpen, title: "CPD Catalog",
@@ -478,19 +231,9 @@ export default function StaffDashboard() {
         </div>
       </section>
 
-      {userId ? (
-        showContributorCard ? (
-          <ContributorEarningsCard
-            userId={userId}
-            tier={profile?.contributor_tier ?? "contributor"}
-            loadingProfile={profileLoading}
-          />
-        ) : showSkeleton ? (
-          <SkeletonEarningsCard />
-        ) : null
-      ) : (
-        <SkeletonEarningsCard />
-      )}
+      {/* 🆕 Shared coin card — decides skeleton / card / nothing internally */}
+      <ContributorEarningsCard />
+
       <div className="grid grid-cols-2 gap-2">
         <StatTile label="CPD Points" value={cpdLoading ? "…" : fmtPoints(cpdStats?.total_points)}
           icon={Award} tone="amber" to="/cpd" cta="Dashboard" />
