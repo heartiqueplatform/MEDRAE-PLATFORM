@@ -9,3 +9,4 @@ export { CpdMyProgressPage } from "./CpdMyProgressPage";
 export { CpdCertificatesPage } from "./CpdCertificatesPage";
 export { CpdCertificateViewPage } from "./CpdCertificateViewPage";
 export { CpdVerifyPage } from "./CpdVerifyPage";
+export { CpdBookmarksPage } from "./CpdBookmarksPage";

@@ -75,6 +75,8 @@ export async function adminCreateContentItem(input: {
     position: number;
     is_required?: boolean;
     metadata?: Record<string, any>;
+    body?: string | null;                          // 🆕
+    body_format?: "markdown" | "html" | "plain";   // 🆕
 }): Promise<CpdContentItem & { activity_id: string }> {
     const check = api.validateContentItem({
         content_type: input.content_type,

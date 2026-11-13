@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tansta
 import { supabase } from "@/lib/supabaseClient";
 import * as api from "./lib";
 import type { Cursor, EnrollmentStatus } from "./lib";
-
+import type {
+    ActivityRating, ActivityComment, ActivityBookmark, ActivityMastery,
+} from "./lib";
 // ─────────────────────────────────────────────────────────────
 // Auth helper — every hook needs the current user id
 // ─────────────────────────────────────────────────────────────
@@ -56,11 +58,12 @@ export function useEnroll() {
         mutationFn: async (activityId: string) => api.enrollInActivity(activityId, await currentUserId()),
         onSuccess: (_d, activityId) => {
             qc.invalidateQueries({ queryKey: ["cpd", "my-enrollment", activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activity-tree", activityId] });  // 🆕
+            qc.invalidateQueries({ queryKey: ["cpd", "activities"] });                 // 🆕
             qc.invalidateQueries({ queryKey: ["cpd", "dashboard"] });
         },
     });
 }
-
 export function useMyEnrollments(status?: EnrollmentStatus) {
     return useInfiniteQuery({
         queryKey: ["cpd", "my-enrollments", status],
@@ -548,6 +551,298 @@ export function useReviewContributorApplication() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["cpd", "contributor-verifications"] });
             qc.invalidateQueries({ queryKey: ["cpd", "admin"] });
+        },
+    });
+}
+// ─────────────────────────────────────────────────────────────
+// SOCIAL HOOKS — ratings, comments, bookmarks, mastery
+// ─────────────────────────────────────────────────────────────
+
+
+// ─── Ratings ──────────────────────────────────────────────────
+
+export function useMyRating(activityId: string | undefined) {
+    return useQuery({
+        queryKey: ["cpd", "my-rating", activityId],
+        enabled: !!activityId,
+        staleTime: 30_000,
+        queryFn: async () => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("cpd_activity_ratings")
+                .select("*")
+                .eq("activity_id", activityId!)
+                .eq("user_id", uid)
+                .maybeSingle();
+            if (error) throw error;
+            return data as ActivityRating | null;
+        },
+    });
+}
+
+export function useRecentRatings(activityId: string | undefined, limit = 5) {
+    return useQuery({
+        queryKey: ["cpd", "recent-ratings", activityId, limit],
+        enabled: !!activityId,
+        staleTime: 60_000,
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from("cpd_activity_ratings")
+                .select("*, user:profiles(name, avatar_url)")
+                .eq("activity_id", activityId!)
+                .order("created_at", { ascending: false })
+                .limit(limit);
+            if (error) throw error;
+            return (data ?? []) as ActivityRating[];
+        },
+    });
+}
+
+export function useUpsertRating() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { activityId: string; rating: number; comment?: string | null }) => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("cpd_activity_ratings")
+                .upsert(
+                    {
+                        activity_id: input.activityId,
+                        user_id: uid,
+                        rating: input.rating,
+                        comment: input.comment?.trim() || null,
+                        updated_at: new Date().toISOString(),
+                    },
+                    { onConflict: "activity_id,user_id" }
+                )
+                .select("*")
+                .single();
+            if (error) throw error;
+            return data as ActivityRating;
+        },
+        onSuccess: (_d, v) => {
+            qc.invalidateQueries({ queryKey: ["cpd", "my-rating", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "recent-ratings", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activity-tree", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activities"] });
+        },
+    });
+}
+
+// ─── Comments ─────────────────────────────────────────────────
+
+export function useActivityComments(activityId: string | undefined) {
+    return useInfiniteQuery({
+        queryKey: ["cpd", "comments", activityId],
+        enabled: !!activityId,
+        initialPageParam: null as string | null,
+        getNextPageParam: (last) => last.nextCursor,
+        queryFn: async ({ pageParam }) => {
+            const limit = 20;
+            const cur = pageParam ? (pageParam as string).split("|") : null;
+
+            let q = supabase
+                .from("cpd_activity_comments")
+                .select("*, user:profiles(name, avatar_url)")
+                .eq("activity_id", activityId!)
+                .eq("is_deleted", false)
+                .order("created_at", { ascending: false })
+                .order("id", { ascending: false })
+                .limit(limit + 1);
+
+            if (cur) {
+                const [ts, id] = cur;
+                q = q.or(`created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`);
+            }
+
+            const { data, error } = await q;
+            if (error) throw error;
+
+            const rows = (data ?? []) as ActivityComment[];
+            const hasMore = rows.length > limit;
+            const items = hasMore ? rows.slice(0, limit) : rows;
+            const last = items[items.length - 1];
+            return {
+                items,
+                nextCursor: hasMore && last ? `${last.created_at}|${last.id}` : null,
+            };
+        },
+    });
+}
+
+export function usePostComment() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { activityId: string; body: string; parentId?: string | null }) => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("cpd_activity_comments")
+                .insert({
+                    activity_id: input.activityId,
+                    user_id: uid,
+                    body: input.body.trim(),
+                    parent_id: input.parentId ?? null,
+                })
+                .select("*, user:profiles(name, avatar_url)")
+                .single();
+            if (error) throw error;
+            return data as ActivityComment;
+        },
+        onSuccess: (_d, v) => {
+            qc.invalidateQueries({ queryKey: ["cpd", "comments", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activity-tree", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activities"] });
+        },
+    });
+}
+
+export function useDeleteComment() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { commentId: string; activityId: string }) => {
+            const uid = await currentUserId();
+            const { error } = await supabase
+                .from("cpd_activity_comments")
+                .update({ is_deleted: true, updated_at: new Date().toISOString() })
+                .eq("id", input.commentId)
+                .eq("user_id", uid);
+            if (error) throw error;
+        },
+        onSuccess: (_d, v) => {
+            qc.invalidateQueries({ queryKey: ["cpd", "comments", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activity-tree", v.activityId] });
+        },
+    });
+}
+
+// ─── Bookmarks ────────────────────────────────────────────────
+
+export function useMyBookmark(activityId: string | undefined) {
+    return useQuery({
+        queryKey: ["cpd", "my-bookmark", activityId],
+        enabled: !!activityId,
+        staleTime: 30_000,
+        queryFn: async () => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("cpd_activity_bookmarks")
+                .select("*")
+                .eq("activity_id", activityId!)
+                .eq("user_id", uid)
+                .maybeSingle();
+            if (error) throw error;
+            return data as ActivityBookmark | null;
+        },
+    });
+}
+
+export function useToggleBookmark() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { activityId: string; isBookmarked: boolean }) => {
+            const uid = await currentUserId();
+            if (input.isBookmarked) {
+                const { error } = await supabase
+                    .from("cpd_activity_bookmarks")
+                    .delete()
+                    .eq("activity_id", input.activityId)
+                    .eq("user_id", uid);
+                if (error) throw error;
+                return { bookmarked: false };
+            }
+            const { error } = await supabase
+                .from("cpd_activity_bookmarks")
+                .insert({ activity_id: input.activityId, user_id: uid });
+            if (error) throw error;
+            return { bookmarked: true };
+        },
+        onSuccess: (_d, v) => {
+            qc.invalidateQueries({ queryKey: ["cpd", "my-bookmark", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activity-tree", v.activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "my-bookmarks"] });
+        },
+    });
+}
+
+export function useMyBookmarks() {
+    return useInfiniteQuery({
+        queryKey: ["cpd", "my-bookmarks"],
+        initialPageParam: null as string | null,
+        getNextPageParam: (last) => last.nextCursor,
+        queryFn: async ({ pageParam }) => {
+            const uid = await currentUserId();
+            const limit = 20;
+            const cur = pageParam ? (pageParam as string).split("|") : null;
+
+            let q = supabase
+                .from("cpd_activity_bookmarks")
+                .select("*, activity:cpd_activities(*)")
+                .eq("user_id", uid)
+                .order("created_at", { ascending: false })
+                .order("id", { ascending: false })
+                .limit(limit + 1);
+
+            if (cur) {
+                const [ts, id] = cur;
+                q = q.or(`created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`);
+            }
+
+            const { data, error } = await q;
+            if (error) throw error;
+
+            const rows = (data ?? []) as (ActivityBookmark & { activity: any })[];
+            const hasMore = rows.length > limit;
+            const items = hasMore ? rows.slice(0, limit) : rows;
+            const last = items[items.length - 1];
+            return {
+                items,
+                nextCursor: hasMore && last ? `${last.created_at}|${last.id}` : null,
+            };
+        },
+    });
+}
+
+// ─── Mastery ──────────────────────────────────────────────────
+
+export function useMyMastery(activityId: string | undefined) {
+    return useQuery({
+        queryKey: ["cpd", "my-mastery", activityId],
+        enabled: !!activityId,
+        staleTime: 60_000,
+        queryFn: async () => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("cpd_activity_mastery")
+                .select("*")
+                .eq("activity_id", activityId!)
+                .eq("user_id", uid)
+                .maybeSingle();
+            if (error) throw error;
+            return data as ActivityMastery | null;
+        },
+    });
+}
+
+export function useMarkMastered() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (activityId: string) => {
+            const uid = await currentUserId();
+            const { data, error } = await supabase
+                .from("cpd_activity_mastery")
+                .upsert(
+                    { activity_id: activityId, user_id: uid },
+                    { onConflict: "activity_id,user_id" }
+                )
+                .select("*")
+                .single();
+            if (error) throw error;
+            return data as ActivityMastery;
+        },
+        onSuccess: (_d, activityId) => {
+            qc.invalidateQueries({ queryKey: ["cpd", "my-mastery", activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activity-tree", activityId] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activities"] });
         },
     });
 }

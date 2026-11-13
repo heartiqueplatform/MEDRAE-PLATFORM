@@ -1,14 +1,22 @@
 // src/staff-cpd/pages/CpdActivityDetailPage.tsx
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import {
-    Award, Clock, CheckCircle2, ArrowRight, Sparkles, Lock,
+    Award, Clock, CheckCircle2, ArrowRight, Sparkles, Lock, ShieldCheck, User,
+    Trophy, Send, Trash2, Loader2,
 } from "lucide-react";
 import {
     useActivityTree, useMyEnrollment, useEnroll, useProgressForEnrollment,
+    useMyRating, useUpsertRating, useMyBookmark, useToggleBookmark,
+    useMyMastery, useMarkMastered,
+    useActivityComments, usePostComment, useDeleteComment,
 } from "../hooks";
-import { ContentTypeChip, CpdEmptyState } from "../components";
-import { fmtHours, fmtPoints, fmtDuration } from "../lib";
+import {
+    ContentTypeChip, CpdEmptyState, RatingStars,
+    ActivitySocialBar, MasteredBadge,
+} from "../components";
+import { fmtHours, fmtPoints, fmtDuration, fmtDate } from "../lib";
 import type { CpdContentItem } from "../lib";
 import { FullScreen, PageHeader, ScrollBody, tap, getStatusTone } from "./shared";
 
@@ -20,10 +28,26 @@ export function CpdActivityDetailPage() {
     const enroll = useEnroll();
     const progress = useProgressForEnrollment(enrollment.data?.id);
 
+    // Social hooks
+    const myRating = useMyRating(id);
+    const upsertRating = useUpsertRating();
+    const myBookmark = useMyBookmark(id);
+    const toggleBookmark = useToggleBookmark();
+    const myMastery = useMyMastery(id);
+    const markMastered = useMarkMastered();
+
+    // Local optimistic overrides — flipped instantly on tap, cleared when
+    // the server query catches up (or rolled back on error by the hook).
+    const [optimisticEnrolled, setOptimisticEnrolled] = useState(false);
+    const [pendingStars, setPendingStars] = useState<number | null>(null);
+    const [optimisticBookmark, setOptimisticBookmark] = useState<boolean | null>(null);
+    const [optimisticMastered, setOptimisticMastered] = useState(false);
+    const [draftComment, setDraftComment] = useState("");
+
     if (tree.isLoading) {
         return (
             <FullScreen>
-                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <PageHeader title="Loading…" onBack={() => nav("/cpd/catalog")} />
                 <ScrollBody>
                     <div className="px-4 pt-4 space-y-3">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -37,7 +61,7 @@ export function CpdActivityDetailPage() {
     if (!tree.data) {
         return (
             <FullScreen>
-                <PageHeader title="Activity" onBack={() => nav(-1)} />
+                <PageHeader title="Activity" onBack={() => nav("/cpd/catalog")} />
                 <ScrollBody>
                     <div className="px-4 pt-4">
                         <CpdEmptyState title="Activity not found" hint="The activity may have been removed." />
@@ -48,6 +72,10 @@ export function CpdActivityDetailPage() {
     }
 
     const { activity, modules, contentByModule, assessments } = tree.data;
+    const author = (activity as any).author as
+        | { user_id: string; name: string | null; avatar_url: string | null; is_verified_contributor: boolean; contributor_tier: string }
+        | null | undefined;
+
     const progressByItem = new Map((progress.data ?? []).map(p => [p.content_item_id, p]));
 
     const allRequired: CpdContentItem[] = modules.flatMap(m =>
@@ -64,9 +92,73 @@ export function CpdActivityDetailPage() {
     const fallbackProgress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
     const shownProgress = enrollment.data ? Math.max(enrollment.data.progress_percentage, fallbackProgress) : 0;
 
+    // ── Derived optimistic state ──────────────────────────────────────────
+    // Merge server truth with local optimistic flags so the UI never flickers
+    // back to "not enrolled" between the tap and the server round-trip.
+    const isEnrolled = !!enrollment.data || optimisticEnrolled;
+
+    const currentStars =
+        pendingStars !== null
+            ? pendingStars
+            : myRating.data?.rating ?? 0;
+
+    const isBookmarked =
+        optimisticBookmark !== null
+            ? optimisticBookmark
+            : !!myBookmark.data;
+
+    const isMastered = !!myMastery.data || optimisticMastered;
+    const canMaster = allDone && isEnrolled && !isMastered;
+
+    // Clear optimistic flag once server truth catches up
+    if (optimisticEnrolled && enrollment.data) setOptimisticEnrolled(false);
+    if (optimisticMastered && myMastery.data) setOptimisticMastered(false);
+    if (optimisticBookmark !== null && !!myBookmark.data === optimisticBookmark) {
+        setOptimisticBookmark(null);
+    }
+
+    // ── Handlers ──────────────────────────────────────────────────────────
     const handleEnroll = async () => {
+        if (isEnrolled || enroll.isPending) return;
         tap("success");
-        await enroll.mutateAsync(activity.id);
+        setOptimisticEnrolled(true);
+        try {
+            await enroll.mutateAsync(activity.id);
+        } catch {
+            setOptimisticEnrolled(false);
+        }
+    };
+
+    const submitRating = async (stars: number) => {
+        if (upsertRating.isPending || stars === currentStars) return;
+        setPendingStars(stars);
+        tap("success");
+        try {
+            await upsertRating.mutateAsync({ activityId: activity.id, rating: stars });
+            setPendingStars(null);
+        } catch {
+            setPendingStars(null);
+        }
+    };
+
+    const handleToggleBookmark = () => {
+        if (toggleBookmark.isPending) return;
+        const next = !isBookmarked;
+        tap();
+        setOptimisticBookmark(next);
+        toggleBookmark.mutate(
+            { activityId: activity.id, isBookmarked: next },
+            { onError: () => setOptimisticBookmark(!next) }
+        );
+    };
+
+    const handleMaster = () => {
+        if (isMastered || markMastered.isPending) return;
+        tap("success");
+        setOptimisticMastered(true);
+        markMastered.mutate(activity.id, {
+            onError: () => setOptimisticMastered(false),
+        });
     };
 
     return (
@@ -79,6 +171,7 @@ export function CpdActivityDetailPage() {
 
             <ScrollBody>
                 <div className="px-4 pt-4 space-y-3">
+                    {/* ── Hero card ── */}
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
                         {activity.thumbnail_url && (
                             <div className="relative aspect-[16/9] bg-slate-100 dark:bg-white/[0.06]">
@@ -101,12 +194,16 @@ export function CpdActivityDetailPage() {
                                         {activity.difficulty}
                                     </span>
                                 )}
-                                {enrollment.data && (
+                                {isEnrolled && (
                                     <span className={`inline-flex items-center rounded-full px-2 py-0.5
-                                                      text-[10px] font-bold capitalize ${getStatusTone(enrollment.data.status)}`}>
-                                        {enrollment.data.status.replace("_", " ")}
+                                                      text-[10px] font-bold capitalize ${enrollment.data
+                                            ? getStatusTone(enrollment.data.status)
+                                            : "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400"
+                                        }`}>
+                                        {(enrollment.data?.status ?? "enrolled").replace("_", " ")}
                                     </span>
                                 )}
+                                {isMastered && <MasteredBadge compact />}
                             </div>
 
                             <div className="flex items-center gap-3 text-[11px] font-medium
@@ -121,13 +218,69 @@ export function CpdActivityDetailPage() {
                                 </span>
                             </div>
 
+                            {/* Author */}
+                            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                                <p className="text-[9px] font-bold uppercase tracking-wider
+                                              text-slate-500 dark:text-slate-400 mb-1.5">
+                                    Created by
+                                </p>
+                                {author ? (
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-9 w-9 rounded-full overflow-hidden shrink-0
+                                                        bg-slate-200 dark:bg-white/[0.08]
+                                                        flex items-center justify-center">
+                                            {author.avatar_url ? (
+                                                <img src={author.avatar_url} alt={author.name ?? ""}
+                                                    className="w-full h-full object-cover" />
+                                            ) : author.name ? (
+                                                <span className="text-[13px] font-bold text-slate-600 dark:text-slate-300">
+                                                    {author.name.charAt(0).toUpperCase()}
+                                                </span>
+                                            ) : (
+                                                <User className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate leading-tight">
+                                                {author.name ?? "Unknown contributor"}
+                                            </p>
+                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                {author.is_verified_contributor && (
+                                                    <span className="inline-flex items-center gap-0.5 rounded-full
+                                                                     px-1.5 py-0.5 text-[9px] font-bold
+                                                                     bg-emerald-50 text-emerald-700
+                                                                     dark:bg-emerald-400/10 dark:text-emerald-400">
+                                                        <ShieldCheck className="h-2.5 w-2.5" />
+                                                        Verified
+                                                    </span>
+                                                )}
+                                                <span className="inline-flex items-center rounded-full
+                                                                 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider
+                                                                 bg-slate-100 text-slate-600
+                                                                 dark:bg-white/[0.06] dark:text-slate-300">
+                                                    {(author.contributor_tier ?? "contributor")
+                                                        .replace(/_/g, " ")
+                                                        .replace(/\b\w/g, (c) => c.toUpperCase())}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-[11px]
+                                                    text-slate-500 dark:text-slate-400">
+                                        <User className="h-3.5 w-3.5" />
+                                        <span>Contributor details unavailable</span>
+                                    </div>
+                                )}
+                            </div>
+
                             {activity.description && (
                                 <p className="text-[12px] text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">
                                     {activity.description}
                                 </p>
                             )}
 
-                            {!enrollment.data ? (
+                            {!isEnrolled ? (
                                 <button
                                     onClick={handleEnroll}
                                     disabled={enroll.isPending}
@@ -159,6 +312,82 @@ export function CpdActivityDetailPage() {
                         </div>
                     </section>
 
+                    {/* ── Social bar ── */}
+                    <ActivitySocialBar
+                        activity={activity}
+                        isBookmarked={isBookmarked}
+                        onToggleBookmark={handleToggleBookmark}
+                        onOpenComments={() => {
+                            tap();
+                            document.getElementById("comments-section")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                    />
+
+                    {/* ── Rating card ── */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <h2 className="text-[10px] font-bold uppercase tracking-wider
+                                           text-slate-500 dark:text-slate-400">
+                                Rate this activity
+                            </h2>
+                            {currentStars > 0 && (
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    You rated {currentStars}/5
+                                </span>
+                            )}
+                        </div>
+                        <RatingStars
+                            value={currentStars}
+                            onChange={submitRating}
+                            size="lg"
+                        />
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
+                            {currentStars > 0
+                                ? "Tap a star to change your rating."
+                                : "Tap a star — takes 2 seconds, helps other nurses find good content."}
+                        </p>
+                    </section>
+
+                    {/* ── Mastery CTA ── */}
+                    {isMastered ? (
+                        <MasteredBadge />
+                    ) : canMaster ? (
+                        <section className="rounded-2xl bg-violet-50 dark:bg-violet-400/10 p-4 space-y-2">
+                            <div className="flex items-center gap-2.5">
+                                <div className="h-10 w-10 rounded-xl bg-violet-600 text-white
+                                                flex items-center justify-center shrink-0">
+                                    <Trophy className="h-5 w-5" strokeWidth={2.4} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[12px] font-bold text-violet-700 dark:text-violet-400">
+                                        Ready to master this activity?
+                                    </p>
+                                    <p className="text-[10px] text-violet-700/80 dark:text-violet-400/80 mt-0.5">
+                                        You've completed all required content. Mastery adds a badge and lets you revisit anytime.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleMaster}
+                                disabled={markMastered.isPending}
+                                className="w-full h-10 rounded-xl bg-violet-600 text-white
+                                           text-[12px] font-bold
+                                           flex items-center justify-center gap-1.5
+                                           active:scale-[0.97] transition-transform
+                                           disabled:opacity-50"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                {markMastered.isPending ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <Trophy className="h-3.5 w-3.5" />
+                                )}
+                                Mark as mastered
+                            </button>
+                        </section>
+                    ) : null}
+
+                    {/* ── Modules ── */}
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                         <h2 className="text-[10px] font-bold uppercase tracking-wider
                                        text-slate-500 dark:text-slate-400">
@@ -242,6 +471,7 @@ export function CpdActivityDetailPage() {
                         })}
                     </section>
 
+                    {/* ── Assessments ── */}
                     {assessments.length > 0 && (
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                             <h2 className="text-[10px] font-bold uppercase tracking-wider
@@ -261,7 +491,7 @@ export function CpdActivityDetailPage() {
                                         </p>
                                     </div>
                                     <button
-                                        disabled={!enrollment.data || !allDone}
+                                        disabled={!isEnrolled || !allDone}
                                         onClick={() => { tap("success"); nav(`/cpd/activity/${activity.id}/assessment?assessment=${a.id}`); }}
                                         className="h-9 px-3 rounded-xl shrink-0
                                                    bg-blue-600 text-white text-[11px] font-bold
@@ -286,8 +516,230 @@ export function CpdActivityDetailPage() {
                             ))}
                         </section>
                     )}
+
+                    {/* ── Comments ── */}
+                    <CommentsSection
+                        activityId={activity.id}
+                        draftComment={draftComment}
+                        setDraftComment={setDraftComment}
+                    />
                 </div>
             </ScrollBody>
         </FullScreen>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMMENTS SECTION
+   ═══════════════════════════════════════════════════════════════ */
+
+type OptimisticComment = {
+    id: string;
+    body: string;
+    created_at: string;
+    user: { name: string | null; avatar_url: string | null } | null;
+    __optimistic?: boolean;
+};
+
+function CommentsSection({
+    activityId, draftComment, setDraftComment,
+}: {
+    activityId: string;
+    draftComment: string;
+    setDraftComment: (v: string) => void;
+}) {
+    const comments = useActivityComments(activityId);
+    const postComment = usePostComment();
+    const deleteComment = useDeleteComment();
+
+    // Optimistic overlays
+    const [optimisticPosts, setOptimisticPosts] = useState<OptimisticComment[]>([]);
+    const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+    const serverItems = comments.data?.pages.flatMap(p => p.items) ?? [];
+
+    // Drop optimistic posts once a real one with matching body arrives
+    // (best-effort reconciliation; server may return a different id).
+    const reconciledPosts = optimisticPosts.filter(
+        op => !serverItems.some(
+            s => s.body === op.body && !deletedIds.has(s.id)
+        )
+    );
+
+    const items: OptimisticComment[] = [
+        ...reconciledPosts,
+        ...serverItems.filter(s => !deletedIds.has(s.id)),
+    ];
+
+    const handlePost = async () => {
+        const body = draftComment.trim();
+        if (!body || postComment.isPending) return;
+
+        const tempId = `optimistic-${Date.now()}`;
+        const optimistic: OptimisticComment = {
+            id: tempId,
+            body,
+            created_at: new Date().toISOString(),
+            user: null,
+            __optimistic: true,
+        };
+
+        // Instant UI update
+        setOptimisticPosts(prev => [optimistic, ...prev]);
+        setDraftComment("");
+        tap("success");
+
+        try {
+            await postComment.mutateAsync({ activityId, body });
+            // Real comment will replace the optimistic one via reconciliation above.
+        } catch {
+            // Roll back — remove optimistic post and restore draft
+            setOptimisticPosts(prev => prev.filter(p => p.id !== tempId));
+            setDraftComment(body);
+        }
+    };
+
+    const handleDelete = (commentId: string) => {
+        if (!confirm("Delete this comment?")) return;
+        tap("warning");
+
+        // Instant removal
+        setDeletedIds(prev => {
+            const next = new Set(prev);
+            next.add(commentId);
+            return next;
+        });
+
+        deleteComment.mutate(
+            { commentId, activityId },
+            {
+                onError: () => {
+                    // Roll back on failure
+                    setDeletedIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(commentId);
+                        return next;
+                    });
+                },
+            }
+        );
+    };
+
+    return (
+        <section id="comments-section" className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+            <h2 className="text-[10px] font-bold uppercase tracking-wider
+                           text-slate-500 dark:text-slate-400">
+                Comments {items.length > 0 && `(${items.length}${comments.hasNextPage ? "+" : ""})`}
+            </h2>
+
+            {/* Composer */}
+            <div className="flex items-start gap-2">
+                <textarea
+                    value={draftComment}
+                    onChange={(e) => setDraftComment(e.target.value)}
+                    placeholder="Share your thoughts on this activity…"
+                    rows={2}
+                    maxLength={2000}
+                    className="flex-1 rounded-xl bg-slate-50 dark:bg-[#0d1117]
+                               px-3 py-2 text-[12px]
+                               text-slate-900 dark:text-white
+                               placeholder:text-slate-400 dark:placeholder:text-slate-500
+                               outline-none resize-y"
+                />
+                <button
+                    onClick={handlePost}
+                    disabled={!draftComment.trim() || postComment.isPending}
+                    className="h-10 w-10 rounded-xl bg-blue-600 text-white
+                               flex items-center justify-center shrink-0
+                               active:scale-[0.97] transition-transform
+                               disabled:opacity-40"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    {postComment.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="h-4 w-4" />
+                    )}
+                </button>
+            </div>
+
+            {/* List */}
+            {comments.isLoading && items.length === 0 ? (
+                <div className="space-y-2">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="h-16 rounded-xl bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                    ))}
+                </div>
+            ) : items.length === 0 ? (
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center py-6">
+                    No comments yet — be the first to share your thoughts.
+                </p>
+            ) : (
+                <div className="space-y-2">
+                    {items.map((c) => (
+                        <div
+                            key={c.id}
+                            className={`rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-1.5 ${c.__optimistic ? "opacity-70" : ""
+                                }`}
+                        >
+                            <div className="flex items-start gap-2">
+                                <div className="h-7 w-7 rounded-full overflow-hidden bg-slate-200 dark:bg-white/[0.08]
+                                                flex items-center justify-center shrink-0">
+                                    {c.user?.avatar_url ? (
+                                        <img src={c.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                            {(c.user?.name ?? "?").charAt(0).toUpperCase()}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                                            {c.user?.name ?? "You"}
+                                        </p>
+                                        <span className="text-[9px] text-slate-400 dark:text-slate-500">
+                                            {c.__optimistic ? "Sending…" : fmtDate(c.created_at)}
+                                        </span>
+                                    </div>
+                                    <p className="text-[12px] text-slate-700 dark:text-slate-300 mt-1 leading-snug whitespace-pre-wrap">
+                                        {c.body}
+                                    </p>
+                                </div>
+                                {!c.__optimistic && (
+                                    <button
+                                        onClick={() => handleDelete(c.id)}
+                                        className="h-6 w-6 rounded-lg flex items-center justify-center shrink-0
+                                                   text-slate-400 hover:text-rose-600 hover:bg-rose-50
+                                                   dark:hover:bg-rose-400/10 dark:hover:text-rose-400
+                                                   active:scale-[0.92] transition-colors"
+                                        style={{ touchAction: "manipulation" }}
+                                        title="Delete your comment"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+
+                    {comments.hasNextPage && (
+                        <button
+                            onClick={() => { tap(); comments.fetchNextPage(); }}
+                            disabled={comments.isFetchingNextPage}
+                            className="w-full h-9 rounded-xl
+                                       bg-slate-100 dark:bg-white/[0.06]
+                                       text-slate-700 dark:text-slate-200
+                                       text-[11px] font-bold
+                                       active:scale-[0.97] transition-transform
+                                       disabled:opacity-50"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            {comments.isFetchingNextPage ? "Loading…" : "Load more comments"}
+                        </button>
+                    )}
+                </div>
+            )}
+        </section>
     );
 }

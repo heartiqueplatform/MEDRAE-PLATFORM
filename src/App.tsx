@@ -161,6 +161,7 @@ import {
   CpdCertificatesPage,
   CpdCertificateViewPage,
   CpdVerifyPage,
+  CpdBookmarksPage,
 } from "@/staff-cpd/pages";
 // ─── CPD ADMIN (folder-based, replaces the old admin.tsx) ───
 import {
@@ -734,6 +735,7 @@ const AppContent = () => {
                         <Route path="/cpd/apply" element={<PrivateRoute><ContributorApplyPage /></PrivateRoute>} />
                         <Route path="/cpd/coins-policy" element={<PrivateRoute><MedraeCoinsPolicyPage /></PrivateRoute>} />
                         <Route path="/cpd/redeem" element={<StaffOnlyRoute><CpdRedeemPage /></StaffOnlyRoute>} />
+                        <Route path="/cpd/bookmarks" element={<StaffOnlyRoute><CpdBookmarksPage /></StaffOnlyRoute>} />
                         {/* CPD Admin — full-screen nested layout */}
                         <Route path="/cpd/admin" element={<StaffOnlyRoute><AdminLayout /></StaffOnlyRoute>}>
                           <Route index element={<AdminHomePage />} />

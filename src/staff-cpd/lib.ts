@@ -21,8 +21,24 @@ export interface CpdActivity {
     status: CpdStatus; thumbnail_url: string | null;
     created_by: string; created_at: string; updated_at: string;
     published_at: string | null; archived_at: string | null;
-}
 
+    // 🆕 social counters (cached columns — no extra query needed)
+    enrolled_count: number;
+    rating_avg: number;
+    rating_count: number;
+    comment_count: number;
+    bookmark_count: number;
+    mastered_count: number;
+
+    // 🆕 joined at query time
+    author?: {
+        user_id: string;
+        name: string | null;
+        avatar_url: string | null;
+        is_verified_contributor: boolean;
+        contributor_tier: string;
+    } | null;
+}
 export interface CpdModule {
     id: string; activity_id: string; title: string; description: string | null;
     position: number; estimated_minutes: number | null;
@@ -35,6 +51,11 @@ export interface CpdContentItem {
     external_provider: ExternalProvider | null; external_id: string | null;
     duration_seconds: number | null; position: number; is_required: boolean;
     metadata: Record<string, any>; created_at: string; updated_at: string;
+
+    // 🆕 rich body columns — added to the table in the SQL migration
+    body: string | null;
+    body_format: "markdown" | "html" | "plain";
+    last_edited_by: string | null;
 }
 
 export interface CpdEnrollment {
@@ -137,11 +158,16 @@ export async function listActivities(opts: {
 } = {}): Promise<Page<CpdActivity>> {
     const limit = opts.limit ?? 20;
     const cur = parseCursor(opts.cursor ?? null);
-
     let q = supabase
         .from("cpd_activities")
-        .select("*")
+        .select(`
+        *,
+        author:profiles!cpd_activities_created_by_fkey (
+            user_id, name, avatar_url, is_verified_contributor, contributor_tier
+        )
+    `)
         .eq("status", "published")
+
         .order("published_at", { ascending: false })
         .order("id", { ascending: false })
         .limit(limit + 1);
@@ -178,7 +204,16 @@ export async function getActivityTree(activityId: string): Promise<{
     assessments: CpdAssessment[];
 }> {
     const [a, m, c, s] = await Promise.all([
-        supabase.from("cpd_activities").select("*").eq("id", activityId).maybeSingle(),
+        supabase
+            .from("cpd_activities")
+            .select(`
+                *,
+                author:profiles!cpd_activities_created_by_fkey (
+                    user_id, name, avatar_url, is_verified_contributor, contributor_tier
+                )
+            `)
+            .eq("id", activityId)
+            .maybeSingle(),
         supabase.from("cpd_modules").select("*").eq("activity_id", activityId).order("position"),
         supabase.from("cpd_content_items").select("*").order("position"),
         supabase.from("cpd_assessments").select("*").eq("activity_id", activityId),
@@ -199,7 +234,6 @@ export async function getActivityTree(activityId: string): Promise<{
         assessments: (s.data ?? []) as CpdAssessment[],
     };
 }
-
 // ---- ENROLLMENTS ----
 export async function getMyEnrollment(activityId: string, nurseId: string): Promise<CpdEnrollment | null> {
     const { data, error } = await supabase
@@ -470,7 +504,47 @@ export function isApplePodcastUrl(url: string): boolean {
         return /(^|\.)podcasts\.apple\.com$/.test(u.hostname);
     } catch { return false; }
 }
+// ─────────────────────────────────────────────────────────────
+// SOCIAL TYPES
+// ─────────────────────────────────────────────────────────────
 
+export interface ActivityRating {
+    id: string;
+    activity_id: string;
+    user_id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+    updated_at: string;
+    user?: { name: string | null; avatar_url: string | null } | null;
+}
+
+export interface ActivityComment {
+    id: string;
+    activity_id: string;
+    user_id: string;
+    parent_id: string | null;
+    body: string;
+    created_at: string;
+    updated_at: string;
+    is_deleted: boolean;
+    user?: { name: string | null; avatar_url: string | null } | null;
+}
+
+export interface ActivityBookmark {
+    id: string;
+    activity_id: string;
+    user_id: string;
+    created_at: string;
+}
+
+export interface ActivityMastery {
+    id: string;
+    activity_id: string;
+    user_id: string;
+    mastered_at: string;
+    attempts: number;
+}
 // ─────────────────────────────────────────────────────────────
 // FORMATTERS
 // ─────────────────────────────────────────────────────────────

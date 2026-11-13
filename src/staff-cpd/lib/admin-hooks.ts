@@ -9,25 +9,61 @@ const ADMIN_KEY = ["cpd", "admin"];
 // ─────────────────────────────────────────────────────────────
 // ACTIVITIES
 // ─────────────────────────────────────────────────────────────
+// src/staff-cpd/lib/admin-hooks.ts
+
+const ADMIN_IDS = [
+    "25f37970-c9b9-4c15-b8a2-514a912e3261",
+    "731974f9-5af2-44c3-bf13-547fc4c89209",
+];
+
+export interface AuthorProfile {
+    user_id: string;
+    name: string | null;
+    avatar_url: string | null;
+    email: string | null;
+    is_verified_contributor: boolean;
+    contributor_tier: string;
+    workplace: string | null;
+}
+
 export function useAdminActivities(status?: string) {
     return useInfiniteQuery({
         queryKey: [...ADMIN_KEY, "activities", status],
         queryFn: async ({ pageParam }) => {
             const { supabase } = await import("@/lib/supabaseClient");
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not signed in");
+            const isAdmin = ADMIN_IDS.includes(user.id);
+
             const limit = 25;
             let q = supabase
-                .from("cpd_activities").select("*")
+                .from("cpd_activities")
+                .select(`
+                    *,
+                    author:profiles!cpd_activities_created_by_fkey (
+                        user_id, name, avatar_url, email,
+                        is_verified_contributor, contributor_tier, workplace
+                    )
+                `)
                 .order("created_at", { ascending: false })
                 .order("id", { ascending: false })
                 .limit(limit + 1);
+
+            // Non-admins only see their own rows
+            if (!isAdmin) q = q.eq("created_by", user.id);
+
             if (status) q = q.eq("status", status);
+
             if (pageParam) {
                 const [ts, id] = (pageParam as string).split("|");
                 q = q.or(`created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`);
             }
+
             const { data, error } = await q;
             if (error) throw error;
-            const rows = (data ?? []) as CpdActivity[];
+
+            const rows = (data ?? []) as (CpdActivity & { author?: AuthorProfile | null })[];
             const hasMore = rows.length > limit;
             const items = hasMore ? rows.slice(0, limit) : rows;
             const last = items[items.length - 1];
@@ -37,7 +73,6 @@ export function useAdminActivities(status?: string) {
         getNextPageParam: (last) => last.nextCursor,
     });
 }
-
 // ─────────────────────────────────────────────────────────────
 // SINGLE ACTIVITY (full tree: modules + content + assessments)
 // ─────────────────────────────────────────────────────────────
@@ -323,11 +358,80 @@ export function useCreatePeriod() {
 // ─────────────────────────────────────────────────────────────
 // COMPLETIONS
 // ─────────────────────────────────────────────────────────────
+// src/staff-cpd/lib/admin-hooks.ts
+
 export function useAdminCompletions(opts: { status?: string; activityId?: string } = {}) {
     return useInfiniteQuery({
         queryKey: [...ADMIN_KEY, "completions", opts],
-        queryFn: ({ pageParam }) =>
-            admin.adminListCompletions({ ...opts, cursor: pageParam as string | null, limit: 25 }),
+        queryFn: async ({ pageParam }) => {
+            const { supabase } = await import("@/lib/supabaseClient");
+
+            const limit = 25;
+            let q = supabase
+                .from("cpd_completions")
+                .select(`
+                    id,
+                    enrollment_id,
+                    nurse_id,
+                    activity_id,
+                    learning_hours_completed,
+                    points_awarded,
+                    assessment_score,
+                    completion_status,
+                    completed_at,
+                    verification_code,
+                    certificate_id,
+                    medrae_coins_awarded,
+                    medrae_coins_awarded_at,
+                    contributor_id,
+                    created_at,
+
+                    activity:cpd_activities!cpd_completions_activity_id_fkey (
+                        id, title, thumbnail_url, category,
+                        learning_hours, configured_cpd_points, created_by
+                    ),
+
+                    nurse:profiles!cpd_completions_nurse_id_fkey (
+                        user_id, name, email, avatar_url,
+                        workplace, nck_number, specialization,
+                        is_verified_contributor, contributor_tier
+                    ),
+
+                    enrollment:cpd_enrollments!cpd_completions_enrollment_id_fkey (
+                        id, status, progress_percentage,
+                        started_at, last_accessed_at, completed_at,
+                        attempts_count
+                    ),
+
+                    certificate:cpd_certificates!cpd_completions_certificate_id_fkey (
+                        id, certificate_number, verification_code,
+                        issued_at, status
+                    )
+                `)
+                .order("completed_at", { ascending: false })
+                .order("id", { ascending: false })
+                .limit(limit + 1);
+
+            if (opts.status) q = q.eq("completion_status", opts.status);
+            if (opts.activityId) q = q.eq("activity_id", opts.activityId);
+
+            if (pageParam) {
+                const [ts, id] = (pageParam as string).split("|");
+                q = q.or(`completed_at.lt.${ts},and(completed_at.eq.${ts},id.lt.${id})`);
+            }
+
+            const { data, error } = await q;
+            if (error) throw error;
+
+            const rows = (data ?? []) as any[];
+            const hasMore = rows.length > limit;
+            const items = hasMore ? rows.slice(0, limit) : rows;
+            const last = items[items.length - 1];
+            return {
+                items,
+                nextCursor: hasMore && last ? `${last.completed_at}|${last.id}` : null,
+            };
+        },
         initialPageParam: null as string | null,
         getNextPageParam: (last) => last.nextCursor,
     });
