@@ -3,9 +3,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     Plus, Search, Trash2, BookOpen, Calendar, Clock, Award, Archive,
-    Loader2, Coins, ChevronRight,
+    Loader2, Coins, ChevronRight, RotateCcw,
 } from "lucide-react";
-import { useAdminActivities, useCreateActivity, useRemoveActivity } from "../lib/admin-hooks";
+import {
+    useAdminActivities,
+    useCreateActivity,
+    useRemoveActivity,
+    useUnarchiveActivity,
+} from "../lib/admin-hooks";
 import { useMedraeCoinConfig } from "../lib/admin-hooks";
 import { CpdEmptyState } from "../components";
 import { fmtDate, fmtHours, fmtPoints } from "../lib";
@@ -102,6 +107,7 @@ export default function ActivitiesListPage() {
     const q = useAdminActivities(status || undefined);
     const create = useCreateActivity();
     const remove = useRemoveActivity();
+    const unarchive = useUnarchiveActivity();
     const nav = useNavigate();
 
     // 🔒 Read coin economics from the database — never hardcoded
@@ -151,6 +157,26 @@ export default function ActivitiesListPage() {
             },
             onError: (e: any) => {
                 alert(`Couldn't archive "${a.title}":\n${e?.message ?? "Unknown error"}`);
+                setRemovingId(null);
+            },
+        });
+    };
+
+    const handleUnarchive = (a: any) => {
+        tap("success");
+        const ok = confirm(
+            `Unarchive "${a.title}"?\n\n` +
+            `It will go back to DRAFT status. You'll need to publish it again before nurses can see it.`
+        );
+        if (!ok) return;
+        setRemovingId(a.id);
+        unarchive.mutate(a.id, {
+            onSuccess: () => {
+                alert(`"${a.title}" was unarchived → status: draft.\n\nPublish it again to make it live.`);
+                setRemovingId(null);
+            },
+            onError: (e: any) => {
+                alert(`Couldn't unarchive "${a.title}":\n${e?.message ?? "Unknown error"}`);
                 setRemovingId(null);
             },
         });
@@ -366,6 +392,28 @@ export default function ActivitiesListPage() {
                                                           text-[9px] font-bold capitalize ${getStatusTone(a.status)}`}>
                                             {a.status}
                                         </span>
+
+                                        {/* 🆕 Unarchive — only for archived activities */}
+                                        {a.status === "archived" && (
+                                            <button
+                                                title="Unarchive (back to draft)"
+                                                disabled={isRemoving}
+                                                onClick={() => handleUnarchive(a)}
+                                                className="h-9 w-9 rounded-xl
+                                                           bg-emerald-50 dark:bg-emerald-400/10
+                                                           text-emerald-600 dark:text-emerald-400
+                                                           flex items-center justify-center
+                                                           active:scale-[0.92] transition-transform
+                                                           disabled:opacity-50"
+                                                style={{ touchAction: "manipulation" }}
+                                            >
+                                                {isRemoving ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <RotateCcw className="h-3.5 w-3.5" />
+                                                )}
+                                            </button>
+                                        )}
 
                                         {/* Archive (only if not archived) */}
                                         {a.status !== "archived" && (

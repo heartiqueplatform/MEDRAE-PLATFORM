@@ -409,3 +409,17 @@ export async function adminRemoveActivity(activityId: string): Promise<{
     if (error) throw error;
     return { action: "deleted", id: activityId };
 }
+
+export async function adminUnarchiveActivity(activityId: string): Promise<CpdActivity> {
+    const { data, error } = await supabase
+        .from("cpd_activities")
+        .update({
+            status: "draft",
+            archived_at: null,
+        })
+        .eq("id", activityId)
+        .select("*")
+        .single();
+    if (error) throw error;
+    return data as CpdActivity;
+}

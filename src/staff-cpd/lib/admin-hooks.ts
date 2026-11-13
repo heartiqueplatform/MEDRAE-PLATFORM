@@ -80,7 +80,18 @@ export function useRemoveActivity() {
         },
     });
 }
-
+export function useUnarchiveActivity() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => admin.adminUnarchiveActivity(id),
+        onSuccess: (_res, id) => {
+            qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activities"] });
+            qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activity", id] });
+            qc.invalidateQueries({ queryKey: ["cpd", "activities"] });
+            qc.invalidateQueries({ queryKey: ["cpd", "dashboard"] });
+        },
+    });
+}
 export function useDeleteActivity() {
     const qc = useQueryClient();
     return useMutation({
