@@ -45,7 +45,9 @@ import { Resources } from "./pages/Resources";
 import { MedTube } from "./pages/MedTube";
 // StudentAnalyticsPage - Keep as normal import for now
 import StudentAnalyticsPage from "@/pages/analytics/StudentAnalyticsPage";
-
+import StudentLanding from "./pages/landing/StudentLanding";
+import StaffLanding from "./pages/landing/StaffLanding";
+import TutorLanding from "./pages/landing/TutorLanding";
 // Import your new pages
 import SurvivalHubDashboard from './pages/survival-hub/index';
 import HousingPage from './pages/survival-hub/Housing';
@@ -625,6 +627,9 @@ const AppContent = () => {
 
                         {/* Public Routes */}
                         <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                        <Route path="/for/student" element={<StudentLanding />} />
+                        <Route path="/for/staff" element={<StaffLanding />} />
+                        <Route path="/for/tutor" element={<TutorLanding />} />
                         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
                         <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
                         <Route path="/redirect" element={<RedirectToRoleDashboard />} />
