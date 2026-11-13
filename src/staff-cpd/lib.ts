@@ -474,13 +474,20 @@ export function isApplePodcastUrl(url: string): boolean {
 // ─────────────────────────────────────────────────────────────
 // FORMATTERS
 // ─────────────────────────────────────────────────────────────
-export function fmtHours(h: number | null | undefined): string {
+// ─────────────────────────────────────────────────────────────
+// FORMATTERS
+// ─────────────────────────────────────────────────────────────
+export function fmtHours(h: number | string | null | undefined): string {
     if (h == null) return "0h";
-    return h < 1 ? `${Math.round(h * 60)}m` : `${h.toFixed(1).replace(/\.0$/, "")}h`;
+    const n = typeof h === "string" ? parseFloat(h) : h;
+    if (isNaN(n)) return "0h";
+    return n < 1 ? `${Math.round(n * 60)}m` : `${n.toFixed(1).replace(/\.0$/, "")}h`;
 }
-export function fmtPoints(p: number | null | undefined): string {
+export function fmtPoints(p: number | string | null | undefined): string {
     if (p == null) return "0";
-    return Number.isInteger(p) ? String(p) : p.toFixed(1);
+    const n = typeof p === "string" ? parseFloat(p) : p;
+    if (isNaN(n)) return "0";
+    return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
 }
 export function fmtDate(iso: string | null | undefined): string {
     if (!iso) return "—";

@@ -86,7 +86,6 @@ export function CpdActivityCard({ activity }: { activity: CpdActivity }) {
                        active:scale-[0.99] transition-transform"
             style={{ touchAction: "manipulation" }}
         >
-            {/* Cover */}
             <div className="aspect-video relative overflow-hidden bg-slate-100 dark:bg-white/[0.06]">
                 {activity.thumbnail_url ? (
                     <img
@@ -101,7 +100,6 @@ export function CpdActivityCard({ activity }: { activity: CpdActivity }) {
                     </div>
                 )}
 
-                {/* Category pill */}
                 {activity.category && (
                     <span className="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider
                                      px-2 py-0.5 rounded-full
@@ -110,7 +108,6 @@ export function CpdActivityCard({ activity }: { activity: CpdActivity }) {
                     </span>
                 )}
 
-                {/* Difficulty pill */}
                 {activity.difficulty && (
                     <span className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wider
                                      px-2 py-0.5 rounded-full capitalize
@@ -120,7 +117,6 @@ export function CpdActivityCard({ activity }: { activity: CpdActivity }) {
                 )}
             </div>
 
-            {/* Body */}
             <div className="p-3 space-y-2">
                 <h3 className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 min-h-[2.25rem]">
                     {activity.title}
@@ -132,7 +128,6 @@ export function CpdActivityCard({ activity }: { activity: CpdActivity }) {
                     </p>
                 )}
 
-                {/* Meta chips */}
                 <div className="flex items-center gap-2.5 pt-0.5 flex-wrap">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium
                                      text-slate-500 dark:text-slate-400">
@@ -151,17 +146,15 @@ export function CpdActivityCard({ activity }: { activity: CpdActivity }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COMPLETION ROW — used on dashboard + progress
+   COMPLETION ROW
    ═══════════════════════════════════════════════════════════════ */
 export function CpdCompletionRow({ completion }: { completion: CpdCompletion & { activity?: CpdActivity } }) {
     return (
         <div className="flex items-center gap-2.5 py-2.5 border-b border-slate-100 dark:border-white/[0.04] last:border-0">
-            {/* Icon */}
             <div className="h-9 w-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
                 <CheckCircle2 className="h-4 w-4" strokeWidth={2.6} />
             </div>
 
-            {/* Meta */}
             <div className="min-w-0 flex-1">
                 <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate leading-tight">
                     {completion.activity?.title ?? "CPD Activity"}
@@ -185,7 +178,6 @@ export function CpdCompletionRow({ completion }: { completion: CpdCompletion & {
                 </div>
             </div>
 
-            {/* Status pill */}
             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full capitalize shrink-0
                               ${getStatusTone(completion.completion_status)}`}>
                 {completion.completion_status}
@@ -195,7 +187,7 @@ export function CpdCompletionRow({ completion }: { completion: CpdCompletion & {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CERTIFICATE CARD — used on certificates page
+   CERTIFICATE CARD
    ═══════════════════════════════════════════════════════════════ */
 export function CpdCertificateCard({ certificate }: { certificate: CpdCertificate }) {
     return (
@@ -206,12 +198,10 @@ export function CpdCertificateCard({ certificate }: { certificate: CpdCertificat
             style={{ touchAction: "manipulation" }}
         >
             <div className="flex items-start gap-2.5">
-                {/* Icon */}
                 <div className="h-10 w-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
                     <Award className="h-5 w-5" strokeWidth={2.4} />
                 </div>
 
-                {/* Meta */}
                 <div className="min-w-0 flex-1">
                     <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Certificate
@@ -233,7 +223,6 @@ export function CpdCertificateCard({ certificate }: { certificate: CpdCertificat
                     </p>
                 </div>
 
-                {/* Arrow */}
                 <ArrowRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 shrink-0 mt-1" />
             </div>
         </Link>
@@ -241,11 +230,118 @@ export function CpdCertificateCard({ certificate }: { certificate: CpdCertificat
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CONTENT RENDERERS
+   MARKDOWN RENDERER — reads the new `body` column
    ═══════════════════════════════════════════════════════════════ */
-export function ContentRenderer({ item, onProgress }: { item: CpdContentItem; onProgress?: (pct: number, lastPos?: number) => void }) {
+
+function MarkdownRenderer({ source }: { source: string }) {
+    const lines = source.split("\n");
+    return (
+        <div className="space-y-2 text-[13px] leading-relaxed text-slate-800 dark:text-slate-200">
+            {lines.map((line, i) => {
+                if (!line.trim()) return <div key={i} className="h-2" />;
+
+                /* Heading level 2 */
+                if (line.startsWith("## ")) {
+                    return (
+                        <h2 key={i} className="text-[16px] font-bold text-slate-900 dark:text-white mt-3">
+                            {renderInline(line.slice(3))}
+                        </h2>
+                    );
+                }
+
+                /* Heading level 3 */
+                if (line.startsWith("### ")) {
+                    return (
+                        <h3 key={i} className="text-[14px] font-bold text-slate-900 dark:text-white mt-2">
+                            {renderInline(line.slice(4))}
+                        </h3>
+                    );
+                }
+
+                /* Full-line image */
+                const imgMatch = line.trim().match(/^!\[.*?\]\((.*?)\)$/);
+                if (imgMatch) {
+                    return (
+                        <img
+                            key={i}
+                            src={imgMatch[1]}
+                            alt=""
+                            className="rounded-xl my-2 max-w-full w-full object-cover"
+                            loading="lazy"
+                        />
+                    );
+                }
+
+                /* Bullet */
+                if (line.trim().startsWith("- ")) {
+                    return (
+                        <div key={i} className="flex gap-2 ml-1">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">•</span>
+                            <span>{renderInline(line.trim().slice(2))}</span>
+                        </div>
+                    );
+                }
+
+                /* Numbered */
+                const numMatch = line.trim().match(/^(\d+)\.\s(.*)$/);
+                if (numMatch) {
+                    return (
+                        <div key={i} className="flex gap-2 ml-1">
+                            <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">{numMatch[1]}.</span>
+                            <span>{renderInline(numMatch[2])}</span>
+                        </div>
+                    );
+                }
+
+                /* Paragraph */
+                return <p key={i}>{renderInline(line)}</p>;
+            })}
+        </div>
+    );
+}
+
+function renderInline(s: string): React.ReactNode {
+    const parts: React.ReactNode[] = [];
+    const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\)|!\[.*?\]\([^)]+\))/g;
+    let last = 0, m, k = 0;
+    while ((m = regex.exec(s)) !== null) {
+        if (m.index > last) parts.push(s.slice(last, m.index));
+        const tok = m[0];
+        if (tok.startsWith("![")) {
+            const im = tok.match(/!\[.*?\]\((.*?)\)/);
+            if (im) parts.push(
+                <img key={k++} src={im[1]} alt="" className="rounded-lg my-1 max-w-full" loading="lazy" />
+            );
+        } else if (tok.startsWith("**")) {
+            parts.push(<b key={k++}>{tok.slice(2, -2)}</b>);
+        } else if (tok.startsWith("*")) {
+            parts.push(<i key={k++}>{tok.slice(1, -1)}</i>);
+        } else {
+            const lm = tok.match(/\[([^\]]+)\]\(([^)]+)\)/);
+            if (lm) parts.push(
+                <a key={k++} href={lm[2]}
+                    className="text-blue-600 dark:text-blue-400 underline"
+                    target="_blank" rel="noopener noreferrer">
+                    {lm[1]}
+                </a>
+            );
+        }
+        last = m.index + tok.length;
+    }
+    if (last < s.length) parts.push(s.slice(last));
+    return <>{parts}</>;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTENT RENDERER — dispatches on content_type
+   ═══════════════════════════════════════════════════════════════ */
+export function ContentRenderer({ item, onProgress }: {
+    item: CpdContentItem;
+    onProgress?: (pct: number, lastPos?: number) => void;
+}) {
     const { content_type, external_provider, external_url, external_id, metadata, title } = item;
 
+    /* ── Video (YouTube) ── */
     if (content_type === "video" && external_provider === "youtube") {
         const vid = external_id || extractYouTubeId(external_url ?? "");
         if (!vid) return <FallbackLink url={external_url} label="Invalid YouTube URL" />;
@@ -262,6 +358,7 @@ export function ContentRenderer({ item, onProgress }: { item: CpdContentItem; on
         );
     }
 
+    /* ── Podcast (Apple) ── */
     if (content_type === "podcast" && external_provider === "apple_podcasts") {
         const embed = external_url?.replace("podcasts.apple.com", "embed.podcasts.apple.com");
         return (
@@ -287,6 +384,7 @@ export function ContentRenderer({ item, onProgress }: { item: CpdContentItem; on
         );
     }
 
+    /* ── PDF ── */
     if (content_type === "pdf" && external_url) {
         return (
             <div className="space-y-2">
@@ -300,16 +398,37 @@ export function ContentRenderer({ item, onProgress }: { item: CpdContentItem; on
         );
     }
 
+    /* ── Reading / Article / Case Study — read `body` ── */
     if (content_type === "text" || content_type === "article" || content_type === "case_study") {
+        /* 🆕 read the new column first */
+        const body = item.body?.trim();
+        if (body) {
+            return <MarkdownRenderer source={body} />;
+        }
+
+        /* Fallback: older items that used metadata.html or metadata.body */
+        const legacyHtml = metadata?.html as string | undefined;
+        if (legacyHtml) {
+            return (
+                <article
+                    className="prose prose-slate dark:prose-invert max-w-none text-[13px] leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: legacyHtml }}
+                />
+            );
+        }
+        const legacyBody = (metadata?.body as string | undefined) ?? item.description ?? "";
+        if (legacyBody) {
+            return <MarkdownRenderer source={legacyBody} />;
+        }
+
         return (
-            <article className="prose prose-slate dark:prose-invert max-w-none text-[13px] leading-relaxed
-                                prose-headings:text-slate-900 dark:prose-headings:text-white
-                                prose-p:text-slate-700 dark:prose-p:text-slate-300">
-                <div dangerouslySetInnerHTML={{ __html: metadata?.html ?? `<p>${item.description ?? ""}</p>` }} />
-            </article>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 italic">
+                No content attached to this item yet.
+            </p>
         );
     }
 
+    /* ── External resource / webinar ── */
     if (content_type === "external_resource" || content_type === "webinar" || external_provider === "external") {
         return (
             <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-4 space-y-3">

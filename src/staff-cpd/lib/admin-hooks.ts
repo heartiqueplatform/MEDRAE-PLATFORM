@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import * as admin from "./admin-api";
 import * as coreApi from "../lib";
-import type { CpdActivity, CpdPeriod, QuestionType } from "../lib";
+import type { CpdActivity, CpdPeriod, QuestionType, CpdQuestion } from "../lib";
 
 const ADMIN_KEY = ["cpd", "admin"];
 
@@ -37,6 +37,7 @@ export function useAdminActivities(status?: string) {
         getNextPageParam: (last) => last.nextCursor,
     });
 }
+
 // ─────────────────────────────────────────────────────────────
 // SINGLE ACTIVITY (full tree: modules + content + assessments)
 // ─────────────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ export function useAdminActivity(activityId: string | undefined) {
         enabled: !!activityId,
     });
 }
+
 export function useCreateActivity() {
     const qc = useQueryClient();
     return useMutation({
@@ -65,6 +67,7 @@ export function useUpdateActivity() {
         },
     });
 }
+
 export function useRemoveActivity() {
     const qc = useQueryClient();
     return useMutation({
@@ -77,6 +80,7 @@ export function useRemoveActivity() {
         },
     });
 }
+
 export function useDeleteActivity() {
     const qc = useQueryClient();
     return useMutation({
@@ -97,7 +101,7 @@ export function usePublishActivity() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODULES / CONTENT
+// MODULES
 // ─────────────────────────────────────────────────────────────
 export function useCreateModule() {
     const qc = useQueryClient();
@@ -111,7 +115,8 @@ export function useCreateModule() {
 export function useUpdateModule() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (v: { id: string; activity_id: string; patch: any }) => admin.adminUpdateModule(v.id, v.patch),
+        mutationFn: (v: { id: string; activity_id: string; patch: any }) =>
+            admin.adminUpdateModule(v.id, v.patch),
         onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activity", v.activity_id] }),
     });
 }
@@ -124,10 +129,22 @@ export function useDeleteModule() {
     });
 }
 
+// ─────────────────────────────────────────────────────────────
+// CONTENT ITEMS — create / update / delete
+// ─────────────────────────────────────────────────────────────
 export function useCreateContentItem() {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (input: any) => admin.adminCreateContentItem(input),
+        onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activity", v.activity_id] }),
+    });
+}
+
+export function useUpdateContentItem() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (v: { id: string; activity_id: string; patch: any }) =>
+            admin.adminUpdateContentItem(v.id, v.patch),
         onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activity", v.activity_id] }),
     });
 }
@@ -154,7 +171,8 @@ export function useCreateAssessment() {
 export function useUpdateAssessment() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (v: { id: string; activity_id: string; patch: any }) => admin.adminUpdateAssessment(v.id, v.patch),
+        mutationFn: (v: { id: string; activity_id: string; patch: any }) =>
+            admin.adminUpdateAssessment(v.id, v.patch),
         onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activity", v.activity_id] }),
     });
 }
@@ -173,7 +191,8 @@ export function useDeleteAssessment() {
 export function useAdminQuestions(opts: { search?: string; type?: QuestionType } = {}) {
     return useInfiniteQuery({
         queryKey: [...ADMIN_KEY, "questions", opts],
-        queryFn: ({ pageParam }) => admin.adminListQuestions({ ...opts, cursor: pageParam as string | null, limit: 25 }),
+        queryFn: ({ pageParam }) =>
+            admin.adminListQuestions({ ...opts, cursor: pageParam as string | null, limit: 25 }),
         initialPageParam: null as string | null,
         getNextPageParam: (last) => last.nextCursor,
     });
@@ -195,6 +214,40 @@ export function useArchiveQuestion() {
     });
 }
 
+/** Update only the question row (no options). */
+export function useUpdateQuestion() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (v: { id: string; patch: Partial<CpdQuestion> }) =>
+            admin.adminUpdateQuestion(v.id, v.patch),
+        onSuccess: () => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "questions"] }),
+    });
+}
+
+/**
+ * Update a question AND replace its options in one call.
+ * Splits the payload so Supabase never tries to write an `options`
+ * column onto cpd_questions (which caused PGRST204).
+ */
+export function useUpdateQuestionWithOptions() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (v: {
+            id: string;
+            patch: Partial<CpdQuestion>;
+            options?: { option_text: string; is_correct: boolean; position?: number }[];
+        }) => {
+            const updated = await admin.adminUpdateQuestion(v.id, v.patch);
+            if (v.options !== undefined) {
+                await admin.adminReplaceQuestionOptions(v.id, v.options);
+            }
+            return updated;
+        },
+        onSuccess: () =>
+            qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "questions"] }),
+    });
+}
+
 // ─────────────────────────────────────────────────────────────
 // ASSESSMENT ↔ QUESTION
 // ─────────────────────────────────────────────────────────────
@@ -211,7 +264,8 @@ export function useAttachQuestion() {
     return useMutation({
         mutationFn: (input: { assessment_id: string; question_id: string; position: number; points?: number }) =>
             admin.adminAttachQuestion(input),
-        onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "assessment-questions", v.assessment_id] }),
+        onSuccess: (_d, v) =>
+            qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "assessment-questions", v.assessment_id] }),
     });
 }
 
@@ -219,7 +273,8 @@ export function useDetachQuestion() {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (v: { id: string; assessment_id: string }) => admin.adminDetachQuestion(v.id),
-        onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "assessment-questions", v.assessment_id] }),
+        onSuccess: (_d, v) =>
+            qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "assessment-questions", v.assessment_id] }),
     });
 }
 
@@ -229,7 +284,8 @@ export function useDetachQuestion() {
 export function useUploadThumbnail() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (v: { file: File; activityId: string }) => admin.adminUploadThumbnail(v.file, v.activityId),
+        mutationFn: (v: { file: File; activityId: string }) =>
+            admin.adminUploadThumbnail(v.file, v.activityId),
         onSuccess: (_url, v) => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "activity", v.activityId] }),
     });
 }
@@ -259,7 +315,8 @@ export function useCreatePeriod() {
 export function useAdminCompletions(opts: { status?: string; activityId?: string } = {}) {
     return useInfiniteQuery({
         queryKey: [...ADMIN_KEY, "completions", opts],
-        queryFn: ({ pageParam }) => admin.adminListCompletions({ ...opts, cursor: pageParam as string | null, limit: 25 }),
+        queryFn: ({ pageParam }) =>
+            admin.adminListCompletions({ ...opts, cursor: pageParam as string | null, limit: 25 }),
         initialPageParam: null as string | null,
         getNextPageParam: (last) => last.nextCursor,
     });
@@ -272,6 +329,7 @@ export function useRevokeCompletion() {
         onSuccess: () => qc.invalidateQueries({ queryKey: [...ADMIN_KEY, "completions"] }),
     });
 }
+
 // ─────────────────────────────────────────────────────────────
 // MEDRAE COIN CONFIG — single source of truth
 // ─────────────────────────────────────────────────────────────
@@ -289,6 +347,7 @@ export function useMedraeCoinConfig() {
     return useQuery({
         queryKey: ["medrae", "coin-config"],
         queryFn: async (): Promise<MedraeCoinConfig> => {
+            const { supabase } = await import("@/lib/supabaseClient");
             const { data, error } = await supabase
                 .from("medrae_coin_config")
                 .select("*")
@@ -297,7 +356,7 @@ export function useMedraeCoinConfig() {
             if (error) throw error;
             return data as MedraeCoinConfig;
         },
-        staleTime: 5 * 60 * 1000,   // 5 min
-        gcTime: 30 * 60 * 1000,     // 30 min
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
     });
 }
