@@ -654,10 +654,11 @@ export default function StudentLanding() {
                                 </div>
 
                                 {/* Right: video in a constrained card */}
-                                <div className="order-1 lg:order-2">
-                                    <div className="relative rounded-2xl overflow-hidden bg-slate-900
-                                    shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]
-                                    ring-1 ring-slate-900/5">
+                                <div className="order-1 lg:order-2 -mx-4 md:mx-0">
+                                    <div className="relative overflow-hidden bg-slate-900
+                    rounded-none md:rounded-2xl
+                    shadow-none md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]
+                    md:ring-1 md:ring-slate-900/5">
                                         <div className="relative aspect-video w-full">
                                             <video
                                                 className="w-full h-full object-cover"
@@ -672,8 +673,8 @@ export default function StudentLanding() {
                                                 Your browser does not support the video tag.
                                             </video>
                                             <div className="absolute bottom-0 left-0 right-0
-                                            bg-gradient-to-t from-black/70 to-transparent
-                                            p-4 md:p-5 pointer-events-none">
+                            bg-gradient-to-t from-black/70 to-transparent
+                            p-4 md:p-5 pointer-events-none">
                                                 <p className="text-white text-xs md:text-sm font-medium opacity-90">
                                                     Medrae Nursing Kenya — Made for Nurses
                                                 </p>
