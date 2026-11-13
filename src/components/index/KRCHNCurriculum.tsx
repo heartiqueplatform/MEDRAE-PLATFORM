@@ -196,7 +196,7 @@ const KRCHNCurriculum = () => {
                                 <span className="font-semibold text-slate-700">Modules</span>
                                 <span className="text-emerald-600 font-bold">18 + 22</span>
                             </div>
-                            <div className="text-[10px] md:text-xs text-slate-500 leading-relaxed pt-1.5 md:pt-2 border-t">
+                            <div className="text-[10px] md:text-xs text-slate-500 leading-relaxed pt-1.5 md:pt-2 border-0">
                                 Communication, Anatomy & Physiology, Fundamentals of Nursing I & II,
                                 Microbiology, Psychology, Maternal & Newborn Health, Community Health,
                                 Pharmacology I, Medical-Surgical Nursing, and clinical practicums.
@@ -231,7 +231,7 @@ const KRCHNCurriculum = () => {
                                 <span className="font-semibold text-slate-700">Modules</span>
                                 <span className="text-blue-600 font-bold">13 + 11</span>
                             </div>
-                            <div className="text-[10px] md:text-xs text-slate-500 leading-relaxed pt-1.5 md:pt-2 border-t">
+                            <div className="text-[10px] md:text-xs text-slate-500 leading-relaxed pt-1.5 md:pt-2 border-0">
                                 Pharmacology II, Pediatric Nursing & IMCI, Mental & Psychiatric Health,
                                 Orthopedic, Endocrinological, ENT, Ophthalmic, Perioperative,
                                 Palliative Care, Gynaecology, Research, Community Strategy.
@@ -266,7 +266,7 @@ const KRCHNCurriculum = () => {
                                 <span className="font-semibold text-slate-700">Modules</span>
                                 <span className="text-purple-600 font-bold">9 + 7 Clinical</span>
                             </div>
-                            <div className="text-[10px] md:text-xs text-slate-500 leading-relaxed pt-1.5 md:pt-2 border-t">
+                            <div className="text-[10px] md:text-xs text-slate-500 leading-relaxed pt-1.5 md:pt-2 border-0">
                                 Teaching Methodology, Neurological, Dermatological, Gerontological
                                 Nursing, Epidemiology, Communicable Diseases, Health Systems
                                 Management, and intensive clinical practicums.
