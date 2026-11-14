@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 
 const CACHE_KEY_PREFIX = "notifs_cache_";
 
@@ -99,20 +100,6 @@ export function Notifications() {
     };
     initialize();
   }, []);
-
-  useEffect(() => {
-    if (selectedNotification) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
-  }, [selectedNotification]);
 
   const fetchNotifications = async (uid: string) => {
     try {
@@ -373,98 +360,68 @@ export function Notifications() {
       </div>
 
       {/* ============================================
-          FULL-SCREEN OVERLAY — borderless, gradient
+          CENTERED MODAL — replaces the old bottom sheet
           ============================================ */}
-      {selectedNotification && (
-        <div
-          className="fixed inset-0 z-[2147483647] flex items-end md:items-center justify-center p-0 md:p-4"
-          onClick={() => setSelectedNotification(null)}
-        >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" />
+      <CenteredModal
+        open={!!selectedNotification}
+        onClose={() => setSelectedNotification(null)}
+        title={selectedNotification?.title ?? ""}
+        maxWidthClass="max-w-md"
+        maxHeight="90vh"
+      >
+        {selectedNotification && (() => {
+          const style = getNotificationStyles(selectedNotification.type);
+          return (
+            <div className="px-4 pb-4 space-y-3">
 
-          <div
-            className="relative w-full md:max-w-lg md:w-full
-              bg-white dark:bg-muted/30
-              md:rounded-3xl
-              shadow-2xl
-              animate-in slide-in-from-bottom duration-300 md:slide-in-from-bottom-4
-              max-h-[92vh] md:max-h-[90vh]
-              flex flex-col
-              pb-[env(safe-area-inset-bottom)]
-              border-0 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="pointer-events-none absolute inset-0 z-0
-              bg-gradient-to-br from-blue-50/40 via-transparent to-purple-50/30
-              dark:from-blue-950/10 dark:via-transparent dark:to-purple-950/10" />
-
-            <div className="relative z-10 md:hidden flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            </div>
-
-            <div className="relative z-10 flex items-start justify-between p-4 md:p-6 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className={`h-12 w-12 rounded-2xl ${getNotificationStyles(selectedNotification.type).bg} ${getNotificationStyles(selectedNotification.type).color} flex items-center justify-center border-0`}>
-                  {getNotificationStyles(selectedNotification.type).icon}
-                </div>
-                <div>
-                  <span className={`text-[10px]   uppercase ${getNotificationStyles(selectedNotification.type).color}`}>
-                    {getNotificationStyles(selectedNotification.type).label}
-                  </span>
-                  <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-                    {selectedNotification.title}
-                  </h2>
-                </div>
+              {/* Category chip */}
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase
+                                  px-2 py-1 rounded-md ${style.bg} ${style.color}`}>
+                  {style.icon}
+                  {style.label}
+                </span>
               </div>
-              <button
-                onClick={() => setSelectedNotification(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border-0"
-              >
-                <X size={20} />
-              </button>
-            </div>
 
-            <div className="relative z-10 h-px bg-slate-100 dark:bg-slate-800 shrink-0" />
-
-            <div className="relative z-10 p-4 md:p-6 overflow-y-auto flex-1 min-h-0">
-              <div className="mb-4">
-                <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+              {/* Message body */}
+              <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                   {selectedNotification.message}
                 </p>
               </div>
 
-              <div className="space-y-3 pt-4">
-                <div className="h-px bg-slate-100 dark:bg-slate-800" />
-                <div className="flex items-center gap-2 text-xs text-slate-500 pt-3">
-                  <Clock size={14} />
-                  <span>{formatDate(selectedNotification.created_at)}</span>
-                </div>
+              {/* Meta */}
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+                <Clock size={13} />
+                <span>{formatDate(selectedNotification.created_at)}</span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06]
+                             text-slate-700 dark:text-slate-200
+                             text-[12px] font-bold
+                             active:scale-[0.97] transition-transform"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={(e) => deleteNotification(e, selectedNotification.id)}
+                  className="flex-1 h-10 rounded-xl bg-rose-500 hover:bg-rose-600
+                             text-white text-[12px] font-bold
+                             flex items-center justify-center gap-1.5
+                             active:scale-[0.97] transition-transform"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
               </div>
             </div>
-
-            <div className="relative z-10 flex gap-3 p-4 md:p-6 shrink-0
-              bg-slate-50 dark:bg-slate-900/40
-              md:rounded-b-3xl
-              border-0">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedNotification(null)}
-                className="flex-1 border-0 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                Close
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={(e) => deleteNotification(e, selectedNotification.id)}
-                className="flex-1 border-0"
-              >
-                <Trash2 size={16} className="mr-2" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
+      </CenteredModal>
     </>
   );
 }

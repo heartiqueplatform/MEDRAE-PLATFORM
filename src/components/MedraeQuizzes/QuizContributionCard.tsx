@@ -4,12 +4,11 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Sparkles,
     PlusCircle,
     Trophy,
-    Users,
     Star,
     Bookmark,
     Share2,
@@ -23,19 +22,36 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { playSound } from "@/lib/soundManager";
 
 /* ------------------------------------------------------------------ */
-/*  Coin rewards — must match constants.ts / medrae_stu_coin_rules    */
+/*  Carousel images — matched to unit-card image height               */
 /* ------------------------------------------------------------------ */
+const CAROUSEL_IMAGES = [
+    {
+        src: "https://plus.unsplash.com/premium_photo-1672660509844-449cb70bfcbe?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+        alt: "Creator writing quiz questions",
+    },
+    {
+        src: "https://images.unsplash.com/photo-1604594849809-dfedbc827105?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+        alt: "Nursing study notes and coins",
+    },
+    {
+        src: "https://images.unsplash.com/photo-1772413438631-a4bc7ccf0f4a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+        alt: "Students collaborating on quizzes",
+    },
+] as const;
 
+/* ------------------------------------------------------------------ */
+/*  Coin rewards                                                      */
+/* ------------------------------------------------------------------ */
 const REWARDS = [
-    { label: "Someone starts your quiz", icon: Play, coins: 3, tone: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10" },
-    { label: "Someone rates your quiz", icon: Star, coins: 4, tone: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10" },
-    { label: "Someone bookmarks your quiz", icon: Bookmark, coins: 3, tone: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" },
-    { label: "Someone shares your quiz", icon: Share2, coins: 6, tone: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10" },
-    { label: "Someone votes difficulty", icon: Flame, coins: 1, tone: "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10" },
+    { label: "Someone starts your quiz", icon: Play, coins: 3 },
+    { label: "Someone rates your quiz", icon: Star, coins: 4 },
+    { label: "Someone bookmarks your quiz", icon: Bookmark, coins: 3 },
+    { label: "Someone shares your quiz", icon: Share2, coins: 6 },
+    { label: "Someone votes difficulty", icon: Flame, coins: 1 },
 ] as const;
 
 interface Props {
-    /** Optional — hide the "author stats" section if the parent already shows it */
+    /** Optional — hide reward chips if the parent already shows them */
     compact?: boolean;
 }
 
@@ -51,8 +67,18 @@ export function QuizContributionCard({ compact = false }: Props) {
     const navigate = useNavigate();
     const [summary, setSummary] = useState<OwnQuizSummary | null>(null);
     const [loading, setLoading] = useState(false);
+    const [imgIndex, setImgIndex] = useState(0);
 
-    /* ── Fetch author stats — only if user has authored quizzes ── */
+    /* ── Auto-advance carousel every 4s ── */
+    useEffect(() => {
+        const t = setInterval(
+            () => setImgIndex((i) => (i + 1) % CAROUSEL_IMAGES.length),
+            4000
+        );
+        return () => clearInterval(t);
+    }, []);
+
+    /* ── Fetch author stats ── */
     useEffect(() => {
         if (!user?.id) {
             setSummary(null);
@@ -64,7 +90,6 @@ export function QuizContributionCard({ compact = false }: Props) {
 
         (async () => {
             try {
-                // Total quizzes + questions this user authored
                 const { data: quizzes } = await supabase
                     .from("quizzes")
                     .select("id, question_count")
@@ -82,7 +107,6 @@ export function QuizContributionCard({ compact = false }: Props) {
                     return;
                 }
 
-                // Total earned from quiz-author actions
                 const { data: ledger } = await supabase
                     .from("medrae_stu_coin_ledger")
                     .select("action, coins")
@@ -96,7 +120,6 @@ export function QuizContributionCard({ compact = false }: Props) {
                     (sum, r) => sum + (Number(r.coins) || 0),
                     0
                 );
-
                 const totalQuestions = quizzes.reduce(
                     (sum, q) => sum + (Number(q.question_count) || 0),
                     0
@@ -124,14 +147,9 @@ export function QuizContributionCard({ compact = false }: Props) {
 
     const hasAnyQuiz = (summary?.total_quizzes ?? 0) > 0;
 
-    /* ── CTA routing ── */
     const handleCTA = () => {
         playSound("ui-tap");
         if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(15);
-
-        // Existing creators → explainer first
-        // New creators → the contribute wizard
-        // (the wizard's Gate redirects unapproved users to /wallet)
         navigate(hasAnyQuiz ? "/wallet/learn" : "/contribute");
     };
 
@@ -140,32 +158,85 @@ export function QuizContributionCard({ compact = false }: Props) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="relative overflow-hidden rounded-2xl
-                       bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700
-                       text-white
-                       shadow-lg shadow-purple-600/20"
+            className="group relative overflow-hidden rounded-2xl
+                       bg-white dark:bg-[#161b22]
+                       shadow-sm
+                       text-gray-900 dark:text-white
+                       h-full min-h-[28rem] flex flex-col"
         >
-            {/* Decorative dots */}
-            <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+            {/* ══ CAROUSEL (matches unit card image height) ══ */}
+            <div className="relative h-60 sm:h-64 w-full overflow-hidden shrink-0">
+                <AnimatePresence mode="wait">
+                    <motion.img
+                        key={imgIndex}
+                        src={CAROUSEL_IMAGES[imgIndex].src}
+                        alt={CAROUSEL_IMAGES[imgIndex].alt}
+                        initial={{ opacity: 0, scale: 1.08 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.04 }}
+                        transition={{ duration: 0.9, ease: "easeOut" }}
+                        className="absolute inset-0 h-full w-full object-cover"
+                        loading={imgIndex === 0 ? "eager" : "lazy"}
+                    />
+                </AnimatePresence>
 
-            <div className="relative p-4 space-y-3">
+                {/* Gradient overlay for label legibility */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
+
+                {/* Top-right "NEW" style badge */}
+                <div className="absolute top-3 right-3">
+                    <div className="flex items-center gap-1 text-[10px] font-bold
+                                    px-2 py-1 rounded-lg
+                                    bg-white/90 dark:bg-[#0d1117]/90
+                                    backdrop-blur-md
+                                    text-purple-700 dark:text-purple-400">
+                        <Sparkles className="w-3 h-3" /> EARN
+                    </div>
+                </div>
+
+                {/* Bottom label */}
+                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-white/80">
+                            Creator Program
+                        </p>
+                        <p className="text-sm font-bold text-white leading-tight truncate">
+                            {hasAnyQuiz ? "Your quizzes are earning" : "Share questions. Earn MedraeCoins."}
+                        </p>
+                    </div>
+                    {/* Carousel dots */}
+                    <div className="flex gap-1 shrink-0">
+                        {CAROUSEL_IMAGES.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setImgIndex(i)}
+                                aria-label={`Show image ${i + 1}`}
+                                className={`h-1.5 rounded-full transition-all ${i === imgIndex
+                                    ? "w-4 bg-white"
+                                    : "w-1.5 bg-white/50 hover:bg-white/80"
+                                    }`}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* ══ CONTENT ══ */}
+            <div className="relative flex-1 p-4 flex flex-col gap-3 min-h-0">
                 {/* Header */}
                 <div className="flex items-start gap-2.5">
-                    <div className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-4 h-4" />
+                    <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-500/15
+                                    flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">
-                            {hasAnyQuiz ? "You're contributing" : "New"}
-                        </p>
-                        <h3 className="text-[15px] font-bold leading-tight mt-0.5">
+                        <h3 className="text-[14px] font-bold leading-tight">
                             {hasAnyQuiz ? "Earn from your quizzes" : "Create quizzes. Earn coins."}
                         </h3>
-                        <p className="text-[11.5px] opacity-85 leading-snug mt-1">
+                        <p className="text-[11.5px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5 line-clamp-2">
                             {hasAnyQuiz
                                 ? "Every start, rate, bookmark, and share pays you coins automatically."
-                                : "Add a quiz unit with 50+ questions and start earning every time someone engages with it."}
+                                : "Add a quiz unit with 50+ questions and start earning when others engage."}
                         </p>
                     </div>
                 </div>
@@ -173,33 +244,22 @@ export function QuizContributionCard({ compact = false }: Props) {
                 {/* Author stats — only if user has quizzes */}
                 {hasAnyQuiz && (
                     <div className="grid grid-cols-3 gap-2">
-                        <StatChip
-                            label="Quizzes"
-                            value={summary?.total_quizzes ?? 0}
-                            loading={loading}
-                        />
-                        <StatChip
-                            label="Questions"
-                            value={summary?.total_questions ?? 0}
-                            loading={loading}
-                        />
-                        <StatChip
-                            label="Earned"
-                            value={summary?.total_earned ?? 0}
-                            loading={loading}
-                            accent
-                        />
+                        <StatChip label="Quizzes" value={summary?.total_quizzes ?? 0} loading={loading} />
+                        <StatChip label="Questions" value={summary?.total_questions ?? 0} loading={loading} />
+                        <StatChip label="Earned" value={summary?.total_earned ?? 0} loading={loading} accent />
                     </div>
                 )}
 
-                {/* Reward chips — compact row */}
+                {/* Reward chips */}
                 {!compact && (
                     <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
                         {REWARDS.map((r) => (
                             <div
                                 key={r.label}
                                 className="shrink-0 flex items-center gap-1.5 rounded-full
-                                           bg-white/15 px-2.5 py-1
+                                           bg-purple-50 dark:bg-purple-500/10
+                                           text-purple-700 dark:text-purple-300
+                                           px-2.5 py-1
                                            text-[10px] font-bold whitespace-nowrap"
                             >
                                 <r.icon className="w-3 h-3" />
@@ -211,22 +271,26 @@ export function QuizContributionCard({ compact = false }: Props) {
 
                 {/* Milestone callout — if not yet reached */}
                 {summary && !summary.has_50_question_quiz && (
-                    <div className="rounded-xl bg-white/10 px-3 py-2 flex items-center gap-2">
-                        <Trophy className="w-3.5 h-3.5 shrink-0 text-amber-300" />
-                        <p className="text-[10.5px] leading-snug">
+                    <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10
+                                    px-3 py-2 flex items-center gap-2
+                                    border border-amber-200/60 dark:border-amber-500/20">
+                        <Trophy className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <p className="text-[10.5px] leading-snug text-amber-800 dark:text-amber-300">
                             Bonus: <strong className="font-bold">+100 coins</strong> when a quiz hits 50 questions
                         </p>
                     </div>
                 )}
 
-                {/* CTA */}
+                {/* CTA — pinned to bottom */}
                 <button
                     onClick={handleCTA}
-                    className="w-full h-10 rounded-xl bg-white text-purple-700
-                               text-[13px] font-bold
+                    className="mt-auto w-full h-11 rounded-2xl
+                               bg-gradient-to-r from-purple-600 to-fuchsia-600
+                               hover:from-purple-700 hover:to-fuchsia-700
+                               text-white text-[13px] font-bold
                                flex items-center justify-center gap-1.5
                                active:scale-[0.97] transition-transform
-                               shadow-sm"
+                               shadow-lg shadow-purple-500/20"
                     style={{ touchAction: "manipulation" }}
                 >
                     {hasAnyQuiz ? (
@@ -249,7 +313,6 @@ export function QuizContributionCard({ compact = false }: Props) {
 /* ------------------------------------------------------------------ */
 /*  Small stat chip                                                   */
 /* ------------------------------------------------------------------ */
-
 function StatChip({
     label,
     value,
@@ -262,14 +325,13 @@ function StatChip({
     accent?: boolean;
 }) {
     return (
-        <div className="rounded-xl bg-white/10 px-2.5 py-1.5 min-w-0">
-            <p className="text-[8.5px] font-bold uppercase tracking-wider opacity-70 truncate">
+        <div className="rounded-xl bg-gray-50 dark:bg-white/[0.06] px-2.5 py-1.5 min-w-0">
+            <p className="text-[8.5px] font-bold uppercase tracking-wider
+                          text-gray-500 dark:text-gray-400 truncate">
                 {label}
             </p>
-            <p
-                className={`text-[13px] font-bold tabular-nums leading-tight truncate mt-0.5 ${accent ? "text-amber-300" : ""
-                    }`}
-            >
+            <p className={`text-[13px] font-bold tabular-nums leading-tight truncate mt-0.5
+                          ${accent ? "text-amber-600 dark:text-amber-400" : "text-gray-900 dark:text-white"}`}>
                 {loading ? (
                     <Loader2 className="w-3 h-3 animate-spin opacity-70" />
                 ) : (

@@ -795,9 +795,7 @@ export function MedraeQuizzes() {
                 </div>
               </div>
             </CardContent>
-            <div className="px-4 sm:px-0 pb-2">
-              <QuizContributionCard />
-            </div>
+
             {/* Dynamic Papers Rendering */}
             {isLoading ? (
               <div className="space-y-4 px-2 sm:px-0">
@@ -872,7 +870,13 @@ export function MedraeQuizzes() {
                       </div>
 
                       {/* GRID */}
+
                       <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
+
+                        {/* ✅ Contribution card — only once, on the first paper */}
+                        {paper.paperNumber === papers[0]?.paperNumber && (
+                          <QuizContributionCard variant="card" />
+                        )}
                         {/* ✅ Last Minute card — ONLY on the first paper, so it appears once */}
                         {paper.paperNumber === papers[0]?.paperNumber && (
                           <LastMinuteCard
