@@ -1221,7 +1221,9 @@ export default function StudentDashboard() {
             </div>
           </div>
         </CenteredModal>
-
+        <DeferredMount fallback={<div className="h-[140px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
+          <DailyStatus />
+        </DeferredMount>
 
 
         {/* --- SIMULATION PAPERS SECTION --- */}
@@ -1358,9 +1360,7 @@ export default function StudentDashboard() {
             </div>
           </section>
         </DeferredMount>
-        <DeferredMount fallback={<div className="h-[140px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <DailyStatus />
-        </DeferredMount>
+
 
         <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
           <UnitBreakdown />
