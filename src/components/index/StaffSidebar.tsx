@@ -1,15 +1,11 @@
 // src/components/index/StaffSidebar.tsx
 import {
     Coins, Award, ShieldCheck, Star, TrendingUp, Trophy,
-    UserPlus, BookOpen, ClipboardList, HelpCircle,
+    BookOpen, ClipboardList, HelpCircle,
 } from "lucide-react";
-import {
-    BaseSidebarDesktop,
-    BaseSidebarMobileTrigger,
-    BaseSidebarDrawer,
-} from "./BaseSidebar";
+import { BaseTopNav } from "./BaseTopNav";
+import { BaseSidebarMobileTrigger, BaseSidebarDrawer } from "./BaseSidebar";
 
-/* Staff page (StaffLanding.tsx) has these anchor sections */
 const SECTIONS = [
     { id: "home", label: "Home", icon: Coins },
     { id: "benefits", label: "What You Get", icon: Award },
@@ -17,7 +13,6 @@ const SECTIONS = [
     { id: "cta", label: "Get Started", icon: Star },
 ] as const;
 
-/* CPD-specific SEO + help links */
 const GUIDES = [
     { to: "/cpd/coins-policy", label: "MedraeCoins Policy", icon: Coins },
     { to: "/nck-exam-revision", label: "NCK Exam Revision", icon: BookOpen },
@@ -37,8 +32,8 @@ const baseProps = {
     guidesLabel: "CPD Resources",
 };
 
-export function StaffSidebarDesktop() {
-    return <BaseSidebarDesktop {...baseProps} />;
+export function StaffTopNav() {
+    return <BaseTopNav {...baseProps} />;
 }
 
 export function StaffSidebarMobileTrigger({ onOpen }: { onOpen: () => void }) {

@@ -3,11 +3,8 @@ import {
     Users, Shield, BarChart3, ClipboardList, Clock, CheckCircle2,
     HelpCircle, BookOpen, FileText,
 } from "lucide-react";
-import {
-    BaseSidebarDesktop,
-    BaseSidebarMobileTrigger,
-    BaseSidebarDrawer,
-} from "./BaseSidebar";
+import { BaseTopNav } from "./BaseTopNav";
+import { BaseSidebarMobileTrigger, BaseSidebarDrawer } from "./BaseSidebar";
 
 const SECTIONS = [
     { id: "home", label: "Home", icon: Users },
@@ -34,8 +31,8 @@ const baseProps = {
     guidesLabel: "Tutor Tools",
 };
 
-export function TutorSidebarDesktop() {
-    return <BaseSidebarDesktop {...baseProps} />;
+export function TutorTopNav() {
+    return <BaseTopNav {...baseProps} />;
 }
 
 export function TutorSidebarMobileTrigger({ onOpen }: { onOpen: () => void }) {

@@ -74,9 +74,25 @@ export default function Index() {
     sessionStorage.removeItem("medrae.seen_chooser");
     nav(`/for/${id}`);
   };
-
+  // Hide page scrollbar while on Index
+  useEffect(() => {
+    document.documentElement.style.scrollbarWidth = "none"; // Firefox
+    document.documentElement.style.msOverflowStyle = "none"; // IE/Edge
+    const style = document.createElement("style");
+    style.id = "hide-scrollbar-index";
+    style.textContent = `
+      html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+      html, body { -ms-overflow-style: none; scrollbar-width: none; }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.documentElement.style.scrollbarWidth = "";
+      document.documentElement.style.msOverflowStyle = "";
+      document.getElementById("hide-scrollbar-index")?.remove();
+    };
+  }, []);
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0d1117] text-white">
+    <div className="min-h-screen relative overflow-hidden bg-[#0d1117] text-white no-scrollbar">
 
       {/* ═══════════════ FULL-BLEED IMAGE SLIDESHOW ═══════════════ */}
       <div className="fixed inset-0 z-0">

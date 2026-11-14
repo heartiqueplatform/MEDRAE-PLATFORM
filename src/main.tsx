@@ -1,5 +1,14 @@
 "use client";
 
+// ─────────────────────────────────────────────────────────────
+// Boot white guard — force white paint at parse time so no dark
+// frame can appear before React, AuthGate, or the loader resolves.
+// ─────────────────────────────────────────────────────────────
+if (typeof document !== "undefined") {
+    document.documentElement.style.backgroundColor = "#ffffff";
+    if (document.body) document.body.style.backgroundColor = "#ffffff";
+}
+
 import { createRoot } from "react-dom/client";
 import { registerSW } from 'virtual:pwa-register';
 import App from "./App.tsx";
@@ -16,7 +25,6 @@ import "@fontsource/poppins/800.css";
  * App Version Control - Smart Cache Management
  */
 const APP_VERSION = "2.0.011";
-
 
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
@@ -109,17 +117,9 @@ const precacheAssets = async () => {
 
 /**
  * Smart Fetch Interceptor with Cache-First Strategy
- *
- * 🔧 CRITICAL: Supabase auth traffic MUST bypass this interceptor.
- * The old version returned a fake `200 OK` with body `{}` when a
- * Supabase request failed. That made Supabase's auth client parse
- * the empty body as "no session" and fire SIGNED_OUT — the root
- * cause of the offline → kicked_out → Index cascade.
  */
 const originalFetch = window.fetch;
 
-// 🔧 Regex that matches auth endpoints. Anything matching this goes
-// straight to originalFetch with no interception, no fallback.
 const AUTH_URL_PATTERN =
     /\/auth\/v1\/|\/auth\/|\/token\b|\/refresh\b|grant_type=|\/user\?/i;
 
@@ -131,11 +131,6 @@ window.fetch = async function (...args) {
                 ? args[0].url
                 : String(args[0]);
 
-    // 🔧 GUARD 1: Never intercept auth traffic.
-    // If Supabase's auth client needs to refresh a token and the
-    // network is down, we want that to surface as a real network
-    // error — not a fake 200. authManager's guards handle the real
-    // error; a fake 200 breaks Supabase's parser and forces a logout.
     if (AUTH_URL_PATTERN.test(url)) {
         return originalFetch.apply(this, args);
     }
@@ -150,9 +145,6 @@ window.fetch = async function (...args) {
             const cache = await caches.open(CACHE_NAMES.assets);
             const cachedResponse = await cache.match(url);
             if (cachedResponse) {
-                // 🔧 Use originalFetch here, not the intercepted one,
-                // to avoid a recursive interception on the background
-                // refresh. The refresh is best-effort; a failure is fine.
                 originalFetch(url)
                     .then((res) => {
                         if (res.ok) cache.put(url, res.clone()).catch(() => { });
@@ -173,17 +165,10 @@ window.fetch = async function (...args) {
             }
             return response;
         } catch (err) {
-            // 🔧 Network failed and we had no cache — rethrow so the
-            // caller knows. The old version didn't have a catch here,
-            // so this branch is new and prevents silent failures.
             throw err;
         }
     }
 
-    // 🔧 GUARD 3: Supabase data traffic (non-auth). We still want a
-    // graceful offline fallback for *data* queries — but only for
-    // reads. Writes (POST/PATCH/PUT/DELETE) must fail loudly so the
-    // caller's error handling runs.
     if (isSupabase) {
         const method = (() => {
             if (typeof args[1] === 'object' && args[1]?.method) {
@@ -197,7 +182,6 @@ window.fetch = async function (...args) {
         try {
             return await originalFetch.apply(this, args);
         } catch (err) {
-            // 🔧 Writes fail loudly — never fake a success for a mutation.
             if (!isReadRequest) throw err;
 
             const isListRequest = url.includes('?') || url.includes('select=');
@@ -238,8 +222,6 @@ const initPWA = () => {
         cleanupOldCaches();
         localStorage.setItem("appVersion", APP_VERSION);
         console.log('App version updated to:', APP_VERSION);
-        // No reload — caches are already namespaced by APP_VERSION,
-        // so old caches get evicted without tearing down the page.
     }
 };
 
@@ -293,12 +275,6 @@ updateSW = registerSW({
                 }
             });
             window.dispatchEvent(updateEvent);
-
-            const isInExam = window.location.pathname.includes('/exam') ||
-                window.location.pathname.includes('/simulation');
-            if (!isInExam) {
-                console.log('Notifying user of pending update');
-            }
         }
     },
 });
@@ -309,7 +285,7 @@ updateSW = registerSW({
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    (window as any).__deferredInstallPrompt = e;  // 👈 ADD THIS LINE
+    (window as any).__deferredInstallPrompt = e;
     console.log('App can be installed');
 
     const installEvent = new CustomEvent('pwa-install-ready', {
@@ -340,18 +316,11 @@ window.addEventListener('offline', () => {
 
 /**
  * Error Handling for PWA
- *
- * 🔧 Only react to errors that are actually about the service worker.
- * The old handler called navigator.serviceWorker.getRegistrations()
- * on every generic error containing "ServiceWorker" — which includes
- * benign console noise from third-party scripts. It also caused a
- * double-update on every SW error during boot.
  */
 window.addEventListener('error', (e) => {
     if (!e.message || !e.message.includes('ServiceWorker')) return;
     if (!('serviceWorker' in navigator)) return;
 
-    // Only react if the SW controller is actually in a bad state.
     if (navigator.serviceWorker.controller) {
         console.error('Service Worker Error:', e.message);
     } else {
@@ -378,15 +347,42 @@ const initApp = async () => {
         </BrowserRouter>
     );
 
-    // Hide the HTML splash as soon as React commits.
-    // Hide the HTML splash only after React has committed AND the
-    // browser has painted the next frame. Prevents the brief window
-    // where the splash is gone but #root is still empty.
+    // ─────────────────────────────────────────────────────────────
+    // Hide the loader ONLY after #root has real painted content.
+    // This eliminates the flash that happens when the loader
+    // disappears before AuthGate resolves and the landing mounts.
+    // ─────────────────────────────────────────────────────────────
+    const tryHideLoader = (attempts = 0) => {
+        const rootEl = document.getElementById("root");
+
+        // A root with children AND meaningful height means something
+        // real has been painted into it. AuthGate's fallback (white
+        // overlay) also satisfies this, which is correct — we want
+        // to hide once the white overlay is showing, not before.
+        const hasContent =
+            rootEl &&
+            rootEl.children.length > 0 &&
+            rootEl.getBoundingClientRect().height > 50;
+
+        if (hasContent || attempts >= 25) {
+            // Content is painted (or we've waited ~5s) — hide loader.
+            // Extra 80ms guarantees the browser has composited the frame.
+            setTimeout(() => {
+                (window as any).hideMedraeLoader?.();
+            }, 80);
+            return;
+        }
+
+        // Poll again in 200ms
+        setTimeout(() => tryHideLoader(attempts + 1), 200);
+    };
+
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-            (window as any).hideMedraeLoader?.();
+            tryHideLoader();
         });
     });
+
     // PWA setup in the background — never blocks first paint.
     if ('serviceWorker' in navigator) {
         setupPWA().catch(console.error);

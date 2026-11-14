@@ -1,5 +1,5 @@
 // src/pages/landing/StaffLanding.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     ArrowRight, Coins, Award, ShieldCheck, Star,
@@ -7,15 +7,31 @@ import {
     Wallet, FileText, BarChart3, Sparkles,
 } from "lucide-react";
 import {
-    StaffSidebarDesktop,
+    StaffTopNav,
     StaffSidebarMobileTrigger,
     StaffSidebarDrawer,
 } from "@/components/index/StaffSidebar";
 import SiteFooter from "@/components/index/SiteFooter";
+import { FloatingWhatsApp } from "@/components/index/FloatingWhatsApp";
 
 export default function StaffLanding() {
     const nav = useNavigate();
     const [drawerOpen, setDrawerOpen] = useState(false);
+
+    // Hide page scrollbar while this landing is mounted
+    useEffect(() => {
+        const style = document.createElement("style");
+        style.id = "hide-scrollbar-staff-landing";
+        style.textContent = `
+            html::-webkit-scrollbar,
+            body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+            html, body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.getElementById("hide-scrollbar-staff-landing")?.remove();
+        };
+    }, []);
 
     const handleSwitchRole = () => {
         localStorage.removeItem("medrae.persona");
@@ -26,10 +42,13 @@ export default function StaffLanding() {
     return (
         <div className="min-h-screen w-full overflow-x-hidden relative bg-slate-50">
 
-            {/* Sidebar + mobile trigger + drawer */}
-            <StaffSidebarDesktop />
+            {/* Desktop: top nav. Mobile: trigger → drawer */}
+            <StaffTopNav />
             <StaffSidebarMobileTrigger onOpen={() => setDrawerOpen(true)} />
             <StaffSidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+            {/* Spacer for the fixed 64px top bar (desktop only) */}
+            <div className="hidden lg:block h-16" aria-hidden />
 
             {/* ═══════════════ HERO ═══════════════ */}
             <section id="home" className="relative w-full py-12 md:py-20 px-4 md:px-6">
@@ -342,7 +361,7 @@ export default function StaffLanding() {
                     </p>
                 </div>
             </section>
-
+            <FloatingWhatsApp />
             <SiteFooter />
         </div>
     );

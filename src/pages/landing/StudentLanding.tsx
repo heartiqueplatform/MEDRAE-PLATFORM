@@ -22,12 +22,14 @@ import GroupPayLandingSection from '@/components/grouppay/GroupPayLandingSection
 import NursingMeritCupSection from '@/components/index/NursingMeritCupSection';
 import PodcastShowcaseSection from '@/components/index/PodcastShowcaseSection';
 // 🆕 New pieces
+// 🆕 New pieces
 import {
-    StudentSidebarDesktop,
+    StudentTopNav,
     StudentSidebarDrawer,
     StudentSidebarMobileTrigger,
 } from '@/components/index/StudentSidebar';
 import SiteFooter from '@/components/index/SiteFooter';
+import { FloatingWhatsApp } from '@/components/index/FloatingWhatsApp';
 
 declare global {
     interface Window {
@@ -138,6 +140,20 @@ export default function StudentLanding() {
     const [drawerOpen, setDrawerOpen] = useState(false);          // 🆕 mobile drawer state
     const navigate = useNavigate();
 
+    // Hide the page scrollbar while this page is mounted
+    useEffect(() => {
+        const style = document.createElement("style");
+        style.id = "hide-scrollbar-student-landing";
+        style.textContent = `
+            html::-webkit-scrollbar,
+            body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+            html, body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.getElementById("hide-scrollbar-student-landing")?.remove();
+        };
+    }, []);
     const [isAutoPlaying, setIsAutoPlaying] = useState(true);
     const autoPlayInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -370,129 +386,294 @@ export default function StudentLanding() {
 
 
     return (
-        <div className="min-h-screen w-full overflow-x-hidden no-scrollbar relative bg-slate-50">
-            {/* 🆕 Header — opens mobile drawer instead of dropdown when callback provided */}
-            {/* Desktop: hover-reveal sidebar. Mobile: top-left trigger → drawer */}
-            <StudentSidebarDesktop />
+        <div className="min-h-screen w-full overflow-x-hidden relative bg-slate-50">
+            {/* Desktop: top nav. Mobile: trigger → drawer */}
+            <StudentTopNav />
             <StudentSidebarMobileTrigger onOpen={() => setDrawerOpen(true)} />
             <StudentSidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-            <div className="w-full">   {/* no lg:pl-56 — no reserved header space */}
+
+            {/* Spacer for the fixed 64px top bar (desktop only) */}
+            <div className="hidden lg:block h-16" aria-hidden />
+
+            <div className="w-full">
                 {/* ═══════════════ HERO ═══════════════ */}
-                <div id="home" className="relative w-full h-[68vh] md:h-[72vh] min-h-[520px] overflow-hidden">
-                    {/* Background slideshow — cycles every 2s */}
-                    {['/high6.png', '/indexbackground2.jpg', '/high3.png'].map((img, index) => (
-                        <div
-                            key={index}
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
-                            style={{ backgroundImage: `url('${img}')`, opacity: index === activeHeroStory % 3 ? 1 : 0 }}
-                        />
-                    ))}
+                {/* ═══════════════ HERO — ALTERNATING TWO-COLUMN ═══════════════ */}
+                <section
+                    id="home"
+                    className="relative w-full bg-slate-50
+             pt-10 md:pt-16 lg:pt-20
+             pb-14 md:pb-20
+             px-4 md:px-6"
+                >
+                    <div className="max-w-6xl mx-auto space-y-14 md:space-y-20 lg:space-y-28">
 
-                    {/* Overlay — gradient from dark bottom to lighter top for text contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/80 z-0" />
+                        {/* ═══════════════════════════════════════════════════
+        ROW 1 — TEXT LEFT, IMAGE RIGHT
+        Purpose: establish what this is
+       ═══════════════════════════════════════════════════ */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
 
-                    {/* Audio mute toggle */}
-                    <button
-                        className="absolute top-4 right-4 md:top-5 md:right-6
-                   bg-black/30 backdrop-blur-md
-                   text-white p-2.5 rounded-xl
-                   z-20 hover:bg-black/50 active:scale-95
-                   transition-all"
-                        onClick={() => {
-                            setIsMuted(prev => {
-                                const newMuted = !prev;
-                                if (notificationAudioRef.current) notificationAudioRef.current.muted = newMuted;
-                                return newMuted;
-                            });
-                        }}
-                        aria-label={isMuted ? "Unmute audio" : "Mute audio"}
-                    >
-                        {isMuted ? <VolumeX className="h-4 w-4 md:h-5 md:w-5" /> : <Volume className="h-4 w-4 md:h-5 md:w-5 animate-pulse" />}
-                    </button>
+                            {/* Text column */}
+                            <div className="order-1">
+                                <p className="text-[12px] md:text-[13px] font-semibold
+                      uppercase tracking-[0.15em] text-blue-600 mb-4 md:mb-5">
+                                    Nursing exam preparation, done properly
+                                </p>
 
-                    {/* Hero content */}
-                    <div className="relative z-10 h-full flex flex-col justify-end">
-                        <div className="w-full max-w-6xl mx-auto px-4 md:px-6 pb-14 md:pb-20">
+                                <h1 className="text-slate-900 font-bold tracking-[-0.02em] leading-[1.05]
+                       text-[32px] sm:text-[42px] md:text-[48px] lg:text-[54px]">
+                                    Pass your NCK, FQEs<br />
+                                    and nursing exams.<br />
+                                    <span className="text-blue-600">With clarity, not chaos.</span>
+                                </h1>
 
-                            {/* Cadre chips — immediate relevance signal */}
-                            <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-4 md:mb-5">
-                                {["DCHN", "BSN", "KRN", "NCK prep", "CPD"].map((tag) => (
-                                    <span
-                                        key={tag}
-                                        className="px-2 md:px-2.5 py-0.5 md:py-1 rounded-full
-                                   bg-white/15 backdrop-blur-sm
-                                   text-[9px] md:text-[10px] font-bold uppercase tracking-wider
-                                   text-white/90"
+                                <p className="mt-6 text-slate-700 leading-relaxed text-[15px] md:text-[17px]">
+                                    10,500+ exam-style questions organized the way the NCK actually tests you
+                                    — by unit, by condition, by difficulty. Every answer comes with an
+                                    explanation. Every mistake gets tracked. Every weak unit gets surfaced
+                                    before exam day, not after.
+                                </p>
+
+                                <p className="mt-4 text-slate-500 leading-relaxed text-[14px] md:text-[15px]">
+                                    Built for DCHN, BSN, and KRN students across Kenya.
+                                </p>
+
+                                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        onClick={() => navigate("/register")}
+                                        className="inline-flex items-center justify-center
+                       px-6 md:px-7 py-3.5 md:py-4 rounded-lg
+                       bg-slate-900 hover:bg-slate-800
+                       text-white font-semibold text-[14px] md:text-[15px]
+                       active:scale-[0.98] transition-all"
+                                        style={{ touchAction: "manipulation" }}
                                     >
-                                        {tag}
-                                    </span>
-                                ))}
+                                        Start free
+                                    </button>
+                                    <button
+                                        onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                                        className="inline-flex items-center justify-center
+                       px-6 md:px-7 py-3.5 md:py-4 rounded-lg
+                       bg-transparent hover:bg-slate-100
+                       border border-slate-300 hover:border-slate-400
+                       text-slate-700 font-semibold text-[14px] md:text-[15px]
+                       active:scale-[0.98] transition-all"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        See what's inside
+                                    </button>
+                                </div>
+
+                                <p className="mt-5 text-[13px] text-slate-500">
+                                    Free to start. No credit card required. Cancel anytime.
+                                </p>
                             </div>
 
-                            {/* Headline */}
-                            <h1 className="text-white max-w-3xl leading-[1.05] tracking-[-0.02em]">
-                                <span className="block text-2xl md:text-4xl lg:text-[44px] font-semibold text-white/90">
-                                    Pass your NCK, FQEs & exams
-                                </span>
-                                <span className="block mt-1 text-3xl md:text-5xl lg:text-6xl font-bold">
-                                    with clarity, not chaos.
-                                </span>
-                            </h1>
+                            {/* Image column */}
+                            <div className="order-2 relative w-full
+                      h-[280px] sm:h-[340px] md:h-[420px] lg:h-[480px]
+                      overflow-hidden rounded-2xl
+                      ring-1 ring-slate-900/5">
+                                {['/high6.png', '/indexbackground2.jpg', '/high3.png'].map((img, index) => (
+                                    <div
+                                        key={index}
+                                        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+                                        style={{ backgroundImage: `url('${img}')`, opacity: index === activeHeroStory % 3 ? 1 : 0 }}
+                                    />
+                                ))}
 
-                            {/* Sub-headline */}
-                            <p className="mt-4 md:mt-5 text-[13px] md:text-base lg:text-lg text-white/80 max-w-xl leading-relaxed">
-                                10,500+ updated exam-style questions. Instant explanations after every answer.
-                                Structured revision for DCHN, BSN, KRN  and the CPD portfolio to match.
-                            </p>
+                                {/* Soft bottom gradient so dots read */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none z-0" />
 
-                            {/* CTA pair */}
-                            <div className="mt-6 md:mt-7 flex flex-col sm:flex-row gap-2.5 md:gap-3">
-                                <button
-                                    onClick={() => navigate("/register")}
-                                    className="inline-flex items-center justify-center gap-2
-                               px-5 md:px-6 py-3 md:py-3.5 rounded-xl
-                               bg-white text-slate-900
-                               text-[13px] md:text-[14px] font-bold
-                               hover:bg-slate-100 active:scale-[0.97]
-                               transition-all group"
-                                    style={{ touchAction: "manipulation" }}
-                                >
-                                    Start free
-                                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1" />
-                                </button>
+                                {/* Dots */}
+                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                                    {[0, 1, 2].map((index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => setActiveHeroStory(index)}
+                                            aria-label={`Go to slide ${index + 1}`}
+                                            className={`h-1.5 rounded-full transition-all duration-300 ${index === activeHeroStory % 3
+                                                ? 'w-8 bg-white'
+                                                : 'w-1.5 bg-white/40 hover:bg-white/60'
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Mute toggle — quiet, corner */}
                                 <button
                                     onClick={() => {
-                                        document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+                                        setIsMuted(prev => {
+                                            const next = !prev;
+                                            if (notificationAudioRef.current) notificationAudioRef.current.muted = next;
+                                            return next;
+                                        });
                                     }}
-                                    className="inline-flex items-center justify-center gap-2
-                               px-5 md:px-6 py-3 md:py-3.5 rounded-xl
-                               bg-white/10 backdrop-blur-md
-                               text-white text-[13px] md:text-[14px] font-bold
-                               hover:bg-white/20 active:scale-[0.97]
-                               transition-all"
+                                    aria-label={isMuted ? "Unmute audio" : "Mute audio"}
+                                    className="absolute top-3 right-3 z-20
+                     w-8 h-8 rounded-lg flex items-center justify-center
+                     bg-black/30 backdrop-blur-sm text-white/90
+                     hover:bg-black/50 active:scale-95 transition-all"
                                     style={{ touchAction: "manipulation" }}
                                 >
-                                    See what's inside
+                                    {isMuted
+                                        ? <VolumeX className="w-3.5 h-3.5" strokeWidth={2.2} />
+                                        : <Volume className="w-3.5 h-3.5" strokeWidth={2.2} />}
                                 </button>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Slideshow dots */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                        {[0, 1, 2].map((index) => (
-                            <button
+                        {/* ═══════════════════════════════════════════════════
+        ROW 2 — IMAGE LEFT, TEXT RIGHT
+        Purpose: why this is different
+       ═══════════════════════════════════════════════════ */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
+
+                            {/* Image column — but shows on right on mobile via order */}
+                            <div className="order-2 lg:order-1 relative w-full
+                      h-[280px] sm:h-[340px] md:h-[420px] lg:h-[480px]
+                      overflow-hidden rounded-2xl
+                      ring-1 ring-slate-900/5">
+                                <img
+                                    src="/indexbackground3.jpg"
+                                    alt="Nursing student studying with Medrae"
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                            </div>
+
+                            {/* Text column */}
+                            <div className="order-1 lg:order-2">
+                                <p className="text-[12px] md:text-[13px] font-semibold
+                      uppercase tracking-[0.15em] text-slate-400 mb-4 md:mb-5">
+                                    Why it works
+                                </p>
+
+                                <h2 className="text-slate-900 font-bold tracking-[-0.02em] leading-[1.1]
+                       text-[26px] md:text-[34px] lg:text-[40px]">
+                                    It's not just a question bank.
+                                </h2>
+
+                                <p className="mt-5 text-slate-700 leading-relaxed text-[15px] md:text-[16px]">
+                                    Every question is tied to the unit it tests, the condition it belongs to,
+                                    and the difficulty level it sits at — so you're never guessing where to
+                                    start. The whole curriculum is mapped to the NCK syllabus, not scraped
+                                    from old PDFs.
+                                </p>
+
+                                <p className="mt-4 text-slate-500 leading-relaxed text-[14px] md:text-[15px]">
+                                    Your mistakes aren't just marked wrong — they're explained, saved to a
+                                    personal log, and quietly rebuilt into your next practice session. The
+                                    algorithm notices patterns the way a good tutor would. You study what
+                                    you actually need, not what you already know.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ═══════════════════════════════════════════════════
+        ROW 3 — TEXT LEFT, IMAGE RIGHT
+        Purpose: who made it / why trust it
+       ═══════════════════════════════════════════════════ */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
+
+                            {/* Text column */}
+                            <div className="order-1">
+                                <p className="text-[12px] md:text-[13px] font-semibold
+                      uppercase tracking-[0.15em] text-slate-400 mb-4 md:mb-5">
+                                    Why Medrae
+                                </p>
+
+                                <h2 className="text-slate-900 font-bold tracking-[-0.02em] leading-[1.1]
+                       text-[26px] md:text-[34px] lg:text-[40px]">
+                                    Built with nurses,<br />
+                                    <span className="text-blue-600">not around them.</span>
+                                </h2>
+
+                                <p className="mt-5 text-slate-700 leading-relaxed text-[15px] md:text-[16px]">
+                                    Medrae was built by a team that has sat the NCK, taught at KMTC, and
+                                    watched friends fail exams they were prepared for. The platform is the
+                                    answer to that gap — the structure, the pacing, and the pressure-testing
+                                    that nursing school doesn't always give you.
+                                </p>
+
+                                <p className="mt-4 text-slate-500 leading-relaxed text-[14px] md:text-[15px]">
+                                    No shortcuts. No scraped PDFs. No "AI magic" that can't explain itself.
+                                    Just a clean, honest system built for the way nurses actually study.
+                                </p>
+                            </div>
+
+                            {/* Image column */}
+                            <div className="order-2 relative w-full
+                      h-[280px] sm:h-[340px] md:h-[420px] lg:h-[480px]
+                      overflow-hidden rounded-2xl
+                      ring-1 ring-slate-900/5">
+                                <img
+                                    src="/indexbackground5.jpg"
+                                    alt="Nursing cohort studying together"
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+                {/* ═══════════════ IMAGE BAND — QUIET SUPPORT ═══════════════ */}
+                <div className="relative w-full bg-slate-50 pb-12 md:pb-20 px-0 md:px-6">
+                    <div className="relative max-w-6xl mx-auto
+                  h-[320px] md:h-[440px] lg:h-[520px]
+                  overflow-hidden rounded-none md:rounded-2xl
+                  ring-1 ring-slate-900/5">
+                        {/* Slideshow */}
+                        {['/high6.png', '/indexbackground2.jpg', '/high3.png'].map((img, index) => (
+                            <div
                                 key={index}
-                                onClick={() => setActiveHeroStory(index)}
-                                aria-label={`Go to slide ${index + 1}`}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${index === activeHeroStory % 3
-                                    ? 'w-8 bg-white'
-                                    : 'w-1.5 bg-white/40 hover:bg-white/60'
-                                    }`}
+                                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+                                style={{ backgroundImage: `url('${img}')`, opacity: index === activeHeroStory % 3 ? 1 : 0 }}
                             />
                         ))}
+
+                        {/* Soft gradient only at bottom for dots to read */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-0 pointer-events-none" />
+
+                        {/* Slideshow dots */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                            {[0, 1, 2].map((index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setActiveHeroStory(index)}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                    className={`h-1.5 rounded-full transition-all duration-300 ${index === activeHeroStory % 3
+                                        ? 'w-8 bg-white'
+                                        : 'w-1.5 bg-white/40 hover:bg-white/60'
+                                        }`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Mute toggle — small, quiet, in the corner */}
+                        <button
+                            onClick={() => {
+                                setIsMuted(prev => {
+                                    const next = !prev;
+                                    if (notificationAudioRef.current) notificationAudioRef.current.muted = next;
+                                    return next;
+                                });
+                            }}
+                            aria-label={isMuted ? "Unmute audio" : "Mute audio"}
+                            className="absolute top-3 right-3 z-20
+                 w-8 h-8 rounded-lg flex items-center justify-center
+                 bg-black/30 backdrop-blur-sm text-white/90
+                 hover:bg-black/50 active:scale-95 transition-all"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            {isMuted
+                                ? <VolumeX className="w-3.5 h-3.5" strokeWidth={2.2} />
+                                : <Volume className="w-3.5 h-3.5" strokeWidth={2.2} />}
+                        </button>
                     </div>
                 </div>
+
                 {/* ═══════════════ CAROUSEL ═══════════════ */}
                 <div className="relative w-full py-12 md:py-16 bg-white">
                     <div className="max-w-7xl mx-auto px-4">
@@ -581,14 +762,37 @@ export default function StudentLanding() {
                     </div>
                 </div>
 
-                {/* ═══════════════ STATS ═══════════════ */}
-                <section id="stats" className="py-12 md:py-16 bg-gradient-to-r from-blue-600 to-blue-800 text-white" ref={statsRef}>
-                    <div className="max-w-7xl mx-auto px-4 md:px-6">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
-                            <div className="space-y-1"><p className="text-4xl md:text-5xl lg:text-6xl tabular-nums">{studentCount.toLocaleString()}+</p><p className="text-sm md:text-base font-medium text-blue-200">Active Students</p></div>
-                            <div className="space-y-1"><p className="text-4xl md:text-5xl lg:text-6xl tabular-nums">{questionCount.toLocaleString()}+</p><p className="text-sm md:text-base font-medium text-blue-200">Practice Questions</p></div>
-                            <div className="space-y-1"><p className="text-4xl md:text-5xl lg:text-6xl tabular-nums">{successRate}%</p><p className="text-sm md:text-base font-medium text-blue-200">Avg Score Improvement</p></div>
-                            <div className="space-y-1"><p className="text-4xl md:text-5xl lg:text-6xl">4.8★</p><p className="text-sm md:text-base font-medium text-blue-200">User Rating</p></div>
+                {/* ═══════════════ PROOF — QUIET, NOT SHOUTY ═══════════════ */}
+                <section
+                    id="stats"
+                    ref={statsRef}
+                    className="w-full bg-white border-y border-slate-200/70
+             py-10 md:py-14 px-4 md:px-6"
+                >
+                    <div className="max-w-5xl mx-auto">
+                        <p className="text-[11px] md:text-[12px] font-semibold
+                  uppercase tracking-[0.15em] text-slate-400 mb-6 md:mb-8">
+                            In numbers
+                        </p>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-6 md:gap-x-10">
+                            {[
+                                { value: `${studentCount.toLocaleString()}+`, label: "Students preparing" },
+                                { value: `${questionCount.toLocaleString()}+`, label: "Exam-style questions" },
+                                { value: `${successRate}%`, label: "Average score lift" },
+                                { value: "4.8", label: "Rated by users", suffix: "★" },
+                            ].map((s, i) => (
+                                <div key={i}>
+                                    <p className="text-[22px] md:text-[26px] font-semibold text-slate-900
+                        tabular-nums leading-none tracking-tight">
+                                        {s.value}
+                                        {s.suffix && <span className="text-amber-500 ml-1">{s.suffix}</span>}
+                                    </p>
+                                    <p className="mt-2 text-[12px] md:text-[13px] text-slate-500 leading-snug">
+                                        {s.label}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
@@ -622,19 +826,28 @@ export default function StudentLanding() {
                                         Train like it's{" "}
                                         <span className="text-blue-600">the real exam day.</span>
                                     </h3>
-                                    <p className="mt-4 text-sm md:text-base text-slate-500 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                                        6,500+ exam-style questions, instant explanations after every answer,
-                                        and a structured curriculum mapped to the NCK syllabus — for every
-                                        nursing cadre.
+
+                                    <p className="mt-4 text-sm md:text-base text-slate-600 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                                        6,500+ exam-style questions written to match the way the NCK actually
+                                        asks them  by unit, by condition, by difficulty. Every answer comes
+                                        with an explanation, every mistake gets saved to a personal log, and
+                                        every weak topic surfaces before exam day. The entire curriculum is
+                                        mapped to the NCK syllabus, so you're never studying from scattered PDFs.
                                     </p>
+
+                                    <p className="mt-4 text-sm md:text-base text-slate-500 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                                        Built for DCHN, BSN, and KRN students across Kenya  with the structure,
+                                        pacing, and pressure-testing that nursing school doesn't always give you.
+                                    </p>
+
                                     <div className="mt-6 flex flex-wrap items-center gap-3 justify-center lg:justify-start">
                                         <button
                                             onClick={() => navigate("/register")}
                                             className="inline-flex items-center gap-2
-                                       px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700
-                                       text-white text-[13px] font-bold
-                                       hover:scale-[1.02] active:scale-[0.97]
-                                       transition-all duration-300"
+                       px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700
+                       text-white text-[13px] font-bold
+                       hover:scale-[1.02] active:scale-[0.97]
+                       transition-all duration-300"
                                             style={{ touchAction: "manipulation" }}
                                         >
                                             Start Free <ArrowRight className="w-4 h-4" />
@@ -642,18 +855,20 @@ export default function StudentLanding() {
                                         <button
                                             onClick={() => navigate("/login")}
                                             className="inline-flex items-center gap-2
-                                       px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200
-                                       text-slate-700 text-[13px] font-bold
-                                       hover:scale-[1.02] active:scale-[0.97]
-                                       transition-all duration-300"
+                       px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200
+                       text-slate-700 text-[13px] font-bold
+                       hover:scale-[1.02] active:scale-[0.97]
+                       transition-all duration-300"
                                             style={{ touchAction: "manipulation" }}
                                         >
                                             Sign in
                                         </button>
                                     </div>
-                                </div>
 
-                                {/* Right: video in a constrained card */}
+                                    <p className="mt-5 text-[12px] text-slate-400">
+                                        Free to start. No credit card required.
+                                    </p>
+                                </div>                                {/* Right: video in a constrained card */}
                                 <div className="order-1 lg:order-2 -mx-4 md:mx-0">
                                     <div className="relative overflow-hidden bg-slate-900
                     rounded-none md:rounded-2xl
@@ -1181,6 +1396,7 @@ export default function StudentLanding() {
                         </section>
                     </AnimatedSection>
                 </section>
+                <FloatingWhatsApp />
                 {/* 🆕 Footer — extracted component */}
                 <SiteFooter />
             </div>

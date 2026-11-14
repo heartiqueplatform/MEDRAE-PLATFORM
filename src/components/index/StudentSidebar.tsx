@@ -3,11 +3,8 @@ import {
     Home, Sparkles, Headphones, Users, Trophy, Stethoscope, BookOpen,
     Brain, Info, Mail, GraduationCap, FileText, HelpCircle, ClipboardList, Award,
 } from "lucide-react";
-import {
-    BaseSidebarDesktop,
-    BaseSidebarMobileTrigger,
-    BaseSidebarDrawer,
-} from "./BaseSidebar";
+import { BaseTopNav } from "./BaseTopNav";
+import { BaseSidebarMobileTrigger, BaseSidebarDrawer } from "./BaseSidebar";
 
 const SECTIONS = [
     { id: "home", label: "Home", icon: Home },
@@ -40,8 +37,8 @@ const baseProps = {
     guides: GUIDES,
 };
 
-export function StudentSidebarDesktop() {
-    return <BaseSidebarDesktop {...baseProps} />;
+export function StudentTopNav() {
+    return <BaseTopNav {...baseProps} />;
 }
 
 export function StudentSidebarMobileTrigger({ onOpen }: { onOpen: () => void }) {

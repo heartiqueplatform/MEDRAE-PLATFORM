@@ -178,7 +178,7 @@ const KRCHNCurriculum = () => {
                 {/* Year Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-10 md:mb-12 px-3 md:px-0">
                     {/* Year 1 */}
-                    <div className="md:border-0 bg-white md:rounded-2xl md:shadow-lg md:hover:shadow-2xl md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-left-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
+                    <div className="md:border-0 bg-white rounded-xl md:shadow-none md:hover:shadow-none md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-left-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
                         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-5 md:p-6 text-white">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
                                 <span className="text-4xl md:text-5xl   opacity-30">01</span>
@@ -213,7 +213,7 @@ const KRCHNCurriculum = () => {
                     </div>
 
                     {/* Year 2 */}
-                    <div className="md:border-0 bg-white md:rounded-2xl md:shadow-lg md:hover:shadow-2xl md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-bottom-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+                    <div className="md:border-0 bg-white rounded-xl md:shadow-none md:hover:shadow-none md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-left-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
                         <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-5 md:p-6 text-white">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
                                 <span className="text-4xl md:text-5xl   opacity-30">02</span>
@@ -248,7 +248,7 @@ const KRCHNCurriculum = () => {
                     </div>
 
                     {/* Year 3 */}
-                    <div className="md:border-0 bg-white md:rounded-2xl md:shadow-lg md:hover:shadow-2xl md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-right-8" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
+                    <div className="md:border-0 bg-white rounded-xl md:shadow-none md:hover:shadow-none md:hover:-translate-y-2 transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-left-8 border-b border-slate-100 md:border-b-0" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-5 md:p-6 text-white">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
                                 <span className="text-4xl md:text-5xl   opacity-30">03</span>
