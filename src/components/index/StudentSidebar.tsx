@@ -1,7 +1,9 @@
 // src/components/index/StudentSidebar.tsx
+
 import {
     Home, Sparkles, Headphones, Users, Trophy, Stethoscope, BookOpen,
     Brain, Info, Mail, GraduationCap, FileText, HelpCircle, ClipboardList, Award,
+    Coins,          // 👈 ADD
 } from "lucide-react";
 import { BaseTopNav } from "./BaseTopNav";
 import { BaseSidebarMobileTrigger, BaseSidebarDrawer } from "./BaseSidebar";
@@ -9,6 +11,7 @@ import { BaseSidebarMobileTrigger, BaseSidebarDrawer } from "./BaseSidebar";
 const SECTIONS = [
     { id: "home", label: "Home", icon: Home },
     { id: "features", label: "Features", icon: Sparkles },
+    { id: "coins", label: "Medrae Coins", icon: Coins },          // 👈 ADD — right after Features
     { id: "podcasts", label: "Podcasts", icon: Headphones },
     { id: "grouppay", label: "GroupPay", icon: Users },
     { id: "merit-cup", label: "Merit Cup", icon: Trophy },
@@ -20,13 +23,7 @@ const SECTIONS = [
 ] as const;
 
 const GUIDES = [
-    { to: "/nursing-revision-kenya", label: "Nursing Revision in Kenya", icon: GraduationCap },
-    { to: "/nck-exam-revision", label: "NCK Exam Revision", icon: FileText },
-    { to: "/nck-exam-questions", label: "NCK Exam Questions", icon: HelpCircle },
-    { to: "/nck-past-papers", label: "NCK Past Papers", icon: ClipboardList },
-    { to: "/nck-exam-preparation", label: "NCK Exam Preparation", icon: Award },
-    { to: "/krchn-revision", label: "KRCHN Revision", icon: BookOpen },
-    { to: "/medrae-nursing-merit-cup", label: "Medrae Merit Cup", icon: Trophy },
+    // ... unchanged
 ] as const;
 
 const baseProps = {

@@ -30,6 +30,7 @@ import {
 } from '@/components/index/StudentSidebar';
 import SiteFooter from '@/components/index/SiteFooter';
 import { FloatingWhatsApp } from '@/components/index/FloatingWhatsApp';
+import { StudentCoinsSection } from '@/components/index/StudentCoinsSection';
 
 declare global {
     interface Window {
@@ -1012,7 +1013,9 @@ export default function StudentLanding() {
                         </div>
                     </div>
                 </section>
-
+                <section id="coins">
+                    <StudentCoinsSection />
+                </section>
                 <section id="podcasts">
                     <PodcastShowcaseSection />
                 </section>
