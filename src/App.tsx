@@ -75,6 +75,8 @@ import {
   AssessmentResults,
   AssessmentHistory
 } from '@/pages/assessment';
+import StudentCoinsPage from "@/pages/studentcoins";
+import CoinsAdminPage from "@/pages/studentcoins/admin";
 import { Announcements } from "./pages/Announcements";
 import { Feedback } from "./pages/Feedback";
 import { Settings } from "./pages/Settings";
@@ -186,6 +188,8 @@ import MedraeCoinsPolicyPage from "./staff-cpd/pages/MedraeCoinsPolicyPage";
 import CpdRedeemPage from "./staff-cpd/pages/CpdRedeemPage";
 import RedemptionsPage from "./staff-cpd/admin/RedemptionsPage";
 import CoinConfigPage from "./staff-cpd/admin/CoinConfigPage";
+import WalletLearnPage from "@/pages/studentcoins/learn";
+import ContributePage from "./pages/contribute";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -312,6 +316,9 @@ const BottomBarWrapper = () => {
       "/assessments",
       "/exam",
       "/cpd",
+      "/wallet",
+      "/wallet/admin",
+      "/contribute",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -790,6 +797,10 @@ const AppContent = () => {
                         <Route path="/help" element={<PrivateRoute><HelpCenter /></PrivateRoute>} />
                         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                         <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+                        <Route path="/wallet" element={<PrivateRoute><StudentCoinsPage /></PrivateRoute>} />
+                        <Route path="/wallet/admin" element={<PrivateRoute><CoinsAdminPage /></PrivateRoute>} />
+                        <Route path="/wallet/learn" element={<PrivateRoute><WalletLearnPage /></PrivateRoute>} />
+                        <Route path="/contribute" element={<PrivateRoute><ContributePage /></PrivateRoute>} />
                         <Route path="/resources" element={<PrivateRoute><Resources /></PrivateRoute>} />
                         <Route path="/announcements" element={<PrivateRoute><Announcements /></PrivateRoute>} />
                         <Route path="/assessment-notes" element={<PrivateRoute><AssessmentNotes /></PrivateRoute>} />

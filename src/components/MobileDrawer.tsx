@@ -42,6 +42,8 @@ import {
     ShoppingBag,
     Zap,
     Loader2,
+    Wallet,
+    ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useProfileData } from "@/hooks/useProfileData";
@@ -132,13 +134,13 @@ const PAGE_VARIANTS = {
     hidden: { y: "100%", opacity: 0.6, transition: { duration: 0.18, ease: "easeInOut" } },
     visible: { y: 0, opacity: 1, transition: { duration: 0.26, ease: NATIVE_EASE } }
 };
-
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
 const STREAK_SUMMARY_KEY = "sidebar_cache_streak_summary";
 const MISTAKE_COUNT_KEY = "sidebar_cache_mistake_count";
 const EPISODES_COUNT_KEY = "sidebar_cache_episodes_count";
 const ANNOUNCEMENTS_KEY = "sidebar_cache_announcements";
-
+const COINS_BALANCE_KEY = "sidebar_cache_coins";       // 👈 NEW — matches AppSidebar
+const IS_COINS_ADMIN_KEY = "sidebar_cache_is_coins_admin";   // 👈 NEW — matches AppSidebar
 /* ---------------- Cache readers (instant paint) ---------------- */
 const readNumberCache = (key: string): number => {
     try {
@@ -329,7 +331,19 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     const [mistakeCount, setMistakeCount] = useState<number>(() => readNumberCache(MISTAKE_COUNT_KEY));
     const [totalEpisodes, setTotalEpisodes] = useState<number>(() => readNumberCache(EPISODES_COUNT_KEY));
     const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(() => readNumberCache(ANNOUNCEMENTS_KEY));
-
+    // 👈 NEW — Medrae Wallet balance (students only). Seeded from the same cache AppSidebar writes.
+    const [coinsBalance, setCoinsBalance] = useState<number>(() => readNumberCache(COINS_BALANCE_KEY));
+    // 👈 NEW — is the current user an admin of the coin program?
+    const [isCoinsAdmin, setIsCoinsAdmin] = useState<boolean>(() => {
+        try {
+            const raw = localStorage.getItem(IS_COINS_ADMIN_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                return parsed?.data === true;
+            }
+        } catch { }
+        return false;
+    });
     /* ---- Streak summary — seeded for instant paint ---- */
     const [streakSummary, setStreakSummary] = useState<{ current: number; best: number }>(
         () => {
@@ -352,7 +366,15 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         setMistakeCount(readNumberCache(MISTAKE_COUNT_KEY));
         setTotalEpisodes(readNumberCache(EPISODES_COUNT_KEY));
         setUnreadAnnouncements(readNumberCache(ANNOUNCEMENTS_KEY));
-
+        setCoinsBalance(readNumberCache(COINS_BALANCE_KEY));   // 👈 NEW
+        // 👈 NEW — admin flag from cache
+        try {
+            const raw = localStorage.getItem(IS_COINS_ADMIN_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                setIsCoinsAdmin(parsed?.data === true);
+            }
+        } catch { }
         // If offline, stop — cache already painted
         if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
@@ -360,14 +382,17 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
 
         (async () => {
             try {
-                const [mistakesRes, episodesRes, streakRes] = await Promise.allSettled([
+                const [mistakesRes, episodesRes, streakRes, walletRes, adminRes] = await Promise.allSettled([
                     isStudent
                         ? supabase.from("user_mistakes").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false)
                         : Promise.resolve({ count: 0 } as any),
                     supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false),
                     supabase.from("user_streak_summary").select("current_streak, best_streak").eq("user_id", user.id).maybeSingle(),
+                    isStudent
+                        ? supabase.from("medrae_stu_wallets").select("balance").eq("user_id", user.id).maybeSingle()
+                        : Promise.resolve({ data: null, error: null } as any),
+                    supabase.rpc("medrae_stu_is_admin"),   // 👈 NEW
                 ]);
-
                 if (cancelled) return;
 
                 if (mistakesRes.status === 'fulfilled' && isStudent) {
@@ -395,6 +420,23 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                     setStreakSummary(summary);
                     try {
                         localStorage.setItem(STREAK_SUMMARY_KEY, JSON.stringify({ data: summary, timestamp: Date.now() }));
+                    } catch { }
+                }
+                // 👈 NEW — Medrae Wallet balance
+                if (walletRes.status === 'fulfilled' && isStudent) {
+                    const raw = (walletRes.value as any)?.data;
+                    const balance = Number(raw?.balance) || 0;
+                    setCoinsBalance(balance);
+                    try {
+                        localStorage.setItem(COINS_BALANCE_KEY, JSON.stringify({ data: balance, timestamp: Date.now() }));
+                    } catch { }
+                }
+                // 👈 NEW — admin status
+                if (adminRes.status === 'fulfilled') {
+                    const isAdminNow = (adminRes.value as any)?.data === true;
+                    setIsCoinsAdmin(isAdminNow);
+                    try {
+                        localStorage.setItem(IS_COINS_ADMIN_KEY, JSON.stringify({ data: isAdminNow, timestamp: Date.now() }));
                     } catch { }
                 }
             } catch { /* silent */ }
@@ -686,12 +728,42 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         mainItems.push(
             { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
         );
-
         const sectionsArray: { label: string; items: any[] }[] = [
             { label: "Main", items: mainItems },
-            { label: "NCK Exam Prep", items: nckExamPrepItems },
         ];
 
+        // 👈 Earn As You Study — students only, sits ABOVE NCK Exam Prep
+        // 👈 Earn As You Study — students only, sits ABOVE NCK Exam Prep
+        if (isStudent) {
+            const earnItems: any[] = [
+                {
+                    title: "Medrae Wallet",
+                    url: "/wallet",
+                    icon: Wallet,
+                    iconTone: "finance" as IconTone,
+                    badge: coinsBalance > 0
+                        ? (coinsBalance >= 1_000
+                            ? `${(coinsBalance / 1_000).toFixed(1).replace(/\.0$/, "")}k`
+                            : coinsBalance)
+                        : undefined,
+                },
+            ];
+
+            // 👈 Admin-only row
+            if (isCoinsAdmin) {
+                earnItems.push({
+                    title: "Coin Admin",
+                    url: "/wallet/admin",
+                    icon: ShieldCheck,
+                    iconTone: "alert" as IconTone,
+                });
+            }
+
+            sectionsArray.push({ label: "Earn As You Study", items: earnItems });
+        }
+
+        // NCK Exam Prep — after Earn so wallet sits above
+        sectionsArray.push({ label: "NCK Exam Prep", items: nckExamPrepItems });
         if (userRole === "tutor") {
             sectionsArray.push({
                 label: "Tutor Tools",
@@ -854,7 +926,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
-    }, [userRole, isStudent, isTutor, isStaff, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements]);
+    }, [userRole, isStudent, isTutor, isStaff, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements, coinsBalance, isCoinsAdmin]);
     /* ---------------- Horizontal identity strip ---------------- */
     const identityStrip = useMemo(() => {
         const base: any[] = [

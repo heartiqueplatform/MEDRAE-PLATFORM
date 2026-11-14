@@ -34,6 +34,7 @@ import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
 import { FloatingCategoryButton } from "@/components/MedraeQuizzes/FloatingCategoryButton";
 import { EmptyState } from "@/components/MedraeQuizzes/EmptyState";
+import { QuizContributionCard } from "@/components/MedraeQuizzes/QuizContributionCard";
 import { CenteredModal } from "@/components/ui/CenteredModal";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
@@ -794,7 +795,9 @@ export function MedraeQuizzes() {
                 </div>
               </div>
             </CardContent>
-
+            <div className="px-4 sm:px-0 pb-2">
+              <QuizContributionCard />
+            </div>
             {/* Dynamic Papers Rendering */}
             {isLoading ? (
               <div className="space-y-4 px-2 sm:px-0">

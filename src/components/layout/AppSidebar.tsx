@@ -9,10 +9,12 @@ import {
   Briefcase, CalendarDays, PenTool, Network, AlertCircle, Newspaper,
   BarChart3, Swords, ShoppingBag, Share2, Award,
   BookOpenCheck,
+  Wallet,
   Upload,
   Headphones,
   Flame,
   Zap,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -279,7 +281,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning', 'institutional', 'tutor', 'nck-exam-prep']);
+  const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning', 'institutional', 'tutor', 'nck-exam-prep', 'earn']);
   const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1024));
 
   const [mistakeCount, setMistakeCount] = useState<number>(() => getCached(MISTAKE_COUNT_KEY) || 0);
@@ -292,7 +294,15 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(() => getCached(ANNOUNCEMENTS_KEY) || 0);
   // ✅ Total podcast episodes — badge source for the Media > Podcasts row
   const [totalEpisodes, setTotalEpisodes] = useState<number>(() => getCached(EPISODES_COUNT_KEY) || 0);
+  // ✅ Medrae Wallet balance — students only. Cached for instant paint.
+  const [coinsBalance, setCoinsBalance] = useState<number>(() => getCached("sidebar_cache_coins") || 0);
+  // 👇 NEW — is the current user an admin of the coin program?
+  const [isCoinsAdmin, setIsCoinsAdmin] = useState<boolean>(
+    () => getCached("sidebar_cache_is_coins_admin") === true
+  );
   // ✅ Streak summary — drives the "Restore streak" item visibility
+
+
   const [streakSummary, setStreakSummary] = useState<{
     current: number;
     best: number;
@@ -317,7 +327,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     if (num >= 1_000) return (num / 1_000).toFixed(0) + "k";
     return num.toString();
   }, []);
-
+  // 👇 NEW — badge for the wallet row, e.g. "1.2k" (hidden when 0)
+  const coinsBadge = useMemo(() => {
+    if (coinsBalance <= 0) return undefined;
+    return formatNumber(coinsBalance);
+  }, [coinsBalance, formatNumber]);
   const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
 
   const handleNavigate = useCallback((url: string) => {
@@ -377,7 +391,9 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         quizResults,
         announcementsResult,
         episodesResult,
-        streakResult
+        streakResult,
+        walletResult,
+        adminResult
       ] = await Promise.allSettled([
         supabase.from("user_mistakes").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false),
         supabase.from("quiz_questions").select("*", { count: "exact", head: true }),
@@ -387,15 +403,25 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         supabase.from("calendar_events").select("*", { count: "exact", head: true }),
         supabase.from("quiz_results").select("unit, score, total_questions", { head: false }).eq("user_id", user.id).limit(100),
         supabase.from("announcements").select("id", { count: "exact", head: true }).eq("is_published", true),
-        // ✅ Total published podcast episodes (independent of the MusicPlayer's
-        //    own cache, so the badge renders even before the player mounts)
         supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false),
+
+        // ── #10 → streakResult ──
         supabase.from("user_streak_summary")
           .select("current_streak, best_streak")
           .eq("user_id", user.id)
-          .maybeSingle()
-      ]);
+          .maybeSingle(),
 
+        // ── #11 → walletResult (students only) ──
+        isStudent
+          ? supabase.from("medrae_stu_wallets")
+            .select("balance")
+            .eq("user_id", user.id)
+            .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+
+        // ── #12 → adminResult ──
+        supabase.rpc("medrae_stu_is_admin"),
+      ]);
       const mistakesCount = mistakesResult.status === 'fulfilled' ? mistakesResult.value.count || 0 : 0;
       const questionsCount = questionsResult.status === 'fulfilled' ? questionsResult.value.count || 0 : 0;
       const simCount = simResult.status === 'fulfilled' ? simResult.value.count || 0 : 0;
@@ -409,6 +435,13 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         current: streakData?.current_streak || 0,
         best: streakData?.best_streak || 0,
       };
+      // 👇 NEW — admin status
+      const isAdminNow =
+        adminResult.status === "fulfilled" && adminResult.value?.data === true;
+      // 👇 NEW — extract wallet balance from the fulfilled promise
+      const coinsBalanceData =
+        walletResult.status === "fulfilled" ? walletResult.value?.data : null;
+      const coinsBalanceNum = Number(coinsBalanceData?.balance) || 0;
       let stars = 0;
       if (quizResults.status === 'fulfilled' && quizResults.value?.data) {
         const unitBestScores: Record<string, number> = {};
@@ -456,20 +489,22 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         setUnreadAnnouncements(unread);
         setTotalEpisodes(episodesCount);
         setStreakSummary(summary);
-
+        setCoinsBalance(coinsBalanceNum);
         setCached(COUNTS_KEY, counts);
         setCached(MISTAKE_COUNT_KEY, mistakesCount);
         setCached(STARS_KEY, stars);
         setCached(ANNOUNCEMENTS_KEY, unread);
         setCached(EPISODES_COUNT_KEY, episodesCount);
         setCached(STREAK_SUMMARY_KEY, summary);
+        setIsCoinsAdmin(isAdminNow);
+        setCached("sidebar_cache_is_coins_admin", isAdminNow);
       }
     } catch (err) {
       console.error("Error fetching sidebar data:", err);
     } finally {
       fetchInProgress = false;
     }
-  }, []);
+  }, [isStudent]);
   useEffect(() => {
     isMounted.current = true;
     fetchAllData(true);
@@ -612,6 +647,31 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       },
     ];
   }, [userRole]);
+  // ✅ EARN AS YOU STUDY — students only, wallet + future coin-earning shortcuts
+  const earnAsYouStudyItems = useMemo(() => {
+    if (!isStudent) return [];
+    const items: any[] = [
+      {
+        title: "Medrae Wallet",
+        url: "/wallet",
+        icon: Wallet,
+        iconTone: "finance" as IconTone,
+        badge: coinsBadge ?? undefined,
+      },
+    ];
+
+    // 👇 Admin-only row
+    if (isCoinsAdmin) {
+      items.push({
+        title: "Coin Admin",
+        url: "/wallet/admin",
+        icon: ShieldCheck,           // import from lucide
+        iconTone: "alert" as IconTone,
+      });
+    }
+
+    return items;
+  }, [isStudent, coinsBadge, isCoinsAdmin]);
   // ✅ NCK EXAM PREP — students only
   const nckExamPrepItems = useMemo(() => {
     if (!isStudent) return [];
@@ -627,7 +687,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         title: "Last Minute",
         url: "/last-minute",
         icon: Zap,
-        iconTone: "alert" as IconTone,   // amber tone — matches the urgency
+        iconTone: "alert" as IconTone,
         badge: "New",
       },
       {
@@ -646,7 +706,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       },
     ];
   }, [isStudent, totalQuestions, totalStars, totalSimulationPapers, formatNumber]);
-
   // ✅ LEARNING — Clinical Assessments hidden for tutor & staff
   const learningItems = useMemo(() => {
     const base = [
@@ -745,7 +804,9 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
   const visibleLearningItems = isFooterMounted ? learningItems.filter(item => !footerRoutes.includes(item.url)) : learningItems;
   const visibleNckPrepItems = isFooterMounted ? nckExamPrepItems.filter(item => !footerRoutes.includes(item.url)) : nckExamPrepItems;
-
+  const visibleEarnItems = isFooterMounted
+    ? earnAsYouStudyItems.filter(item => !footerRoutes.includes(item.url))
+    : earnAsYouStudyItems;
   return (
     <Sidebar className="fixed top-0 left-0 h-full z-[999] bg-background border-0 shadow-none transition-transform duration-300 w-[380px] overflow-y-auto">
       {/* Header */}
@@ -824,7 +885,19 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           onNavigate={handleNavigate}
           groupId="main"
         />
-
+        {/* 👇 NEW — Earn As You Study (students only) */}
+        {visibleEarnItems.length > 0 && (
+          <SidebarSection
+            label="Earn As You Study"
+            items={visibleEarnItems}
+            openGroups={openGroups}
+            toggleGroup={toggleGroup}
+            isCollapsed={isCollapsed}
+            isActiveFn={isActive}
+            onNavigate={handleNavigate}
+            groupId="earn"
+          />
+        )}
         {staffItems.length > 0 && (
           <SidebarSection
             label="Staff Tools"
