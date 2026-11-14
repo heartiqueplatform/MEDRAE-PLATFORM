@@ -21,7 +21,7 @@ export function BaseSidebarMobileTrigger({ onOpen }: { onOpen: () => void }) {
     return (
         <button
             onClick={onOpen}
-            className="lg:hidden fixed top-3 left-3 z-[9999]
+            className="lg:hidden fixed bottom-3 left-3 z-[9999]
                  flex items-center gap-2 h-11 pl-2 pr-3 rounded-xl
                  bg-white/95 backdrop-blur-md shadow-lg
                  active:scale-95 transition-transform"
@@ -30,10 +30,12 @@ export function BaseSidebarMobileTrigger({ onOpen }: { onOpen: () => void }) {
         >
             <img src="/pwa-192x192.jpeg" alt="" className="h-7 w-7 rounded-lg" />
             <Menu className="w-5 h-5 text-slate-700" />
+            <span className="text-[13px] font-semibold text-slate-700 whitespace-nowrap">
+                Menu
+            </span>
         </button>
     );
 }
-
 /* ═══════════════════════════════════════════════════════════════
    MOBILE DRAWER
    ═══════════════════════════════════════════════════════════════ */
@@ -53,16 +55,40 @@ export function BaseSidebarDrawer({
     guidesLabel?: string;
 }) {
     const A = ACCENT_MAP[accent];
-    const [visible, setVisible] = useState(open);
+
+    // `mounted` = is the drawer in the DOM at all?
+    // `show`    = is the drawer in its "open" visual position?
+    // We mount at the closed position, then flip `show` on next frame
+    // so the transition actually runs. On close, we flip `show` off
+    // immediately (transition runs), then unmount after 300ms.
+    // Start `mounted` matched to `open`, but start `show` as `false` always.
+    // This guarantees the drawer mounts in the "closed" position, even if
+    // `open` was already true when this component first rendered.
+    const [mounted, setMounted] = useState(open);
+    const [show, setShow] = useState(false);
+
     useEffect(() => {
-        if (open) setVisible(true);
-        else {
-            const t = setTimeout(() => setVisible(false), 300);
-            return () => clearTimeout(t);
+        if (open) {
+            setMounted(true);
+
+            // Give the browser one tick to paint the "closed" position,
+            // THEN flip `show` to trigger the slide-in transition.
+            // setTimeout(0) is a macrotask — guaranteed after paint.
+            const id = setTimeout(() => setShow(true), 20);
+
+            return () => clearTimeout(id);
+        } else {
+            // Close: flip show off immediately so the slide-out plays,
+            // then unmount after the transition finishes.
+            setShow(false);
+
+            const id = setTimeout(() => setMounted(false), 320);
+
+            return () => clearTimeout(id);
         }
     }, [open]);
 
-    if (!visible) return null;
+    if (!mounted) return null;
 
     const handleClick = (id: string) => {
         onClose();
@@ -75,14 +101,14 @@ export function BaseSidebarDrawer({
                 onClick={onClose}
                 className={`absolute inset-0 bg-black/50 backdrop-blur-sm
                     transition-opacity duration-300
-                    ${open ? "opacity-100" : "opacity-0"}`}
+                    ${show ? "opacity-100" : "opacity-0"}`}
             />
 
             <aside
                 className={`relative w-[280px] max-w-[85vw] h-full
                     bg-white shadow-2xl flex flex-col
                     transition-transform duration-300 ease-out
-                    ${open ? "translate-x-0" : "-translate-x-full"}`}
+                    ${show ? "translate-x-0" : "-translate-x-full"}`}
             >
                 <div className="shrink-0 flex items-center justify-between px-4 py-3.5">
                     <Link to={homeRoute} className="flex items-center gap-2">
