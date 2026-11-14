@@ -1,5 +1,5 @@
 // src/staff-cpd/pages/CpdRedeemPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     ChevronLeft, Coins, AlertCircle, CheckCircle2, Clock, XCircle,
@@ -12,17 +12,7 @@ import {
     useWallet, useStaffProfile, useMyRedemptions,
 } from "@/staff-cpd/lib/contributor-hooks";
 import { useAuth } from "@/context/AuthProvider";
-import { playSound } from "@/lib/soundManager";
-
-const vibrate = (p: number | number[] = 15) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
-};
-const tap = (type: "light" | "success" | "warning" = "light") => {
-    try { playSound("ui-tap"); } catch { /* no-op */ }
-    if (type === "success") vibrate([15, 30, 15]);
-    else if (type === "warning") vibrate(40);
-    else vibrate(12);
-};
+import { tap } from "./shared";
 
 const Sk = "rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse";
 
@@ -48,12 +38,8 @@ const STATUS_META: Record<
 
 /* ------------------------------------------------------------------ */
 /*  Full-page gate for non-contributors                               */
-/*  Non-contributors NEVER see the wallet, form, or history.          */
-/*  They see this page INSTEAD. Mirrors ContributorReviewsPage's      */
-/*  "Access denied" pattern — returns a different page entirely.      */
 /* ------------------------------------------------------------------ */
-
-function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
+function NotContributorGate({ onBack }: { onBack: () => void }) {
     return (
         <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
@@ -61,11 +47,12 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
                                border-b border-slate-200/70 dark:border-white/[0.06]
                                z-30 safe-top">
                 <button
-                    onClick={() => { tap(); nav(-1); }}
+                    onClick={onBack}
                     aria-label="Back"
                     className="h-10 w-10 rounded-full flex items-center justify-center
                                text-slate-700 dark:text-slate-200
                                active:bg-slate-100 dark:active:bg-white/5"
+                    style={{ touchAction: "manipulation" }}
                 >
                     <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                 </button>
@@ -79,11 +66,11 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
                 </div>
             </header>
 
-            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                <div className="w-full max-w-[560px] mx-auto px-4 pt-8 pb-16 space-y-4">
-
-                    {/* Access-denied hero — mirrors ContributorReviewsPage gate */}
+            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain">
+                {/* ✅ Gutter matched to rest of app */}
+                <div className="w-full max-w-[560px] mx-auto px-1.5 sm:px-4 pt-6 pb-16 space-y-4">
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-4">
+                        {/* Neutral surface for icon container */}
                         <div className="h-14 w-14 mx-auto rounded-2xl bg-rose-50 dark:bg-rose-400/10
                                         flex items-center justify-center">
                             <AlertCircle className="h-7 w-7 text-rose-600 dark:text-rose-400" strokeWidth={2.4} />
@@ -104,7 +91,6 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
                             </p>
                         </div>
 
-                        {/* What unlocks — 3 hints, kept tight */}
                         <div className="grid grid-cols-1 gap-2 pt-2 text-left">
                             <div className="flex items-start gap-2 rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
                                 <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -116,7 +102,7 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
                                 </div>
                             </div>
                             <div className="flex items-start gap-2 rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
-                                <Coins className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <Coins className="h-4 w-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-[11px] font-bold text-slate-900 dark:text-white">Earnings card live</p>
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -135,11 +121,10 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
                             </div>
                         </div>
 
-                        {/* Single CTA — send them to apply */}
                         <Link
                             to="/cpd/apply"
                             onClick={() => tap("success")}
-                            className="w-full h-12 rounded-xl bg-amber-600 text-white
+                            className="w-full h-12 rounded-xl bg-amber-500 text-white
                                        text-[13px] font-bold
                                        flex items-center justify-center gap-2
                                        active:scale-[0.97] transition-transform"
@@ -155,6 +140,7 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
                             className="inline-block text-[11px] font-bold
                                        text-slate-500 dark:text-slate-400
                                        underline underline-offset-4"
+                            style={{ touchAction: "manipulation" }}
                         >
                             Read the MedraeCoins policy
                         </Link>
@@ -173,7 +159,6 @@ function NotContributorGate({ nav }: { nav: (n: number | string) => void }) {
 /* ------------------------------------------------------------------ */
 /*  Main page                                                         */
 /* ------------------------------------------------------------------ */
-
 export default function CpdRedeemPage() {
     const nav = useNavigate();
     const qc = useQueryClient();
@@ -205,17 +190,21 @@ export default function CpdRedeemPage() {
     }, [amount]);
 
     const kesForAmount = (amountNum * coinToKes).toFixed(2);
-
     const isContributor = !!profile?.is_verified_contributor;
 
-    /* ---- Prefill M-Pesa from most recent redemption ---- */
+    const handleBack = useCallback(() => {
+        tap();
+        nav(-1);
+    }, [nav]);
+
+    /* Prefill M-Pesa */
     useEffect(() => {
         if (!mpesaPhone && redemptions.length > 0 && redemptions[0].mpesa_phone) {
             setMpesaPhone(redemptions[0].mpesa_phone);
         }
     }, [redemptions, mpesaPhone]);
 
-    const validate = (): string | null => {
+    const validate = useCallback((): string | null => {
         if (!isContributor) return "Only verified contributors can redeem.";
         if (hasPending) return "You already have a pending redemption.";
         if (hasApproved) return "You already have an approved redemption in progress.";
@@ -226,9 +215,9 @@ export default function CpdRedeemPage() {
         if (!/^\+?[0-9]{9,15}$/.test(mpesaPhone.replace(/\s/g, "")))
             return "Enter a valid M-Pesa phone number.";
         return null;
-    };
+    }, [isContributor, hasPending, hasApproved, amountNum, balance, minWithdrawal, mpesaPhone]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (submitting) return;
         const v = validate();
         if (v) { setErr(v); tap("warning"); return; }
@@ -251,23 +240,24 @@ export default function CpdRedeemPage() {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [submitting, validate, amountNum, mpesaPhone, qc, userId]);
 
-    /* ---- Gate 1: profile still loading → block until we know ---- */
+    /* ── Loading ── */
     if (profileLoading) {
         return (
             <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
                 <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                    bg-white dark:bg-[#0d1117]
                                    border-b border-slate-200/70 dark:border-white/[0.06]">
-                    <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                    <div className={`h-10 w-10 rounded-full shrink-0 ${Sk}`} />
                     <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-32 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
-                        <div className="h-2 w-24 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                        <div className={`h-3 w-32 ${Sk}`} />
+                        <div className={`h-2 w-24 ${Sk}`} />
                     </div>
                 </header>
-                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                    <div className="w-full max-w-[880px] mx-auto px-4 pt-4 pb-16 space-y-3">
+                <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain">
+                    {/* ✅ Gutter matched */}
+                    <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
                         <div className={`h-40 rounded-2xl ${Sk}`} />
                         <div className={`h-64 rounded-2xl ${Sk}`} />
                     </div>
@@ -276,12 +266,12 @@ export default function CpdRedeemPage() {
         );
     }
 
-    /* ---- Gate 2: NOT a contributor → full-page gate, page never mounts ---- */
+    /* ── Not contributor ── */
     if (!isContributor) {
-        return <NotContributorGate nav={nav} />;
+        return <NotContributorGate onBack={handleBack} />;
     }
 
-    /* ---- Contributor: full redeem UI ---- */
+    /* ── Contributor ── */
     return (
         <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
@@ -289,11 +279,12 @@ export default function CpdRedeemPage() {
                                border-b border-slate-200/70 dark:border-white/[0.06]
                                z-30 safe-top">
                 <button
-                    onClick={() => { tap(); nav(-1); }}
+                    onClick={handleBack}
                     aria-label="Back"
                     className="h-10 w-10 rounded-full flex items-center justify-center
                                text-slate-700 dark:text-slate-200
                                active:bg-slate-100 dark:active:bg-white/5"
+                    style={{ touchAction: "manipulation" }}
                 >
                     <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
                 </button>
@@ -307,20 +298,21 @@ export default function CpdRedeemPage() {
                 </div>
             </header>
 
-            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                <div className="w-full max-w-[880px] mx-auto px-4 pt-4 pb-16 space-y-3">
+            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain">
+                {/* ✅ Gutter matched */}
+                <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
 
-                    {/* Balance */}
-                    <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4 space-y-3">
+                    {/* Balance — neutral surface, amber reserved for the "MC" suffix + icon */}
+                    <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                         <div className="flex items-start gap-2.5">
-                            <div className="h-10 w-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+                            <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                                 <Wallet className="h-5 w-5" strokeWidth={2.4} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     Your wallet
                                 </p>
-                                <h2 className="text-[14px] font-bold text-amber-800 dark:text-amber-300 leading-tight">
+                                <h2 className="text-[14px] font-bold text-slate-900 dark:text-white leading-tight">
                                     {profile?.contributor_tier
                                         ? profile.contributor_tier.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
                                         : "Contributor"}
@@ -328,7 +320,7 @@ export default function CpdRedeemPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-xl bg-white/80 dark:bg-[#0d1117]/70 p-3">
+                        <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
                             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 Wallet balance
                             </p>
@@ -352,12 +344,14 @@ export default function CpdRedeemPage() {
                         </div>
                     </section>
 
-                    {/* Minimum notice */}
+                    {/* Minimum notice — neutral surface, amber only on icon */}
                     {!walletLoading && !canWithdraw && (
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
-                            <div className="flex items-start gap-2">
-                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                <div>
+                            <div className="flex items-start gap-2.5">
+                                <div className="h-8 w-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                                    <AlertCircle className="h-4 w-4" strokeWidth={2.4} />
+                                </div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-snug">
                                         Minimum {minWithdrawal.toLocaleString()} MC to redeem
                                     </p>
@@ -370,16 +364,18 @@ export default function CpdRedeemPage() {
                         </section>
                     )}
 
-                    {/* Approved (money in flight) banner */}
+                    {/* Approved banner */}
                     {hasApproved && (
-                        <section className="rounded-2xl bg-blue-50 dark:bg-blue-400/10 p-4">
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                             <div className="flex items-start gap-2.5">
-                                <Send className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-[13px] font-bold text-blue-700 dark:text-blue-400">
+                                <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                                    <Send className="h-4 w-4" strokeWidth={2.4} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[13px] font-bold text-slate-900 dark:text-white">
                                         Approved — payout in progress
                                     </p>
-                                    <p className="text-[11px] text-blue-700/80 dark:text-blue-400/80 mt-1 leading-snug">
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                                         Your redemption has been approved and the coins are on hold.
                                         The M-Pesa transfer is being processed — usually within 1–2 business days.
                                     </p>
@@ -388,7 +384,7 @@ export default function CpdRedeemPage() {
                         </section>
                     )}
 
-                    {/* Form (only if can withdraw AND nothing in flight) */}
+                    {/* Form */}
                     {canWithdraw && !hasPending && !hasApproved && (
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                             <h2 className="text-[13px] font-bold text-slate-900 dark:text-white">
@@ -406,6 +402,7 @@ export default function CpdRedeemPage() {
                                     onChange={(e) => setAmount(e.target.value)}
                                     placeholder={`${minWithdrawal} – ${balance}`}
                                     className={InputBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                                 <div className="flex items-center justify-between mt-1 ml-1">
                                     <p className="text-[10px] text-slate-400 dark:text-slate-500">
@@ -414,7 +411,7 @@ export default function CpdRedeemPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setAmount(String(balance)); tap(); }}
-                                        className="text-[10px] font-bold text-blue-600 dark:text-blue-400 active:scale-[0.97] transition-transform"
+                                        className="text-[11px] font-bold text-blue-600 dark:text-blue-400 active:scale-[0.97] transition-transform"
                                         style={{ touchAction: "manipulation" }}
                                     >
                                         Use max ({balance.toLocaleString()})
@@ -425,14 +422,15 @@ export default function CpdRedeemPage() {
                             <div>
                                 <Label>M-Pesa phone number</Label>
                                 <div className="relative">
-                                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                     <input
                                         type="tel"
                                         inputMode="tel"
                                         value={mpesaPhone}
                                         onChange={(e) => setMpesaPhone(e.target.value)}
                                         placeholder="+2547XXXXXXXX"
-                                        className={InputBase + " pl-9"}
+                                        className={InputBase + " pl-10"}
+                                        style={{ touchAction: "manipulation" }}
                                     />
                                 </div>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1">
@@ -450,7 +448,7 @@ export default function CpdRedeemPage() {
                             <button
                                 onClick={handleSubmit}
                                 disabled={submitting}
-                                className="w-full h-11 rounded-xl bg-amber-600 text-white text-[13px] font-bold
+                                className="w-full h-11 rounded-xl bg-amber-500 text-white text-[13px] font-bold
                                            flex items-center justify-center gap-1.5
                                            active:scale-[0.97] transition-transform disabled:opacity-50"
                                 style={{ touchAction: "manipulation" }}
@@ -458,25 +456,24 @@ export default function CpdRedeemPage() {
                                 {submitting ? (
                                     <div className="h-3.5 w-32 rounded bg-white/30 animate-pulse" />
                                 ) : (
-                                    <>
-                                        <Coins className="h-4 w-4" />
-                                        Request redemption
-                                    </>
+                                    <><Coins className="h-4 w-4" /> Request redemption</>
                                 )}
                             </button>
                         </section>
                     )}
 
-                    {/* Pending banner */}
+                    {/* Pending banner — neutral surface */}
                     {hasPending && (
-                        <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4">
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                             <div className="flex items-start gap-2.5">
-                                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-[13px] font-bold text-amber-700 dark:text-amber-400">
+                                <div className="h-9 w-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                                    <Clock className="h-4 w-4" strokeWidth={2.4} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[13px] font-bold text-slate-900 dark:text-white">
                                         Redemption under review
                                     </p>
-                                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-1 leading-snug">
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                                         You already have a pending request. We'll review it within 2–3 business days.
                                     </p>
                                 </div>
@@ -492,9 +489,9 @@ export default function CpdRedeemPage() {
 
                         {rLoading ? (
                             <div className="space-y-1">
-                                <div className={`h-10 rounded-xl ${Sk}`} />
-                                <div className={`h-10 rounded-xl ${Sk}`} />
-                                <div className={`h-10 rounded-xl ${Sk}`} />
+                                <div className={`h-12 rounded-xl ${Sk}`} />
+                                <div className={`h-12 rounded-xl ${Sk}`} />
+                                <div className={`h-12 rounded-xl ${Sk}`} />
                             </div>
                         ) : redemptions.length === 0 ? (
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center py-4">
@@ -506,9 +503,9 @@ export default function CpdRedeemPage() {
                                     const meta = STATUS_META[r.status];
                                     const Icon = meta.icon;
                                     return (
-                                        <div key={r.id} className="rounded-xl bg-slate-50 dark:bg-[#0d1117] px-2 py-2">
+                                        <div key={r.id} className="rounded-xl bg-slate-50 dark:bg-[#0d1117] px-2.5 py-2">
                                             <div className="flex items-center gap-2">
-                                                <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${meta.color}`}>
+                                                <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${meta.color}`}>
                                                     <Icon className="h-3.5 w-3.5" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
@@ -521,9 +518,8 @@ export default function CpdRedeemPage() {
                                                 </div>
                                             </div>
 
-                                            {/* M-Pesa receipt — visible when paid */}
                                             {r.status === "paid" && r.mpesa_reference && (
-                                                <div className="flex items-start gap-1.5 mt-1.5 ml-8 pt-1.5 border-t border-slate-200/60 dark:border-white/[0.06]">
+                                                <div className="flex items-start gap-1.5 mt-1.5 ml-9 pt-1.5 border-t border-slate-200/60 dark:border-white/[0.06]">
                                                     <Receipt className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                                     <p className="text-[10px] text-slate-600 dark:text-slate-400">
                                                         M-Pesa ref: <span className="font-bold text-slate-900 dark:text-white">{r.mpesa_reference}</span>
@@ -534,9 +530,8 @@ export default function CpdRedeemPage() {
                                                 </div>
                                             )}
 
-                                            {/* Rejection reason */}
                                             {r.status === "rejected" && r.review_notes && (
-                                                <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-1.5 ml-8 leading-snug">
+                                                <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-1.5 ml-9 leading-snug">
                                                     Reason: {r.review_notes}
                                                 </p>
                                             )}

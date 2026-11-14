@@ -1,5 +1,5 @@
 // src/staff-cpd/pages/CpdPlayerPage.tsx
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, ArrowRight, Clock, Lock } from "lucide-react";
 import {
@@ -23,7 +23,6 @@ export function CpdPlayerPage() {
     const progress = useProgressForEnrollment(enrollment.data?.id);
     const upsert = useUpsertProgress();
 
-    /* 🆕 ref goes on the <main> scroll container, not the inner <div> */
     const contentRef = useRef<HTMLElement>(null);
 
     const moduleObj = tree.data?.modules.find(m => m.id === moduleId);
@@ -42,40 +41,57 @@ export function CpdPlayerPage() {
         minPercent: 90,
     });
 
+    /* ✅ Guard against multiple in_progress writes on slow networks */
+    const markedInProgress = useRef<Set<string>>(new Set());
+
     useEffect(() => {
         if (!enrollment.data || !item) return;
+        if (markedInProgress.current.has(item.id)) return;
+
         const existing = progress.data?.find(p => p.content_item_id === item.id);
         if (!existing || existing.status === "not_started") {
+            markedInProgress.current.add(item.id);
             upsert.mutate({
                 enrollment_id: enrollment.data.id,
                 content_item_id: item.id,
                 status: "in_progress",
                 progress_percentage: existing?.progress_percentage ?? 0,
             });
+        } else {
+            // Already tracked — don't re-fire even after re-render
+            markedInProgress.current.add(item.id);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enrollment.data?.id, item?.id]);
+    }, [enrollment.data?.id, item?.id, progress.data, upsert]);
 
+    const handleBack = useCallback(() => {
+        tap();
+        nav(`/cpd/activity/${id}`);
+    }, [nav, id]);
+
+    const handleBackGeneric = useCallback(() => {
+        nav(-1);
+    }, [nav]);
+
+    /* ── Loading ── */
     if (tree.isLoading) {
         return (
             <FullScreen>
-                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <PageHeader title="Loading…" onBack={handleBackGeneric} />
                 <ScrollBody>
-                    <div className="px-4 pt-4 space-y-3">
-                        {Array.from({ length: 2 }).map((_, i) => (
-                            <div key={i} className="h-40 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
-                        ))}
+                    <div className="pt-3 space-y-3">
+                        <PlayerSkeleton />
                     </div>
                 </ScrollBody>
             </FullScreen>
         );
     }
+
     if (!tree.data || !item) {
         return (
             <FullScreen>
-                <PageHeader title="Player" onBack={() => nav(-1)} />
+                <PageHeader title="Player" onBack={handleBackGeneric} />
                 <ScrollBody>
-                    <div className="px-4 pt-4">
+                    <div className="pt-3">
                         <CpdEmptyState title="Content not found" />
                     </div>
                 </ScrollBody>
@@ -105,17 +121,28 @@ export function CpdPlayerPage() {
         }
     };
 
+    const handleSkip = useCallback(() => {
+        if (!nextItem) return;
+        tap();
+        nav(`/cpd/activity/${id}/module/${moduleId}?item=${nextItem.id}`);
+    }, [nav, id, moduleId, nextItem]);
+
+    const handleSelectItem = useCallback((itemId: string) => {
+        tap();
+        nav(`/cpd/activity/${id}/module/${moduleId}?item=${itemId}`);
+    }, [nav, id, moduleId]);
+
     return (
         <FullScreen>
             <PageHeader
                 title={moduleObj?.title || "Module"}
                 subtitle={item.title}
-                onBack={() => { tap(); nav(`/cpd/activity/${id}`); }}
+                onBack={handleBack}
             />
 
-            {/* 🆕 ref on ScrollBody — measures the actual scroll container */}
             <ScrollBody ref={contentRef}>
-                <div className="px-4 pt-4 space-y-3">
+                {/* ✅ No px-* — ScrollBody owns the gutter */}
+                <div className="pt-3 space-y-3">
                     {/* Player card */}
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -156,6 +183,8 @@ export function CpdPlayerPage() {
                                 <img
                                     src={item.metadata.thumbnail || item.metadata.artwork}
                                     alt=""
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -198,21 +227,21 @@ export function CpdPlayerPage() {
 
                         <div className="flex items-center justify-between pt-3 gap-2 flex-wrap
                                         border-t border-slate-100 dark:border-white/[0.04]">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold min-w-0">
                                 {done ? (
                                     <>
-                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                                         <span className="text-emerald-600 dark:text-emerald-400">Completed</span>
                                     </>
                                 ) : isReading && !reading.isComplete ? (
                                     <>
-                                        <Lock className="h-3.5 w-3.5 text-slate-400" />
-                                        <span className="text-slate-500 dark:text-slate-400">
+                                        <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                        <span className="text-slate-500 dark:text-slate-400 truncate">
                                             Finish reading to continue
                                         </span>
                                     </>
                                 ) : (
-                                    <span className="text-slate-500 dark:text-slate-400">
+                                    <span className="text-slate-500 dark:text-slate-400 truncate">
                                         Mark as complete to continue
                                     </span>
                                 )}
@@ -220,8 +249,8 @@ export function CpdPlayerPage() {
                             <div className="flex items-center gap-2">
                                 {nextItem && (
                                     <button
-                                        onClick={() => { tap(); nav(`/cpd/activity/${id}/module/${moduleId}?item=${nextItem.id}`); }}
-                                        className="h-10 px-3 rounded-xl
+                                        onClick={handleSkip}
+                                        className="h-11 px-3 rounded-xl
                                                    bg-slate-100 dark:bg-white/[0.06]
                                                    text-slate-700 dark:text-slate-200
                                                    text-[12px] font-bold
@@ -235,7 +264,7 @@ export function CpdPlayerPage() {
                                 <button
                                     onClick={handleMarkComplete}
                                     disabled={upsert.isPending || done || !canComplete}
-                                    className={`h-10 px-3 rounded-xl text-[12px] font-bold
+                                    className={`h-11 px-3 rounded-xl text-[12px] font-bold
                                                 flex items-center gap-1.5
                                                 active:scale-[0.97] transition-transform
                                                 disabled:opacity-40
@@ -267,9 +296,9 @@ export function CpdPlayerPage() {
                                     return (
                                         <button
                                             key={c.id}
-                                            onClick={() => { tap(); nav(`/cpd/activity/${id}/module/${moduleId}?item=${c.id}`); }}
+                                            onClick={() => handleSelectItem(c.id)}
                                             className={`w-full text-left flex items-center justify-between gap-2
-                                                        rounded-xl px-3 py-2 transition-colors
+                                                        rounded-xl px-3 py-2.5 min-h-[44px] transition-colors
                                                         ${isCurrent
                                                     ? "bg-blue-50 dark:bg-blue-400/10"
                                                     : "bg-slate-50 dark:bg-[#0d1117] active:bg-slate-100 dark:active:bg-white/[0.08]"}`}
@@ -286,7 +315,7 @@ export function CpdPlayerPage() {
                                                     {c.title}
                                                 </span>
                                             </div>
-                                            {cDone && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={3} />}
+                                            {cDone && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" strokeWidth={3} />}
                                         </button>
                                     );
                                 })}
@@ -296,5 +325,33 @@ export function CpdPlayerPage() {
                 </div>
             </ScrollBody>
         </FullScreen>
+    );
+}
+
+/* ── Skeleton ──────────────────────────────────────────────── */
+function PlayerSkeleton() {
+    return (
+        <div className="space-y-3 animate-pulse">
+            {/* Player card skeleton */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                <div className="flex gap-1.5">
+                    <div className="h-5 w-20 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                    <div className="h-5 w-16 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                </div>
+                <div className="space-y-1.5">
+                    <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                    <div className="h-3 w-2/3 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                </div>
+                <div className="aspect-video rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-16 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            {/* In-module list skeleton */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                ))}
+            </div>
+        </div>
     );
 }

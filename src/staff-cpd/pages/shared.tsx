@@ -4,7 +4,6 @@ import { ChevronLeft } from "lucide-react";
 import { playSound } from "@/lib/soundManager";
 
 /* ─── Tap helper ─────────────────────────────────────────────── */
-
 const vibrate = (pattern: number | number[] = 15) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(pattern);
@@ -19,7 +18,6 @@ export const tap = (type: "light" | "success" | "warning" = "light") => {
 };
 
 /* ─── Status tones ───────────────────────────────────────────── */
-
 export const STATUS_TONES: Record<string, string> = {
     verified: "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400",
     pending: "bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-400",
@@ -33,7 +31,6 @@ export const getStatusTone = (s?: string) =>
     STATUS_TONES[(s ?? "").toLowerCase()] ?? STATUS_TONES.not_started;
 
 /* ─── Layout shells ──────────────────────────────────────────── */
-
 export function PageHeader({
     title,
     subtitle,
@@ -79,23 +76,27 @@ export function PageHeader({
 
 export function FullScreen({ children }: { children: React.ReactNode }) {
     return (
-        <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
-            style={{ WebkitTapHighlightColor: "transparent" }}>
+        <div
+            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+        >
             {children}
         </div>
     );
 }
 
-/* 🆕 forwardRef — so the player can measure the actual scroll container */
+/* ScrollBody — now owns the gutter + safe-area padding */
 export const ScrollBody = forwardRef<HTMLElement, { children: React.ReactNode }>(
     function ScrollBody({ children }, ref) {
         return (
             <main
                 ref={ref}
-                className="flex-1 min-h-0 overflow-y-auto no-scrollbar"
+                className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
                 style={{ WebkitOverflowScrolling: "touch" }}
             >
-                <div className="w-full max-w-[880px] mx-auto pb-16">
+                <div className="w-full max-w-[880px] mx-auto
+                                px-1.5 sm:px-4
+                                pb-[calc(4rem+env(safe-area-inset-bottom))]">
                     {children}
                 </div>
             </main>

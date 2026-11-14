@@ -18,8 +18,7 @@ import { useWallet, useStaffProfile } from "@/staff-cpd/lib/contributor-hooks";
 import { ContributorEarningsCard } from "@/staff-cpd/components/ContributorEarningsCard";
 
 /* ------------------------------------------------------------------ */
-/*  Module-level cache — survives route changes / remounts            */
-/*  so userId is non-null on the FIRST render after navigating back.  */
+/*  Module-level cache                                                */
 /* ------------------------------------------------------------------ */
 let cachedUserId: string | null = null;
 
@@ -107,8 +106,6 @@ function StatTile({
    MAIN
    ═══════════════════════════════════════════════════════════════ */
 export default function StaffDashboard() {
-  // INITIALIZE from the module cache → non-null on the FIRST render
-  // of every remount after the first ever load.
   const [userId, setUserId] = useState<string | null>(cachedUserId);
   const [license, setLicense] = useState<any>(null);
   const [shiftCount, setShiftCount] = useState(0);
@@ -120,20 +117,18 @@ export default function StaffDashboard() {
   const { data: profile, isLoading: profileLoading } = useStaffProfile(userId);
   const { data: cachedWallet } = useWallet(userId);
 
-  /* Auth — updates module cache too */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       const id = data.session?.user.id ?? null;
-      cachedUserId = id;       // write-through
+      cachedUserId = id;
       setUserId(id);
     })();
     return () => { cancelled = true; };
   }, []);
 
-  /* Other dashboard data */
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -169,10 +164,6 @@ export default function StaffDashboard() {
     ? Math.ceil((new Date(license.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  /* ------------------------------------------------------------------ */
-  /*  Contributor status — used ONLY for the badge + tool card swap    */
-  /*  The coin card has its own gating internally (shared component).  */
-  /* ------------------------------------------------------------------ */
   const profileSaysContributor = !!profile?.is_verified_contributor;
   const hasCachedWallet = cachedWallet != null;
   const isVerifiedContributor = profileSaysContributor || hasCachedWallet;
@@ -207,7 +198,8 @@ export default function StaffDashboard() {
   ];
 
   return (
-    <div className="w-full max-w-[880px] mx-auto px-4 pt-4 pb-16 space-y-3">
+    // ─── ONLY CHANGE: px-4 → px-1.5 sm:px-4 (tighter gutters on phone) ───
+    <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-2.5">
       <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
         <div className="flex items-center gap-2.5">
           <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
@@ -231,8 +223,7 @@ export default function StaffDashboard() {
         </div>
       </section>
 
-      {/* 🆕 Shared coin card — decides skeleton / card / nothing internally */}
-      <ContributorEarningsCard />
+
 
       <div className="grid grid-cols-2 gap-2">
         <StatTile label="CPD Points" value={cpdLoading ? "…" : fmtPoints(cpdStats?.total_points)}
@@ -251,7 +242,7 @@ export default function StaffDashboard() {
         <StatTile label="Certificates" value={cpdLoading ? "…" : cpdStats?.certificates_count ?? 0}
           icon={GraduationCap} tone="amber" to="/cpd/certificates" cta="View" />
       </div>
-
+      <ContributorEarningsCard />
       {cpdStats?.recent_completions?.length ? (
         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
           <div className="flex items-center justify-between mb-3">

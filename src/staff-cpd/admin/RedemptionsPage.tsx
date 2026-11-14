@@ -1,7 +1,7 @@
 // src/staff-cpd/admin/RedemptionsPage.tsx
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
-    Coins, CheckCircle2, XCircle, Loader2, Clock, AlertCircle, Phone,
+    Coins, CheckCircle2, XCircle, Clock, Phone,
     Receipt, Send,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -10,27 +10,21 @@ import {
     useAdminRedemptions, type RedemptionRow,
 } from "@/staff-cpd/lib/contributor-hooks";
 import { useMedraeCoinConfig } from "@/staff-cpd/lib/admin-hooks";
-import { playSound } from "@/lib/soundManager";
-
-const vibrate = (p: number | number[] = 15) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
-};
-const tap = (type: "light" | "success" | "warning" = "light") => {
-    try { playSound("ui-tap"); } catch { /* no-op */ }
-    if (type === "success") vibrate([15, 30, 15]);
-    else if (type === "warning") vibrate(40);
-    else vibrate(12);
-};
+import { tap } from "../pages/shared";
 
 const Sk = "rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse";
 
 const InputBase =
-    "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
+    "w-full h-11 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
     "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
 
 const TextareaBase =
     "w-full rounded-xl bg-white dark:bg-[#161b22] px-3 py-2 text-[13px] font-medium " +
     "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
+
+const PrimaryBtn =
+    "h-11 px-4 rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 " +
+    "active:scale-[0.97] transition-transform disabled:opacity-50";
 
 const Label = ({ children }: { children: React.ReactNode }) => (
     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
@@ -40,6 +34,32 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 
 type Filter = "pending" | "approved" | "paid" | "rejected" | "all";
 
+/* ── Skeleton ─────────────────────────────────────────────── */
+function RedemptionSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3 animate-pulse">
+            <div className="flex items-start gap-2.5">
+                <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/[0.06] shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="h-3 w-2/3 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                    <div className="h-2.5 w-1/2 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                    <div className="h-2 w-1/3 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                </div>
+            </div>
+            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-1.5">
+                <div className="h-2 w-16 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-4 w-32 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-2 w-40 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
+                <div className="flex-1 h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="flex-1 h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+        </div>
+    );
+}
+
+/* ── Main ─────────────────────────────────────────────────── */
 export default function RedemptionsPage() {
     const qc = useQueryClient();
     const [filter, setFilter] = useState<Filter>("pending");
@@ -49,20 +69,20 @@ export default function RedemptionsPage() {
     const [actingId, setActingId] = useState<string | null>(null);
     const [rejectingId, setRejectingId] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
-
-    // NEW: mark-paid inline form
     const [payingId, setPayingId] = useState<string | null>(null);
     const [mpesaRef, setMpesaRef] = useState<Record<string, string>>({});
 
-    const refresh = () =>
-        qc.invalidateQueries({ queryKey: ["medrae", "redemptions"] });
+    const refresh = useCallback(
+        () => qc.invalidateQueries({ queryKey: ["medrae", "redemptions"] }),
+        [qc],
+    );
 
-    const callRpc = async (fn: string, args: Record<string, any>) => {
+    const callRpc = useCallback(async (fn: string, args: Record<string, any>) => {
         const { error } = await supabase.rpc(fn, args);
         if (error) throw error;
-    };
+    }, []);
 
-    const handleApprove = async (row: RedemptionRow) => {
+    const handleApprove = useCallback(async (row: RedemptionRow) => {
         if (actingId) return;
         tap("success");
         setActingId(row.id);
@@ -74,9 +94,9 @@ export default function RedemptionsPage() {
         } finally {
             setActingId(null);
         }
-    };
+    }, [actingId, callRpc, refresh]);
 
-    const handleMarkPaid = async (row: RedemptionRow) => {
+    const handleMarkPaid = useCallback(async (row: RedemptionRow) => {
         if (actingId) return;
         const ref = (mpesaRef[row.id] ?? "").trim();
         if (!ref) {
@@ -98,12 +118,16 @@ export default function RedemptionsPage() {
         } finally {
             setActingId(null);
         }
-    };
+    }, [actingId, mpesaRef, callRpc, refresh]);
 
-    const handleReject = async (row: RedemptionRow) => {
+    const handleReject = useCallback(async (row: RedemptionRow) => {
         if (actingId) return;
         const reason = (rejectReason[row.id] ?? "").trim();
-        if (!reason) { tap("warning"); alert("Provide a rejection reason."); return; }
+        if (!reason) {
+            tap("warning");
+            alert("Provide a rejection reason.");
+            return;
+        }
         tap("warning");
         setActingId(row.id);
         try {
@@ -118,14 +142,15 @@ export default function RedemptionsPage() {
         } finally {
             setActingId(null);
         }
-    };
+    }, [actingId, rejectReason, callRpc, refresh]);
 
     return (
-        <div className="px-4 pt-4 pb-16 space-y-3 max-w-[880px] mx-auto">
+        // ✅ Gutter restored (bare-mounted page)
+        <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
             {/* Intro */}
             <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                 <div className="flex items-start gap-2.5">
-                    <div className="h-10 w-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                         <Coins className="h-4 w-4" strokeWidth={2.4} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -144,12 +169,16 @@ export default function RedemptionsPage() {
                 {(["pending", "approved", "paid", "rejected", "all"] as const).map((s) => {
                     const active = filter === s;
                     return (
-                        <button key={s} onClick={() => { tap(); setFilter(s); }}
-                            className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-bold capitalize
+                        <button
+                            key={s}
+                            onClick={() => { tap(); setFilter(s); }}
+                            className={`shrink-0 h-9 px-3 rounded-full text-[11px] font-bold capitalize
                                         active:scale-[0.97] transition-transform
-                                        ${active ? "bg-blue-600 text-white"
+                                        ${active
+                                    ? "bg-blue-600 text-white"
                                     : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"}`}
-                            style={{ touchAction: "manipulation" }}>
+                            style={{ touchAction: "manipulation" }}
+                        >
                             {s}
                         </button>
                     );
@@ -159,13 +188,7 @@ export default function RedemptionsPage() {
             {/* List */}
             {isLoading ? (
                 <div className="space-y-2">
-                    {Array.from({ length: 2 }).map((_, i) => (
-                        <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
-                            <div className={`h-10 w-full rounded-xl ${Sk}`} />
-                            <div className={`h-10 w-full rounded-xl ${Sk}`} />
-                            <div className={`h-10 w-full rounded-xl ${Sk}`} />
-                        </div>
-                    ))}
+                    {Array.from({ length: 3 }).map((_, i) => <RedemptionSkeleton key={i} />)}
                 </div>
             ) : rows.length === 0 ? (
                 <div className="rounded-2xl bg-white dark:bg-[#161b22] p-8 text-center">
@@ -184,9 +207,10 @@ export default function RedemptionsPage() {
                         const kesEquiv = (r.coins_amount * (coinConfig?.coin_to_kes_rate ?? r.coin_to_kes_rate)).toFixed(2);
                         return (
                             <div key={r.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+
                                 {/* Header */}
                                 <div className="flex items-start gap-2.5">
-                                    <div className="h-10 w-10 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0 text-[13px] font-bold">
+                                    <div className="h-10 w-10 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 text-[13px] font-bold">
                                         {(r.profile?.name ?? "?").charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -223,7 +247,7 @@ export default function RedemptionsPage() {
                                     )}
                                 </div>
 
-                                {/* Approved — payout in-flight notice */}
+                                {/* Approved — payout in-flight */}
                                 {r.status === "approved" && (
                                     <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-3 flex items-start gap-2">
                                         <Send className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
@@ -275,33 +299,45 @@ export default function RedemptionsPage() {
                                                     placeholder="Reason for rejection (required)"
                                                     rows={2}
                                                     className={TextareaBase}
+                                                    style={{ touchAction: "manipulation" }}
                                                 />
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => setRejectingId(null)}
-                                                        className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold active:scale-[0.97] transition-transform"
-                                                        style={{ touchAction: "manipulation" }}>
+                                                    <button
+                                                        onClick={() => setRejectingId(null)}
+                                                        className={`${PrimaryBtn} flex-1 bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200`}
+                                                        style={{ touchAction: "manipulation" }}
+                                                    >
                                                         Cancel
                                                     </button>
-                                                    <button onClick={() => handleReject(r)}
+                                                    <button
+                                                        onClick={() => handleReject(r)}
                                                         disabled={acting || !(rejectReason[r.id] ?? "").trim()}
-                                                        className="flex-1 h-10 rounded-xl bg-rose-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-                                                        style={{ touchAction: "manipulation" }}>
-                                                        {acting ? <div className="h-3.5 w-14 rounded bg-white/30 animate-pulse" />
+                                                        className={`${PrimaryBtn} flex-1 bg-rose-600 text-white`}
+                                                        style={{ touchAction: "manipulation" }}
+                                                    >
+                                                        {acting
+                                                            ? <div className="h-3.5 w-14 rounded bg-white/30 animate-pulse" />
                                                             : <><XCircle className="h-3.5 w-3.5" /> Reject</>}
                                                     </button>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="flex gap-2">
-                                                <button onClick={() => setRejectingId(r.id)}
-                                                    className="flex-1 h-10 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400 text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
-                                                    style={{ touchAction: "manipulation" }}>
+                                                <button
+                                                    onClick={() => setRejectingId(r.id)}
+                                                    className={`${PrimaryBtn} flex-1 bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400`}
+                                                    style={{ touchAction: "manipulation" }}
+                                                >
                                                     <XCircle className="h-3.5 w-3.5" /> Reject
                                                 </button>
-                                                <button onClick={() => handleApprove(r)} disabled={acting}
-                                                    className="flex-1 h-10 rounded-xl bg-emerald-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-                                                    style={{ touchAction: "manipulation" }}>
-                                                    {acting ? <div className="h-3.5 w-14 rounded bg-white/30 animate-pulse" />
+                                                <button
+                                                    onClick={() => handleApprove(r)}
+                                                    disabled={acting}
+                                                    className={`${PrimaryBtn} flex-1 bg-emerald-600 text-white`}
+                                                    style={{ touchAction: "manipulation" }}
+                                                >
+                                                    {acting
+                                                        ? <div className="h-3.5 w-14 rounded bg-white/30 animate-pulse" />
                                                         : <><CheckCircle2 className="h-3.5 w-3.5" /> Approve</>}
                                                 </button>
                                             </div>
@@ -309,7 +345,7 @@ export default function RedemptionsPage() {
                                     </div>
                                 )}
 
-                                {/* Actions — approved (mark paid with reference) */}
+                                {/* Actions — approved (mark paid) */}
                                 {r.status === "approved" && (
                                     <div className="pt-1 border-t border-slate-100 dark:border-white/[0.04] space-y-2">
                                         {payingId === r.id ? (
@@ -322,31 +358,39 @@ export default function RedemptionsPage() {
                                                         onChange={(e) => setMpesaRef((prev) => ({ ...prev, [r.id]: e.target.value }))}
                                                         placeholder="e.g. QK47XYZ12A"
                                                         className={InputBase + " font-mono"}
-                                                        autoFocus
+                                                        style={{ touchAction: "manipulation" }}
                                                     />
                                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1">
                                                         Copy from the M-Pesa SMS. Visible to the contributor in their history.
                                                     </p>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => setPayingId(null)}
-                                                        className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold active:scale-[0.97] transition-transform"
-                                                        style={{ touchAction: "manipulation" }}>
+                                                    <button
+                                                        onClick={() => setPayingId(null)}
+                                                        className={`${PrimaryBtn} flex-1 bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200`}
+                                                        style={{ touchAction: "manipulation" }}
+                                                    >
                                                         Cancel
                                                     </button>
-                                                    <button onClick={() => handleMarkPaid(r)}
+                                                    <button
+                                                        onClick={() => handleMarkPaid(r)}
                                                         disabled={acting || !(mpesaRef[r.id] ?? "").trim()}
-                                                        className="flex-1 h-10 rounded-xl bg-emerald-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-                                                        style={{ touchAction: "manipulation" }}>
-                                                        {acting ? <div className="h-3.5 w-20 rounded bg-white/30 animate-pulse" />
+                                                        className={`${PrimaryBtn} flex-1 bg-emerald-600 text-white`}
+                                                        style={{ touchAction: "manipulation" }}
+                                                    >
+                                                        {acting
+                                                            ? <div className="h-3.5 w-20 rounded bg-white/30 animate-pulse" />
                                                             : <><CheckCircle2 className="h-3.5 w-3.5" /> Confirm paid</>}
                                                     </button>
                                                 </div>
                                             </>
                                         ) : (
-                                            <button onClick={() => setPayingId(r.id)} disabled={acting}
-                                                className="w-full h-10 rounded-xl bg-emerald-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
-                                                style={{ touchAction: "manipulation" }}>
+                                            <button
+                                                onClick={() => setPayingId(r.id)}
+                                                disabled={acting}
+                                                className={`${PrimaryBtn} w-full bg-emerald-600 text-white`}
+                                                style={{ touchAction: "manipulation" }}
+                                            >
                                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                                 Mark as paid (I've sent M-Pesa)
                                             </button>

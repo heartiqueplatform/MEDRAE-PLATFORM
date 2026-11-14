@@ -1,4 +1,5 @@
 // src/staff-cpd/pages/CpdDashboard.tsx
+import { useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     Award, BookOpen, Clock, CheckCircle2, TrendingUp, GraduationCap, ArrowRight,
@@ -17,6 +18,11 @@ export function CpdDashboard() {
     const nav = useNavigate();
     const home = useHomeRoute();
 
+    const handleBack = useCallback(() => {
+        tap();
+        nav(home);
+    }, [nav, home]);
+
     return (
         <FullScreen>
             <PageHeader
@@ -26,12 +32,12 @@ export function CpdDashboard() {
                         ? `${data.current_period.name} · ends ${fmtDate(data.current_period.end_date)}`
                         : "Continuing Professional Development"
                 }
-                onBack={() => { tap(); nav(home); }}
+                onBack={handleBack}
                 rightSlot={
                     <Link
                         to="/cpd/catalog"
                         onClick={() => tap()}
-                        className="h-9 px-3 rounded-xl shrink-0
+                        className="h-10 px-3 rounded-xl shrink-0
                                    bg-blue-600 text-white text-[11px] font-bold
                                    flex items-center gap-1.5
                                    active:scale-[0.97] transition-transform"
@@ -44,8 +50,8 @@ export function CpdDashboard() {
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-4">
-                    <ContributorEarningsCard />
+                {/* ← no px-* here; ScrollBody handles the gutter */}
+                <div className="pt-3 space-y-3">
 
                     <section className="grid grid-cols-2 gap-2">
                         <CpdStatTile label="CPD Points" value={isLoading ? "…" : fmtPoints(data?.total_points)} icon={Award} tone="amber" />
@@ -54,6 +60,8 @@ export function CpdDashboard() {
                         <CpdStatTile label="In Progress" value={isLoading ? "…" : data?.in_progress_count ?? 0} icon={TrendingUp} tone="violet" />
                         <CpdStatTile label="Certificates" value={isLoading ? "…" : data?.certificates_count ?? 0} icon={GraduationCap} tone="rose" />
                     </section>
+
+                    <ContributorEarningsCard />
 
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -67,6 +75,7 @@ export function CpdDashboard() {
                                 className="inline-flex items-center gap-1 text-[11px] font-bold
                                            text-blue-600 dark:text-blue-400
                                            active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
                             >
                                 View all <ArrowRight className="h-3 w-3" />
                             </Link>
@@ -78,7 +87,10 @@ export function CpdDashboard() {
                                 ))}
                             </div>
                         ) : (
-                            <CpdEmptyState title="No completions yet" hint="Enroll in a CPD activity from the catalog to get started." />
+                            <CpdEmptyState
+                                title="No completions yet"
+                                hint="Enroll in a CPD activity from the catalog to get started."
+                            />
                         )}
                     </section>
                 </div>

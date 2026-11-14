@@ -98,7 +98,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
         <section className="w-full">
             {/* ── header row ── */}
             {/* ── header row ── */}
-            <div className="flex items-center justify-end mb-3 px-4">
+            <div className="flex items-center justify-end mb-3  px-4">
                 <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-gh-l-muted dark:text-gh-muted uppercase tracking-widest shrink-0">
                     <Calendar size={11} />
                     {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -111,7 +111,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                 whileHover={{ scale: 1.006 }}
                 whileTap={{ scale: 0.996 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                className="relative w-full overflow-hidden rounded-none sm:rounded-xl
+                className="relative w-full overflow-hidden rounded-xl sm:rounded-xl
                     bg-gh-l-card dark:bg-gh-card p-0 md:p-5 mb-6 text-left font-sans antialiased"
             >
                 {/* blurred artwork background */}

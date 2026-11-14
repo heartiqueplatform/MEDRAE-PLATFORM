@@ -24,9 +24,12 @@ function writeContributorFlag(is: boolean) {
 
 const Sk = "rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse";
 
+/* ═══════════════════════════════════════════════════════════════
+   Skeleton — matches the new card surface (white / #161b22)
+   ═══════════════════════════════════════════════════════════════ */
 export function ContributorEarningsCardSkeleton() {
     return (
-        <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4 space-y-3">
+        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
             <div className="flex items-start gap-2.5">
                 <div className={`h-10 w-10 rounded-xl shrink-0 ${Sk}`} />
                 <div className="min-w-0 flex-1 space-y-2">
@@ -35,33 +38,31 @@ export function ContributorEarningsCardSkeleton() {
                 </div>
                 <div className={`h-6 w-16 rounded-full shrink-0 ${Sk}`} />
             </div>
-            <div className="rounded-xl bg-white/80 dark:bg-[#0d1117]/70 p-3 space-y-2">
+            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
                 <div className={`h-2 w-24 ${Sk}`} />
                 <div className={`h-7 w-32 ${Sk}`} />
                 <div className={`h-3 w-20 ${Sk}`} />
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-white/[0.06]">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
                     <div><div className={`h-2 w-16 ${Sk}`} /><div className={`mt-1 h-3 w-20 ${Sk}`} /></div>
                     <div><div className={`h-2 w-20 ${Sk}`} /><div className={`mt-1 h-3 w-16 ${Sk}`} /></div>
                 </div>
             </div>
             <div className="space-y-1 min-h-[4.5rem]">
-                <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-                <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-                <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
+                <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
+                <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
+                <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
             </div>
             <div className="grid grid-cols-2 gap-2">
-                <div className="h-9 rounded-xl bg-white/70 dark:bg-[#0d1117]/60 animate-pulse" />
-                <div className="h-9 rounded-xl bg-amber-600/40 animate-pulse" />
+                <div className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
+                <div className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
             </div>
         </section>
     );
 }
 
-/**
- * Renders the earnings card ONLY if the user is a known contributor,
- * renders a skeleton if unknown, renders nothing if known-non-contributor.
- * Cache-backed so it never re-flashes for non-contributors after visit #1.
- */
+/* ═══════════════════════════════════════════════════════════════
+   Real card
+   ═══════════════════════════════════════════════════════════════ */
 export function ContributorEarningsCard() {
     const { user } = useAuth();
     const userId = user?.id ?? null;
@@ -94,7 +95,6 @@ export function ContributorEarningsCard() {
     if (knownNotContributor) return null;
     if (!knownContributor) return <ContributorEarningsCardSkeleton />;
 
-    // ─── Real card ───
     const coinToKes = coinConfig?.coin_to_kes_rate ?? 0.01;
     const minWithdrawal = coinConfig?.minimum_withdrawal ?? 1000;
     const coinsPerCompletion = coinConfig?.coins_per_completion ?? 20;
@@ -112,31 +112,32 @@ export function ContributorEarningsCard() {
         .replace(/\b\w/g, (c) => c.toUpperCase());
 
     return (
-        <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4 space-y-3">
-            {/* Header */}
+        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+            {/* ── Header — amber reserved for the ICON only ──────── */}
             <div className="flex items-start gap-2.5">
-                <div className="h-10 w-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                     <Coins className="h-5 w-5" strokeWidth={2.4} />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-[14px] font-bold text-amber-800 dark:text-amber-300 leading-tight">
+                    <h2 className="text-[14px] font-bold text-slate-900 dark:text-white leading-tight">
                         Your MedraeCoins
                     </h2>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">
                         {tierLabel} · Verified contributor
                     </p>
                 </div>
                 <Link to="/cpd/redeem"
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 shrink-0
-                     bg-white/70 dark:bg-[#0d1117]/60 text-[10px] font-bold
-                     text-amber-700 dark:text-amber-300 active:scale-[0.97] transition-transform"
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 shrink-0
+                     bg-slate-100 dark:bg-white/[0.06] text-[10px] font-bold
+                     text-slate-700 dark:text-slate-200
+                     active:scale-[0.97] transition-transform"
                     style={{ touchAction: "manipulation" }}>
                     Redeem <ArrowRight className="h-3 w-3" />
                 </Link>
             </div>
 
-            {/* Balance */}
-            <div className="rounded-xl bg-white/80 dark:bg-[#0d1117]/70 p-3 space-y-2">
+            {/* ── Balance — inner surface, standard dividers ────── */}
+            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-2">
                 <div>
                     <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Wallet balance
@@ -145,8 +146,10 @@ export function ContributorEarningsCard() {
                         {numbersLoading ? (
                             <span className="inline-block h-6 w-24 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse align-middle" />
                         ) : (
-                            <>{balance.toLocaleString()}
-                                <span className="text-sm ml-1 text-amber-600 dark:text-amber-400">MC</span></>
+                            <>
+                                {balance.toLocaleString()}
+                                <span className="text-sm ml-1 text-amber-600 dark:text-amber-400">MC</span>
+                            </>
                         )}
                     </p>
                     <p className="h-4 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -156,9 +159,11 @@ export function ContributorEarningsCard() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-white/[0.06]">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
                     <div>
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Lifetime</p>
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Lifetime
+                        </p>
                         <p className="h-4 text-[12px] font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
                             {numbersLoading ? (
                                 <span className="inline-block h-3 w-16 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse" />
@@ -166,8 +171,12 @@ export function ContributorEarningsCard() {
                         </p>
                     </div>
                     <div>
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Withdrawable</p>
-                        <p className={`h-4 text-[12px] font-bold tabular-nums mt-0.5 ${canWithdraw ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Withdrawable
+                        </p>
+                        <p className={`h-4 text-[12px] font-bold tabular-nums mt-0.5 ${canWithdraw
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-slate-400 dark:text-slate-500"}`}>
                             {numbersLoading ? (
                                 <span className="inline-block h-3 w-12 rounded bg-slate-200/70 dark:bg-white/[0.08] animate-pulse" />
                             ) : canWithdraw ? "Yes" : `Need ${(minWithdrawal - balance).toLocaleString()}`}
@@ -176,20 +185,22 @@ export function ContributorEarningsCard() {
                 </div>
             </div>
 
-            {/* Transactions */}
+            {/* ── Transactions — neutral rows on inner surface ─── */}
             <div className="space-y-1 min-h-[4.5rem]">
                 {txLoadingOnly ? (
                     <>
-                        <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-                        <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
-                        <div className="h-7 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 animate-pulse" />
+                        <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
+                        <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
+                        <div className="h-7 rounded-lg bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
                     </>
                 ) : transactions.length > 0 ? (
                     transactions.map((tx) => {
                         const isEarn = tx.amount > 0;
                         return (
-                            <div key={tx.id} className="flex items-center gap-2 rounded-lg bg-white/60 dark:bg-[#0d1117]/60 px-2 py-1.5">
-                                <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${isEarn ? "bg-emerald-50 dark:bg-emerald-400/10" : "bg-rose-50 dark:bg-rose-400/10"}`}>
+                            <div key={tx.id} className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-[#0d1117] px-2 py-1.5">
+                                <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${isEarn
+                                    ? "bg-emerald-50 dark:bg-emerald-400/10"
+                                    : "bg-rose-50 dark:bg-rose-400/10"}`}>
                                     {isEarn
                                         ? <ArrowDownLeft className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
                                         : <ArrowUpRight className="h-2.5 w-2.5 text-rose-600 dark:text-rose-400" />}
@@ -197,30 +208,35 @@ export function ContributorEarningsCard() {
                                 <p className="flex-1 text-[10px] font-bold text-slate-900 dark:text-white truncate">
                                     {tx.reason || tx.kind.replace(/_/g, " ")}
                                 </p>
-                                <span className={`text-[10px] font-bold tabular-nums shrink-0 ${isEarn ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                <span className={`text-[10px] font-bold tabular-nums shrink-0 ${isEarn
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-rose-600 dark:text-rose-400"}`}>
                                     {isEarn ? "+" : ""}{tx.amount}
                                 </span>
                             </div>
                         );
                     })
                 ) : (
-                    <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 leading-snug text-center py-3">
-                        No earnings yet — publish an activity to start earning {coinsPerCompletion} MC per completion.
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug text-center py-3">
+                        No earnings yet — publish an activity to start earning{" "}
+                        <span className="font-bold text-amber-600 dark:text-amber-400">{coinsPerCompletion} MC</span>{" "}
+                        per completion.
                     </p>
                 )}
             </div>
 
-            {/* CTAs */}
+            {/* ── CTAs — one accent max, thumb-sized ───────────── */}
             <div className="grid grid-cols-2 gap-2">
                 <Link to="/cpd/admin/activities"
-                    className="h-9 rounded-xl bg-white/70 dark:bg-[#0d1117]/60 text-amber-700 dark:text-amber-300
+                    className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06]
+                     text-slate-700 dark:text-slate-200
                      text-[11px] font-bold flex items-center justify-center gap-1.5
                      active:scale-[0.97] transition-transform"
                     style={{ touchAction: "manipulation" }}>
                     <BookOpen className="h-3.5 w-3.5" /> Activities
                 </Link>
                 <Link to="/cpd/redeem"
-                    className="h-9 rounded-xl bg-amber-600 text-white text-[11px] font-bold
+                    className="h-10 rounded-xl bg-amber-500 text-white text-[11px] font-bold
                      flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform"
                     style={{ touchAction: "manipulation" }}>
                     <Coins className="h-3.5 w-3.5" /> Redeem

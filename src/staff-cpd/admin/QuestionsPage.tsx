@@ -1,5 +1,5 @@
 // src/staff-cpd/admin/QuestionsPage.tsx
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
     Plus, Trash2, Search, HelpCircle, Check, Circle, Type,
     Pencil, X, Save,
@@ -11,26 +11,8 @@ import {
     useArchiveQuestion,
 } from "../lib/admin-hooks";
 import { CpdEmptyState } from "../components";
-import { playSound } from "@/lib/soundManager";
+import { tap } from "../pages/shared";
 import SelectField from "@/components/ui/SelectField";
-
-/* ------------------------------------------------------------------ */
-/*  Tap helper                                                        */
-/* ------------------------------------------------------------------ */
-
-const vibrate = (p: number | number[] = 15) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
-};
-const tap = (type: "light" | "success" | "warning" = "light") => {
-    try { playSound("ui-tap"); } catch { /* no-op */ }
-    if (type === "success") vibrate([15, 30, 15]);
-    else if (type === "warning") vibrate(40);
-    else vibrate(12);
-};
-
-/* ------------------------------------------------------------------ */
-/*  Type tones                                                        */
-/* ------------------------------------------------------------------ */
 
 const TYPE_TONES: Record<string, string> = {
     multiple_choice: "bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400",
@@ -38,13 +20,8 @@ const TYPE_TONES: Record<string, string> = {
     true_false: "bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400",
     short_answer: "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400",
 };
-
 const getTypeTone = (t?: string) =>
     TYPE_TONES[t ?? ""] ?? "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300";
-
-/* ------------------------------------------------------------------ */
-/*  Question-type options for SelectField                             */
-/* ------------------------------------------------------------------ */
 
 const QUESTION_TYPE_OPTIONS = [
     { value: "multiple_choice", label: "Multiple Choice" },
@@ -56,12 +33,8 @@ const QUESTION_TYPE_OPTIONS = [
 const isChoiceType = (t: string) =>
     t === "multiple_choice" || t === "multiple_select" || t === "true_false";
 
-/* ------------------------------------------------------------------ */
-/*  Shared styles                                                     */
-/* ------------------------------------------------------------------ */
-
 const InputBase =
-    "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
+    "w-full h-11 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
     "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
 
 const TextareaBase =
@@ -69,16 +42,18 @@ const TextareaBase =
     "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
 
 const PrimaryBtn =
-    "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold " +
+    "h-11 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold " +
     "flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
 
 const SecondaryBtn =
-    "h-10 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 " +
+    "h-11 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 " +
     "text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
 
-const DangerBtn =
-    "h-8 w-8 rounded-lg bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400 " +
-    "flex items-center justify-center shrink-0 active:scale-[0.92] transition-transform";
+const IconBtn =
+    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 " +
+    "active:scale-[0.92] transition-transform";
+
+const DangerBtn = `${IconBtn} bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400`;
 
 const Label = ({ children }: { children: React.ReactNode }) => (
     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
@@ -86,27 +61,36 @@ const Label = ({ children }: { children: React.ReactNode }) => (
     </label>
 );
 
-/* ------------------------------------------------------------------ */
-/*  Reusable option editor (used for new + edit)                      */
-/* ------------------------------------------------------------------ */
-
 type OptionDraft = { option_text: string; is_correct: boolean };
 
 function OptionsEditor({
-    options,
-    setOptions,
+    options, setOptions,
 }: {
     options: OptionDraft[];
     setOptions: React.Dispatch<React.SetStateAction<OptionDraft[]>>;
 }) {
-    const addOption = () => {
+    const addOption = useCallback(() => {
         tap();
         setOptions((o) => [...o, { option_text: "", is_correct: false }]);
-    };
-    const removeOption = (i: number) => {
+    }, [setOptions]);
+
+    const removeOption = useCallback((i: number) => {
         tap("warning");
         setOptions((o) => o.filter((_, idx) => idx !== i));
-    };
+    }, [setOptions]);
+
+    const toggleCorrect = useCallback((i: number) => {
+        tap();
+        setOptions((prev) =>
+            prev.map((x, idx) => idx === i ? { ...x, is_correct: !x.is_correct } : x)
+        );
+    }, [setOptions]);
+
+    const updateText = useCallback((i: number, value: string) => {
+        setOptions((prev) =>
+            prev.map((x, idx) => idx === i ? { ...x, option_text: value } : x)
+        );
+    }, [setOptions]);
 
     return (
         <div className="space-y-2">
@@ -116,44 +100,31 @@ function OptionsEditor({
                     key={i}
                     className={`flex items-center gap-2 rounded-xl p-2 transition-colors ${o.is_correct
                         ? "bg-emerald-50 dark:bg-emerald-400/10"
-                        : "bg-slate-50 dark:bg-[#0d1117]"
-                        }`}
+                        : "bg-slate-50 dark:bg-[#0d1117]"}`}
                 >
                     <button
                         type="button"
-                        onClick={() => {
-                            tap();
-                            setOptions((prev) =>
-                                prev.map((x, idx) =>
-                                    idx === i ? { ...x, is_correct: !x.is_correct } : x
-                                )
-                            );
-                        }}
-                        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 active:scale-[0.92] transition-transform ${o.is_correct
-                            ? "bg-emerald-500 text-white"
-                            : "bg-white dark:bg-[#161b22] text-slate-400 ring-1 ring-slate-200 dark:ring-white/[0.06]"
-                            }`}
+                        onClick={() => toggleCorrect(i)}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0
+                                    active:scale-[0.92] transition-transform ${o.is_correct
+                                ? "bg-emerald-500 text-white"
+                                : "bg-white dark:bg-[#161b22] text-slate-400 ring-1 ring-slate-200 dark:ring-white/[0.06]"}`}
                         aria-label={o.is_correct ? "Marked correct" : "Mark as correct"}
                         style={{ touchAction: "manipulation" }}
                     >
                         {o.is_correct ? (
-                            <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                            <Check className="w-4 h-4" strokeWidth={3} />
                         ) : (
-                            <Circle className="w-3 h-3" strokeWidth={2.5} />
+                            <Circle className="w-3.5 h-3.5" strokeWidth={2.5} />
                         )}
                     </button>
 
                     <input
                         value={o.option_text}
-                        onChange={(e) =>
-                            setOptions((prev) =>
-                                prev.map((x, idx) =>
-                                    idx === i ? { ...x, option_text: e.target.value } : x
-                                )
-                            )
-                        }
+                        onChange={(e) => updateText(i, e.target.value)}
                         placeholder={`Option ${i + 1}`}
-                        className={InputBase + " !h-9 flex-1"}
+                        className={InputBase + " !h-10 flex-1"}
+                        style={{ touchAction: "manipulation" }}
                     />
 
                     {options.length > 2 && (
@@ -164,7 +135,7 @@ function OptionsEditor({
                             className={DangerBtn}
                             style={{ touchAction: "manipulation" }}
                         >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3.5 w-3.5" />
                         </button>
                     )}
                 </div>
@@ -173,7 +144,7 @@ function OptionsEditor({
             <button
                 type="button"
                 onClick={addOption}
-                className={SecondaryBtn + " w-full !h-9"}
+                className={SecondaryBtn + " w-full"}
                 style={{ touchAction: "manipulation" }}
             >
                 <Plus className="h-3.5 w-3.5" />
@@ -183,18 +154,14 @@ function OptionsEditor({
     );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN
-   ═══════════════════════════════════════════════════════════════ */
 export default function QuestionsPage() {
     const [search, setSearch] = useState("");
     const q = useAdminQuestions({ search });
     const create = useCreateQuestion();
     const update = useUpdateQuestionWithOptions();
     const archive = useArchiveQuestion();
-    const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+    const items = useMemo(() => q.data?.pages.flatMap((p) => p.items) ?? [], [q.data]);
 
-    /* ---------------- new question form ---------------- */
     const [qText, setQText] = useState("");
     const [qType, setQType] = useState("multiple_choice");
     const [options, setOptions] = useState<OptionDraft[]>([
@@ -204,16 +171,16 @@ export default function QuestionsPage() {
 
     const showOptions = isChoiceType(qType);
 
-    const resetNew = () => {
+    const resetNew = useCallback(() => {
         setQText("");
         setQType("multiple_choice");
         setOptions([
             { option_text: "", is_correct: false },
             { option_text: "", is_correct: false },
         ]);
-    };
+    }, []);
 
-    const save = async () => {
+    const save = useCallback(async () => {
         if (!qText.trim()) return;
         tap("success");
         await create.mutateAsync({
@@ -222,15 +189,14 @@ export default function QuestionsPage() {
             options: options.filter((o) => o.option_text.trim()),
         });
         resetNew();
-    };
+    }, [qText, qType, options, create, resetNew]);
 
-    /* ---------------- edit existing question ---------------- */
     const [editingId, setEditingId] = useState<string | null>(null);
     const [eText, setEText] = useState("");
     const [eType, setEType] = useState("multiple_choice");
     const [eOptions, setEOptions] = useState<OptionDraft[]>([]);
 
-    const startEdit = (qq: any) => {
+    const startEdit = useCallback((qq: any) => {
         tap();
         setEditingId(qq.id);
         setEText(qq.question ?? "");
@@ -241,38 +207,22 @@ export default function QuestionsPage() {
         }));
         setEOptions(
             isChoiceType(qq.question_type) && opts.length < 2
-                ? [
-                    ...opts,
-                    ...Array.from(
-                        { length: 2 - opts.length },
-                        () => ({ option_text: "", is_correct: false })
-                    ),
-                ]
+                ? [...opts, ...Array.from({ length: 2 - opts.length }, () => ({ option_text: "", is_correct: false }))]
                 : opts
         );
-    };
+    }, []);
 
-    const cancelEdit = () => {
+    const cancelEdit = useCallback(() => {
         tap();
         setEditingId(null);
-    };
+    }, []);
 
-    /**
-     * Save edit.
-     *  - patch   → only real columns on cpd_questions
-     *  - options → sent separately, handled by adminReplaceQuestionOptions
-     *
-     * This is what fixes PGRST204 "Could not find the 'options' column".
-     */
-    const saveEdit = async (id: string) => {
+    const saveEdit = useCallback(async (id: string) => {
         if (!eText.trim()) return;
         tap("success");
         await update.mutateAsync({
             id,
-            patch: {
-                question: eText,
-                question_type: eType as any,
-            },
+            patch: { question: eText, question_type: eType as any },
             options: isChoiceType(eType)
                 ? eOptions
                     .filter((o) => o.option_text.trim())
@@ -284,18 +234,18 @@ export default function QuestionsPage() {
                 : [],
         });
         setEditingId(null);
-    };
+    }, [eText, eType, eOptions, update]);
 
-    const deleteQuestion = (id: string) => {
+    const deleteQuestion = useCallback((id: string) => {
         if (!confirm("Archive this question? It won't appear in the bank anymore."))
             return;
         tap("warning");
         archive.mutate(id);
-    };
+    }, [archive]);
 
     return (
-        <div className="px-4 pt-4 pb-16 space-y-3 max-w-[880px] mx-auto">
-            {/* Intro */}
+        // ✅ Gutter restored — matches the rest of the CPD section
+        <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
             <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                 <div className="flex items-start gap-2.5">
                     <div className="h-10 w-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0">
@@ -312,7 +262,6 @@ export default function QuestionsPage() {
                 </div>
             </section>
 
-            {/* New question card */}
             <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     New Question
@@ -326,6 +275,7 @@ export default function QuestionsPage() {
                         placeholder="Type your question…"
                         rows={3}
                         className={TextareaBase}
+                        style={{ touchAction: "manipulation" }}
                     />
                 </div>
 
@@ -333,10 +283,7 @@ export default function QuestionsPage() {
                     <Label>Question type</Label>
                     <SelectField
                         value={qType}
-                        onValueChange={(v) => {
-                            tap();
-                            setQType(v);
-                        }}
+                        onValueChange={(v) => { tap(); setQType(v); }}
                         options={QUESTION_TYPE_OPTIONS}
                         placeholder="Question type"
                     />
@@ -348,7 +295,7 @@ export default function QuestionsPage() {
 
                 <button
                     onClick={save}
-                    disabled={!qText || create.isPending}
+                    disabled={!qText.trim() || create.isPending}
                     className={PrimaryBtn + " w-full"}
                     style={{ touchAction: "manipulation" }}
                 >
@@ -357,25 +304,21 @@ export default function QuestionsPage() {
                 </button>
             </section>
 
-            {/* Search */}
             <div className="relative">
                 <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search questions…"
-                    className={InputBase + " pl-9"}
+                    className={InputBase + " pl-10"}
+                    style={{ touchAction: "manipulation" }}
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             </div>
 
-            {/* List */}
-            {q.isLoading ? (
+            {q.isLoading && !items.length ? (
                 <div className="space-y-2">
                     {Array.from({ length: 4 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse"
-                        />
+                        <QuestionSkeleton key={i} />
                     ))}
                 </div>
             ) : items.length ? (
@@ -388,14 +331,9 @@ export default function QuestionsPage() {
                                     key={qq.id}
                                     className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2"
                                 >
-                                    {/* Header */}
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-start gap-2 min-w-0 flex-1">
-                                            <div
-                                                className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${getTypeTone(
-                                                    qq.question_type
-                                                )}`}
-                                            >
+                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${getTypeTone(qq.question_type)}`}>
                                                 <Type className="h-3.5 w-3.5" strokeWidth={2.4} />
                                             </div>
                                             {!isEditing ? (
@@ -408,19 +346,20 @@ export default function QuestionsPage() {
                                                     onChange={(e) => setEText(e.target.value)}
                                                     rows={3}
                                                     className={TextareaBase}
+                                                    style={{ touchAction: "manipulation" }}
                                                 />
                                             )}
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
-                                            {!isEditing && (
+                                            {!isEditing ? (
                                                 <>
                                                     <button
                                                         onClick={() => startEdit(qq)}
-                                                        className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] active:scale-[0.92] transition-transform"
+                                                        className={IconBtn + " text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-white/[0.06]"}
                                                         aria-label="Edit question"
                                                         style={{ touchAction: "manipulation" }}
                                                     >
-                                                        <Pencil className="h-3.5 w-3.5" />
+                                                        <Pencil className="h-4 w-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => deleteQuestion(qq.id)}
@@ -428,27 +367,28 @@ export default function QuestionsPage() {
                                                         aria-label="Archive question"
                                                         style={{ touchAction: "manipulation" }}
                                                     >
-                                                        <Trash2 className="h-3 w-3" />
+                                                        <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </>
-                                            )}
-                                            {isEditing && (
+                                            ) : (
                                                 <>
                                                     <button
                                                         onClick={cancelEdit}
-                                                        className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+                                                        className={IconBtn + " text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-white/[0.06]"}
                                                         aria-label="Cancel edit"
                                                         style={{ touchAction: "manipulation" }}
                                                     >
-                                                        <X className="h-3.5 w-3.5" />
+                                                        <X className="h-4 w-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => saveEdit(qq.id)}
                                                         disabled={!eText.trim() || update.isPending}
-                                                        className="h-8 px-2 rounded-lg bg-blue-600 text-white text-[11px] font-bold flex items-center gap-1 disabled:opacity-50"
+                                                        className="h-10 px-3 rounded-xl bg-blue-600 text-white text-[11px] font-bold
+                                                                   flex items-center gap-1 disabled:opacity-50
+                                                                   active:scale-[0.97] transition-transform"
                                                         style={{ touchAction: "manipulation" }}
                                                     >
-                                                        <Save className="h-3 w-3" />
+                                                        <Save className="h-3.5 w-3.5" />
                                                         Save
                                                     </button>
                                                 </>
@@ -456,39 +396,29 @@ export default function QuestionsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Type badge (read view) */}
                                     {!isEditing && (
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize ${getTypeTone(
-                                                qq.question_type
-                                            )}`}
-                                        >
+                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${getTypeTone(qq.question_type)}`}>
                                             {qq.question_type.replace("_", " ")}
                                         </span>
                                     )}
 
-                                    {/* Edit view: type selector + options editor */}
                                     {isEditing && (
                                         <div className="space-y-2">
                                             <div>
                                                 <Label>Question type</Label>
                                                 <SelectField
                                                     value={eType}
-                                                    onValueChange={(v) => setEType(v)}
+                                                    onValueChange={setEType}
                                                     options={QUESTION_TYPE_OPTIONS}
                                                     placeholder="Question type"
                                                 />
                                             </div>
                                             {isChoiceType(eType) && (
-                                                <OptionsEditor
-                                                    options={eOptions}
-                                                    setOptions={setEOptions}
-                                                />
+                                                <OptionsEditor options={eOptions} setOptions={setEOptions} />
                                             )}
                                         </div>
                                     )}
 
-                                    {/* Read view: options */}
                                     {!isEditing && qq.options?.length > 0 && (
                                         <div className="space-y-1">
                                             {qq.options.map((o: any) => (
@@ -496,25 +426,18 @@ export default function QuestionsPage() {
                                                     key={o.id}
                                                     className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 ${o.is_correct
                                                         ? "bg-emerald-50 dark:bg-emerald-400/10"
-                                                        : "bg-slate-50 dark:bg-[#0d1117]"
-                                                        }`}
+                                                        : "bg-slate-50 dark:bg-[#0d1117]"}`}
                                                 >
                                                     {o.is_correct ? (
                                                         <span className="h-3.5 w-3.5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                                                            <Check
-                                                                className="h-2 w-2 text-white"
-                                                                strokeWidth={3.5}
-                                                            />
+                                                            <Check className="h-2 w-2 text-white" strokeWidth={3.5} />
                                                         </span>
                                                     ) : (
                                                         <span className="h-3.5 w-3.5 rounded-full ring-1 ring-slate-300 dark:ring-white/[0.15] shrink-0" />
                                                     )}
-                                                    <span
-                                                        className={`text-[11px] font-medium ${o.is_correct
-                                                            ? "text-emerald-700 dark:text-emerald-400"
-                                                            : "text-slate-600 dark:text-slate-400"
-                                                            }`}
-                                                    >
+                                                    <span className={`text-[11px] font-medium ${o.is_correct
+                                                        ? "text-emerald-700 dark:text-emerald-400"
+                                                        : "text-slate-600 dark:text-slate-400"}`}>
                                                         {o.option_text}
                                                     </span>
                                                 </div>
@@ -527,12 +450,9 @@ export default function QuestionsPage() {
                     </div>
 
                     {q.hasNextPage && (
-                        <div className="flex justify-center pt-2">
+                        <div className="flex justify-center pt-2 pb-4">
                             <button
-                                onClick={() => {
-                                    tap();
-                                    q.fetchNextPage();
-                                }}
+                                onClick={() => { tap(); q.fetchNextPage(); }}
                                 disabled={q.isFetchingNextPage}
                                 className={SecondaryBtn}
                                 style={{ touchAction: "manipulation" }}
@@ -549,6 +469,27 @@ export default function QuestionsPage() {
                     icon={HelpCircle}
                 />
             )}
+        </div>
+    );
+}
+
+function QuestionSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2 animate-pulse">
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2 flex-1">
+                    <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-white/[0.06] shrink-0" />
+                    <div className="flex-1 space-y-1.5 pt-1">
+                        <div className="h-3 w-4/5 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                        <div className="h-3 w-2/3 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                    </div>
+                </div>
+                <div className="flex gap-1">
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                </div>
+            </div>
+            <div className="h-5 w-24 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
         </div>
     );
 }

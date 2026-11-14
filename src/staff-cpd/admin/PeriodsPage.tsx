@@ -1,49 +1,32 @@
 // src/staff-cpd/admin/PeriodsPage.tsx
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Calendar, Plus, ArrowRight, CalendarDays } from "lucide-react";
 import { useAdminPeriods, useCreatePeriod } from "../lib/admin-hooks";
 import { fmtDate } from "../lib";
 import { CpdEmptyState } from "../components";
-import { playSound } from "@/lib/soundManager";
-
-/* ------------------------------------------------------------------ */
-/*  Tap helper                                                        */
-/* ------------------------------------------------------------------ */
-
-const vibrate = (p: number | number[] = 15) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
-};
-const tap = (type: "light" | "success" | "warning" = "light") => {
-    try { playSound("ui-tap"); } catch { /* no-op */ }
-    if (type === "success") vibrate([15, 30, 15]);
-    else if (type === "warning") vibrate(40);
-    else vibrate(12);
-};
+import { tap } from "../pages/shared";
 
 /* ------------------------------------------------------------------ */
 /*  Status tones                                                      */
 /* ------------------------------------------------------------------ */
-
 const STATUS_TONES: Record<string, string> = {
     active: "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400",
     upcoming: "bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400",
     closed: "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300",
     archived: "bg-rose-50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-400",
 };
-
 const getStatusTone = (status?: string) =>
     STATUS_TONES[(status ?? "").toLowerCase()] ?? STATUS_TONES.closed;
 
 /* ------------------------------------------------------------------ */
 /*  Shared styles                                                     */
 /* ------------------------------------------------------------------ */
-
 const InputBase =
-    "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
+    "w-full h-11 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
     "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
 
 const PrimaryBtn =
-    "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold " +
+    "h-11 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold " +
     "flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
 
 const Label = ({ children }: { children: React.ReactNode }) => (
@@ -51,6 +34,22 @@ const Label = ({ children }: { children: React.ReactNode }) => (
         {children}
     </label>
 );
+
+/* ------------------------------------------------------------------ */
+/*  Skeleton — matches real period row                                */
+/* ------------------------------------------------------------------ */
+function PeriodRowSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 flex items-center gap-2.5 animate-pulse">
+            <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-white/[0.06] shrink-0" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="h-3 w-2/3 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-2.5 w-1/2 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            <div className="h-5 w-16 rounded-full bg-slate-100 dark:bg-white/[0.04] shrink-0" />
+        </div>
+    );
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN
@@ -60,21 +59,22 @@ export default function PeriodsPage() {
     const create = useCreatePeriod();
     const [form, setForm] = useState({ name: "", start_date: "", end_date: "" });
 
-    const submit = async () => {
+    const submit = useCallback(async () => {
+        if (!form.name || !form.start_date || !form.end_date || create.isPending) return;
         tap("success");
         await create.mutateAsync(form);
         setForm({ name: "", start_date: "", end_date: "" });
-    };
+    }, [form, create]);
 
-    const canSubmit = form.name && form.start_date && form.end_date && !create.isPending;
+    const canSubmit = !!form.name && !!form.start_date && !!form.end_date && !create.isPending;
 
     return (
-        <div className="px-4 pt-4 pb-16 space-y-3 max-w-[880px] mx-auto">
-
+        // ✅ Gutter restored (bare-mounted page)
+        <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
             {/* Intro */}
             <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                 <div className="flex items-start gap-2.5">
-                    <div className="h-10 w-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                         <Calendar className="h-4 w-4" strokeWidth={2.4} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -102,6 +102,7 @@ export default function PeriodsPage() {
                             onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                             placeholder="CPD 2026"
                             className={InputBase}
+                            style={{ touchAction: "manipulation" }}
                         />
                     </div>
                     <div>
@@ -111,6 +112,7 @@ export default function PeriodsPage() {
                             value={form.start_date}
                             onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))}
                             className={InputBase}
+                            style={{ touchAction: "manipulation" }}
                         />
                     </div>
                     <div>
@@ -120,6 +122,7 @@ export default function PeriodsPage() {
                             value={form.end_date}
                             onChange={(e) => setForm(f => ({ ...f, end_date: e.target.value }))}
                             className={InputBase}
+                            style={{ touchAction: "manipulation" }}
                         />
                     </div>
                 </div>
@@ -136,21 +139,15 @@ export default function PeriodsPage() {
             </section>
 
             {/* List */}
-            {q.isLoading ? (
+            {q.isLoading && !q.data?.length ? (
                 <div className="space-y-2">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-20 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
-                    ))}
+                    {Array.from({ length: 3 }).map((_, i) => <PeriodRowSkeleton key={i} />)}
                 </div>
             ) : q.data?.length ? (
                 <div className="space-y-2">
                     {q.data.map((p) => (
-                        <div
-                            key={p.id}
-                            className="rounded-2xl bg-white dark:bg-[#161b22] p-3
-                                       flex items-center gap-2.5"
-                        >
-                            <div className="h-11 w-11 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+                        <div key={p.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-3 flex items-center gap-2.5">
+                            <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                                 <CalendarDays className="h-4 w-4" strokeWidth={2.4} />
                             </div>
 
@@ -167,7 +164,7 @@ export default function PeriodsPage() {
                             </div>
 
                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 shrink-0
-                                              text-[9px] font-bold capitalize ${getStatusTone(p.status)}`}>
+                                              text-[10px] font-bold capitalize ${getStatusTone(p.status)}`}>
                                 {p.status}
                             </span>
                         </div>

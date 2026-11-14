@@ -1,9 +1,10 @@
 // src/staff-cpd/pages/ContributorApplyPage.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     ChevronLeft, CheckCircle2, Clock, XCircle, Loader2,
     ShieldCheck, AlertCircle, UserCheck, ArrowRight,
+    Award, Sparkles, PenTool, TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
@@ -12,7 +13,6 @@ import { playSound } from "@/lib/soundManager";
 /* ------------------------------------------------------------------ */
 /*  Tap helper                                                        */
 /* ------------------------------------------------------------------ */
-
 const vibrate = (p: number | number[] = 15) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
 };
@@ -24,9 +24,8 @@ const tap = (type: "light" | "success" | "warning" = "light") => {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Admin IDs — must match the ones in ContributorReviewsPage         */
+/*  Admin IDs                                                         */
 /* ------------------------------------------------------------------ */
-
 const ADMIN_IDS = [
     "25f37970-c9b9-4c15-b8a2-514a912e3261",
     "731974f9-5af2-44c3-bf13-547fc4c89209",
@@ -35,12 +34,17 @@ const ADMIN_IDS = [
 /* ------------------------------------------------------------------ */
 /*  Shared styles                                                     */
 /* ------------------------------------------------------------------ */
+const InputBase =
+    "w-full h-11 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
+    "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
 
-const InputBase = "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
+const TextareaBase =
+    "w-full rounded-xl bg-white dark:bg-[#161b22] px-3 py-2 text-[13px] font-medium " +
+    "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
 
-const TextareaBase = "w-full rounded-xl bg-white dark:bg-[#161b22] px-3 py-2 text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
-
-const PrimaryBtn = "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
+const PrimaryBtn =
+    "h-11 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 " +
+    "active:scale-[0.97] transition-transform disabled:opacity-50";
 
 const Sk = "rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse";
 
@@ -53,7 +57,6 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
 /* ------------------------------------------------------------------ */
-
 interface Profile {
     user_id: string;
     name: string;
@@ -78,9 +81,8 @@ interface VerificationRow {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Skeleton loader — full page, no spinner                           */
+/*  Skeleton                                                          */
 /* ------------------------------------------------------------------ */
-
 function SkeletonApplyPage() {
     return (
         <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
@@ -95,8 +97,7 @@ function SkeletonApplyPage() {
             </header>
 
             <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                <div className="w-full max-w-[880px] mx-auto px-4 pt-4 pb-16 space-y-3">
-                    {/* Requirements card skeleton */}
+                <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                         <div className={`h-3 w-28 ${Sk}`} />
                         <div className="space-y-2 pt-1">
@@ -107,32 +108,25 @@ function SkeletonApplyPage() {
                         </div>
                     </section>
 
-                    {/* Application form skeleton */}
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                         <div className={`h-3 w-24 ${Sk}`} />
-
                         <div className="space-y-1.5">
                             <div className={`h-2 w-32 ml-1 ${Sk}`} />
-                            <div className={`h-10 w-full rounded-xl ${Sk}`} />
-                            <div className={`h-2 w-48 ml-1 ${Sk}`} />
+                            <div className={`h-11 w-full rounded-xl ${Sk}`} />
                         </div>
-
                         <div className="space-y-1.5">
                             <div className={`h-2 w-28 ml-1 ${Sk}`} />
-                            <div className={`h-10 w-full rounded-xl ${Sk}`} />
+                            <div className={`h-11 w-full rounded-xl ${Sk}`} />
                         </div>
-
                         <div className="space-y-1.5">
                             <div className={`h-2 w-40 ml-1 ${Sk}`} />
-                            <div className={`h-10 w-full rounded-xl ${Sk}`} />
+                            <div className={`h-11 w-full rounded-xl ${Sk}`} />
                         </div>
-
                         <div className="space-y-1.5">
                             <div className={`h-2 w-36 ml-1 ${Sk}`} />
                             <div className={`h-20 w-full rounded-xl ${Sk}`} />
                         </div>
-
-                        <div className={`h-10 w-full rounded-xl ${Sk}`} />
+                        <div className={`h-11 w-full rounded-xl ${Sk}`} />
                     </section>
                 </div>
             </main>
@@ -141,9 +135,145 @@ function SkeletonApplyPage() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Approved hero — centered, informative, no dead space              */
+/* ------------------------------------------------------------------ */
+function ApprovedHero({
+    profile, verification, onAuthor, onDashboard,
+}: {
+    profile: Profile;
+    verification: VerificationRow | null;
+    onAuthor: () => void;
+    onDashboard: () => void;
+}) {
+    const tierLabel = useMemo(() => {
+        const t = profile.contributor_tier ?? "contributor";
+        return t.replace(/_/g, " ");
+    }, [profile.contributor_tier]);
+
+    const joined = useMemo(() => {
+        if (!verification?.reviewed_at) return null;
+        return new Date(verification.reviewed_at).toLocaleDateString(undefined, {
+            month: "short", day: "numeric", year: "numeric",
+        });
+    }, [verification?.reviewed_at]);
+
+    return (
+        <div className="space-y-3">
+            {/* ── Big centered "you're in" card ─────────────────── */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] px-4 py-8
+                                flex flex-col items-center text-center">
+                {/* Badge ring */}
+                <div className="relative mb-4">
+                    <div className="h-20 w-20 rounded-full bg-emerald-50 dark:bg-emerald-400/10
+                                    flex items-center justify-center">
+                        <div className="h-14 w-14 rounded-full bg-emerald-600
+                                        flex items-center justify-center shadow-sm">
+                            <ShieldCheck className="h-7 w-7 text-white" strokeWidth={2.6} />
+                        </div>
+                    </div>
+                    <Sparkles className="absolute -top-1 -right-1 h-5 w-5
+                                         text-amber-500 dark:text-amber-400" strokeWidth={2.4} />
+                </div>
+
+                <p className="text-[10px] font-bold uppercase tracking-wider
+                              text-emerald-600 dark:text-emerald-400 mb-1">
+                    Verified contributor
+                </p>
+                <h2 className="text-[18px] font-bold text-slate-900 dark:text-white leading-tight">
+                    You're in, {profile.name?.split(" ")[0] || "Nurse"}
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug max-w-[300px]">
+                    You can now author CPD activities and earn MedraeCoins for every completion.
+                </p>
+
+                {/* Stat chips — fills the dead space */}
+                <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+                    <span className="inline-flex items-center gap-1.5 rounded-full
+                                     px-3 h-7 text-[11px] font-bold capitalize
+                                     bg-violet-50 text-violet-700
+                                     dark:bg-violet-400/10 dark:text-violet-400">
+                        <Award className="h-3 w-3" strokeWidth={2.4} />
+                        {tierLabel}
+                    </span>
+                    {joined && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full
+                                         px-3 h-7 text-[11px] font-bold
+                                         bg-slate-100 text-slate-700
+                                         dark:bg-white/[0.06] dark:text-slate-300">
+                            <Clock className="h-3 w-3" strokeWidth={2.4} />
+                            Joined {joined}
+                        </span>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 rounded-full
+                                     px-3 h-7 text-[11px] font-bold
+                                     bg-amber-50 text-amber-700
+                                     dark:bg-amber-400/10 dark:text-amber-400">
+                        <TrendingUp className="h-3 w-3" strokeWidth={2.4} />
+                        20 MC / completion
+                    </span>
+                </div>
+            </section>
+
+            {/* ── Actions ───────────────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-2">
+                <button
+                    onClick={() => { tap("success"); onAuthor(); }}
+                    className="h-11 rounded-xl bg-violet-600 text-white
+                               text-[12px] font-bold
+                               flex items-center justify-center gap-1.5
+                               active:scale-[0.97] transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <PenTool className="h-3.5 w-3.5" />
+                    Author CPD
+                </button>
+                <button
+                    onClick={() => { tap(); onDashboard(); }}
+                    className="h-11 rounded-xl
+                               bg-slate-100 dark:bg-white/[0.06]
+                               text-slate-700 dark:text-slate-200
+                               text-[12px] font-bold
+                               flex items-center justify-center gap-1.5
+                               active:scale-[0.97] transition-transform"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    Dashboard
+                    <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+            </div>
+
+            {/* ── What you can do ───────────────────────────────── */}
+            <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                <h2 className="text-[10px] font-bold uppercase tracking-wider
+                               text-slate-500 dark:text-slate-400">
+                    Your contributor perks
+                </h2>
+                <ul className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <span>Verified badge appears on your dashboard and profile</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <span>Publish videos, podcasts, articles and assessments</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <span>Earn 20 MedraeCoins every time someone completes your activity</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <span>Track earnings and payouts from the wallet card</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main                                                              */
 /* ------------------------------------------------------------------ */
-
 export default function ContributorApplyPage() {
     const nav = useNavigate();
     const home = useHomeRoute();
@@ -159,11 +289,17 @@ export default function ContributorApplyPage() {
     const [additionalNotes, setAdditionalNotes] = useState("");
     const [err, setErr] = useState<string | null>(null);
 
+    const handleBack = useCallback(() => {
+        tap();
+        nav(-1);
+    }, [nav]);
+
     /* ---- Load profile + latest verification ---- */
     useEffect(() => {
+        let cancelled = false;
         (async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) { setLoading(false); return; }
+            if (!user) { if (!cancelled) setLoading(false); return; }
 
             const [profileRes, verificationRes] = await Promise.all([
                 supabase
@@ -180,14 +316,16 @@ export default function ContributorApplyPage() {
                     .maybeSingle(),
             ]);
 
+            if (cancelled) return;
             if (profileRes.data) setProfile(profileRes.data);
             if (verificationRes.data) setLatestVerification(verificationRes.data);
             setLoading(false);
         })();
+        return () => { cancelled = true; };
     }, []);
 
     /* ---- Submit application ---- */
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (submitting || !profile) return;
 
         if (!nckLicenseUrl.trim() || !cvUrl.trim()) {
@@ -211,7 +349,6 @@ export default function ContributorApplyPage() {
                     additional_notes: additionalNotes.trim() || null,
                     status: "submitted",
                 });
-
             if (error) throw error;
 
             const { data } = await supabase
@@ -232,9 +369,8 @@ export default function ContributorApplyPage() {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [submitting, profile, nckLicenseUrl, cvUrl, employerLetterUrl, additionalNotes]);
 
-    /* ---- Loading (skeleton, no spinner) ---- */
     if (loading) return <SkeletonApplyPage />;
 
     if (!profile) {
@@ -243,7 +379,7 @@ export default function ContributorApplyPage() {
                 <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                    bg-white dark:bg-[#0d1117]
                                    border-b border-slate-200/70 dark:border-white/[0.06]">
-                    <button onClick={() => nav(-1)} className="h-10 w-10 rounded-full flex items-center justify-center active:bg-slate-100 dark:active:bg-white/5">
+                    <button onClick={handleBack} className="h-10 w-10 rounded-full flex items-center justify-center active:bg-slate-100 dark:active:bg-white/5">
                         <ChevronLeft className="h-5 w-5" />
                     </button>
                     <h1 className="text-base font-bold">Apply to Contribute</h1>
@@ -255,14 +391,13 @@ export default function ContributorApplyPage() {
         );
     }
 
-    /* ---- Derived flags ---- */
     const isApproved = profile.is_verified_contributor;
     const isPending = latestVerification?.status === "submitted";
     const isRejected = latestVerification?.status === "rejected";
     const isAdmin = ADMIN_IDS.includes(profile.user_id);
 
     /* ═══════════════════════════════════════════════════════════
-       ADMIN BYPASS — admins skip the application entirely
+       ADMIN BYPASS
        ═══════════════════════════════════════════════════════════ */
     if (isAdmin && !isApproved) {
         return (
@@ -272,7 +407,7 @@ export default function ContributorApplyPage() {
                                    border-b border-slate-200/70 dark:border-white/[0.06]
                                    z-30 safe-top">
                     <button
-                        onClick={() => { tap(); nav(-1); }}
+                        onClick={handleBack}
                         aria-label="Back"
                         className="h-10 w-10 rounded-full flex items-center justify-center
                                    text-slate-700 dark:text-slate-200
@@ -291,8 +426,7 @@ export default function ContributorApplyPage() {
                 </header>
 
                 <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                    <div className="w-full max-w-[880px] mx-auto px-4 pt-4 pb-16 space-y-3">
-                        {/* Admin notice */}
+                    <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
                         <section className="rounded-2xl bg-violet-50 dark:bg-violet-400/10 p-4">
                             <div className="flex items-start gap-2.5">
                                 <div className="h-10 w-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0">
@@ -314,13 +448,11 @@ export default function ContributorApplyPage() {
                             </div>
                         </section>
 
-                        {/* What you can do */}
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                             <h2 className="text-[10px] font-bold uppercase tracking-wider
                                            text-slate-500 dark:text-slate-400">
                                 What happens when you toggle on
                             </h2>
-
                             <ul className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -345,7 +477,6 @@ export default function ContributorApplyPage() {
                             </ul>
                         </section>
 
-                        {/* CTA */}
                         <button
                             onClick={() => { tap("success"); nav("/cpd/admin/contributors"); }}
                             className="w-full h-12 rounded-xl bg-violet-600 text-white
@@ -369,7 +500,7 @@ export default function ContributorApplyPage() {
     }
 
     /* ═══════════════════════════════════════════════════════════
-       REGULAR USER VIEW — normal application flow
+       REGULAR USER VIEW
        ═══════════════════════════════════════════════════════════ */
     return (
         <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
@@ -378,7 +509,7 @@ export default function ContributorApplyPage() {
                                border-b border-slate-200/70 dark:border-white/[0.06]
                                z-30 safe-top">
                 <button
-                    onClick={() => { tap(); nav(-1); }}
+                    onClick={handleBack}
                     aria-label="Back"
                     className="h-10 w-10 rounded-full flex items-center justify-center
                                text-slate-700 dark:text-slate-200
@@ -388,35 +519,28 @@ export default function ContributorApplyPage() {
                 </button>
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-bold leading-tight truncate">
-                        Apply to Contribute
+                        {isApproved ? "Contributor" : "Apply to Contribute"}
                     </h1>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
-                        Verified educators only
+                        {isApproved ? "Your contributor status" : "Verified educators only"}
                     </p>
                 </div>
             </header>
 
             <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                <div className="w-full max-w-[880px] mx-auto px-4 pt-4 pb-16 space-y-3">
+                <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
 
-                    {/* Approved banner */}
+                    {/* ── Approved: new centered hero card ──────── */}
                     {isApproved && (
-                        <section className="rounded-2xl bg-emerald-50 dark:bg-emerald-400/10 p-4">
-                            <div className="flex items-start gap-2.5">
-                                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-[13px] font-bold text-emerald-700 dark:text-emerald-400">
-                                        You're a verified contributor
-                                    </p>
-                                    <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-1 leading-snug">
-                                        Your tier: <span className="font-bold capitalize">{profile.contributor_tier.replace(/_/g, " ")}</span>. You can now submit CPD content and earn MedraeCoins.
-                                    </p>
-                                </div>
-                            </div>
-                        </section>
+                        <ApprovedHero
+                            profile={profile}
+                            verification={latestVerification}
+                            onAuthor={() => nav("/cpd/admin/activities")}
+                            onDashboard={() => nav(home)}
+                        />
                     )}
 
-                    {/* Pending banner */}
+                    {/* ── Pending banner ────────────────────────── */}
                     {isPending && !isApproved && (
                         <section className="rounded-2xl bg-amber-50 dark:bg-amber-400/10 p-4">
                             <div className="flex items-start gap-2.5">
@@ -426,14 +550,16 @@ export default function ContributorApplyPage() {
                                         Application under review
                                     </p>
                                     <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-1 leading-snug">
-                                        Submitted on {new Date(latestVerification!.submitted_at).toLocaleDateString()}. We'll review it soon — usually within 2-3 days.
+                                        Submitted on{" "}
+                                        {new Date(latestVerification!.submitted_at).toLocaleDateString()}.
+                                        We'll review it soon — usually within 2-3 days.
                                     </p>
                                 </div>
                             </div>
                         </section>
                     )}
 
-                    {/* Rejected banner */}
+                    {/* ── Rejected banner ───────────────────────── */}
                     {isRejected && !isApproved && (
                         <section className="rounded-2xl bg-rose-50 dark:bg-rose-400/10 p-4">
                             <div className="flex items-start gap-2.5">
@@ -455,7 +581,7 @@ export default function ContributorApplyPage() {
                         </section>
                     )}
 
-                    {/* Requirements */}
+                    {/* ── Requirements ──────────────────────────── */}
                     {!isApproved && (
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
                             <h2 className="text-[13px] font-bold text-slate-900 dark:text-white">
@@ -482,7 +608,7 @@ export default function ContributorApplyPage() {
                         </section>
                     )}
 
-                    {/* Application form */}
+                    {/* ── Application form ──────────────────────── */}
                     {!isApproved && !isPending && (
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                             <h2 className="text-[13px] font-bold text-slate-900 dark:text-white">
@@ -496,6 +622,7 @@ export default function ContributorApplyPage() {
                                     onChange={(e) => setNckLicenseUrl(e.target.value)}
                                     placeholder="https://…"
                                     className={InputBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1">
                                     Upload to imgur, Google Drive (public), or any image host. Paste the direct URL.
@@ -509,6 +636,7 @@ export default function ContributorApplyPage() {
                                     onChange={(e) => setCvUrl(e.target.value)}
                                     placeholder="https://…"
                                     className={InputBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                             </div>
 
@@ -519,6 +647,7 @@ export default function ContributorApplyPage() {
                                     onChange={(e) => setEmployerLetterUrl(e.target.value)}
                                     placeholder="https://…"
                                     className={InputBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                             </div>
 
@@ -530,6 +659,7 @@ export default function ContributorApplyPage() {
                                     placeholder="Anything we should know — specialty areas, teaching experience, etc."
                                     rows={3}
                                     className={TextareaBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                             </div>
 

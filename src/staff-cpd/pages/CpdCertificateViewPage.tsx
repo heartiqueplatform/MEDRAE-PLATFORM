@@ -53,8 +53,9 @@ export function CpdCertificateViewPage() {
             <FullScreen>
                 <PageHeader title="Certificate" onBack={() => nav(-1)} />
                 <ScrollBody>
-                    <div className="px-4 pt-4">
-                        <div className="h-96 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                    {/* ✅ No inner px-* — ScrollBody owns the gutter */}
+                    <div className="pt-3">
+                        <CertificateSkeleton />
                     </div>
                 </ScrollBody>
             </FullScreen>
@@ -65,7 +66,7 @@ export function CpdCertificateViewPage() {
             <FullScreen>
                 <PageHeader title="Certificate" onBack={() => nav(-1)} />
                 <ScrollBody>
-                    <div className="px-4 pt-4">
+                    <div className="pt-3">
                         <CpdEmptyState title="Certificate not found" />
                     </div>
                 </ScrollBody>
@@ -89,11 +90,13 @@ export function CpdCertificateViewPage() {
                 />
 
                 <ScrollBody>
-                    <div className="px-4 pt-4 print:hidden">
+                    {/* ✅ No inner px-* — ScrollBody owns the gutter */}
+                    <div className="pt-3 print:hidden">
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-4">
-                            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center
-                                            bg-amber-50 dark:bg-amber-400/10">
-                                <Award className="h-8 w-8 text-amber-600 dark:text-amber-400" strokeWidth={2.4} />
+                            {/* Award icon — neutral container, amber only on the glyph */}
+                            <div className="h-16 w-16 mx-auto rounded-2xl flex items-center justify-center
+                                            bg-slate-100 dark:bg-white/[0.06]">
+                                <Award className="h-8 w-8 text-amber-500 dark:text-amber-400" strokeWidth={2.4} />
                             </div>
 
                             <div>
@@ -152,10 +155,10 @@ export function CpdCertificateViewPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-xl bg-blue-50 dark:bg-blue-400/10 p-3 space-y-1">
+                            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-1 text-left">
                                 <p className="text-[10px] font-bold uppercase tracking-wider
-                                              text-blue-600 dark:text-blue-400">
-                                    Verification Code
+                                              text-slate-500 dark:text-slate-400">
+                                    Verification code
                                 </p>
                                 <p className="text-[12px] font-mono font-bold text-slate-900 dark:text-white break-all">
                                     {c.verification_code}
@@ -167,7 +170,7 @@ export function CpdCertificateViewPage() {
 
                             <button
                                 onClick={handleDownloadPdf}
-                                className="w-full h-11 rounded-xl bg-amber-600 text-white
+                                className="w-full h-11 rounded-xl bg-amber-500 text-white
                                            text-[13px] font-bold
                                            flex items-center justify-center gap-2
                                            active:scale-[0.97] transition-transform"
@@ -177,7 +180,7 @@ export function CpdCertificateViewPage() {
                                 Download PDF
                             </button>
 
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">
                                 In the print dialog, choose <b>Save as PDF</b> and set layout to <b>Landscape</b>.
                             </p>
                         </section>
@@ -192,5 +195,33 @@ export function CpdCertificateViewPage() {
                 recipient={profile}
             />
         </>
+    );
+}
+
+/* ── Skeleton — shape-matched to the real certificate card ──── */
+function CertificateSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-4 animate-pulse">
+            <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-200 dark:bg-white/[0.06]" />
+            <div className="space-y-1.5">
+                <div className="mx-auto h-2.5 w-40 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="mx-auto h-2 w-56 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            <div className="border-t border-b border-slate-100 dark:border-white/[0.04] py-4 space-y-2">
+                <div className="mx-auto h-2 w-24 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="mx-auto h-5 w-40 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="mx-auto h-2 w-32 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            <div className="space-y-1.5">
+                <div className="mx-auto h-2 w-20 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="mx-auto h-3 w-48 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+                <div className="h-16 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="h-16 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            <div className="h-20 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+            <div className="h-11 rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+        </div>
     );
 }

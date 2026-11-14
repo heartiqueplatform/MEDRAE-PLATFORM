@@ -1,5 +1,5 @@
 // src/staff-cpd/pages/CpdMyProgressPage.tsx
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, Calendar } from "lucide-react";
@@ -13,18 +13,22 @@ export function CpdMyProgressPage() {
     const q = useMyEnrollments();
     const items = useMemo(() => q.data?.pages.flatMap(p => p.items) ?? [], [q.data]);
 
+    const handleBack = useCallback(() => {
+        tap();
+        nav("/cpd");
+    }, [nav]);
+
     return (
         <FullScreen>
             <PageHeader
                 title="My Progress"
                 subtitle="Every CPD activity you've enrolled in"
-                onBack={() => { tap(); nav("/cpd"); }}
-
+                onBack={handleBack}
                 rightSlot={
                     <Link
                         to="/cpd/catalog"
                         onClick={() => tap()}
-                        className="h-9 px-3 rounded-xl shrink-0
+                        className="h-10 px-3 rounded-xl shrink-0
                                    bg-slate-100 dark:bg-white/[0.06]
                                    text-slate-700 dark:text-slate-200
                                    text-[11px] font-bold
@@ -39,10 +43,10 @@ export function CpdMyProgressPage() {
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-2">
-                    {q.isLoading ? (
+                <div className="px-1.5 sm:px-4 pt-3 space-y-2">
+                    {q.isLoading && !items.length ? (
                         Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                            <EnrollmentSkeleton key={i} />
                         ))
                     ) : items.length ? (
                         <>
@@ -84,11 +88,11 @@ export function CpdMyProgressPage() {
                                 </Link>
                             ))}
                             {q.hasNextPage && (
-                                <div className="flex justify-center pt-2">
+                                <div className="flex justify-center pt-2 pb-4">
                                     <button
                                         onClick={() => { tap(); q.fetchNextPage(); }}
                                         disabled={q.isFetchingNextPage}
-                                        className="h-10 px-4 rounded-xl
+                                        className="h-11 px-5 rounded-xl
                                                    bg-slate-100 dark:bg-white/[0.06]
                                                    text-slate-700 dark:text-slate-200
                                                    text-[12px] font-bold
@@ -111,5 +115,24 @@ export function CpdMyProgressPage() {
                 </div>
             </ScrollBody>
         </FullScreen>
+    );
+}
+
+/* ── Skeleton shaped like the real enrollment row ─────────────── */
+function EnrollmentSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 animate-pulse">
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                    <div className="h-3 w-3/4 rounded-full bg-slate-200 dark:bg-white/[0.06] mb-2" />
+                    <div className="flex gap-1.5">
+                        <div className="h-4 w-16 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                        <div className="h-4 w-20 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                    </div>
+                </div>
+                <div className="h-4 w-8 rounded-md bg-slate-200 dark:bg-white/[0.06]" />
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.04] mt-3" />
+        </div>
     );
 }

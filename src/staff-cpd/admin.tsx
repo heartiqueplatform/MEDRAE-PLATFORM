@@ -1,12 +1,10 @@
 // src/staff-cpd/admin.tsx
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-    ChevronLeft, Plus, Trash2, ShieldCheck, AlertCircle, BookOpen,
-    ClipboardCheck, Calendar, ListChecks, Users,
-    Loader2,
+    Plus, Trash2, ShieldCheck, AlertCircle,
+    ClipboardCheck, Loader2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
     useAdminActivities, useAdminActivity, useCreateActivity, useUpdateActivity, usePublishActivity,
     useCreateModule, useDeleteModule, useCreateContentItem, useDeleteContentItem,
@@ -15,102 +13,40 @@ import {
 import { ContentTypeChip, CpdEmptyState } from "./components";
 import { validateContentItem, fmtDate, fmtHours, fmtPoints, CONTENT_LABEL } from "./lib";
 import type { ContentType, ExternalProvider } from "./lib";
-import { playSound } from "@/lib/soundManager";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import SelectField from "@/components/ui/SelectField";
 
-/* ------------------------------------------------------------------ */
-/*  Tap helper                                                        */
-/* ------------------------------------------------------------------ */
-
-const vibrate = (p: number | number[] = 15) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
-};
-
-const tap = (type: "light" | "success" | "warning" = "light") => {
-    try { playSound("ui-tap"); } catch { /* no-op */ }
-    if (type === "success") vibrate([15, 30, 15]);
-    else if (type === "warning") vibrate(40);
-    else vibrate(12);
-};
+/* ✅ Import shared shells + helpers instead of redefining them here */
+import { FullScreen, PageHeader, ScrollBody, tap } from "./shared";
 
 /* ------------------------------------------------------------------ */
-/*  Shared shells                                                     */
+/*  Shared styles — h-11 for thumb-sized inputs                      */
 /* ------------------------------------------------------------------ */
+const InputBase =
+    "w-full h-11 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium " +
+    "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
 
-function FullScreen({ children }: { children: React.ReactNode }) {
-    return (
-        <div
-            className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-        >
-            {children}
-        </div>
-    );
-}
+const TextareaBase =
+    "w-full rounded-xl bg-white dark:bg-[#161b22] px-3 py-2 text-[13px] font-medium " +
+    "text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
 
-function PageHeader({
-    title,
-    subtitle,
-    onBack,
-    rightSlot,
-}: {
-    title: string;
-    subtitle?: string;
-    onBack?: () => void;
-    rightSlot?: React.ReactNode;
-}) {
-    return (
-        <header className="shrink-0 flex items-center gap-2 px-2 h-14
-                           bg-white dark:bg-[#0d1117]
-                           border-b border-slate-200/70 dark:border-white/[0.06]
-                           z-30 safe-top">
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    aria-label="Back"
-                    className="h-10 w-10 rounded-full flex items-center justify-center
-                               text-slate-700 dark:text-slate-200
-                               active:bg-slate-100 dark:active:bg-white/5"
-                    style={{ touchAction: "manipulation" }}
-                >
-                    <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-            )}
-            <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
-                    {title}
-                </h1>
-                {subtitle && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
-                        {subtitle}
-                    </p>
-                )}
-            </div>
-            {rightSlot}
-        </header>
-    );
-}
+const PrimaryBtn =
+    "h-11 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 " +
+    "active:scale-[0.97] transition-transform disabled:opacity-50 disabled:active:scale-100";
 
-function ScrollBody({ children }: { children: React.ReactNode }) {
-    return (
-        <main
-            className="flex-1 min-h-0 overflow-y-auto no-scrollbar"
-            style={{ WebkitOverflowScrolling: "touch" }}
-        >
-            <div className="w-full max-w-[880px] mx-auto pb-16">{children}</div>
-        </main>
-    );
-}
+const SecondaryBtn =
+    "h-11 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold " +
+    "flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
+
+const DangerBtn =
+    "h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400 " +
+    "flex items-center justify-center active:scale-[0.92] transition-transform disabled:opacity-50";
 
 /* ------------------------------------------------------------------ */
-/*  Fullscreen loading overlay (reusable across admin)                */
+/*  Fullscreen loading overlay                                        */
 /* ------------------------------------------------------------------ */
-
 function LoadingOverlay({
-    open,
-    title,
-    subtitle,
+    open, title, subtitle,
 }: {
     open: boolean;
     title: string;
@@ -118,16 +54,12 @@ function LoadingOverlay({
 }) {
     if (!open) return null;
     return (
-        <div
-            className="fixed inset-0 z-[99999] flex items-center justify-center
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center
                        bg-slate-50/95 dark:bg-[#0d1117]/95 backdrop-blur-sm
-                       animate-in fade-in-0 duration-150"
-        >
+                       animate-in fade-in-0 duration-150">
             <div className="flex flex-col items-center gap-3 px-6 text-center">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
-                <p className="text-[13px] font-bold text-slate-900 dark:text-white">
-                    {title}
-                </p>
+                <p className="text-[13px] font-bold text-slate-900 dark:text-white">{title}</p>
                 {subtitle && (
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug max-w-[260px]">
                         {subtitle}
@@ -137,20 +69,6 @@ function LoadingOverlay({
         </div>
     );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Common inputs (design-system)                                     */
-/* ------------------------------------------------------------------ */
-
-const InputBase = "w-full h-10 rounded-xl bg-white dark:bg-[#161b22] px-3 text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none";
-
-const TextareaBase = "w-full rounded-xl bg-white dark:bg-[#161b22] px-3 py-2 text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none resize-y";
-
-const PrimaryBtn = "h-10 px-4 rounded-xl bg-blue-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50 disabled:active:scale-100";
-
-const SecondaryBtn = "h-10 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-50";
-
-const DangerBtn = "h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-[0.92] transition-transform disabled:opacity-50";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN — ACTIVITIES LIST  /cpd/admin/activities
@@ -165,7 +83,7 @@ export function CpdAdminActivitiesPage() {
 
     const statuses = ["", "draft", "review", "published", "archived"];
 
-    const handleCreate = async () => {
+    const handleCreate = useCallback(async () => {
         if (creating) return;
         tap("success");
         setCreating(true);
@@ -175,39 +93,35 @@ export function CpdAdminActivitiesPage() {
         } catch {
             setCreating(false);
         }
-    };
+    }, [creating, create, nav]);
+
+    const handleBack = useCallback(() => { tap(); nav(-1); }, [nav]);
 
     return (
         <FullScreen>
             <PageHeader
                 title="CPD Activities"
                 subtitle={`${items.length} total`}
-                onBack={() => { tap(); nav(-1); }}
+                onBack={handleBack}
                 rightSlot={
                     <button
                         onClick={handleCreate}
                         disabled={creating || create.isPending}
-                        className={PrimaryBtn + " shrink-0"}
+                        className={PrimaryBtn + " shrink-0 !px-3 !h-10"}
                         style={{ touchAction: "manipulation" }}
                     >
                         {creating ? (
-                            <>
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Creating…
-                            </>
+                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Creating…</>
                         ) : (
-                            <>
-                                <Plus className="h-3.5 w-3.5" />
-                                New
-                            </>
+                            <><Plus className="h-3.5 w-3.5" /> New</>
                         )}
                     </button>
                 }
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-3">
-                    {/* Filter pills */}
+                {/* No px-* — ScrollBody owns gutter */}
+                <div className="pt-3 space-y-3">
                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                         {statuses.map((s) => {
                             const active = status === s;
@@ -216,12 +130,11 @@ export function CpdAdminActivitiesPage() {
                                 <button
                                     key={s || "all"}
                                     onClick={() => { tap(); setStatus(s); }}
-                                    className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-bold
+                                    className={`shrink-0 h-9 px-3 rounded-full text-[11px] font-bold
                                                 active:scale-[0.97] transition-transform
                                                 ${active
                                             ? "bg-blue-600 text-white"
-                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
-                                        }`}
+                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"}`}
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     {label}
@@ -230,11 +143,10 @@ export function CpdAdminActivitiesPage() {
                         })}
                     </div>
 
-                    {/* List */}
-                    {q.isLoading ? (
+                    {q.isLoading && !items.length ? (
                         <div className="space-y-2">
                             {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="h-16 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                                <ActivityListSkeleton key={i} />
                             ))}
                         </div>
                     ) : items.length ? (
@@ -258,17 +170,13 @@ export function CpdAdminActivitiesPage() {
                                                     {fmtHours(a.learning_hours)} · {fmtPoints(a.configured_cpd_points)} pts · created {fmtDate(a.created_at)}
                                                 </p>
                                             </div>
-                                            <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
-                                                             text-[10px] font-bold capitalize
-                                                             bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
-                                                {a.status}
-                                            </span>
+                                            <StatusPill status={a.status} />
                                         </div>
                                     </Link>
                                 ))}
                             </div>
                             {q.hasNextPage && (
-                                <div className="flex justify-center pt-2">
+                                <div className="flex justify-center pt-2 pb-4">
                                     <button
                                         onClick={() => { tap(); q.fetchNextPage(); }}
                                         disabled={q.isFetchingNextPage}
@@ -276,13 +184,8 @@ export function CpdAdminActivitiesPage() {
                                         style={{ touchAction: "manipulation" }}
                                     >
                                         {q.isFetchingNextPage ? (
-                                            <>
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                Loading…
-                                            </>
-                                        ) : (
-                                            "Load more"
-                                        )}
+                                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</>
+                                        ) : "Load more"}
                                     </button>
                                 </div>
                             )}
@@ -293,12 +196,32 @@ export function CpdAdminActivitiesPage() {
                 </div>
             </ScrollBody>
 
-            <LoadingOverlay
-                open={creating}
-                title="Creating activity…"
-                subtitle="Setting up your new CPD activity"
-            />
+            <LoadingOverlay open={creating} title="Creating activity…" subtitle="Setting up your new CPD activity" />
         </FullScreen>
+    );
+}
+
+function ActivityListSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 animate-pulse">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0 space-y-2">
+                    <div className="h-3 w-2/3 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                    <div className="h-2 w-1/2 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                </div>
+                <div className="h-5 w-16 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+        </div>
+    );
+}
+
+function StatusPill({ status }: { status: string }) {
+    return (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
+                         text-[10px] font-bold capitalize
+                         bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
+            {status}
+        </span>
     );
 }
 
@@ -319,13 +242,16 @@ export function CpdAdminActivityEditorPage() {
     const [tab, setTab] = useState<"basics" | "modules" | "assessments" | "publish">("basics");
     const [publishError, setPublishError] = useState<string | null>(null);
 
+    const handleBackToList = useCallback(() => { tap(); nav("/cpd/admin/activities"); }, [nav]);
+    const handleBackHome = useCallback(() => { tap(); nav(home); }, [nav, home]);
+
     if (q.isLoading || !q.data) {
         return (
             <FullScreen>
-                <PageHeader title="Loading…" onBack={() => { tap(); nav(home); }} />
+                <PageHeader title="Loading…" onBack={handleBackHome} />
                 <ScrollBody>
-                    <div className="px-4 pt-4">
-                        <div className="h-64 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                    <div className="pt-3">
+                        <EditorSkeleton />
                     </div>
                 </ScrollBody>
             </FullScreen>
@@ -357,18 +283,12 @@ export function CpdAdminActivityEditorPage() {
             <PageHeader
                 title={activity.title || "Untitled Activity"}
                 subtitle={activity.status?.toUpperCase() || "DRAFT"}
-                onBack={() => { tap(); nav("/cpd/admin/activities"); }}
-                rightSlot={
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
-                                     text-[10px] font-bold capitalize
-                                     bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
-                        {activity.status}
-                    </span>
-                }
+                onBack={handleBackToList}
+                rightSlot={<StatusPill status={activity.status} />}
             />
 
             <ScrollBody>
-                <div className="px-4 pt-3 space-y-3">
+                <div className="pt-3 space-y-3">
                     {/* Tab bar */}
                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
                         {tabs.map((t) => {
@@ -377,12 +297,11 @@ export function CpdAdminActivityEditorPage() {
                                 <button
                                     key={t.id}
                                     onClick={() => { tap(); setTab(t.id); }}
-                                    className={`shrink-0 h-9 px-3 rounded-xl text-[11px] font-bold
+                                    className={`shrink-0 h-10 px-3 rounded-xl text-[11px] font-bold
                                                 active:scale-[0.97] transition-transform
                                                 ${active
                                             ? "bg-blue-600 text-white"
-                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
-                                        }`}
+                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"}`}
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     {t.label}
@@ -399,12 +318,14 @@ export function CpdAdminActivityEditorPage() {
                                 onChange={(e) => patch({ title: e.target.value })}
                                 placeholder="Title"
                                 className={InputBase}
+                                style={{ touchAction: "manipulation" }}
                             />
                             <input
                                 value={activity.short_description ?? ""}
                                 onChange={(e) => patch({ short_description: e.target.value })}
                                 placeholder="Short description"
                                 className={InputBase}
+                                style={{ touchAction: "manipulation" }}
                             />
                             <textarea
                                 value={activity.description ?? ""}
@@ -412,47 +333,41 @@ export function CpdAdminActivityEditorPage() {
                                 placeholder="Full description"
                                 rows={5}
                                 className={TextareaBase}
+                                style={{ touchAction: "manipulation" }}
                             />
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                                        Learning hours
-                                    </label>
+                                    <Label>Learning hours</Label>
                                     <input
-                                        type="number"
-                                        step="0.25"
+                                        type="number" step="0.25"
                                         value={activity.learning_hours}
                                         onChange={(e) => patch({ learning_hours: Number(e.target.value) })}
                                         className={InputBase}
+                                        style={{ touchAction: "manipulation" }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                                        CPD points
-                                    </label>
+                                    <Label>CPD points</Label>
                                     <input
-                                        type="number"
-                                        step="0.25"
+                                        type="number" step="0.25"
                                         value={activity.configured_cpd_points}
                                         onChange={(e) => patch({ configured_cpd_points: Number(e.target.value) })}
                                         className={InputBase}
+                                        style={{ touchAction: "manipulation" }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                                        Category
-                                    </label>
+                                    <Label>Category</Label>
                                     <input
                                         value={activity.category ?? ""}
                                         onChange={(e) => patch({ category: e.target.value })}
                                         placeholder="e.g. Clinical"
                                         className={InputBase}
+                                        style={{ touchAction: "manipulation" }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                                        Difficulty
-                                    </label>
+                                    <Label>Difficulty</Label>
                                     <SelectField
                                         value={activity.difficulty ?? "intermediate"}
                                         onValueChange={(v) => { tap(); patch({ difficulty: v }); }}
@@ -485,15 +400,9 @@ export function CpdAdminActivityEditorPage() {
                                 style={{ touchAction: "manipulation" }}
                             >
                                 {createModule.isPending ? (
-                                    <>
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                        Adding…
-                                    </>
+                                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Adding…</>
                                 ) : (
-                                    <>
-                                        <Plus className="h-3.5 w-3.5" />
-                                        Add Module
-                                    </>
+                                    <><Plus className="h-3.5 w-3.5" /> Add Module</>
                                 )}
                             </button>
 
@@ -515,9 +424,9 @@ export function CpdAdminActivityEditorPage() {
                                             style={{ touchAction: "manipulation" }}
                                         >
                                             {deleteModule.isPending ? (
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
-                                                <Trash2 className="h-3.5 w-3.5" />
+                                                <Trash2 className="h-4 w-4" />
                                             )}
                                         </button>
                                     </div>
@@ -537,14 +446,15 @@ export function CpdAdminActivityEditorPage() {
                                             <button
                                                 onClick={() => { tap("warning"); deleteItem.mutate({ id: c.id, activityId: activity.id }); }}
                                                 disabled={deleteItem.isPending}
-                                                className={DangerBtn + " !h-8 !w-8"}
+                                                className="h-9 w-9 rounded-lg bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400
+                                                           flex items-center justify-center active:scale-[0.92] transition-transform disabled:opacity-50"
                                                 aria-label="Delete content"
                                                 style={{ touchAction: "manipulation" }}
                                             >
                                                 {deleteItem.isPending ? (
-                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                 ) : (
-                                                    <Trash2 className="h-3 w-3" />
+                                                    <Trash2 className="h-3.5 w-3.5" />
                                                 )}
                                             </button>
                                         </div>
@@ -592,9 +502,7 @@ export function CpdAdminActivityEditorPage() {
                             {publishError && (
                                 <div className="flex items-start gap-2 rounded-xl bg-rose-50 dark:bg-rose-400/10 p-3">
                                     <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                                    <p className="text-[11px] text-rose-700 dark:text-rose-300">
-                                        {publishError}
-                                    </p>
+                                    <p className="text-[11px] text-rose-700 dark:text-rose-300">{publishError}</p>
                                 </div>
                             )}
                             <div className="grid grid-cols-1 gap-2">
@@ -605,13 +513,8 @@ export function CpdAdminActivityEditorPage() {
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     {publish.isPending ? (
-                                        <>
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Publishing…
-                                        </>
-                                    ) : (
-                                        "Publish Activity"
-                                    )}
+                                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Publishing…</>
+                                    ) : "Publish Activity"}
                                 </button>
                                 <button
                                     onClick={() => { tap(); patch({ status: "review" }); }}
@@ -620,18 +523,13 @@ export function CpdAdminActivityEditorPage() {
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     {update.isPending ? (
-                                        <>
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Updating…
-                                        </>
-                                    ) : (
-                                        "Submit for Review"
-                                    )}
+                                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Updating…</>
+                                    ) : "Submit for Review"}
                                 </button>
                                 <button
                                     onClick={() => { tap("warning"); patch({ status: "archived", archived_at: new Date().toISOString() }); }}
                                     disabled={update.isPending}
-                                    className="h-10 px-4 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400 text-[13px] font-bold active:scale-[0.97] transition-transform disabled:opacity-50"
+                                    className="h-11 px-4 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400 text-[13px] font-bold active:scale-[0.97] transition-transform disabled:opacity-50"
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     Archive
@@ -648,6 +546,35 @@ export function CpdAdminActivityEditorPage() {
                 subtitle="Running content validation and going live"
             />
         </FullScreen>
+    );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+    return (
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
+            {children}
+        </label>
+    );
+}
+
+function EditorSkeleton() {
+    return (
+        <div className="space-y-3">
+            <div className="flex gap-1">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 w-20 rounded-xl bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                ))}
+            </div>
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2.5 animate-pulse">
+                <div className="h-11 rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-11 rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-24 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -687,7 +614,7 @@ function NewContentItemForm({
                         value: k,
                         label: CONTENT_LABEL[k as ContentType],
                     }))}
-                    triggerClassName="!h-9"
+                    triggerClassName="!h-10"
                 />
                 <SelectField
                     value={provider}
@@ -698,38 +625,34 @@ function NewContentItemForm({
                         { value: "external", label: "External URL" },
                         { value: "internal", label: "Internal (text)" },
                     ]}
-                    triggerClassName="!h-9"
+                    triggerClassName="!h-10"
                 />
             </div>
             <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Content title"
-                className={InputBase + " !h-9"}
+                className={InputBase + " !h-10"}
+                style={{ touchAction: "manipulation" }}
             />
             <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://…"
-                className={InputBase + " !h-9"}
+                className={InputBase + " !h-10"}
+                style={{ touchAction: "manipulation" }}
             />
             {err && <p className="text-[10px] text-rose-600 dark:text-rose-400">{err}</p>}
             <button
                 onClick={handle}
                 disabled={!title || isSubmitting}
-                className={SecondaryBtn + " w-full !h-9"}
+                className={SecondaryBtn + " w-full !h-10"}
                 style={{ touchAction: "manipulation" }}
             >
                 {isSubmitting ? (
-                    <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Adding…
-                    </>
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Adding…</>
                 ) : (
-                    <>
-                        <Plus className="h-3.5 w-3.5" />
-                        Add Content
-                    </>
+                    <><Plus className="h-3.5 w-3.5" /> Add Content</>
                 )}
             </button>
         </div>
@@ -766,17 +689,18 @@ export function CpdAdminQuestionsPage() {
         setOptions([{ option_text: "", is_correct: false }, { option_text: "", is_correct: false }]);
     };
 
+    const handleBack = useCallback(() => { tap(); window.history.back(); }, []);
+
     return (
         <FullScreen>
             <PageHeader
                 title="Question Bank"
                 subtitle="Reusable across all CPD assessments"
-                onBack={() => window.history.back()}
+                onBack={handleBack}
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-3">
-                    {/* New question */}
+                <div className="pt-3 space-y-3">
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2.5">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             New Question
@@ -787,6 +711,7 @@ export function CpdAdminQuestionsPage() {
                             placeholder="Question text"
                             rows={2}
                             className={TextareaBase}
+                            style={{ touchAction: "manipulation" }}
                         />
                         <SelectField
                             value={qType}
@@ -807,27 +732,29 @@ export function CpdAdminQuestionsPage() {
                                             type="checkbox"
                                             checked={o.is_correct}
                                             onChange={(e) => setOptions(prev => prev.map((x, idx) => idx === i ? { ...x, is_correct: e.target.checked } : x))}
-                                            className="w-4 h-4 accent-blue-600 shrink-0"
+                                            className="w-5 h-5 accent-blue-600 shrink-0"
                                         />
                                         <input
                                             value={o.option_text}
                                             onChange={(e) => setOptions(prev => prev.map((x, idx) => idx === i ? { ...x, option_text: e.target.value } : x))}
                                             placeholder={`Option ${i + 1}`}
-                                            className={InputBase + " !h-9"}
+                                            className={InputBase + " !h-10"}
+                                            style={{ touchAction: "manipulation" }}
                                         />
                                         <button
                                             onClick={() => removeOption(i)}
-                                            className={DangerBtn + " !h-8 !w-8"}
+                                            className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-400
+                                                       flex items-center justify-center active:scale-[0.92] transition-transform"
                                             aria-label="Remove option"
                                             style={{ touchAction: "manipulation" }}
                                         >
-                                            <Trash2 className="h-3 w-3" />
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
                                 ))}
                                 <button
                                     onClick={addOption}
-                                    className={SecondaryBtn + " w-full !h-9"}
+                                    className={SecondaryBtn + " w-full !h-10"}
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     <Plus className="h-3 w-3" />
@@ -843,58 +770,62 @@ export function CpdAdminQuestionsPage() {
                             style={{ touchAction: "manipulation" }}
                         >
                             {create.isPending ? (
-                                <>
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    Saving…
-                                </>
-                            ) : (
-                                "Save Question"
-                            )}
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>
+                            ) : "Save Question"}
                         </button>
                     </section>
 
-                    {/* Search */}
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search questions…"
                         className={InputBase}
+                        style={{ touchAction: "manipulation" }}
                     />
 
-                    {/* List */}
                     <div className="space-y-2">
-                        {items.map((qq: any) => (
-                            <div key={qq.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
-                                <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[12px] font-medium text-slate-900 dark:text-white truncate">
-                                        {qq.question}
-                                    </p>
-                                    <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
-                                                     text-[10px] font-bold capitalize
-                                                     bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
-                                        {qq.question_type.replace("_", " ")}
-                                    </span>
+                        {q.isLoading && !items.length ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="h-3 flex-1 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                                        <div className="h-5 w-20 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {q.hasNextPage && (
-                            <div className="flex justify-center pt-2">
-                                <button
-                                    onClick={() => { tap(); q.fetchNextPage(); }}
-                                    disabled={q.isFetchingNextPage}
-                                    className={SecondaryBtn}
-                                    style={{ touchAction: "manipulation" }}
-                                >
-                                    {q.isFetchingNextPage ? (
-                                        <>
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Loading…
-                                        </>
-                                    ) : (
-                                        "Load more"
-                                    )}
-                                </button>
-                            </div>
+                            ))
+                        ) : items.length ? (
+                            <>
+                                {items.map((qq: any) => (
+                                    <div key={qq.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-[12px] font-medium text-slate-900 dark:text-white truncate">
+                                                {qq.question}
+                                            </p>
+                                            <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
+                                                             text-[10px] font-bold capitalize
+                                                             bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
+                                                {qq.question_type.replace("_", " ")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {q.hasNextPage && (
+                                    <div className="flex justify-center pt-2 pb-4">
+                                        <button
+                                            onClick={() => { tap(); q.fetchNextPage(); }}
+                                            disabled={q.isFetchingNextPage}
+                                            className={SecondaryBtn}
+                                            style={{ touchAction: "manipulation" }}
+                                        >
+                                            {q.isFetchingNextPage ? (
+                                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</>
+                                            ) : "Load more"}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <CpdEmptyState title="No questions yet" hint="Create your first question above." />
                         )}
                     </div>
                 </div>
@@ -912,18 +843,18 @@ export function CpdAdminCompletionsPage() {
     const items = q.data?.pages.flatMap(p => p.items) ?? [];
 
     const statuses = ["", "verified", "pending", "revoked"];
+    const handleBack = useCallback(() => { tap(); window.history.back(); }, []);
 
     return (
         <FullScreen>
             <PageHeader
                 title="CPD Completions"
                 subtitle={`${items.length} records`}
-                onBack={() => window.history.back()}
+                onBack={handleBack}
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-3">
-                    {/* Filter pills */}
+                <div className="pt-3 space-y-3">
                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                         {statuses.map((s) => {
                             const active = status === s;
@@ -932,12 +863,11 @@ export function CpdAdminCompletionsPage() {
                                 <button
                                     key={s || "all"}
                                     onClick={() => { tap(); setStatus(s); }}
-                                    className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-bold
+                                    className={`shrink-0 h-9 px-3 rounded-full text-[11px] font-bold
                                                 active:scale-[0.97] transition-transform
                                                 ${active
                                             ? "bg-blue-600 text-white"
-                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
-                                        }`}
+                                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"}`}
                                     style={{ touchAction: "manipulation" }}
                                 >
                                     {label}
@@ -946,45 +876,43 @@ export function CpdAdminCompletionsPage() {
                         })}
                     </div>
 
-                    {/* List */}
                     <div className="space-y-2">
-                        {items.map((c: any) => (
-                            <div key={c.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
-                                            {c.activity?.title ?? "Activity"}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                                            {c.nurse?.name ?? c.nurse_id} · {fmtDate(c.completed_at)} · {fmtPoints(c.points_awarded)} pts
-                                        </p>
+                        {q.isLoading && !items.length ? (
+                            Array.from({ length: 5 }).map((_, i) => <ActivityListSkeleton key={i} />)
+                        ) : items.length ? (
+                            <>
+                                {items.map((c: any) => (
+                                    <div key={c.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                                                    {c.activity?.title ?? "Activity"}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                                                    {c.nurse?.name ?? c.nurse_id} · {fmtDate(c.completed_at)} · {fmtPoints(c.points_awarded)} pts
+                                                </p>
+                                            </div>
+                                            <StatusPill status={c.completion_status} />
+                                        </div>
                                     </div>
-                                    <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
-                                                     text-[10px] font-bold capitalize
-                                                     bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
-                                        {c.completion_status}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                        {q.hasNextPage && (
-                            <div className="flex justify-center pt-2">
-                                <button
-                                    onClick={() => { tap(); q.fetchNextPage(); }}
-                                    disabled={q.isFetchingNextPage}
-                                    className={SecondaryBtn}
-                                    style={{ touchAction: "manipulation" }}
-                                >
-                                    {q.isFetchingNextPage ? (
-                                        <>
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Loading…
-                                        </>
-                                    ) : (
-                                        "Load more"
-                                    )}
-                                </button>
-                            </div>
+                                ))}
+                                {q.hasNextPage && (
+                                    <div className="flex justify-center pt-2 pb-4">
+                                        <button
+                                            onClick={() => { tap(); q.fetchNextPage(); }}
+                                            disabled={q.isFetchingNextPage}
+                                            className={SecondaryBtn}
+                                            style={{ touchAction: "manipulation" }}
+                                        >
+                                            {q.isFetchingNextPage ? (
+                                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</>
+                                            ) : "Load more"}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <CpdEmptyState title="No completions yet" hint="Verified completions will appear here." />
                         )}
                     </div>
                 </div>
@@ -1008,17 +936,18 @@ export function CpdAdminPeriodsPage() {
         setForm({ name: "", start_date: "", end_date: "" });
     };
 
+    const handleBack = useCallback(() => { tap(); window.history.back(); }, []);
+
     return (
         <FullScreen>
             <PageHeader
                 title="CPD Periods"
                 subtitle="Professional development cycles"
-                onBack={() => window.history.back()}
+                onBack={handleBack}
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-3">
-                    {/* New period */}
+                <div className="pt-3 space-y-3">
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2.5">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             New Period
@@ -1028,28 +957,27 @@ export function CpdAdminPeriodsPage() {
                             onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                             placeholder="Name (e.g. CPD 2026)"
                             className={InputBase}
+                            style={{ touchAction: "manipulation" }}
                         />
                         <div className="grid grid-cols-2 gap-2">
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                                    Start
-                                </label>
+                                <Label>Start</Label>
                                 <input
                                     type="date"
                                     value={form.start_date}
                                     onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))}
                                     className={InputBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                                    End
-                                </label>
+                                <Label>End</Label>
                                 <input
                                     type="date"
                                     value={form.end_date}
                                     onChange={(e) => setForm(f => ({ ...f, end_date: e.target.value }))}
                                     className={InputBase}
+                                    style={{ touchAction: "manipulation" }}
                                 />
                             </div>
                         </div>
@@ -1060,37 +988,33 @@ export function CpdAdminPeriodsPage() {
                             style={{ touchAction: "manipulation" }}
                         >
                             {create.isPending ? (
-                                <>
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    Creating…
-                                </>
-                            ) : (
-                                "Create Period"
-                            )}
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Creating…</>
+                            ) : "Create Period"}
                         </button>
                     </section>
 
-                    {/* List */}
                     <div className="space-y-2">
-                        {q.data?.map((p) => (
-                            <div key={p.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
-                                            {p.name}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                                            {fmtDate(p.start_date)} → {fmtDate(p.end_date)}
-                                        </p>
+                        {q.isLoading ? (
+                            Array.from({ length: 3 }).map((_, i) => <ActivityListSkeleton key={i} />)
+                        ) : q.data?.length ? (
+                            q.data.map((p) => (
+                                <div key={p.id} className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                                                {p.name}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                                                {fmtDate(p.start_date)} → {fmtDate(p.end_date)}
+                                            </p>
+                                        </div>
+                                        <StatusPill status={p.status} />
                                     </div>
-                                    <span className="inline-flex items-center rounded-full px-2 py-0.5 shrink-0
-                                                     text-[10px] font-bold capitalize
-                                                     bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
-                                        {p.status}
-                                    </span>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <CpdEmptyState title="No periods yet" hint="Create your first CPD cycle above." />
+                        )}
                     </div>
                 </div>
             </ScrollBody>

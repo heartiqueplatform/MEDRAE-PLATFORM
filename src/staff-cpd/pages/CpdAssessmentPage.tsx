@@ -1,5 +1,5 @@
 // src/staff-cpd/pages/CpdAssessmentPage.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -21,43 +21,91 @@ export function CpdAssessmentPage() {
 
     const [attemptId, setAttemptId] = useState<string | null>(null);
     const [answers, setAnswers] = useState<Record<string, any>>({});
+    const [startError, setStartError] = useState<string | null>(null);
+    /* ✅ Prevents double-attempt on slow networks / StrictMode double-mount */
+    const startedRef = useRef(false);
 
     useEffect(() => {
-        if (!enrollment.data || !assessmentId || attemptId) return;
+        if (!enrollment.data || !assessmentId) return;
+        if (startedRef.current || attemptId) return;
+        startedRef.current = true;
+
+        let cancelled = false;
         (async () => {
             try {
                 const a = await startAttempt.mutateAsync({
                     assessmentId,
                     enrollmentId: enrollment.data!.id,
                 });
-                setAttemptId(a.id);
+                if (!cancelled) setAttemptId(a.id);
             } catch (e: any) {
-                console.error("startAttempt failed", e);
+                if (!cancelled) setStartError(e?.message ?? "Could not start attempt.");
+                startedRef.current = false; // allow retry
             }
         })();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enrollment.data?.id, assessmentId]);
+        return () => { cancelled = true; };
+    }, [enrollment.data?.id, assessmentId, attemptId, startAttempt]);
 
+    const handleBack = useCallback(() => {
+        tap();
+        nav(-1);
+    }, [nav]);
+
+    const handleBackToActivity = useCallback(() => {
+        tap();
+        nav(`/cpd/activity/${id}`);
+    }, [nav, id]);
+
+    /* ── Loading ── */
     if (bundle.isLoading || !enrollment.data) {
         return (
             <FullScreen>
-                <PageHeader title="Loading…" onBack={() => nav(-1)} />
+                <PageHeader title="Loading…" onBack={handleBack} />
                 <ScrollBody>
-                    <div className="px-4 pt-4 space-y-3">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
-                        ))}
+                    <div className="pt-3 space-y-3">
+                        <AssessmentSkeleton />
                     </div>
                 </ScrollBody>
             </FullScreen>
         );
     }
+
+    /* ── Start failed ── */
+    if (startError) {
+        return (
+            <FullScreen>
+                <PageHeader title="Assessment" onBack={handleBackToActivity} />
+                <ScrollBody>
+                    <div className="pt-3">
+                        <div className="rounded-2xl bg-rose-50 dark:bg-rose-400/10 p-6 text-center">
+                            <p className="text-[13px] font-bold text-rose-700 dark:text-rose-400">
+                                Couldn't start the attempt
+                            </p>
+                            <p className="text-[11px] text-rose-700/80 dark:text-rose-400/80 mt-1 leading-snug">
+                                {startError}
+                            </p>
+                            <button
+                                onClick={() => { tap(); startedRef.current = false; setStartError(null); window.location.reload(); }}
+                                className="mt-3 h-10 px-4 rounded-xl bg-rose-600 text-white text-[12px] font-bold
+                                           active:scale-[0.97] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    </div>
+                </ScrollBody>
+            </FullScreen>
+        );
+    }
+
+    /* ── Not found ── */
     if (!bundle.data) {
         return (
             <FullScreen>
-                <PageHeader title="Assessment" onBack={() => nav(-1)} />
+                <PageHeader title="Assessment" onBack={handleBack} />
                 <ScrollBody>
-                    <div className="px-4 pt-4">
+                    <div className="pt-3">
                         <CpdEmptyState title="Assessment not found" />
                     </div>
                 </ScrollBody>
@@ -74,7 +122,7 @@ export function CpdAssessmentPage() {
     }).length;
 
     const submit = async () => {
-        if (!attemptId) return;
+        if (!attemptId || submitAttempt.isPending) return;
         tap("success");
         await submitAttempt.mutateAsync({ attemptId, answers });
         nav(`/cpd/activity/${id}/assessment/${attemptId}/results`);
@@ -85,11 +133,12 @@ export function CpdAssessmentPage() {
             <PageHeader
                 title={assessment.title}
                 subtitle={`Pass mark ${assessment.pass_mark}% · ${answered}/${totalQuestions} answered`}
-                onBack={() => { tap(); nav(`/cpd/activity/${id}`); }}
+                onBack={handleBackToActivity}
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-3">
+                {/* ✅ No px-* — ScrollBody owns the gutter */}
+                <div className="pt-3 space-y-3">
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
                         <Progress
                             value={totalQuestions > 0 ? (answered / totalQuestions) * 100 : 0}
@@ -108,7 +157,7 @@ export function CpdAssessmentPage() {
                             return (
                                 <div key={q.id} className="space-y-3 pb-5 border-b border-slate-100 dark:border-white/[0.04] last:border-0 last:pb-0">
                                     <div className="flex items-start gap-2">
-                                        <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0
+                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0
                                                         text-[11px] font-bold
                                                         ${qAnswered
                                                 ? "bg-emerald-500 text-white"
@@ -121,14 +170,14 @@ export function CpdAssessmentPage() {
                                             </p>
                                             {q.points && q.points !== 1 && (
                                                 <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full
-                                                                 bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">
+                                                                 bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
                                                     {q.points} pts
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1.5 pl-8">
+                                    <div className="space-y-1.5 pl-9">
                                         {q.options?.map((opt: any) => {
                                             const checked = q.question_type === "multiple_select"
                                                 ? Array.isArray(answers[q.id]) && answers[q.id].includes(opt.id)
@@ -136,7 +185,7 @@ export function CpdAssessmentPage() {
                                             return (
                                                 <label
                                                     key={opt.id}
-                                                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5
+                                                    className={`flex items-center gap-3 rounded-xl px-3 min-h-[44px] py-2.5
                                                                 text-[12px] cursor-pointer
                                                                 transition-colors
                                                                 ${checked
@@ -159,9 +208,9 @@ export function CpdAssessmentPage() {
                                                                 setAnswers((a) => ({ ...a, [q.id]: opt.id }));
                                                             }
                                                         }}
-                                                        className="w-4 h-4 accent-blue-600 shrink-0"
+                                                        className="w-5 h-5 accent-blue-600 shrink-0"
                                                     />
-                                                    <span className="font-medium">
+                                                    <span className="font-medium leading-snug">
                                                         {opt.option_text}
                                                     </span>
                                                 </label>
@@ -178,6 +227,7 @@ export function CpdAssessmentPage() {
                                                            outline-none resize-y"
                                                 rows={3}
                                                 placeholder="Type your answer…"
+                                                style={{ touchAction: "manipulation" }}
                                             />
                                         )}
                                     </div>
@@ -186,7 +236,8 @@ export function CpdAssessmentPage() {
                         })}
                     </section>
 
-                    <div className="sticky bottom-2">
+                    {/* Sticky footer — safe-area aware */}
+                    <div className="sticky bottom-2 z-10">
                         <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3
                                         flex items-center justify-between gap-2 flex-wrap
                                         border border-slate-200/70 dark:border-white/[0.06]">
@@ -198,7 +249,7 @@ export function CpdAssessmentPage() {
                             <button
                                 onClick={submit}
                                 disabled={submitAttempt.isPending || !attemptId}
-                                className="h-10 px-4 rounded-xl bg-blue-600 text-white
+                                className="h-11 px-5 rounded-xl bg-blue-600 text-white
                                            text-[12px] font-bold
                                            active:scale-[0.97] transition-transform
                                            disabled:opacity-40"
@@ -211,5 +262,38 @@ export function CpdAssessmentPage() {
                 </div>
             </ScrollBody>
         </FullScreen>
+    );
+}
+
+/* ── Skeleton — shape-matched to the real question layout ───── */
+function AssessmentSkeleton() {
+    return (
+        <div className="space-y-3 animate-pulse">
+            {/* Progress bar skeleton */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                <div className="h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            {/* Question card skeleton — 2 questions */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-5">
+                {[1, 2].map((qi) => (
+                    <div key={qi} className="space-y-3 pb-5 border-b border-slate-100 dark:border-white/[0.04] last:border-0 last:pb-0">
+                        <div className="flex items-start gap-2">
+                            <div className="w-7 h-7 rounded-md bg-slate-200 dark:bg-white/[0.06] shrink-0" />
+                            <div className="flex-1 space-y-1.5">
+                                <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                                <div className="h-3 w-2/3 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5 pl-9">
+                            {[1, 2, 3, 4].map((oi) => (
+                                <div key={oi} className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            {/* Footer skeleton */}
+            <div className="h-16 rounded-2xl bg-white dark:bg-[#161b22]" />
+        </div>
     );
 }

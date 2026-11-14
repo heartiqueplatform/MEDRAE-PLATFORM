@@ -1,13 +1,11 @@
 // src/staff-cpd/pages/CpdCatalogPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { Search, X } from "lucide-react";
 import {
-    useActivities, useActivityTree,
-    useActivityComments, usePostComment,
-    useMyBookmark, useToggleBookmark,
-    useMyRating, useUpsertRating,
+    useActivities,
+    useToggleBookmark,
 } from "../hooks";
 import {
     CpdActivityCard, CpdEmptyState,
@@ -28,7 +26,7 @@ export function CpdCatalogPage() {
     const [category, setCategory] = useState<string>("All");
     const [difficulty, setDifficulty] = useState<string>("All");
 
-    // Debounce search — but keep old results visible while typing.
+    // Debounce search
     useEffect(() => {
         const t = setTimeout(() => setDebounced(search), 250);
         return () => clearTimeout(t);
@@ -41,24 +39,47 @@ export function CpdCatalogPage() {
     });
     const items = useMemo(() => q.data?.pages.flatMap(p => p.items) ?? [], [q.data]);
 
-    // ── Optimistic overlays ─────────────────────────────────────────────
+    // ── Optimistic overlays ─────────────────────────────────────
     const [optimisticBookmarks, setOptimisticBookmarks] = useState<Record<string, boolean>>({});
     const [optimisticRatings, setOptimisticRatings] = useState<Record<string, number>>({});
 
-    // Sheet/popover state
     const [sheetActivity, setSheetActivity] = useState<CpdActivity | null>(null);
     const [ratingActivity, setRatingActivity] = useState<CpdActivity | null>(null);
 
-    // Prefetch detail on press for instant nav
-    const prefetch = (activityId: string) => {
+    const toggleBookmark = useToggleBookmark();
+
+    // Stable prefetch — no recreated closures on each render
+    const prefetch = useCallback((activityId: string) => {
         qc.prefetchQuery({
             queryKey: ["cpd", "activity-tree", activityId],
             queryFn: () => fetchTree(activityId),
             staleTime: 60_000,
         });
-    };
+    }, [qc]);
+
+    // Stable handlers — prevents re-render of every card on state change
+    const handleToggleBookmark = useCallback((a: CpdActivity, current: boolean) => {
+        const next = !current;
+        tap();
+        setOptimisticBookmarks(prev => ({ ...prev, [a.id]: next }));
+        toggleBookmark.mutate(
+            { activityId: a.id, isBookmarked: next },
+            { onError: () => setOptimisticBookmarks(prev => ({ ...prev, [a.id]: !next })) }
+        );
+    }, [toggleBookmark]);
+
+    const handleOpenComments = useCallback((a: CpdActivity) => {
+        tap();
+        setSheetActivity(a);
+    }, []);
+
+    const handleQuickRate = useCallback((a: CpdActivity) => {
+        tap();
+        setRatingActivity(a);
+    }, []);
 
     const isFirstLoad = q.isLoading && items.length === 0;
+    const hasFilter = debounced || category !== "All" || difficulty !== "All";
 
     return (
         <FullScreen>
@@ -69,36 +90,39 @@ export function CpdCatalogPage() {
             />
 
             <ScrollBody>
-                {/* Sticky header: search + filters */}
-                <div className="sticky top-0 z-20 bg-[#f7f8fa] dark:bg-[#0d1117] pb-2">
-                    <div className="px-4 pt-4 space-y-2">
+                {/* Sticky search + filters */}
+                <div className="sticky top-0 z-20 bg-slate-50 dark:bg-[#0d1117] pb-2">
+                    <div className="px-1.5 sm:px-4 pt-3 space-y-2">
                         <div className="relative">
                             <input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search activities…"
-                                className="w-full h-10 rounded-xl bg-white dark:bg-[#161b22]
-                                           pl-9 pr-9 text-[13px] font-medium
+                                className="w-full h-11 rounded-xl bg-white dark:bg-[#161b22]
+                                           pl-10 pr-10 text-[13px] font-medium
                                            text-slate-900 dark:text-white
                                            placeholder:text-slate-400 dark:placeholder:text-slate-500
                                            outline-none"
+                                style={{ touchAction: "manipulation" }}
                             />
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4
                                               text-slate-400 pointer-events-none" />
                             {search && (
                                 <button
                                     onClick={() => { tap(); setSearch(""); }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-lg
-                                               flex items-center justify-center
-                                               text-slate-400 active:scale-90 transition-transform"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2
+                                               h-8 w-8 rounded-full flex items-center justify-center
+                                               text-slate-500 dark:text-slate-400
+                                               active:bg-slate-100 dark:active:bg-white/[0.06]
+                                               transition-colors"
                                     style={{ touchAction: "manipulation" }}
+                                    aria-label="Clear search"
                                 >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-4 w-4" />
                                 </button>
                             )}
                         </div>
 
-                        {/* Category chips */}
                         <FilterChipRow
                             options={CATEGORIES}
                             value={category}
@@ -113,16 +137,16 @@ export function CpdCatalogPage() {
                     </div>
                 </div>
 
-                <div className="px-4 pt-2 space-y-4">
+                <div className="px-1.5 sm:px-4 pt-2 space-y-4">
                     {isFirstLoad ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="h-64 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
+                                <CpdCardSkeleton key={i} />
                             ))}
                         </div>
                     ) : items.length ? (
                         <>
-                            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 transition-opacity ${q.isFetching ? "opacity-60" : "opacity-100"
+                            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 transition-opacity duration-150 ${q.isFetching && !q.isFetchingNextPage ? "opacity-60" : "opacity-100"
                                 }`}>
                                 {items.map((a) => (
                                     <CpdActivityCard
@@ -131,26 +155,20 @@ export function CpdCatalogPage() {
                                         onPressStart={() => prefetch(a.id)}
                                         isBookmarked={optimisticBookmarks[a.id] ?? !!a.is_bookmarked}
                                         myRating={optimisticRatings[a.id] ?? a.my_rating ?? 0}
-                                        onToggleBookmark={() => {
-                                            const next = !(optimisticBookmarks[a.id] ?? !!a.is_bookmarked);
-                                            tap();
-                                            setOptimisticBookmarks(prev => ({ ...prev, [a.id]: next }));
-                                            toggleBookmark.mutate(
-                                                { activityId: a.id, isBookmarked: next },
-                                                { onError: () => setOptimisticBookmarks(prev => ({ ...prev, [a.id]: !next })) }
-                                            );
-                                        }}
-                                        onOpenComments={() => { tap(); setSheetActivity(a); }}
-                                        onQuickRate={() => { tap(); setRatingActivity(a); }}
+                                        onToggleBookmark={() =>
+                                            handleToggleBookmark(a, optimisticBookmarks[a.id] ?? !!a.is_bookmarked)
+                                        }
+                                        onOpenComments={() => handleOpenComments(a)}
+                                        onQuickRate={() => handleQuickRate(a)}
                                     />
                                 ))}
                             </div>
                             {q.hasNextPage && (
-                                <div className="flex justify-center pt-2">
+                                <div className="flex justify-center pt-2 pb-4">
                                     <button
                                         onClick={() => { tap(); q.fetchNextPage(); }}
                                         disabled={q.isFetchingNextPage}
-                                        className="h-10 px-4 rounded-xl
+                                        className="h-11 px-5 rounded-xl
                                                    bg-slate-100 dark:bg-white/[0.06]
                                                    text-slate-700 dark:text-slate-200
                                                    text-[12px] font-bold
@@ -165,9 +183,9 @@ export function CpdCatalogPage() {
                         </>
                     ) : (
                         <CpdEmptyState
-                            title={debounced || category !== "All" || difficulty !== "All" ? "No matching activities" : "No activities yet"}
+                            title={hasFilter ? "No matching activities" : "No activities yet"}
                             hint={
-                                debounced || category !== "All" || difficulty !== "All"
+                                hasFilter
                                     ? "Try a different search term or filter."
                                     : "Once staff publish CPD activities they'll appear here."
                             }
@@ -176,7 +194,6 @@ export function CpdCatalogPage() {
                 </div>
             </ScrollBody>
 
-            {/* Bottom-sheet comment preview */}
             {sheetActivity && (
                 <CpdCommentPreviewSheet
                     activity={sheetActivity}
@@ -189,7 +206,6 @@ export function CpdCatalogPage() {
                 />
             )}
 
-            {/* Inline quick rating popover */}
             {ratingActivity && (
                 <CpdQuickRatingPopover
                     activity={ratingActivity}
@@ -200,7 +216,6 @@ export function CpdCatalogPage() {
                         tap("success");
                         setOptimisticRatings(prev => ({ ...prev, [id]: stars }));
                         setRatingActivity(null);
-                        // fire-and-forget; hooks roll back on error
                     }}
                 />
             )}
@@ -208,8 +223,22 @@ export function CpdCatalogPage() {
     );
 }
 
-/* ── helpers ───────────────────────────────────────────────────── */
+/* ── Skeleton matches final card shape (no layout shift) ──────── */
+function CpdCardSkeleton() {
+    return (
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
+            <div className="h-32 rounded-xl bg-slate-200 dark:bg-white/[0.06] mb-3" />
+            <div className="h-3 w-2/3 rounded-full bg-slate-200 dark:bg-white/[0.06] mb-2" />
+            <div className="h-2 w-1/2 rounded-full bg-slate-100 dark:bg-white/[0.04] mb-3" />
+            <div className="flex gap-2">
+                <div className="h-6 w-14 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="h-6 w-14 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+        </div>
+    );
+}
 
+/* ── Filter chip row — finger-sized + horizontally scrollable ─── */
 function FilterChipRow({
     options, value, onChange, renderLabel,
 }: {
@@ -219,14 +248,14 @@ function FilterChipRow({
     renderLabel?: (v: string) => string;
 }) {
     return (
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-0.5">
             {options.map((o) => {
                 const active = o === value;
                 return (
                     <button
                         key={o}
                         onClick={() => onChange(o)}
-                        className={`shrink-0 h-7 px-2.5 rounded-full text-[10px] font-bold
+                        className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-bold
                                     capitalize whitespace-nowrap
                                     active:scale-[0.96] transition-all
                                     ${active

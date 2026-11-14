@@ -1,6 +1,6 @@
 // src/staff-cpd/pages/CpdActivityDetailPage.tsx
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import {
     Award, Clock, CheckCircle2, ArrowRight, Sparkles, Lock, ShieldCheck, User,
@@ -28,7 +28,6 @@ export function CpdActivityDetailPage() {
     const enroll = useEnroll();
     const progress = useProgressForEnrollment(enrollment.data?.id);
 
-    // Social hooks
     const myRating = useMyRating(id);
     const upsertRating = useUpsertRating();
     const myBookmark = useMyBookmark(id);
@@ -36,34 +35,54 @@ export function CpdActivityDetailPage() {
     const myMastery = useMyMastery(id);
     const markMastered = useMarkMastered();
 
-    // Local optimistic overrides — flipped instantly on tap, cleared when
-    // the server query catches up (or rolled back on error by the hook).
     const [optimisticEnrolled, setOptimisticEnrolled] = useState(false);
     const [pendingStars, setPendingStars] = useState<number | null>(null);
     const [optimisticBookmark, setOptimisticBookmark] = useState<boolean | null>(null);
     const [optimisticMastered, setOptimisticMastered] = useState(false);
     const [draftComment, setDraftComment] = useState("");
 
+    /* ✅ Clear optimistic flags in effects (NOT during render) */
+    useEffect(() => {
+        if (optimisticEnrolled && enrollment.data) setOptimisticEnrolled(false);
+    }, [optimisticEnrolled, enrollment.data]);
+
+    useEffect(() => {
+        if (optimisticMastered && myMastery.data) setOptimisticMastered(false);
+    }, [optimisticMastered, myMastery.data]);
+
+    useEffect(() => {
+        if (optimisticBookmark !== null && !!myBookmark.data === optimisticBookmark) {
+            setOptimisticBookmark(null);
+        }
+    }, [optimisticBookmark, myBookmark.data]);
+
+    const handleBackToList = useCallback(() => {
+        tap();
+        nav("/cpd/catalog");
+    }, [nav]);
+
+    /* ── Loading ── */
     if (tree.isLoading) {
         return (
             <FullScreen>
-                <PageHeader title="Loading…" onBack={() => nav("/cpd/catalog")} />
+                <PageHeader title="Loading…" onBack={handleBackToList} />
                 <ScrollBody>
-                    <div className="px-4 pt-4 space-y-3">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="h-32 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
-                        ))}
+                    {/* ✅ No px-* — ScrollBody owns gutter */}
+                    <div className="pt-3 space-y-3">
+                        <DetailSkeleton />
                     </div>
                 </ScrollBody>
             </FullScreen>
         );
     }
+
+    /* ── Not found ── */
     if (!tree.data) {
         return (
             <FullScreen>
-                <PageHeader title="Activity" onBack={() => nav("/cpd/catalog")} />
+                <PageHeader title="Activity" onBack={handleBackToList} />
                 <ScrollBody>
-                    <div className="px-4 pt-4">
+                    <div className="pt-3">
                         <CpdEmptyState title="Activity not found" hint="The activity may have been removed." />
                     </div>
                 </ScrollBody>
@@ -92,32 +111,13 @@ export function CpdActivityDetailPage() {
     const fallbackProgress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
     const shownProgress = enrollment.data ? Math.max(enrollment.data.progress_percentage, fallbackProgress) : 0;
 
-    // ── Derived optimistic state ──────────────────────────────────────────
-    // Merge server truth with local optimistic flags so the UI never flickers
-    // back to "not enrolled" between the tap and the server round-trip.
     const isEnrolled = !!enrollment.data || optimisticEnrolled;
-
-    const currentStars =
-        pendingStars !== null
-            ? pendingStars
-            : myRating.data?.rating ?? 0;
-
-    const isBookmarked =
-        optimisticBookmark !== null
-            ? optimisticBookmark
-            : !!myBookmark.data;
-
+    const currentStars = pendingStars !== null ? pendingStars : myRating.data?.rating ?? 0;
+    const isBookmarked = optimisticBookmark !== null ? optimisticBookmark : !!myBookmark.data;
     const isMastered = !!myMastery.data || optimisticMastered;
     const canMaster = allDone && isEnrolled && !isMastered;
 
-    // Clear optimistic flag once server truth catches up
-    if (optimisticEnrolled && enrollment.data) setOptimisticEnrolled(false);
-    if (optimisticMastered && myMastery.data) setOptimisticMastered(false);
-    if (optimisticBookmark !== null && !!myBookmark.data === optimisticBookmark) {
-        setOptimisticBookmark(null);
-    }
-
-    // ── Handlers ──────────────────────────────────────────────────────────
+    /* ── Handlers ── */
     const handleEnroll = async () => {
         if (isEnrolled || enroll.isPending) return;
         tap("success");
@@ -166,16 +166,23 @@ export function CpdActivityDetailPage() {
             <PageHeader
                 title={activity.title}
                 subtitle={activity.category || "CPD Activity"}
-                onBack={() => { tap(); nav("/cpd/catalog"); }}
+                onBack={handleBackToList}
             />
 
             <ScrollBody>
-                <div className="px-4 pt-4 space-y-3">
+                {/* ✅ No px-* — ScrollBody owns the gutter */}
+                <div className="pt-3 space-y-3">
                     {/* ── Hero card ── */}
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
                         {activity.thumbnail_url && (
                             <div className="relative aspect-[16/9] bg-slate-100 dark:bg-white/[0.06]">
-                                <img src={activity.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                                <img
+                                    src={activity.thumbnail_url}
+                                    alt=""
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
                         )}
                         <div className="p-4 space-y-3">
@@ -230,8 +237,13 @@ export function CpdActivityDetailPage() {
                                                         bg-slate-200 dark:bg-white/[0.08]
                                                         flex items-center justify-center">
                                             {author.avatar_url ? (
-                                                <img src={author.avatar_url} alt={author.name ?? ""}
-                                                    className="w-full h-full object-cover" />
+                                                <img
+                                                    src={author.avatar_url}
+                                                    alt={author.name ?? ""}
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    className="w-full h-full object-cover"
+                                                />
                                             ) : author.name ? (
                                                 <span className="text-[13px] font-bold text-slate-600 dark:text-slate-300">
                                                     {author.name.charAt(0).toUpperCase()}
@@ -336,11 +348,7 @@ export function CpdActivityDetailPage() {
                                 </span>
                             )}
                         </div>
-                        <RatingStars
-                            value={currentStars}
-                            onChange={submitRating}
-                            size="lg"
-                        />
+                        <RatingStars value={currentStars} onChange={submitRating} size="lg" />
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
                             {currentStars > 0
                                 ? "Tap a star to change your rating."
@@ -352,17 +360,17 @@ export function CpdActivityDetailPage() {
                     {isMastered ? (
                         <MasteredBadge />
                     ) : canMaster ? (
-                        <section className="rounded-2xl bg-violet-50 dark:bg-violet-400/10 p-4 space-y-2">
+                        <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
                             <div className="flex items-center gap-2.5">
                                 <div className="h-10 w-10 rounded-xl bg-violet-600 text-white
                                                 flex items-center justify-center shrink-0">
                                     <Trophy className="h-5 w-5" strokeWidth={2.4} />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[12px] font-bold text-violet-700 dark:text-violet-400">
+                                    <p className="text-[12px] font-bold text-slate-900 dark:text-white">
                                         Ready to master this activity?
                                     </p>
-                                    <p className="text-[10px] text-violet-700/80 dark:text-violet-400/80 mt-0.5">
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                                         You've completed all required content. Mastery adds a badge and lets you revisit anytime.
                                     </p>
                                 </div>
@@ -370,7 +378,7 @@ export function CpdActivityDetailPage() {
                             <button
                                 onClick={handleMaster}
                                 disabled={markMastered.isPending}
-                                className="w-full h-10 rounded-xl bg-violet-600 text-white
+                                className="w-full h-11 rounded-xl bg-violet-600 text-white
                                            text-[12px] font-bold
                                            flex items-center justify-center gap-1.5
                                            active:scale-[0.97] transition-transform
@@ -393,7 +401,9 @@ export function CpdActivityDetailPage() {
                                        text-slate-500 dark:text-slate-400">
                             Modules ({modules.length})
                         </h2>
-                        {modules.length === 0 && <CpdEmptyState title="No modules yet" hint="Content hasn't been added yet." />}
+                        {modules.length === 0 && (
+                            <CpdEmptyState title="No modules yet" hint="Content hasn't been added yet." />
+                        )}
                         {modules.map((m) => {
                             const items = contentByModule[m.id] ?? [];
                             return (
@@ -493,7 +503,7 @@ export function CpdActivityDetailPage() {
                                     <button
                                         disabled={!isEnrolled || !allDone}
                                         onClick={() => { tap("success"); nav(`/cpd/activity/${activity.id}/assessment?assessment=${a.id}`); }}
-                                        className="h-9 px-3 rounded-xl shrink-0
+                                        className="h-10 px-3 rounded-xl shrink-0
                                                    bg-blue-600 text-white text-[11px] font-bold
                                                    flex items-center gap-1.5
                                                    active:scale-[0.97] transition-transform
@@ -501,15 +511,9 @@ export function CpdActivityDetailPage() {
                                         style={{ touchAction: "manipulation" }}
                                     >
                                         {allDone ? (
-                                            <>
-                                                <Sparkles className="h-3.5 w-3.5" />
-                                                Start
-                                            </>
+                                            <><Sparkles className="h-3.5 w-3.5" /> Start</>
                                         ) : (
-                                            <>
-                                                <Lock className="h-3.5 w-3.5" />
-                                                Locked
-                                            </>
+                                            <><Lock className="h-3.5 w-3.5" /> Locked</>
                                         )}
                                     </button>
                                 </div>
@@ -530,9 +534,38 @@ export function CpdActivityDetailPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COMMENTS SECTION
+   SKELETON
    ═══════════════════════════════════════════════════════════════ */
+function DetailSkeleton() {
+    return (
+        <div className="space-y-3 animate-pulse">
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
+                <div className="aspect-[16/9] bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="p-4 space-y-3">
+                    <div className="flex gap-1.5">
+                        <div className="h-5 w-20 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                        <div className="h-5 w-16 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                    </div>
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                </div>
+            </div>
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
+                <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                <div className="h-8 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
+                <div className="h-3 w-24 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="h-10 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+                ))}
+            </div>
+        </div>
+    );
+}
 
+/* ═══════════════════════════════════════════════════════════════
+   COMMENTS
+   ═══════════════════════════════════════════════════════════════ */
 type OptimisticComment = {
     id: string;
     body: string;
@@ -552,14 +585,11 @@ function CommentsSection({
     const postComment = usePostComment();
     const deleteComment = useDeleteComment();
 
-    // Optimistic overlays
     const [optimisticPosts, setOptimisticPosts] = useState<OptimisticComment[]>([]);
     const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
     const serverItems = comments.data?.pages.flatMap(p => p.items) ?? [];
 
-    // Drop optimistic posts once a real one with matching body arrives
-    // (best-effort reconciliation; server may return a different id).
     const reconciledPosts = optimisticPosts.filter(
         op => !serverItems.some(
             s => s.body === op.body && !deletedIds.has(s.id)
@@ -584,16 +614,13 @@ function CommentsSection({
             __optimistic: true,
         };
 
-        // Instant UI update
         setOptimisticPosts(prev => [optimistic, ...prev]);
         setDraftComment("");
         tap("success");
 
         try {
             await postComment.mutateAsync({ activityId, body });
-            // Real comment will replace the optimistic one via reconciliation above.
         } catch {
-            // Roll back — remove optimistic post and restore draft
             setOptimisticPosts(prev => prev.filter(p => p.id !== tempId));
             setDraftComment(body);
         }
@@ -602,19 +629,15 @@ function CommentsSection({
     const handleDelete = (commentId: string) => {
         if (!confirm("Delete this comment?")) return;
         tap("warning");
-
-        // Instant removal
         setDeletedIds(prev => {
             const next = new Set(prev);
             next.add(commentId);
             return next;
         });
-
         deleteComment.mutate(
             { commentId, activityId },
             {
                 onError: () => {
-                    // Roll back on failure
                     setDeletedIds(prev => {
                         const next = new Set(prev);
                         next.delete(commentId);
@@ -645,11 +668,12 @@ function CommentsSection({
                                text-slate-900 dark:text-white
                                placeholder:text-slate-400 dark:placeholder:text-slate-500
                                outline-none resize-y"
+                    style={{ touchAction: "manipulation" }}
                 />
                 <button
                     onClick={handlePost}
                     disabled={!draftComment.trim() || postComment.isPending}
-                    className="h-10 w-10 rounded-xl bg-blue-600 text-white
+                    className="h-11 w-11 rounded-xl bg-blue-600 text-white
                                flex items-center justify-center shrink-0
                                active:scale-[0.97] transition-transform
                                disabled:opacity-40"
@@ -679,14 +703,19 @@ function CommentsSection({
                     {items.map((c) => (
                         <div
                             key={c.id}
-                            className={`rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-1.5 ${c.__optimistic ? "opacity-70" : ""
-                                }`}
+                            className={`rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-1.5 ${c.__optimistic ? "opacity-70" : ""}`}
                         >
                             <div className="flex items-start gap-2">
                                 <div className="h-7 w-7 rounded-full overflow-hidden bg-slate-200 dark:bg-white/[0.08]
                                                 flex items-center justify-center shrink-0">
                                     {c.user?.avatar_url ? (
-                                        <img src={c.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                                        <img
+                                            src={c.user.avatar_url}
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="w-full h-full object-cover"
+                                        />
                                     ) : (
                                         <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
                                             {(c.user?.name ?? "?").charAt(0).toUpperCase()}
@@ -709,14 +738,14 @@ function CommentsSection({
                                 {!c.__optimistic && (
                                     <button
                                         onClick={() => handleDelete(c.id)}
-                                        className="h-6 w-6 rounded-lg flex items-center justify-center shrink-0
-                                                   text-slate-400 hover:text-rose-600 hover:bg-rose-50
-                                                   dark:hover:bg-rose-400/10 dark:hover:text-rose-400
+                                        className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0
+                                                   text-slate-400 active:bg-rose-50 dark:active:bg-rose-400/10
+                                                   active:text-rose-600 dark:active:text-rose-400
                                                    active:scale-[0.92] transition-colors"
                                         style={{ touchAction: "manipulation" }}
-                                        title="Delete your comment"
+                                        aria-label="Delete your comment"
                                     >
-                                        <Trash2 className="h-3 w-3" />
+                                        <Trash2 className="h-3.5 w-3.5" />
                                     </button>
                                 )}
                             </div>
@@ -727,7 +756,7 @@ function CommentsSection({
                         <button
                             onClick={() => { tap(); comments.fetchNextPage(); }}
                             disabled={comments.isFetchingNextPage}
-                            className="w-full h-9 rounded-xl
+                            className="w-full h-11 rounded-xl
                                        bg-slate-100 dark:bg-white/[0.06]
                                        text-slate-700 dark:text-slate-200
                                        text-[11px] font-bold

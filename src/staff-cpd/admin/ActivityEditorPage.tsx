@@ -1,5 +1,5 @@
 // src/staff-cpd/admin/ActivityEditorPage.tsx
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BookOpen, Clock, Award } from "lucide-react";
 
@@ -13,7 +13,6 @@ import { AssessmentsTab } from "./editor/AssessmentsTab";
 import { PublishTab } from "./editor/PublishTab";
 
 /* ─── Tab definitions ─────────────────────────────────────────── */
-
 const TABS = [
     { id: "basics", label: "Basics" },
     { id: "modules", label: "Modules" },
@@ -23,24 +22,48 @@ const TABS = [
 
 type TabId = typeof TABS[number]["id"];
 
-/* ─── Page shell ──────────────────────────────────────────────── */
+/* ─── Skeleton ────────────────────────────────────────────────── */
+function EditorLoading() {
+    return (
+        // ✅ Gutter restored
+        <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
+            {/* Header skeleton */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 animate-pulse">
+                <div className="flex items-start gap-2.5">
+                    <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-white/[0.06] shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                        <div className="h-3 w-3/4 rounded-full bg-slate-200 dark:bg-white/[0.06]" />
+                        <div className="flex gap-2">
+                            <div className="h-4 w-16 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                            <div className="h-4 w-14 rounded-full bg-slate-100 dark:bg-white/[0.04]" />
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            {/* Tab strip skeleton */}
+            <div className="flex gap-1">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 w-20 rounded-xl bg-slate-200 dark:bg-white/[0.06] animate-pulse" />
+                ))}
+            </div>
+
+            {/* Content skeleton */}
+            <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2.5 animate-pulse">
+                <div className="h-11 rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-11 rounded-xl bg-slate-200 dark:bg-white/[0.06]" />
+                <div className="h-24 rounded-xl bg-slate-100 dark:bg-white/[0.04]" />
+            </div>
+        </div>
+    );
+}
+
+/* ─── Page shell ──────────────────────────────────────────────── */
 export default function ActivityEditorPage() {
     const { id = "" } = useParams();
     const q = useAdminActivity(id);
 
-    if (q.isLoading || !q.data) {
-        return (
-            <div className="px-4 pt-4 space-y-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <div
-                        key={i}
-                        className="h-24 rounded-2xl bg-white dark:bg-[#161b22] animate-pulse"
-                    />
-                ))}
-            </div>
-        );
-    }
+    if (q.isLoading || !q.data) return <EditorLoading />;
 
     const { activity, modules, contentByModule, assessments } = q.data;
 
@@ -55,7 +78,6 @@ export default function ActivityEditorPage() {
 }
 
 /* ─── Body (header + tabs + active tab content) ───────────────── */
-
 function ActivityEditorBody({
     activity,
     modules,
@@ -64,8 +86,14 @@ function ActivityEditorBody({
 }: any) {
     const [tab, setTab] = useState<TabId>("basics");
 
+    const handleTab = useCallback((t: TabId) => {
+        tap();
+        setTab(t);
+    }, []);
+
     return (
-        <div className="px-4 pt-3 pb-16 space-y-3 max-w-[880px] mx-auto">
+        // ✅ Gutter restored + consistent with other admin pages
+        <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-3">
             {/* Header card */}
             <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-2">
                 <div className="flex items-start gap-2.5">
@@ -77,12 +105,8 @@ function ActivityEditorBody({
                             {activity.title || "Untitled Activity"}
                         </h2>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5
-                                            text-[10px] font-bold capitalize ${getStatusTone(
-                                    activity.status
-                                )}`}
-                            >
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5
+                                            text-[10px] font-bold capitalize ${getStatusTone(activity.status)}`}>
                                 {activity.status}
                             </span>
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
@@ -105,16 +129,12 @@ function ActivityEditorBody({
                     return (
                         <button
                             key={t.id}
-                            onClick={() => {
-                                tap();
-                                setTab(t.id);
-                            }}
-                            className={`shrink-0 h-9 px-3 rounded-xl text-[11px] font-bold
+                            onClick={() => handleTab(t.id)}
+                            className={`shrink-0 h-10 px-3 rounded-xl text-[11px] font-bold
                                         active:scale-[0.97] transition-transform
                                         ${active
                                     ? "bg-blue-600 text-white"
-                                    : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
-                                }`}
+                                    : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"}`}
                             style={{ touchAction: "manipulation" }}
                         >
                             {t.label}
