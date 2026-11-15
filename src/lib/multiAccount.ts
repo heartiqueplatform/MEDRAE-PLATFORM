@@ -376,26 +376,24 @@ export async function createLinkedRole(
         throw new Error("Couldn't resolve your primary account. Please try again.");
     }
 
-    LOG("createLinkedRole → linked_accounts insert start", {
+    LOG("createLinkedRole → create_linked_account RPC start", {
         primary_user_id: truePrimaryId,
         linked_user_id: newAuthUserId,
         role: newRole,
     });
-    const { error: linkError } = await supabase
-        .from("linked_accounts")
-        .insert({
-            primary_user_id: truePrimaryId,       // ← FIX: always use the true primary
-            linked_user_id: newAuthUserId,
-            role: newRole,
-        });
+    const { error: linkError } = await supabase.rpc("create_linked_account", {
+        p_primary_user_id: truePrimaryId,
+        p_linked_user_id: newAuthUserId,
+        p_role: newRole,
+    });
 
     if (linkError) {
-        ERR("createLinkedRole → linked_accounts insert failed", linkError);
-        // Roll back the profile insert to avoid orphan
+        ERR("createLinkedRole → create_linked_account RPC failed", linkError);
+        // Clean up profile + orphan auth user
         await supabase.from("profiles").delete().eq("user_id", newAuthUserId);
         throw new Error(`Couldn't link accounts: ${linkError.message}`);
     }
-    LOG("createLinkedRole → linked_accounts insert OK");
+    LOG("createLinkedRole → create_linked_account RPC OK");
 
     // Extra safety: if the current user is NOT the primary, the auth user is
     // still logged in as the linked account. That's fine — the caller

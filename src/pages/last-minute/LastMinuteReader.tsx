@@ -17,7 +17,7 @@ import FinishGateModal from "@/components/last-minute/FinishGateModal";
 import ResultModal from "@/components/last-minute/ResultModal";
 import PastResultsPanel from "@/components/last-minute/PastResultsPanel";
 import MistakeReviewModal from "@/components/last-minute/MistakeReviewModal";
-
+import { UserProfileModal } from "@/components/UserProfileModal";
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
@@ -89,6 +89,12 @@ export default function LastMinuteReader() {
     const [total, setTotal] = useState(0);
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
+    // 🆕 Creator info
+    const [creatorName, setCreatorName] = useState<string | null>(null);
+    const [creatorAvatar, setCreatorAvatar] = useState<string | null>(null);
+    const [creatorRole, setCreatorRole] = useState<string | null>(null);
+    const [creatorProfileOpen, setCreatorProfileOpen] = useState(false);
+    const [creatorUserId, setCreatorUserId] = useState<string | null>(null);
     // Questions
     const [batch, setBatch] = useState<Q[]>([]);
     const [batchStart, setBatchStart] = useState(0);
@@ -163,11 +169,27 @@ export default function LastMinuteReader() {
             setLoading(true); setErr(null);
 
             const { data: p } = await supabase
-                .from("lm_papers").select("id,title,question_count")
+                .from("lm_papers")
+                .select("id,title,question_count,created_by")
                 .eq("slug", slug).eq("is_published", true).eq("is_deleted", false).maybeSingle();
             if (!p) { setErr("Paper not found."); setLoading(false); return; }
             setPaperId(p.id); setPaperTitle(p.title); setTotal(p.question_count ?? 0);
 
+            // 🆕 Fetch the creator's profile
+            // 🆕 Fetch the creator's profile
+            if ((p as any).created_by) {
+                setCreatorUserId((p as any).created_by);
+                const { data: creatorProfile } = await supabase
+                    .from("profiles")
+                    .select("name, avatar_url, role")
+                    .eq("user_id", (p as any).created_by)
+                    .maybeSingle();
+                if (creatorProfile) {
+                    setCreatorName(creatorProfile.name ?? null);
+                    setCreatorAvatar(creatorProfile.avatar_url ?? null);
+                    setCreatorRole(creatorProfile.role ?? null);
+                }
+            }
             const ent = await checkEntitlement(user.id, p.id);
             if (!ent) { setErr("You don't have access to this paper yet."); setLoading(false); return; }
             setExpiresAt(ent.expires_at);
@@ -589,6 +611,9 @@ export default function LastMinuteReader() {
                         </h1>
                         <p className="text-[11px] text-muted-foreground truncate">
                             Completed · Retake available
+                            {creatorName && (
+                                <span className="ml-1">· by {creatorName}</span>
+                            )}
                         </p>
                     </div>
                 </header>
@@ -691,6 +716,40 @@ export default function LastMinuteReader() {
                             <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5 tabular-nums">
                                 Question {idx + 1} of {total || "?"} · {answeredCount} answered
                             </p>
+                            {/* 🆕 Creator line */}
+                            {/* 🆕 Creator line — tappable */}
+                            {creatorName && creatorUserId && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        playSound("tap");
+                                        if (navigator.vibrate) navigator.vibrate(15);
+                                        setCreatorProfileOpen(true);
+                                    }}
+                                    className="flex items-center gap-1.5 mt-1 active:scale-[0.97] transition-transform group"
+                                    aria-label={`View ${creatorName}'s profile`}
+                                >
+                                    {creatorAvatar ? (
+                                        <img
+                                            src={creatorAvatar}
+                                            alt={creatorName}
+                                            className="h-4 w-4 rounded-full object-cover ring-1 ring-border/40 shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="h-4 w-4 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[8px] font-bold shrink-0">
+                                            {creatorName[0]?.toUpperCase() ?? "U"}
+                                        </div>
+                                    )}
+                                    <span className="text-[10px] md:text-[11px] text-muted-foreground truncate group-active:text-foreground/80 transition-colors">
+                                        by <span className="font-semibold text-foreground/80 underline-offset-2 group-hover:underline">{creatorName}</span>
+                                        {creatorRole && (
+                                            <span className="ml-1 text-[9px] uppercase tracking-wider text-muted-foreground/70">
+                                                · {creatorRole}
+                                            </span>
+                                        )}
+                                    </span>
+                                </button>
+                            )}
                         </div>
                         <button
                             onClick={() => { playSound("tap"); setShowPast(true); }}
@@ -1134,7 +1193,14 @@ export default function LastMinuteReader() {
                 onClose={() => setShowPast(false)}
                 onOpenResult={() => { setShowPast(false); setShowResult(true); }}
             />
-
+            {/* 🆕 Creator profile modal */}
+            {creatorProfileOpen && creatorUserId && (
+                <UserProfileModal
+                    open={creatorProfileOpen}
+                    userId={creatorUserId}
+                    onClose={() => setCreatorProfileOpen(false)}
+                />
+            )}
             <MistakeReviewModal
                 open={showReview}
                 paperId={paperId}

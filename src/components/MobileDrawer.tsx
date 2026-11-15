@@ -833,7 +833,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         );
 
         if (isStudent) {
-            base.push({
+            otherItems.push({
                 title: "GroupPay",
                 url: "/grouppay",
                 icon: Users,

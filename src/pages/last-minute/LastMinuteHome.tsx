@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
     BookOpen, Lock, Unlock, Coins, ChevronLeft,
     Search, AlertCircle, Clock, Flame, Sparkles, Bookmark, Share2,
-    Star, Play, Eye, X,
+    Star, Play, Eye, X, PlusCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
@@ -13,6 +13,16 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
 import { cn } from "@/lib/utils";
+import { useUserRole } from "@/context/UserRoleContext";
+import {
+    getLastMinuteCopy,
+    type LastMinuteMode,
+} from "@/lib/lastMinute/lastMinuteCopy";
+import {
+    PaperCreatorStrip,
+    type PaperCreator,
+} from "@/components/last-minute/PaperCreatorStrip";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -38,6 +48,10 @@ type Paper = {
     rating_count: number;
     rating_avg: number;
     hot_score: number;
+
+    // 🆕 creator fields joined from profiles
+    created_by: string | null;
+    creator: PaperCreator | null;
 };
 
 type State = {
@@ -51,7 +65,6 @@ type State = {
 const BOARDS = ["All", "NCK", "KRCHN", "KRN"] as const;
 type BoardFilter = (typeof BOARDS)[number];
 
-// Avatar + ring config — mirrors MedraeQuizzes CATEGORY_STORIES
 const BOARD_STORIES: {
     id: BoardFilter;
     label: string;
@@ -70,7 +83,6 @@ const fmt = (n: number) => {
     return String(n);
 };
 
-// ── BubblePop (same as MedraeQuizzes) ──
 function BubblePop({ color = "#F59E0B", emoji }: { color?: string; emoji?: string }) {
     const particles = Array.from({ length: 6 });
     return (
@@ -102,6 +114,10 @@ export default function LastMinuteHome() {
     const home = useHomeRoute();
     const user = useUser();
 
+    const { role } = useUserRole();
+    const mode: LastMinuteMode = role === "tutor" ? "tutor" : "student";
+    const copy = useMemo(() => getLastMinuteCopy(mode), [mode]);
+
     const [papers, setPapers] = useState<Paper[]>([]);
     const [state, setState] = useState<Record<string, State>>({});
     const [tokens, setTokens] = useState(0);
@@ -111,6 +127,7 @@ export default function LastMinuteHome() {
     const [board, setBoard] = useState<BoardFilter>("All");
     const [query, setQuery] = useState("");
     const [bubbleKey, setBubbleKey] = useState<string | null>(null);
+    const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
 
     const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -121,15 +138,27 @@ export default function LastMinuteHome() {
     }, [bubbleKey]);
 
     // ─────────────────────────────────────────────────────────────
-    // Load — DB does math, frontend reads
+    // Load
     // ─────────────────────────────────────────────────────────────
     const reload = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         const { data: papersData, error: papersErr } = await supabase
-            .from("lm_papers_home")
-            .select("*")
+            .from("lm_papers")
+            .select(`
+                *,
+                profiles:created_by (
+                    user_id,
+                    name,
+                    avatar_url,
+                    role,
+                    institution,
+                    is_verified_contributor,
+                    contributor_tier,
+                    nck_license_verified
+                )
+            `)
             .order("created_at", { ascending: false });
 
         if (papersErr) {
@@ -137,7 +166,27 @@ export default function LastMinuteHome() {
             setLoading(false);
             return;
         }
-        setPapers((papersData ?? []) as Paper[]);
+
+        const mapped: Paper[] = (papersData ?? []).map((row: any) => ({
+            ...row,
+            created_by: row.created_by ?? null,
+            creator: row.profiles
+                ? {
+                    user_id: row.created_by ?? null,
+                    name: row.profiles.name ?? null,
+                    avatar_url: row.profiles.avatar_url ?? null,
+                    role: row.profiles.role ?? null,
+                    institution: row.profiles.institution ?? null,
+                    is_verified_contributor:
+                        row.profiles.is_verified_contributor ?? null,
+                    contributor_tier: row.profiles.contributor_tier ?? null,
+                    nck_license_verified:
+                        row.profiles.nck_license_verified ?? null,
+                }
+                : null,
+        }));
+
+        setPapers(mapped);
 
         if (user?.id) {
             const [{ data: stateData }, { data: profile }] = await Promise.all([
@@ -259,20 +308,20 @@ export default function LastMinuteHome() {
         <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
             {/* ═════ HEADER ═════ */}
             <header className="flex-shrink-0 w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 sm:py-3
-        border-b border-gray-100 dark:border-gray-800
-        bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
-        z-30 safe-top">
+                border-b border-gray-100 dark:border-gray-800
+                bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80
+                z-30 safe-top">
                 <button
                     onClick={handleBack}
                     aria-label="Go back"
                     className="flex items-center justify-center h-10 w-10 rounded-full
-            bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
-            active:scale-95 transition-all touch-manipulation shrink-0"
+                        bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700
+                        active:scale-95 transition-all touch-manipulation shrink-0"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
                 <h1 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate flex-1">
-                    Last Minute
+                    {copy.headerTitle}
                 </h1>
                 <div className="shrink-0 flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-gray-100 dark:bg-gray-800">
                     <Coins className="w-3.5 h-3.5 text-amber-500" />
@@ -283,36 +332,45 @@ export default function LastMinuteHome() {
             {/* ═════ BODY ═════ */}
             <div
                 ref={contentRef}
-                className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
-          no-scrollbar
-          px-0 sm:px-6 md:px-4 lg:px-6"
+                className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden no-scrollbar
+                    px-0 sm:px-6 md:px-4 lg:px-6"
             >
                 <div className="w-full max-w-full space-y-2 pb-24 safe-bottom">
+
+                    {/* ── TUTOR BANNER ── */}
+                    {mode === "tutor" && copy.tutorBanner && (
+                        <div className="mx-4 sm:mx-0 mt-3 rounded-2xl bg-indigo-50 dark:bg-indigo-400/10 p-3 flex items-start gap-2">
+                            <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                            <p className="text-[11px] leading-snug text-indigo-700 dark:text-indigo-300">
+                                {copy.tutorBanner}
+                            </p>
+                        </div>
+                    )}
 
                     {/* ── HERO ── */}
                     <section className="px-4 sm:px-0 pt-4 pb-3">
                         <h2 className="text-[24px] sm:text-[28px] font-black leading-[1.1] tracking-tight">
-                            The paper you need.
+                            {copy.heroHeading}
                             {cheapest !== null && (
-                                <span className="text-muted-foreground"> From KSh {cheapest.toLocaleString()}.</span>
+                                <span className="text-muted-foreground"> {copy.heroSubheading(cheapest)}</span>
                             )}
                         </h2>
                         <p className="mt-1 text-[13px] text-muted-foreground leading-snug">
-                            One payment. One paper. Read it inside the app.
+                            {copy.heroBody}
                         </p>
 
                         {!loading && papers.length > 0 && (
                             <div className="mt-2.5 flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                                 <span className="inline-flex items-center gap-1">
                                     <BookOpen className="h-3 w-3" />
-                                    {papers.length} papers
+                                    {copy.papersCountLabel(papers.length)}
                                 </span>
                                 {entitledCount > 0 && (
                                     <>
                                         <span className="h-1 w-1 rounded-full bg-border" />
                                         <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                                             <Unlock className="h-3 w-3" />
-                                            {entitledCount} unlocked
+                                            {copy.unlockedLabel(entitledCount)}
                                         </span>
                                     </>
                                 )}
@@ -320,9 +378,8 @@ export default function LastMinuteHome() {
                         )}
                     </section>
 
-                    {/* ── FILTERS — avatar-form story tabs + search ── */}
+                    {/* ── FILTERS ── */}
                     <section className="px-4 sm:px-0 space-y-3">
-                        {/* STORY TABS — same look as MedraeQuizzes */}
                         <div className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 pb-1 pt-1
                             -mx-0 px-0 sm:flex-wrap sm:justify-center sm:overflow-visible">
                             {BOARD_STORIES.map((b) => {
@@ -357,7 +414,6 @@ export default function LastMinuteHome() {
                                                 <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${b.ring.replace('ring-', 'bg-')}`} />
                                             )}
                                         </div>
-
                                         <span
                                             className={`text-[10px] md:text-[11px] font-semibold leading-tight text-center truncate w-full
                                                 ${isActive
@@ -372,16 +428,15 @@ export default function LastMinuteHome() {
                             })}
                         </div>
 
-                        {/* SEARCH */}
                         <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                             <input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search papers…"
+                                placeholder={copy.searchPlaceholder}
                                 className="w-full h-10 pl-8 pr-8 bg-gray-100 dark:bg-gray-900 border-0 rounded-lg text-[13px] font-medium
-                  placeholder:text-muted-foreground/70 outline-none
-                  focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-primary/20 transition-all"
+                                    placeholder:text-muted-foreground/70 outline-none
+                                    focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-primary/20 transition-all"
                             />
                             {query && (
                                 <button
@@ -418,14 +473,14 @@ export default function LastMinuteHome() {
                         ) : filtered.length === 0 ? (
                             <div className="text-center py-12 px-4">
                                 <p className="text-gray-500 dark:text-gray-400">
-                                    {papers.length === 0 ? "No papers live yet." : "Nothing matches your filter."}
+                                    {papers.length === 0 ? copy.emptyNoPapers : copy.emptyNoMatches}
                                 </p>
                                 {papers.length > 0 && (board !== "All" || query) && (
                                     <button
                                         onClick={() => { setBoard("All"); setQuery(""); }}
                                         className="mt-2 text-primary text-sm font-medium hover:underline"
                                     >
-                                        Clear filters
+                                        {copy.clearFilters}
                                     </button>
                                 )}
                             </div>
@@ -453,9 +508,9 @@ export default function LastMinuteHome() {
                                             key={p.id}
                                             onClick={() => openPaper(p)}
                                             className="group relative overflow-hidden rounded-2xl
-bg-white dark:bg-[#161b22]
-cursor-pointer p-0
-active:scale-[0.99] transition-transform"
+                                                bg-white dark:bg-[#161b22]
+                                                cursor-pointer p-0
+                                                active:scale-[0.99] transition-transform"
                                             style={{ touchAction: "manipulation" }}
                                         >
                                             {/* IMAGE */}
@@ -527,6 +582,13 @@ active:scale-[0.99] transition-transform"
                                                 <h3 className="text-lg font-bold leading-tight text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
                                                     {p.title}
                                                 </h3>
+
+                                                {/* 🆕 Creator strip */}
+                                                <PaperCreatorStrip
+                                                    creator={p.creator}
+                                                    onSelect={(id) => setSelectedCreatorId(id)}
+                                                    variant="card"
+                                                />
                                             </div>
 
                                             {/* BODY */}
@@ -562,20 +624,21 @@ active:scale-[0.99] transition-transform"
                                                         )}
                                                     >
                                                         {entitled ? (
-                                                            <><Play className="h-4 w-4 fill-current" /> Open Paper</>
+                                                            <><Play className="h-4 w-4 fill-current" /> {copy.openCta}</>
                                                         ) : (
-                                                            <><Lock className="h-4 w-4" /> Unlock for {priceLabel}</>
+                                                            <><Lock className="h-4 w-4" /> {copy.unlockCta(priceLabel)}</>
                                                         )}
                                                     </button>
                                                 </div>
-                                                {/* ACTION ROW — stars, then Save + Share labeled pills */}
+
+                                                {/* ACTION ROW */}
                                                 <div className="pt-3 mt-1">
                                                     <div className="flex flex-col items-center gap-1.5 mb-2">
                                                         <p className="text-[10px] font-bold uppercase tracking-wider
-                      text-slate-500 dark:text-slate-400 text-center">
+                                                            text-slate-500 dark:text-slate-400 text-center">
                                                             {myRating > 0
-                                                                ? `You rated this ${myRating} star${myRating === 1 ? "" : "s"} · tap again to clear`
-                                                                : "Tap a star to rate"}
+                                                                ? copy.ratePrompt(myRating)
+                                                                : copy.ratePromptEmpty}
                                                         </p>
                                                         <div className="flex items-center justify-center gap-1">
                                                             {[1, 2, 3, 4, 5].map((n) => {
@@ -589,8 +652,8 @@ active:scale-[0.99] transition-transform"
                                                                             rate(p, nextRating);
                                                                         }}
                                                                         className="relative flex items-center justify-center h-9 w-9 rounded-lg
-                                   bg-slate-50 dark:bg-white/[0.04]
-                                   active:scale-[0.95] transition-transform"
+                                                                            bg-slate-50 dark:bg-white/[0.04]
+                                                                            active:scale-[0.95] transition-transform"
                                                                         style={{ touchAction: "manipulation" }}
                                                                         aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
                                                                     >
@@ -628,21 +691,21 @@ active:scale-[0.99] transition-transform"
                                                         >
                                                             {bubbleKey === `bm:${p.id}` && <BubblePop color="#10B981" emoji="🔖" />}
                                                             <Bookmark size={14} fill={bookmarked ? "currentColor" : "none"} className="relative z-10" />
-                                                            <span className="relative z-10">{bookmarked ? "Saved" : "Save"}</span>
+                                                            <span className="relative z-10">{bookmarked ? copy.saveLabel.on : copy.saveLabel.off}</span>
                                                         </button>
 
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); share(p); }}
                                                             className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5
-                       bg-slate-50 dark:bg-white/[0.04]
-                       text-slate-600 dark:text-slate-300
-                       text-[10px] font-bold uppercase tracking-wider
-                       active:scale-[0.97] transition-transform"
+                                                                bg-slate-50 dark:bg-white/[0.04]
+                                                                text-slate-600 dark:text-slate-300
+                                                                text-[10px] font-bold uppercase tracking-wider
+                                                                active:scale-[0.97] transition-transform"
                                                             style={{ touchAction: "manipulation" }}
                                                             aria-label="Share this paper"
                                                         >
                                                             <Share2 size={14} />
-                                                            <span>Share</span>
+                                                            <span>{copy.shareLabel}</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -656,12 +719,33 @@ active:scale-[0.99] transition-transform"
 
                     {!loading && papers.length > 0 && (
                         <p className="mt-6 px-4 sm:px-0 text-[11px] text-muted-foreground text-center leading-relaxed">
-                            Every paper locks automatically when its window ends. No auto-renewal.
-                            No download. No sharing — access stays yours alone.
+                            {copy.footerDisclaimer}
                         </p>
                     )}
                 </div>
             </div>
+
+            {/* Tutor FAB — encourages content creation */}
+            {mode === "tutor" && copy.createCta && (
+                <button
+                    onClick={() => {
+                        if (navigator.vibrate) navigator.vibrate(20);
+                        navigate("/last-minute/create");
+                    }}
+                    className="fixed bottom-24 right-4 z-40 h-14 px-4 rounded-full bg-indigo-600 text-white
+                        flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-transform"
+                    style={{ touchAction: "manipulation", marginBottom: "env(safe-area-inset-bottom, 0px)" }}
+                >
+                    <PlusCircle className="h-5 w-5" strokeWidth={2.5} />
+                    <span className="text-[13px] font-bold">{copy.createCta}</span>
+                </button>
+            )}
+
+            {/* 🆕 Creator profile modal */}
+            <UserProfileModal
+                userId={selectedCreatorId}
+                onClose={() => setSelectedCreatorId(null)}
+            />
         </div>
     );
 }

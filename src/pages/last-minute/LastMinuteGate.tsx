@@ -13,7 +13,8 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { playSound } from "@/lib/soundManager";
 import { cn } from "@/lib/utils";
-
+// Adjust path based on what Step 1 finds
+import { UserProfileModal } from "@/components/UserProfileModal";
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ type Paper = {
     rating_count: number;
     rating_avg: number;
     hot_score: number;
+    created_by: string | null;
 };
 
 type Access = {
@@ -145,12 +147,15 @@ export default function LastMinuteGate() {
     const [access, setAccess] = useState<Access>(null);
     const [bookmarked, setBookmarked] = useState(false);
     const [myRating, setMyRating] = useState(0);
-
+    // 🆕 Creator info
+    const [creatorName, setCreatorName] = useState<string | null>(null);
+    const [creatorAvatar, setCreatorAvatar] = useState<string | null>(null);
+    const [creatorRole, setCreatorRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
     const [showSuccess, setShowSuccess] = useState<{ title: string; subtitle: string } | null>(null);
-
+    const [creatorProfileOpen, setCreatorProfileOpen] = useState(false);
     const [phone, setPhone] = useState("");
     const [tokens, setTokens] = useState(0);
 
@@ -173,7 +178,7 @@ export default function LastMinuteGate() {
         const paperPromise = supabase
             .from("lm_papers")
             .select(
-                "id,slug,title,description,tagline,urgency_label,cover_image_url,exam_board,access_type,price_kes,token_cost,duration_days,question_count,opens_count,bookmarks_count,shares_count,rating_count,rating_avg,hot_score"
+                "id,slug,title,description,tagline,urgency_label,cover_image_url,exam_board,access_type,price_kes,token_cost,duration_days,question_count,opens_count,bookmarks_count,shares_count,rating_count,rating_avg,hot_score,created_by"
             )
             .eq("slug", slug)
             .eq("is_published", true)
@@ -194,7 +199,18 @@ export default function LastMinuteGate() {
 
         const paperRow = (p ?? null) as Paper | null;
         setPaper(paperRow);
-
+        if (paperRow?.created_by) {
+            const { data: creatorProfile } = await supabase
+                .from("profiles")
+                .select("name, avatar_url, role")
+                .eq("user_id", paperRow.created_by)
+                .maybeSingle();
+            if (creatorProfile) {
+                setCreatorName(creatorProfile.name ?? null);
+                setCreatorAvatar(creatorProfile.avatar_url ?? null);
+                setCreatorRole(creatorProfile.role ?? null);
+            }
+        }
         if (paperRow && user?.id) {
             // 2. Fire the access + bookmark + rating reads in parallel
             const [accessRes, bookmarkRes, ratingRes] = await Promise.all([
@@ -550,6 +566,42 @@ export default function LastMinuteGate() {
                                     {paper.title}
                                 </h2>
 
+                                {creatorName && paper?.created_by && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            playSound("tap");
+                                            if (navigator.vibrate) navigator.vibrate(15);
+                                            setCreatorProfileOpen(true);
+                                        }}
+                                        className="mt-2 flex items-center gap-2 group active:scale-[0.97] transition-transform"
+                                        aria-label={`View ${creatorName}'s profile`}
+                                    >
+                                        {creatorAvatar ? (
+                                            <img
+                                                src={creatorAvatar}
+                                                alt={creatorName}
+                                                className="h-6 w-6 rounded-full object-cover ring-1 ring-border/40 shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="h-6 w-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                                                {creatorName[0]?.toUpperCase() ?? "U"}
+                                            </div>
+                                        )}
+                                        <span className="text-[11px] sm:text-xs text-muted-foreground group-active:text-foreground/80 transition-colors">
+                                            by{" "}
+                                            <span className="font-semibold text-foreground/80 underline-offset-2 group-hover:underline">
+                                                {creatorName}
+                                            </span>
+                                            {creatorRole && (
+                                                <span className="ml-1.5 text-[9px] uppercase tracking-wider text-muted-foreground/70 font-bold">
+                                                    · {creatorRole}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </button>
+                                )}
+
                                 {(paper.tagline || paper.description) && (
                                     <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground leading-relaxed">
                                         {paper.tagline || paper.description}
@@ -828,6 +880,14 @@ export default function LastMinuteGate() {
                     )}
                 </div>
             </main>
+            {/* 🆕 Creator profile modal */}
+            {creatorProfileOpen && paper?.created_by && (
+                <UserProfileModal
+                    open={creatorProfileOpen}
+                    userId={paper.created_by}
+                    onClose={() => setCreatorProfileOpen(false)}
+                />
+            )}
         </div>
     );
 }
