@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { saveLoginInfo, getLoginInfo } from "@/lib/offlineAuth";
+import { loginWithAnyRole, baseEmailFromShadow } from "@/lib/multiAccount";
 import sha256 from "crypto-js/sha256";
 import ExitOverlay from "@/components/ExitOverlay";
 import GoogleAuthButton from "@/components/google/GoogleAuthButton";
@@ -118,7 +119,9 @@ export function Login() {
       });
       return;
     }
-    navigate(`/reset-password?email=${encodeURIComponent(email)}`);
+    // Base email only — the reset page will let them pick which profile
+    // they want to reset if they have more than one.
+    navigate(`/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`);
   }, [email, navigate]);
 
   // ============================================================
@@ -175,24 +178,25 @@ export function Login() {
     }
 
     setIsLoading(true);
+    const baseEmail = email.trim().toLowerCase();
     const passwordHash = sha256(password).toString();
 
     try {
       if (navigator.onLine) {
-        // 1. Authenticate
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-
-        if (error || !data.user) {
-          throw new Error(error?.message || "Invalid login credentials");
+        // 1. 🔑 Authenticate — this tries the base email first
+        //    (their "parent" account), then each role variant.
+        //    The first password that matches wins.
+        let loginResult;
+        try {
+          loginResult = await loginWithAnyRole(baseEmail, password);
+        } catch (err: any) {
+          throw new Error(err?.message || "Invalid email or password");
         }
 
-        const userId = data.user.id;
+        const userId = loginResult.userId;
         const deviceId = getOrCreateDeviceId();
 
-        // 2. 🔒 Enforce device limit (keeps this device + up to N-1 others)
+        // 2. 🔒 Enforce device limit (per auth user — each role counts separately)
         await enforceDeviceLimit(userId, deviceId);
 
         // 3. Heartbeat (non-blocking)
@@ -205,7 +209,7 @@ export function Login() {
           console.error("Heartbeat error:", heartbeatErr);
         }
 
-        // 4. Get profile
+        // 4. Get profile for THIS role's auth user
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
@@ -216,17 +220,13 @@ export function Login() {
           throw new Error("Profile not found. Please contact support.");
         }
 
-        // 5. Save role
-        const userRole = profileData.role || 'student';
+        // 5. Save role (the actual role from their profile)
+        const userRole = profileData.role || loginResult.role || 'student';
         localStorage.setItem(`userRole_${userId}`, userRole);
         localStorage.setItem("last_known_role", userRole);
 
         // 6. Save for offline mode
-        await saveLoginInfo(
-          email.trim().toLowerCase(),
-          data.session?.access_token || "",
-          passwordHash
-        );
+        await saveLoginInfo(baseEmail, passwordHash);
 
         const roleConfig = ROLE_CONFIG[userRole as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.student;
         const roleIcon = roleConfig.icon;
@@ -262,15 +262,21 @@ export function Login() {
 
         // 8. Persist session for offline boot
         try {
-          localStorage.setItem("supabaseUser", JSON.stringify(data.user));
-          localStorage.setItem(
-            "supabaseUserTokens",
-            JSON.stringify({
-              access_token: data.session?.access_token,
-              refresh_token: data.session?.refresh_token,
-              expires_at: data.session?.expires_at,
-            })
-          );
+          const { data: sessionData } = await supabase.auth.getSession();
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user) {
+            localStorage.setItem("supabaseUser", JSON.stringify(userData.user));
+          }
+          if (sessionData?.session) {
+            localStorage.setItem(
+              "supabaseUserTokens",
+              JSON.stringify({
+                access_token: sessionData.session.access_token,
+                refresh_token: sessionData.session.refresh_token,
+                expires_at: sessionData.session.expires_at,
+              })
+            );
+          }
         } catch { /* ignore quota */ }
 
         setIsLoading(false);
@@ -282,9 +288,11 @@ export function Login() {
         return;
 
       } else {
-        // Offline mode
+        // ── OFFLINE MODE ─────────────────────────────────
+        // Offline we only know the base email; use the last role
+        // the user was in on this device.
         const saved = await getLoginInfo();
-        if (saved && saved.username === email && saved.passwordHash === passwordHash) {
+        if (saved && saved.username === baseEmail && saved.passwordHash === passwordHash) {
           const lastRole = localStorage.getItem("last_known_role");
           toast({
             title: "Offline Mode",

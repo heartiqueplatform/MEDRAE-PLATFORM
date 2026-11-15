@@ -270,9 +270,16 @@ export function Register() {
         },
       });
 
-      if (signUpError || !signUpData.user)
+      if (signUpError || !signUpData.user) {
+        const msg = String(signUpError?.message || "").toLowerCase();
+        // If the email is already taken, tell the user clearly
+        if (msg.includes("already registered") || msg.includes("already been registered")) {
+          throw new Error(
+            "An account with this email already exists. Please log in instead."
+          );
+        }
         throw new Error(signUpError?.message || "Sign-up failed.");
-
+      }
       const userId = signUpData.user.id;
       const courseFinal = formData.course === "other" ? formData.otherCourse : formData.course;
 
@@ -296,13 +303,31 @@ export function Register() {
           ? basePayload
           : { ...basePayload, course: courseFinal, block: formData.block };
 
-      const { error: updateError } = await supabase
+      // ── Update the profile row the trigger created for this new user ──
+      // The signup trigger (handle_new_user) normally creates a profile row
+      // with user_id = userId. We update it with the full form data.
+      // If the trigger somehow didn't create one, this update returns 0 rows
+      // and we detect that below.
+      const { data: updatedRows, error: updateError } = await supabase
         .from("profiles")
         .update(profileUpdatePayload)
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .select("user_id");
 
       if (updateError) throw updateError;
 
+      // If the trigger didn't fire, insert the profile ourselves
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: userId,
+            email: formData.email.trim().toLowerCase(),  // <- base email (no shadow)
+            ...profileUpdatePayload,
+          });
+
+        if (insertError) throw insertError;
+      }
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email: formData.email.trim().toLowerCase(),
         password: formData.password,

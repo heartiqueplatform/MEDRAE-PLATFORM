@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       mode === "development" && componentTagger(),
       VitePWA({
         registerType: "autoUpdate",
-        injectRegister: 'auto', // Changed from 'inline' to 'auto'
+        injectRegister: 'auto',
         includeAssets: [
           'favicon.ico',
           'apple-touch-icon.png',
@@ -89,10 +89,19 @@ export default defineConfig(({ mode }) => {
           navigateFallbackDenylist: [
             /[.][a-zA-Z0-9]+$/,
             /^\/api/,
-            /^\/__/
+            /^\/__/,
+            /^\/auth\//,
+            /^\/rest\//,
           ],
           navigateFallbackAllowlist: [/^(?!\/__).*/],
           runtimeCaching: [
+            {
+              // 🔑 Supabase — NEVER intercept.
+              //    Auth, rest, storage, realtime all go direct to network.
+              //    This is the fix for the "getUser timeout" / "signIn hangs" bug.
+              urlPattern: /^https:\/\/[^/]+\.supabase\.co\/.*/i,
+              handler: 'NetworkOnly',
+            },
             {
               // Images & Fonts
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|woff2|webp)$/,
@@ -106,7 +115,7 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
-              // API calls - network first for fresh data
+              // API calls — network first for fresh data
               urlPattern: /^\/api\/.*/,
               handler: 'NetworkFirst',
               options: {
@@ -117,19 +126,7 @@ export default defineConfig(({ mode }) => {
                 },
               },
             },
-            {
-              // Supabase calls
-              urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'supabase-cache',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60,
-                },
-              },
-            }
-          ]
+          ],
         },
         devOptions: {
           enabled: true,

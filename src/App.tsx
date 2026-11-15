@@ -190,6 +190,7 @@ import RedemptionsPage from "./staff-cpd/admin/RedemptionsPage";
 import CoinConfigPage from "./staff-cpd/admin/CoinConfigPage";
 import WalletLearnPage from "@/pages/studentcoins/learn";
 import ContributePage from "./pages/contribute";
+import SwitchAccount from "./pages/SwitchAccount";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -781,7 +782,14 @@ const AppContent = () => {
                         <Route path="/assessments/history" element={<PrivateRoute><AssessmentHistory /></PrivateRoute>} />
                         <Route path="/assessments/:slug" element={<PrivateRoute><AssessmentQuestion /></PrivateRoute>} />
                         <Route path="/assessments/:slug/results/:attemptId" element={<PrivateRoute><AssessmentResults /></PrivateRoute>} />
-
+                        <Route
+                          path="/switch-account"
+                          element={
+                            <PrivateRoute>
+                              <SwitchAccount />
+                            </PrivateRoute>
+                          }
+                        />
                         <Route path="/nursing" element={<PrivateRoute><NursingHome /></PrivateRoute>} />
                         <Route path="/nursing/:yearId" element={<PrivateRoute><NursingSemester /></PrivateRoute>} />
                         <Route path="/nursing/:yearId/:semId" element={<PrivateRoute><NursingModule /></PrivateRoute>} />
