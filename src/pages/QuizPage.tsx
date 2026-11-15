@@ -25,6 +25,7 @@ import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { ReflectionSheet } from "@/components/QuizPage/ReflectionSheet";
 import { getMyReferralCode, getMyReferralStats, type ReferralStats } from "@/lib/referrals";
 import { CenteredModal } from "@/components/ui/CenteredModal";
+import { UserProfileModal } from "@/components/UserProfileModal";
 interface Question {
   id: string;
   quiz_id: string;
@@ -112,6 +113,16 @@ export default function QuizPage() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [quizId, setQuizId] = useState<string | null>(null);
+  const [quizCreator, setQuizCreator] = useState<{
+    user_id: string;
+    name: string | null;
+    avatar_url: string | null;
+    role: string | null;
+    institution: string | null;
+    is_verified_contributor: boolean | null;
+    contributor_tier: string | null;
+    nck_license_verified: boolean | null;
+  } | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [explanationOverlayOpen, setExplanationOverlayOpen] = useState(false);
   const [openExplanationFor, setOpenExplanationFor] = useState<string | null>(null);
@@ -144,7 +155,7 @@ export default function QuizPage() {
   } | null>(null);
   const circleRefs = useRef([]);
   const questionStripRef = useRef<HTMLDivElement | null>(null);
-
+  const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
   const questionTopRef = useRef<HTMLDivElement | null>(null);
   // Total question count (used by premium badge + upgrade banner)
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -298,6 +309,7 @@ export default function QuizPage() {
     setPendingReflectionIds({});
     setReflectionSheetFor(null);
     setHydrated(false);
+    setQuizCreator(null);
   }, [unit]);
 
 
@@ -539,13 +551,38 @@ export default function QuizPage() {
         try {
           const { data: quiz, error: quizError } = await supabase
             .from("quizzes")
-            .select("id")
+            .select(`
+              id,
+              title,
+              created_by,
+              profiles:created_by (
+                user_id,
+                name,
+                avatar_url,
+                role,
+                institution,
+                is_verified_contributor,
+                contributor_tier,
+                nck_license_verified
+              )
+            `)
             .eq("unit", unit)
             .single();
 
           if (quiz && !quizError && isValidId(quiz.id)) {
             currentQuizId = quiz.id;
-
+            if (!cancelled && quiz.profiles) {
+              setQuizCreator({
+                user_id: quiz.created_by ?? "",
+                name: quiz.profiles.name ?? null,
+                avatar_url: quiz.profiles.avatar_url ?? null,
+                role: quiz.profiles.role ?? null,
+                institution: quiz.profiles.institution ?? null,
+                is_verified_contributor: quiz.profiles.is_verified_contributor ?? null,
+                contributor_tier: quiz.profiles.contributor_tier ?? null,
+                nck_license_verified: quiz.profiles.nck_license_verified ?? null,
+              });
+            }
             const { data: quizQuestions, error: qError } = await supabase
               .from("quiz_questions")
               .select("*")
@@ -966,6 +1003,57 @@ Please provide a detailed discussion and guidance.`;
               <h1 className="break-words font-bold text-lg md:text-xl">
                 {unit}
               </h1>
+              {quizCreator?.name && (
+                <button
+                  onClick={() => {
+                    if (!quizCreator.user_id) return;
+                    if (navigator.vibrate) navigator.vibrate(20);
+                    setSelectedCreatorId(quizCreator.user_id);
+                  }}
+                  className="mt-1 flex items-center gap-2 flex-wrap text-left
+               rounded-lg -mx-1 px-1 py-0.5
+               hover:bg-muted/50 active:scale-[0.985] transition-all
+               touch-manipulation"
+                  title={`View ${quizCreator.name}'s profile`}
+                >
+                  {quizCreator.avatar_url ? (
+                    <img
+                      src={quizCreator.avatar_url}
+                      alt={quizCreator.name}
+                      className="h-7 w-7 rounded-full object-cover shrink-0 ring-1 ring-border"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  ) : (
+                    <span className="h-7 w-7 rounded-full bg-muted flex items-center justify-center
+                       text-[11px] font-bold text-muted-foreground shrink-0 ring-1 ring-border">
+                      {quizCreator.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="text-[13px] font-semibold text-muted-foreground truncate max-w-[160px]">
+                    by {quizCreator.name}
+                  </span>
+                  {quizCreator.contributor_tier === "gold" && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                       bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+                      Gold
+                    </span>
+                  )}
+                  {quizCreator.nck_license_verified && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                       bg-blue-100 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
+                      NCK ✓
+                    </span>
+                  )}
+                  {quizCreator.is_verified_contributor && (
+                    <CheckCircle2
+                      size={20}
+                      strokeWidth={2.4}
+                      className="text-emerald-500 shrink-0"
+                      aria-label="Verified contributor"
+                    />
+                  )}
+                </button>
+              )}
               <p className="text-muted-foreground mt-0.5">
                 Question {currentQuestionIndex + 1} of {filteredQuestions.length}
                 {" · "}
@@ -1703,6 +1791,10 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
               onClose={() => setAIOverlayOpen(false)}
               prefillQuestion={aiPrefillQuestion}
               isDarkTheme={isDarkMode}
+            />
+            <UserProfileModal
+              userId={selectedCreatorId}
+              onClose={() => setSelectedCreatorId(null)}
             />
             {
               showScrollTop && (

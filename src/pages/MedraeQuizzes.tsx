@@ -36,6 +36,7 @@ import { FloatingCategoryButton } from "@/components/MedraeQuizzes/FloatingCateg
 import { EmptyState } from "@/components/MedraeQuizzes/EmptyState";
 import { QuizContributionCard } from "@/components/MedraeQuizzes/QuizContributionCard";
 import { CenteredModal } from "@/components/ui/CenteredModal";
+import { UserProfileModal } from "@/components/UserProfileModal";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
@@ -190,7 +191,15 @@ const getQuizTypeColor = (type: string) => {
       return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
   }
 };
+const getRoleLabel = (role?: string | null) => {
+  switch (role) {
+    case "tutor": return "Tutor";
+    case "staff": return "Staff";
+    default: return "Student";
+  }
+};
 
+/* Accent gradient fallback — used when a unit has no image */
 /* Accent gradient fallback — used when a unit has no image */
 const ACCENT_GRADIENTS: Record<string, string> = {
   blue: "from-blue-500 to-blue-700",
@@ -290,7 +299,13 @@ export function MedraeQuizzes() {
   const [freeUnits, setFreeUnits] = useState<string[]>(() => getCachedFreeUnits() || []);
   const [activeCategory, setActiveCategory] = useState<CategoryType>("all");
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
 
+  const handleCreatorSelect = useCallback(
+    (userId: string) => setSelectedCreatorId(userId),
+    []
+  );
+  const handleCreatorModalClose = useCallback(() => setSelectedCreatorId(null), []);
   const { papers, loading: unitsLoading, refreshUnits } = useUnits();
   const { data: unitCounts, loading: countsLoading, refreshCounts, version: countsVersion } = useUnitQuestionCount();
   const [refreshing, setRefreshing] = useState(false);
@@ -1049,6 +1064,87 @@ export function MedraeQuizzes() {
                                   <CardTitle className="text-lg font-bold leading-tight text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
                                     {unit.title}
                                   </CardTitle>
+
+                                  {/* 🆕 Creator row — tappable, larger avatar, larger name, larger pills */}
+                                  {unit.creator_name && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!unit.created_by) return;
+                                        if (navigator.vibrate) navigator.vibrate(20);
+                                        handleCreatorSelect(unit.created_by);
+                                      }}
+                                      disabled={!unit.created_by}
+                                      className="mt-2 flex items-center gap-2 flex-wrap text-left
+                                                 rounded-lg -mx-1 px-1 py-1
+                                                 hover:bg-slate-50 dark:hover:bg-white/[0.04]
+                                                 active:scale-[0.985] transition-all
+                                                 touch-manipulation
+                                                 disabled:cursor-default disabled:hover:bg-transparent"
+                                      title={unit.created_by ? `View ${unit.creator_name}'s profile` : undefined}
+                                      aria-label={unit.created_by ? `View ${unit.creator_name}'s profile` : undefined}
+                                    >
+                                      {unit.creator_avatar ? (
+                                        <img
+                                          src={unit.creator_avatar}
+                                          alt={unit.creator_name}
+                                          className="h-8 w-8 rounded-full object-cover shrink-0 ring-1 ring-slate-200 dark:ring-white/[0.08]"
+                                          onError={(e) => (e.currentTarget.style.display = "none")}
+                                        />
+                                      ) : (
+                                        <span className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/[0.08]
+                                                         flex items-center justify-center text-xs font-bold
+                                                         text-slate-500 dark:text-slate-400 shrink-0
+                                                         ring-1 ring-slate-200 dark:ring-white/[0.08]">
+                                          {unit.creator_name.charAt(0).toUpperCase()}
+                                        </span>
+                                      )}
+                                      <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[140px] group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                        {unit.creator_name}
+                                      </span>
+                                      {unit.creator_role === "tutor" && (
+                                        <span className="text-[10px] font-bold uppercase tracking-wider
+                                                         px-2 py-0.5 rounded-full
+                                                         bg-indigo-100 text-indigo-700
+                                                         dark:bg-indigo-400/10 dark:text-indigo-300">
+                                          Tutor
+                                        </span>
+                                      )}
+                                      {unit.creator_tier === "gold" && (
+                                        <span className="text-[10px] font-bold uppercase tracking-wider
+                                                         px-2 py-0.5 rounded-full
+                                                         bg-amber-100 text-amber-700
+                                                         dark:bg-amber-400/10 dark:text-amber-300">
+                                          Gold
+                                        </span>
+                                      )}
+                                      {unit.creator_nck_verified && (
+                                        <span className="text-[10px] font-bold uppercase tracking-wider
+                                                         px-2 py-0.5 rounded-full
+                                                         bg-blue-100 text-blue-700
+                                                         dark:bg-blue-400/10 dark:text-blue-300">
+                                          NCK ✓
+                                        </span>
+                                      )}
+                                      {unit.creator_verified && (
+                                        <CheckCircle2
+                                          size={20}
+                                          className="text-emerald-500 shrink-0"
+                                          aria-label="Verified contributor"
+                                          strokeWidth={2.5}
+                                        />
+                                      )}
+                                      {user?.id === unit.created_by && (
+                                        <span className="text-[11px] font-extrabold uppercase tracking-wider
+                                                         px-2.5 py-1 rounded-full
+                                                         bg-emerald-500 text-white
+                                                         dark:bg-emerald-500 dark:text-white
+                                                         shadow-sm shadow-emerald-500/30">
+                                          You
+                                        </span>
+                                      )}
+                                    </button>
+                                  )}
                                 </CardHeader>
 
                                 <CardContent>
@@ -1366,6 +1462,89 @@ export function MedraeQuizzes() {
                   </div>
                 )}
 
+                {/* 🆕 Creator block */}
+                {/* 🆕 Creator block — tappable, larger avatar, larger name, larger pills */}
+                {selectedUnit.creator_name && (
+                  <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!selectedUnit.created_by) return;
+                        if (navigator.vibrate) navigator.vibrate(20);
+                        // Close the unit modal first so the profile modal doesn't stack underneath
+                        setSelectedUnit(null);
+                        handleCreatorSelect(selectedUnit.created_by);
+                      }}
+                      disabled={!selectedUnit.created_by}
+                      className="w-full flex items-center gap-3 text-left
+                                 rounded-lg -m-1 p-1
+                                 hover:bg-white dark:hover:bg-white/[0.04]
+                                 active:scale-[0.985] transition-all
+                                 touch-manipulation
+                                 disabled:cursor-default disabled:hover:bg-transparent"
+                      title={selectedUnit.created_by ? `View ${selectedUnit.creator_name}'s profile` : undefined}
+                      aria-label={selectedUnit.created_by ? `View ${selectedUnit.creator_name}'s profile` : undefined}
+                    >
+                      {selectedUnit.creator_avatar ? (
+                        <img
+                          src={selectedUnit.creator_avatar}
+                          alt={selectedUnit.creator_name}
+                          className="h-11 w-11 rounded-full object-cover shrink-0 ring-2 ring-slate-200 dark:ring-white/[0.08]"
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                        />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full bg-slate-200 dark:bg-white/[0.08]
+                                        flex items-center justify-center text-base font-bold
+                                        text-slate-500 dark:text-slate-400 shrink-0
+                                        ring-2 ring-slate-200 dark:ring-white/[0.08]">
+                          {selectedUnit.creator_name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Created by
+                        </p>
+                        <p className="text-[15px] font-bold text-slate-900 dark:text-white truncate">
+                          {selectedUnit.creator_name}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {getRoleLabel(selectedUnit.creator_role)}
+                          {selectedUnit.creator_institution && ` · ${selectedUnit.creator_institution}`}
+                        </p>
+                        {(selectedUnit.creator_verified || selectedUnit.creator_nck_verified || selectedUnit.creator_tier) && (
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                            {selectedUnit.creator_tier === "gold" && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+                                Gold
+                              </span>
+                            )}
+                            {selectedUnit.creator_nck_verified && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
+                                NCK ✓
+                              </span>
+                            )}
+                            {selectedUnit.creator_verified && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                                <CheckCircle2 size={20} strokeWidth={2.5} />
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {user?.id === selectedUnit.created_by && (
+                        <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-wider
+                                         px-2.5 py-1 rounded-full
+                                         bg-emerald-500 text-white
+                                         dark:bg-emerald-500 dark:text-white
+                                         shadow-sm shadow-emerald-500/30">
+                          You
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {/* Details grid */}
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
@@ -1583,6 +1762,12 @@ export function MedraeQuizzes() {
           setActiveCategory(cat);
           contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
         }}
+      />
+
+      {/* 🆕 Creator profile modal — same pattern as FeedSeenTop10 */}
+      <UserProfileModal
+        userId={selectedCreatorId}
+        onClose={handleCreatorModalClose}
       />
 
     </div>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthProvider";
+import { useUserRole } from "@/context/UserRoleContext";
 import { registrationService } from "@/services/liveClassService";
 import { toast } from "sonner";
 import {
@@ -17,6 +18,7 @@ import {
     Plus,
     LayoutGrid,
     Search,
+    BookOpen,
 } from "lucide-react";
 import { playSound } from "@/lib/soundManager";
 import TutorsList from "@/components/student/TutorsList";
@@ -76,9 +78,12 @@ function MyClassesSkeleton() {
 
 export const MyClasses = () => {
     const { user } = useAuth();
+    const { role } = useUserRole();
+    const isTutor = role === "tutor";
     const navigate = useNavigate();
 
     const [registrations, setRegistrations] = useState<any[]>([]);
+    const [tutorClasses, setTutorClasses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");
     const [activeTab, setActiveTab] = useState<"classes" | "tutors">("classes");
@@ -91,20 +96,47 @@ export const MyClasses = () => {
         }
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, isTutor]);
 
     const loadData = async () => {
         try {
             setLoading(true);
-            const data = await registrationService.getUserRegistrations();
-            setRegistrations(data || []);
+
+            if (isTutor) {
+                // Tutor: load classes they are hosting.
+                // Try the tutor-specific service method first; fall back gracefully.
+                const svc: any = registrationService;
+                let data: any[] = [];
+
+                if (typeof svc.getTutorClasses === "function") {
+                    data = await svc.getTutorClasses();
+                } else if (typeof svc.getMyHostedClasses === "function") {
+                    data = await svc.getMyHostedClasses();
+                } else if (typeof svc.getUserRegistrations === "function") {
+                    // Last resort — will usually return [] for tutors, but won't crash.
+                    data = await svc.getUserRegistrations();
+                }
+
+                setTutorClasses(Array.isArray(data) ? data : []);
+            } else {
+                const data = await registrationService.getUserRegistrations();
+                setRegistrations(data || []);
+            }
         } catch (error) {
             console.error("Error:", error);
-            toast.error("Failed to load your classes");
+            toast.error(
+                isTutor
+                    ? "Failed to load your hosted classes"
+                    : "Failed to load your classes"
+            );
         } finally {
             setLoading(false);
         }
     };
+
+    /* ─────────────────────────────────────────────────────────────── */
+    /*  Student helpers                                                */
+    /* ─────────────────────────────────────────────────────────────── */
 
     const getStatusBadge = (status: string, classStatus: string) => {
         if (classStatus === "cancelled") {
@@ -190,8 +222,75 @@ export const MyClasses = () => {
         }
         return { text: "Registered", color: "text-blue-600 dark:text-blue-400", icon: CheckCircle };
     };
-    const filteredRegistrations = registrations.filter((reg: any) => {
-        // Filter by tab
+
+    /* ─────────────────────────────────────────────────────────────── */
+    /*  Tutor helpers — operate on `tutorClasses`                      */
+    /* ─────────────────────────────────────────────────────────────── */
+
+    const getTutorStatusBadge = (status: string) => {
+        if (status === "cancelled") {
+            return (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                 text-[10px] font-bold
+                                 bg-rose-100 text-rose-700
+                                 dark:bg-rose-400/10 dark:text-rose-300">
+                    Cancelled
+                </span>
+            );
+        }
+        if (status === "live") {
+            return (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                 text-[10px] font-bold
+                                 bg-emerald-100 text-emerald-700
+                                 dark:bg-emerald-400/10 dark:text-emerald-300
+                                 animate-pulse">
+                    <AlertCircle className="h-2.5 w-2.5" />
+                    Live now
+                </span>
+            );
+        }
+        if (status === "upcoming") {
+            return (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                 text-[10px] font-bold
+                                 bg-blue-100 text-blue-700
+                                 dark:bg-blue-400/10 dark:text-blue-300">
+                    <Clock className="h-2.5 w-2.5" />
+                    Upcoming
+                </span>
+            );
+        }
+        if (status === "completed") {
+            return (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                                 text-[10px] font-bold
+                                 bg-emerald-100 text-emerald-700
+                                 dark:bg-emerald-400/10 dark:text-emerald-300">
+                    <CheckCircle className="h-2.5 w-2.5" />
+                    Completed
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
+                             text-[10px] font-bold
+                             bg-slate-100 text-slate-600
+                             dark:bg-white/[0.06] dark:text-slate-300">
+                {status?.toUpperCase() || "Draft"}
+            </span>
+        );
+    };
+
+    /* ─────────────────────────────────────────────────────────────── */
+    /*  Filtering — works for both shapes                              */
+    /* ─────────────────────────────────────────────────────────────── */
+
+    const sourceRows: any[] = isTutor
+        ? tutorClasses.map((c) => ({ class: c, attendance_status: null }))
+        : registrations;
+
+    const filteredRegistrations = sourceRows.filter((reg: any) => {
         if (filter === "upcoming") {
             if (reg.class?.status !== "upcoming" && reg.class?.status !== "live") return false;
         } else if (filter === "past") {
@@ -202,7 +301,6 @@ export const MyClasses = () => {
                 return false;
             }
         }
-        // Filter by search
         const q = searchQuery.trim().toLowerCase();
         if (q) {
             const hay = [
@@ -219,14 +317,14 @@ export const MyClasses = () => {
         return true;
     });
 
-    const upcomingCount = registrations.filter(
+    const upcomingCount = sourceRows.filter(
         (r: any) => r.class?.status === "upcoming" || r.class?.status === "live"
     ).length;
-    const pastCount = registrations.filter(
+    const pastCount = sourceRows.filter(
         (r: any) =>
             r.class?.status === "completed" || r.class?.status === "cancelled"
     ).length;
-    const attendedCount = registrations.filter(
+    const attendedCount = sourceRows.filter(
         (r: any) => r.attendance_status === "attended"
     ).length;
 
@@ -238,6 +336,10 @@ export const MyClasses = () => {
             navigate("/live-classes", { replace: true });
         }
     }, [navigate]);
+
+    /* ─────────────────────────────────────────────────────────────── */
+    /*  Loading                                                         */
+    /* ─────────────────────────────────────────────────────────────── */
 
     if (loading) {
         return (
@@ -255,6 +357,33 @@ export const MyClasses = () => {
             </div>
         );
     }
+
+    /* ─────────────────────────────────────────────────────────────── */
+    /*  Header copy — role aware                                       */
+    /* ─────────────────────────────────────────────────────────────── */
+
+    const headerTitle = isTutor ? "My Classes" : "My Sessions";
+    const headerSubtitle = isTutor
+        ? `${tutorClasses.length} hosted · ${upcomingCount} upcoming`
+        : `${registrations.length} registered · ${attendedCount} attended`;
+
+    const emptyTitle = searchQuery
+        ? "No matching classes"
+        : isTutor
+            ? "No classes yet"
+            : "No classes found";
+
+    const emptyBody = searchQuery
+        ? `Nothing matches "${searchQuery}"`
+        : isTutor
+            ? "You haven't created any classes yet. Tap + to schedule your first session."
+            : filter === "all"
+                ? "You haven't registered for any classes yet."
+                : `No ${filter} classes.`;
+
+    /* ─────────────────────────────────────────────────────────────── */
+    /*  Render                                                          */
+    /* ─────────────────────────────────────────────────────────────── */
 
     return (
         <div
@@ -276,74 +405,77 @@ export const MyClasses = () => {
 
                     <div className="flex-1 min-w-0">
                         <h1 className="text-base font-bold leading-tight truncate">
-                            My Sessions
+                            {headerTitle}
                         </h1>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
-                            {registrations.length} registered · {attendedCount} attended
+                            {headerSubtitle}
                         </p>
                     </div>
-
-
                 </div>
             </header>
 
-            {/* ── SCROLLABLE BODY ── */}
             {/* ── SCROLLABLE BODY ── */}
             <main
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar"
                 style={{ WebkitOverflowScrolling: "touch" }}
             >
                 <div className="w-full max-w-[880px] mx-auto pb-24">
-                    {/* ── TABS ── */}
-                    <div className="sticky top-0 z-20 bg-slate-50 dark:bg-[#0d1117] px-4 pt-3 pb-3">
-                        <div className="flex gap-1.5 rounded-full bg-white dark:bg-[#161b22] p-1">
-                            <button
-                                onClick={() => {
-                                    tap();
-                                    setActiveTab("classes");
-                                }}
-                                className={`flex-1 h-9 rounded-full text-[12px] font-bold
-                                            active:scale-[0.97] transition-all
-                                            flex items-center justify-center gap-1.5
-                                            ${activeTab === "classes"
-                                        ? "bg-blue-600 text-white"
-                                        : "text-slate-600 dark:text-slate-300"
-                                    }`}
-                                style={{ touchAction: "manipulation" }}
-                            >
-                                <Calendar className="h-3.5 w-3.5" />
-                                My Classes
-                            </button>
-                            <button
-                                onClick={() => {
-                                    tap();
-                                    setActiveTab("tutors");
-                                }}
-                                className={`flex-1 h-9 rounded-full text-[12px] font-bold
-                                            active:scale-[0.97] transition-all
-                                            flex items-center justify-center gap-1.5
-                                            ${activeTab === "tutors"
-                                        ? "bg-blue-600 text-white"
-                                        : "text-slate-600 dark:text-slate-300"
-                                    }`}
-                                style={{ touchAction: "manipulation" }}
-                            >
-                                <Users className="h-3.5 w-3.5" />
-                                Find a Tutor
-                            </button>
+                    {/* ── TABS — student only ── */}
+                    {!isTutor && (
+                        <div className="sticky top-0 z-20 bg-slate-50 dark:bg-[#0d1117] px-4 pt-3 pb-3">
+                            <div className="flex gap-1.5 rounded-full bg-white dark:bg-[#161b22] p-1">
+                                <button
+                                    onClick={() => {
+                                        tap();
+                                        setActiveTab("classes");
+                                    }}
+                                    className={`flex-1 h-9 rounded-full text-[12px] font-bold
+                                                active:scale-[0.97] transition-all
+                                                flex items-center justify-center gap-1.5
+                                                ${activeTab === "classes"
+                                            ? "bg-blue-600 text-white"
+                                            : "text-slate-600 dark:text-slate-300"
+                                        }`}
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    My Classes
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        tap();
+                                        setActiveTab("tutors");
+                                    }}
+                                    className={`flex-1 h-9 rounded-full text-[12px] font-bold
+                                                active:scale-[0.97] transition-all
+                                                flex items-center justify-center gap-1.5
+                                                ${activeTab === "tutors"
+                                            ? "bg-blue-600 text-white"
+                                            : "text-slate-600 dark:text-slate-300"
+                                        }`}
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    <Users className="h-3.5 w-3.5" />
+                                    Find a Tutor
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* ── TAB: MY CLASSES ── */}
+                    {/* ── TAB: MY CLASSES (or tutor's hosted classes) ── */}
                     {activeTab === "classes" && (
                         <>
                             {/* Search */}
-                            <section className="px-4 pb-3">
+                            <section className="px-4 pb-3 pt-3">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search your classes…"
+                                        placeholder={
+                                            isTutor
+                                                ? "Search your hosted classes…"
+                                                : "Search your classes…"
+                                        }
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full rounded-xl border-0
@@ -373,16 +505,16 @@ export const MyClasses = () => {
                                 </div>
                             </section>
 
-                            {/* Stats */}
+                            {/* Stats — student shows 4 tiles; tutor shows 3 */}
                             <section className="px-4 pb-3">
-                                <div className="grid grid-cols-4 gap-2">
+                                <div className={`grid ${isTutor ? "grid-cols-3" : "grid-cols-4"} gap-2`}>
                                     <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
                                         <LayoutGrid className="mx-auto mb-1 h-4 w-4 text-slate-600 dark:text-slate-400" />
                                         <p className="text-[11px] font-bold tabular-nums text-slate-900 dark:text-white">
-                                            {registrations.length}
+                                            {sourceRows.length}
                                         </p>
                                         <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                            Total
+                                            {isTutor ? "Hosted" : "Total"}
                                         </p>
                                     </div>
                                     <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
@@ -394,24 +526,38 @@ export const MyClasses = () => {
                                             Upcoming
                                         </p>
                                     </div>
-                                    <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
-                                        <CheckCircle className="mx-auto mb-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                        <p className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                                            {attendedCount}
-                                        </p>
-                                        <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                            Attended
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
-                                        <Calendar className="mx-auto mb-1 h-4 w-4 text-slate-400" />
-                                        <p className="text-[11px] font-bold tabular-nums text-slate-600 dark:text-slate-300">
-                                            {pastCount}
-                                        </p>
-                                        <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                            Past
-                                        </p>
-                                    </div>
+                                    {isTutor ? (
+                                        <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
+                                            <CheckCircle className="mx-auto mb-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                            <p className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                {pastCount}
+                                            </p>
+                                            <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                Completed
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
+                                                <CheckCircle className="mx-auto mb-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                <p className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                    {attendedCount}
+                                                </p>
+                                                <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                    Attended
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
+                                                <Calendar className="mx-auto mb-1 h-4 w-4 text-slate-400" />
+                                                <p className="text-[11px] font-bold tabular-nums text-slate-600 dark:text-slate-300">
+                                                    {pastCount}
+                                                </p>
+                                                <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                    Past
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </section>
 
@@ -439,22 +585,16 @@ export const MyClasses = () => {
                                 </div>
                             </section>
 
-                            {/* Registration cards */}
+                            {/* Class cards */}
                             <section className="px-4">
                                 {filteredRegistrations.length === 0 ? (
                                     <div className="rounded-2xl bg-white dark:bg-[#161b22] p-8 text-center">
                                         <Calendar className="mx-auto mb-3 h-10 w-10 text-slate-400" />
                                         <p className="font-semibold text-sm">
-                                            {searchQuery
-                                                ? "No matching classes"
-                                                : "No classes found"}
+                                            {emptyTitle}
                                         </p>
                                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                            {searchQuery
-                                                ? `Nothing matches "${searchQuery}"`
-                                                : filter === "all"
-                                                    ? "You haven't registered for any classes yet."
-                                                    : `No ${filter} classes.`}
+                                            {emptyBody}
                                         </p>
                                         {searchQuery ? (
                                             <button
@@ -470,6 +610,21 @@ export const MyClasses = () => {
                                                 style={{ touchAction: "manipulation" }}
                                             >
                                                 Clear search
+                                            </button>
+                                        ) : isTutor ? (
+                                            <button
+                                                onClick={() => {
+                                                    tap("success");
+                                                    navigate("/live-classes/create");
+                                                }}
+                                                className="mt-4 inline-flex items-center gap-1.5
+                                                           rounded-xl bg-blue-600 text-white
+                                                           px-4 py-2 text-xs font-bold
+                                                           active:scale-[0.97] transition-transform"
+                                                style={{ touchAction: "manipulation" }}
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Create your first class
                                             </button>
                                         ) : (
                                             <button
@@ -491,15 +646,17 @@ export const MyClasses = () => {
                                     <div className="grid gap-2.5 sm:grid-cols-2">
                                         {filteredRegistrations.map((reg: any) => {
                                             const cls = reg.class;
-                                            const attendance = getAttendanceStatus(reg);
-                                            const AttendanceIcon = attendance.icon;
                                             const isUpcoming =
                                                 cls?.status === "upcoming" || cls?.status === "live";
                                             const isLive = cls?.status === "live";
 
+                                            // Student-specific attendance meta (tutors don't have one)
+                                            const attendance = isTutor ? null : getAttendanceStatus(reg);
+                                            const AttendanceIcon = attendance?.icon;
+
                                             return (
                                                 <div
-                                                    key={reg.id}
+                                                    key={cls?.id ?? reg.id}
                                                     className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden"
                                                 >
                                                     {cls?.cover_image_url && (
@@ -518,10 +675,12 @@ export const MyClasses = () => {
                                                             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex-1 leading-snug line-clamp-2">
                                                                 {cls?.title || "Class"}
                                                             </h3>
-                                                            {getStatusBadge(
-                                                                reg.attendance_status,
-                                                                cls?.status
-                                                            )}
+                                                            {isTutor
+                                                                ? getTutorStatusBadge(cls?.status)
+                                                                : getStatusBadge(
+                                                                    reg.attendance_status,
+                                                                    cls?.status
+                                                                )}
                                                         </div>
 
                                                         {cls?.description && (
@@ -542,12 +701,21 @@ export const MyClasses = () => {
                                                                     {cls?.end_time?.slice(0, 5)}
                                                                 </span>
                                                             </div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Users className="w-3 h-3 flex-shrink-0" />
-                                                                <span>
-                                                                    Host: {cls?.host_name || "Unknown"}
-                                                                </span>
-                                                            </div>
+                                                            {isTutor ? (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Users className="w-3 h-3 flex-shrink-0" />
+                                                                    <span>
+                                                                        {cls?.registration_count ?? 0} registered
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Users className="w-3 h-3 flex-shrink-0" />
+                                                                    <span>
+                                                                        Host: {cls?.host_name || "Unknown"}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                             {cls?.is_cpd_eligible && (
                                                                 <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                                                                     <Award className="w-3 h-3 flex-shrink-0" />
@@ -556,16 +724,19 @@ export const MyClasses = () => {
                                                             )}
                                                         </div>
 
-                                                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.04]">
-                                                            <div
-                                                                className={`flex items-center gap-1.5 ${attendance.color}`}
-                                                            >
-                                                                <AttendanceIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                                                                <span className="text-[11px] font-semibold">
-                                                                    {attendance.text}
-                                                                </span>
+                                                        {/* Attendance row — students only */}
+                                                        {!isTutor && attendance && AttendanceIcon && (
+                                                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.04]">
+                                                                <div
+                                                                    className={`flex items-center gap-1.5 ${attendance.color}`}
+                                                                >
+                                                                    <AttendanceIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                                                                    <span className="text-[11px] font-semibold">
+                                                                        {attendance.text}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        )}
 
                                                         <div className="mt-3">
                                                             {isLive && cls?.meeting_link ? (
@@ -584,7 +755,7 @@ export const MyClasses = () => {
                                                                     style={{ touchAction: "manipulation" }}
                                                                 >
                                                                     <Video className="h-3.5 w-3.5" />
-                                                                    Join now
+                                                                    {isTutor ? "Start session" : "Join now"}
                                                                 </button>
                                                             ) : (
                                                                 <button
@@ -602,7 +773,11 @@ export const MyClasses = () => {
                                                                     style={{ touchAction: "manipulation" }}
                                                                 >
                                                                     <Calendar className="h-3.5 w-3.5" />
-                                                                    {isUpcoming ? "View details" : "View summary"}
+                                                                    {isTutor
+                                                                        ? "Manage class"
+                                                                        : isUpcoming
+                                                                            ? "View details"
+                                                                            : "View summary"}
                                                                 </button>
                                                             )}
                                                         </div>
@@ -616,15 +791,15 @@ export const MyClasses = () => {
                         </>
                     )}
 
-                    {/* ── TAB: FIND A TUTOR ── */}
-                    {activeTab === "tutors" && (
+                    {/* ── TAB: FIND A TUTOR — student only ── */}
+                    {!isTutor && activeTab === "tutors" && (
                         <section className="px-4 pt-1">
                             <TutorsList />
                         </section>
                     )}
                 </div>
 
-                {/* FAB — create a new class (only on classes tab) */}
+                {/* FAB — create a new class (classes tab, any role that can create) */}
                 {activeTab === "classes" && (
                     <button
                         onClick={() => {

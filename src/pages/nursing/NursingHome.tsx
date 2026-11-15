@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     BookOpen,
@@ -17,6 +17,8 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { academicProgress } from "@/lib/academicProgress";
 import { playSound } from "@/lib/soundManager";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
+import { useUserRole } from "@/context/UserRoleContext";
+import { getNursingCopy, type NursingMode } from "@/lib/nursing/nursingCopy";
 
 /* ------------------------------------------------------------------ */
 /*  GitHub dark palette constants                                      */
@@ -72,7 +74,6 @@ function formatNumberWithImpact(num: number): string {
 
 /* ------------------------------------------------------------------ */
 /*  MiniPie — real progress donut                                      */
-/*  Fills as user answers questions in that year.                      */
 /* ------------------------------------------------------------------ */
 
 function MiniPie({
@@ -138,8 +139,8 @@ function MiniPie({
             <div className="absolute inset-0 flex items-center justify-center">
                 <span
                     className={`text-[9px] font-bold tabular-nums leading-none ${answered === 0
-                        ? "text-slate-400 dark:text-slate-500"
-                        : "text-slate-900 dark:text-white"
+                            ? "text-slate-400 dark:text-slate-500"
+                            : "text-slate-900 dark:text-white"
                         }`}
                 >
                     {label}
@@ -188,8 +189,9 @@ function StatsSkeleton() {
 /*  Progress Card                                                      */
 /* ------------------------------------------------------------------ */
 
-function ProgressCard() {
+function ProgressCard({ mode }: { mode: NursingMode }) {
     const navigate = useNavigate();
+    const copy = useMemo(() => getNursingCopy(mode), [mode]);
 
     const session = useSession();
     const userId = session?.user?.id;
@@ -268,7 +270,9 @@ function ProgressCard() {
         <button
             onClick={() => {
                 tap("success");
-                navigate("/nursing/progress");
+                navigate(
+                    mode === "tutor" ? "/analytics" : "/nursing/progress"
+                );
             }}
             className="w-full text-left rounded-2xl bg-white dark:bg-[#161b22]
                        p-4 active:scale-[0.99] transition-transform"
@@ -281,14 +285,17 @@ function ProgressCard() {
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                            Your Progress
+                            {copy.progressTitle}
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                             {loading
-                                ? "Loading..."
+                                ? copy.progressSubtitleLoading
                                 : totalAttempted > 0
-                                    ? `${totalAttempted} answered · ${Math.round(accuracy)}% accuracy`
-                                    : "Start your journey"}
+                                    ? copy.progressSubtitleActive(
+                                        totalAttempted,
+                                        accuracy
+                                    )
+                                    : copy.progressSubtitleEmpty}
                         </p>
                     </div>
                 </div>
@@ -308,7 +315,7 @@ function ProgressCard() {
                 </div>
             ) : (
                 <p className="text-xs text-slate-400 dark:text-slate-500">
-                    Take a quiz to start tracking.
+                    {copy.progressEmptyBody}
                 </p>
             )}
         </button>
@@ -324,9 +331,16 @@ export default function NursingHome() {
     const userId = session?.user?.id;
     const [years, setYears] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [yearProgress, setYearProgress] = useState<Record<string, UserYearProgress>>({});
+    const [yearProgress, setYearProgress] = useState<
+        Record<string, UserYearProgress>
+    >({});
     const navigate = useNavigate();
     const home = useHomeRoute();
+
+    const { role } = useUserRole();
+    const mode: NursingMode = role === "tutor" ? "tutor" : "student";
+    const copy = useMemo(() => getNursingCopy(mode), [mode]);
+
     useEffect(() => {
         let cancelled = false;
 
@@ -338,7 +352,9 @@ export default function NursingHome() {
                     setYears(parsed.data);
                     setLoading(false);
                 }
-            } catch { /* ignore */ }
+            } catch {
+                /* ignore */
+            }
         }
 
         withTimeout(getYears(), 12000)
@@ -421,10 +437,10 @@ export default function NursingHome() {
 
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-bold leading-tight truncate">
-                        Nursing Curriculum
+                        {copy.headerTitle}
                     </h1>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
-                        KRCHN · {years.length} year{years.length === 1 ? "" : "s"}
+                        {copy.headerSubtitle(years.length)}
                     </p>
                 </div>
 
@@ -464,15 +480,15 @@ export default function NursingHome() {
                             </div>
                             <div className="min-w-0">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                                    KRCHN Curriculum
+                                    {copy.heroLabel}
                                 </p>
                                 <h2 className="text-lg font-bold leading-tight">
-                                    Choose your year
+                                    {copy.heroHeading}
                                 </h2>
                             </div>
                         </div>
                         <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
-                            Study smarter. Move through the curriculum one unit at a time.
+                            {copy.heroBody}
                         </p>
                     </section>
 
@@ -488,7 +504,7 @@ export default function NursingHome() {
                                         {years.length}
                                     </p>
                                     <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                        Years
+                                        {copy.statsYears}
                                     </p>
                                 </div>
                                 <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
@@ -497,7 +513,7 @@ export default function NursingHome() {
                                         80
                                     </p>
                                     <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                        Units
+                                        {copy.statsUnits}
                                     </p>
                                 </div>
                                 <div className="rounded-xl bg-white dark:bg-[#161b22] p-2.5 text-center">
@@ -506,7 +522,7 @@ export default function NursingHome() {
                                         {formatNumberWithImpact(totalQuestions)}
                                     </p>
                                     <p className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                        Questions
+                                        {copy.statsQuestions}
                                     </p>
                                 </div>
                             </div>
@@ -515,7 +531,7 @@ export default function NursingHome() {
 
                     {/* Progress */}
                     <section className="px-4 mb-6">
-                        <ProgressCard />
+                        <ProgressCard mode={mode} />
                     </section>
 
                     {/* Quick actions */}
@@ -538,17 +554,21 @@ export default function NursingHome() {
                                         <Zap className="h-4 w-4" />
                                     </div>
                                     <p className="text-sm font-bold text-slate-900 dark:text-white">
-                                        Quick Practice
+                                        {copy.quickAction1Title}
                                     </p>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                        Jump to any topic
+                                        {copy.quickAction1Body}
                                     </p>
                                 </button>
 
                                 <button
                                     onClick={() => {
                                         tap("success");
-                                        navigate("/nursing/progress");
+                                        navigate(
+                                            mode === "tutor"
+                                                ? "/analytics"
+                                                : "/nursing/progress"
+                                        );
                                     }}
                                     className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-left
                                                active:scale-[0.98] transition-transform"
@@ -558,10 +578,10 @@ export default function NursingHome() {
                                         <BarChart3 className="h-4 w-4" />
                                     </div>
                                     <p className="text-sm font-bold text-slate-900 dark:text-white">
-                                        Full Progress
+                                        {copy.quickAction2Title}
                                     </p>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                        Deep analytics
+                                        {copy.quickAction2Body}
                                     </p>
                                 </button>
                             </div>
@@ -572,13 +592,13 @@ export default function NursingHome() {
                     <section className="px-4">
                         <div className="flex items-center justify-between mb-2">
                             <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                Your learning path
+                                {copy.yearListHeading}
                             </h3>
                             <div className="inline-flex items-center gap-1 rounded-full
                                             bg-emerald-100 dark:bg-emerald-400/10 px-2 py-0.5">
                                 <Sparkles className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
                                 <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
-                                    Keep going
+                                    {copy.yearListBadge}
                                 </span>
                             </div>
                         </div>
@@ -618,8 +638,19 @@ export default function NursingHome() {
                                                 </h4>
                                                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-snug truncate">
                                                     {answered > 0
-                                                        ? `${formatNumberWithImpact(answered)} / ${formatNumberWithImpact(qTotal)} answered`
-                                                        : `${formatNumberWithImpact(qTotal)} questions`}
+                                                        ? copy.yearCardAnswered(
+                                                            formatNumberWithImpact(
+                                                                answered
+                                                            ),
+                                                            formatNumberWithImpact(
+                                                                qTotal
+                                                            )
+                                                        )
+                                                        : copy.yearCardTotal(
+                                                            formatNumberWithImpact(
+                                                                qTotal
+                                                            )
+                                                        )}
                                                 </p>
                                             </div>
 
@@ -635,10 +666,10 @@ export default function NursingHome() {
                             <div className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center">
                                 <BookOpen className="mx-auto mb-2 h-7 w-7 text-slate-400" />
                                 <p className="font-semibold text-sm">
-                                    No curriculum years available
+                                    {copy.emptyTitle}
                                 </p>
                                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                    Please check back later.
+                                    {copy.emptyBody}
                                 </p>
                             </div>
                         )}

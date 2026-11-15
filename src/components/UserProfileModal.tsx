@@ -19,6 +19,11 @@ import {
     Star,
     Cpu,
     ClipboardCheck,
+    CheckCircle2,
+    BookOpen,
+    ShieldCheck,
+    Building2,
+    GraduationCap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CenteredModal } from "@/components/ui/CenteredModal";
@@ -45,11 +50,20 @@ interface Profile {
     block: string | null;
     county: string | null;
     bio: string | null;
-    role: string;
+    role: string | null;
     specialization: string | null;
     joined_date: string | null;
     is_online: boolean | null;
     last_seen: string | null;
+
+    // 🆕 trust + contributor fields
+    is_verified_contributor: boolean | null;
+    contributor_tier: string | null;
+    contributor_bio: string | null;
+    nck_license_verified: boolean | null;
+    employer_verified: boolean | null;
+    nck_number: string | null;
+    profile_type: string | null;
 }
 
 interface QuizResult {
@@ -68,6 +82,7 @@ interface SimulationResult {
     total_questions: number;
     submitted_at: string;
 }
+
 interface TriviaResult {
     id: string;
     score: number;
@@ -81,11 +96,22 @@ interface DuelStats {
     total: number;
 }
 
+interface AuthoredQuiz {
+    id: string;
+    unit_code: string | null;
+    title: string;
+    image_url: string | null;
+    is_free: boolean;
+    question_count: number;
+    created_at: string;
+}
+
 interface UserDataState {
     profile: Profile | null;
     quizResults: QuizResult[];
     simulationResults: SimulationResult[];
     triviaResults: TriviaResult[];
+    authoredQuizzes: AuthoredQuiz[];
     totalFeedSeen: number;
     currentStreak: number;
     bestStreak: number;
@@ -99,12 +125,41 @@ const INITIAL_USER_DATA: UserDataState = {
     quizResults: [],
     simulationResults: [],
     triviaResults: [],
+    authoredQuizzes: [],
     totalFeedSeen: 0,
     currentStreak: 0,
     bestStreak: 0,
     duelStats: { wins: 0, losses: 0, total: 0 },
     isLoading: true,
     isPaperTitlesLoaded: false,
+};
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                           */
+/* ------------------------------------------------------------------ */
+
+const getRoleLabel = (role?: string | null) => {
+    switch (role) {
+        case "tutor":
+            return "Tutor";
+        case "staff":
+            return "Staff";
+        default:
+            return "Student";
+    }
+};
+
+const getTierLabel = (tier?: string | null) => {
+    if (!tier) return null;
+    const t = tier.toLowerCase();
+    if (t === "gold" || t === "silver" || t === "bronze") return t;
+    return null;
+};
+
+const TIER_STYLES: Record<string, string> = {
+    gold: "bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300",
+    silver: "bg-slate-200 text-slate-700 dark:bg-slate-400/10 dark:text-slate-300",
+    bronze: "bg-orange-100 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300",
 };
 
 /* ------------------------------------------------------------------ */
@@ -216,11 +271,15 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                     feedResult,
                     streaksResult,
                     duelResult,
+                    authoredResult,
                 ] = await Promise.all([
                     supabase
                         .from("profiles")
                         .select(
-                            "user_id, name, username, avatar_url, institution, course, block, county, bio, role, specialization, joined_date, is_online, last_seen"
+                            `user_id, name, username, avatar_url, institution, course, block, county,
+                             bio, role, specialization, joined_date, is_online, last_seen,
+                             is_verified_contributor, contributor_tier, contributor_bio,
+                             nck_license_verified, employer_verified, nck_number, profile_type`
                         )
                         .eq("user_id", userId)
                         .single(),
@@ -256,6 +315,16 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                     supabase
                         .rpc("get_user_duel_stats", { p_user_id: userId })
                         .maybeSingle(),
+                    // 🆕 Quizzes authored by this user
+                    supabase
+                        .from("quizzes")
+                        .select(
+                            "id, unit_code, title, image_url, is_free, question_count, created_at"
+                        )
+                        .eq("created_by", userId)
+                        .eq("is_active", true)
+                        .order("created_at", { ascending: false })
+                        .limit(8),
                 ]);
 
                 const profileData = profileResult.data as Profile | null;
@@ -263,6 +332,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                 const quizList = (quizData?.data || []) as QuizResult[];
                 const simList = (simData?.data || []) as SimulationResult[];
                 const triviaList = (triviaData?.data || []) as TriviaResult[];
+                const authoredList = (authoredResult?.data || []) as AuthoredQuiz[];
                 const streakData = streaksResult.data || [];
                 const latestStreak =
                     streakData.length > 0 ? streakData[0].streak || 0 : 0;
@@ -284,6 +354,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         quizResults: quizList,
                         simulationResults: simList,
                         triviaResults: triviaList,
+                        authoredQuizzes: authoredList,
                         totalFeedSeen: feedResult.count || 0,
                         currentStreak: latestStreak,
                         bestStreak: maxStreak,
@@ -340,9 +411,6 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
     }, [fetchUserData, isRefreshing]);
 
     /* ---------------- Effects ---------------- */
-    // IMPORTANT: reset effect is declared BEFORE the fetch effect so it
-    // always runs first on a userId change (A → B shows B's skeleton,
-    // never A's stale profile).
 
     useEffect(() => {
         isMounted.current = true;
@@ -394,6 +462,11 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
             userData.simulationResults.length,
             userData.triviaResults.length,
         ]
+    );
+
+    const tierLabel = useMemo(
+        () => getTierLabel(userData.profile?.contributor_tier),
+        [userData.profile?.contributor_tier]
     );
 
     /* ---------------- Handlers ---------------- */
@@ -539,6 +612,24 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                         <span className="text-[12px] font-bold text-blue-600 dark:text-blue-400">
                                             @{userData.profile.username || "user"}
                                         </span>
+
+                                        {/* 🆕 Role badge */}
+                                        {userData.profile.role && (
+                                            <>
+                                                <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+                                                <span
+                                                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${userData.profile.role === "tutor"
+                                                        ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-400/10 dark:text-indigo-300"
+                                                        : userData.profile.role === "staff"
+                                                            ? "bg-violet-100 text-violet-700 dark:bg-violet-400/10 dark:text-violet-300"
+                                                            : "bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300"
+                                                        }`}
+                                                >
+                                                    {getRoleLabel(userData.profile.role)}
+                                                </span>
+                                            </>
+                                        )}
+
                                         {userData.profile.is_online !== null && (
                                             <>
                                                 <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
@@ -555,6 +646,33 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                             </>
                                         )}
                                     </div>
+
+                                    {/* 🆕 Trust pills */}
+                                    {(tierLabel ||
+                                        userData.profile.is_verified_contributor ||
+                                        userData.profile.nck_license_verified) && (
+                                            <div className="flex items-center justify-center gap-1 mt-2 flex-wrap">
+                                                {tierLabel && (
+                                                    <span
+                                                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${TIER_STYLES[tierLabel]}`}
+                                                    >
+                                                        {tierLabel}
+                                                    </span>
+                                                )}
+                                                {userData.profile.nck_license_verified && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
+                                                        <ShieldCheck size={10} />
+                                                        NCK ✓
+                                                    </span>
+                                                )}
+                                                {userData.profile.is_verified_contributor && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                                                        <CheckCircle2 size={10} />
+                                                        Verified
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
 
                                     <div className="mt-3 flex justify-center [&_button]:h-10 [&_button]:px-5 [&_button]:text-[12px] [&_button]:font-bold [&_button]:gap-1.5 [&_button]:rounded-xl">
                                         <FollowButton
@@ -617,6 +735,42 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                             ))}
                                         </div>
 
+                                        {/* 🆕 Authored quizzes */}
+                                        {userData.authoredQuizzes.length > 0 && (
+                                            <div className="rounded-3xl bg-slate-100 dark:bg-white/[0.04] p-4 mb-6">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
+                                                    <BookOpen size={12} />
+                                                    Quizzes by {userData.profile.name?.split(" ")[0] || "this user"}
+                                                </p>
+                                                <div className="space-y-1.5">
+                                                    {userData.authoredQuizzes.map((quiz) => (
+                                                        <div
+                                                            key={quiz.id}
+                                                            className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white dark:bg-white/[0.03]"
+                                                        >
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate">
+                                                                    {quiz.title}
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                                                    {quiz.unit_code || "—"} ·{" "}
+                                                                    {quiz.question_count} questions ·{" "}
+                                                                    {quiz.is_free ? "Free" : "Premium"}
+                                                                </p>
+                                                            </div>
+                                                            <a
+                                                                href={`/quiz?unit=${encodeURIComponent(quiz.title)}`}
+                                                                className="shrink-0 h-7 px-2.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider flex items-center active:scale-95 transition-transform"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                Open
+                                                            </a>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Academic info */}
                                         <div className="rounded-3xl bg-slate-100 dark:bg-white/[0.04] p-4 mb-6">
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
@@ -643,8 +797,49 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                                         {userData.profile.specialization || "-"}
                                                     </span>
                                                 </div>
+
+                                                {/* 🆕 NCK number — tutors/staff */}
+                                                {userData.profile.nck_number && (
+                                                    <AcademicRow
+                                                        label="NCK No."
+                                                        value={userData.profile.nck_number}
+                                                    />
+                                                )}
+
+                                                {/* 🆕 Employer — tutors/staff */}
+                                                {userData.profile.employer_verified !== null && (
+                                                    <div className="flex justify-between flex-wrap gap-2 items-center">
+                                                        <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                            <Building2 size={10} />
+                                                            Employer
+                                                        </span>
+                                                        <span
+                                                            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${userData.profile.employer_verified
+                                                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                                                                : "bg-slate-200 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300"
+                                                                }`}
+                                                        >
+                                                            {userData.profile.employer_verified
+                                                                ? "Verified"
+                                                                : "Unverified"}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
+
+                                        {/* 🆕 Contributor bio */}
+                                        {userData.profile.contributor_bio && (
+                                            <div className="rounded-3xl bg-slate-100 dark:bg-white/[0.04] p-4 mb-6">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                                                    <GraduationCap size={12} />
+                                                    About as contributor
+                                                </p>
+                                                <p className="text-[12px] leading-relaxed text-slate-700 dark:text-slate-300">
+                                                    {userData.profile.contributor_bio}
+                                                </p>
+                                            </div>
+                                        )}
 
                                         {/* Performance history */}
                                         <div className="space-y-4">
@@ -728,7 +923,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
 
                                         <div className="mt-6 text-center">
                                             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                                Student since{" "}
+                                                Member since{" "}
                                                 {userData.profile.joined_date
                                                     ? new Date(userData.profile.joined_date).getFullYear()
                                                     : "2024"}
@@ -741,7 +936,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                             Activity hidden
                                         </p>
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[260px] leading-relaxed">
-                                            Follow this student to see their streaks, stats, and performance history.
+                                            Follow this user to see their streaks, stats, and performance history.
                                         </p>
                                     </div>
                                 )}

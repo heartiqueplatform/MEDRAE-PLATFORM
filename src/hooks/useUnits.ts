@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 export interface Unit {
-    id: string;                    // ✅ NEW — the quizzes.id UUID
+    id: string;
     code: string;
     title: string;
     description?: string | null;
@@ -20,6 +20,16 @@ export interface Unit {
     image_url?: string | null;
     image_alt?: string | null;
     accent_color?: string | null;
+
+    // 🆕 creator fields (joined from profiles via quizzes.created_by)
+    created_by?: string | null;
+    creator_name?: string | null;
+    creator_avatar?: string | null;
+    creator_role?: string | null;
+    creator_institution?: string | null;
+    creator_verified?: boolean | null;
+    creator_tier?: string | null;
+    creator_nck_verified?: boolean | null;
 }
 
 export interface PaperData {
@@ -32,7 +42,7 @@ export interface PaperData {
     description: string;
 }
 
-const UNITS_CACHE_KEY = "dynamic_units_cache_v8"; // ⬅️ bumped — adds quiz id
+const UNITS_CACHE_KEY = "dynamic_units_cache_v10"; // ⬅️ bumped — adds creator + trust fields
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -45,7 +55,6 @@ let lastFetchTime = 0;
 
 // ---------------------------------------------------------------
 // 🆘 STATIC HELP PAPER — edit freely, no DB needed
-// Content for each guide lives in src/data/helpGuides.ts
 // ---------------------------------------------------------------
 const HELP_PAPER: PaperData = {
     paper: "Help & Study Guides",
@@ -153,10 +162,6 @@ const HELP_PAPER: PaperData = {
     ],
 };
 
-/**
- * Always ensures HELP_PAPER is present in the papers array,
- * even when serving from cache. Removes any duplicate paperNumber 6.
- */
 const mergeHelpPaper = (dbPapers: PaperData[]): PaperData[] => {
     const withoutHelp = dbPapers.filter((p) => p.paperNumber !== 6);
     return [...withoutHelp, HELP_PAPER].sort(
@@ -193,7 +198,7 @@ const getCachedUnits = (
 
 const saveUnitsToCache = (papers: PaperData[], allUnits: Unit[]) => {
     try {
-        const merged = mergeHelpPaper(papers); // ⬅️ ensure Help is in cache
+        const merged = mergeHelpPaper(papers);
         localStorage.setItem(
             UNITS_CACHE_KEY,
             JSON.stringify({
@@ -232,12 +237,8 @@ const getPaperProperties = (paperNumber: number) => {
 };
 
 const getUnitLevel = (unitCode: string, title: string): string => {
-    if (unitCode.startsWith("FUN")) {
-        return "Just for Fun";
-    }
-    if (unitCode.startsWith("HELP")) {
-        return "Guide";
-    }
+    if (unitCode.startsWith("FUN")) return "Just for Fun";
+    if (unitCode.startsWith("HELP")) return "Guide";
 
     const unitCodeNum = parseInt(unitCode.replace(/\D/g, "")) || 0;
 
@@ -248,22 +249,14 @@ const getUnitLevel = (unitCode: string, title: string): string => {
         return "Advanced";
     }
 
-    if (unitCodeNum <= 3 || title?.toLowerCase().includes("beginner")) {
-        return "Beginner";
-    }
-    if (unitCodeNum >= 10 || title?.toLowerCase().includes("advanced")) {
-        return "Advanced";
-    }
+    if (unitCodeNum <= 3 || title?.toLowerCase().includes("beginner")) return "Beginner";
+    if (unitCodeNum >= 10 || title?.toLowerCase().includes("advanced")) return "Advanced";
     if (
         title?.toLowerCase().includes("professional") ||
         title?.toLowerCase().includes("expert") ||
         title?.toLowerCase().includes("nclex")
-    ) {
-        return "Professional";
-    }
-    if (title?.toLowerCase().includes("foundation")) {
-        return "Foundation";
-    }
+    ) return "Professional";
+    if (title?.toLowerCase().includes("foundation")) return "Foundation";
 
     return "Intermediate";
 };
@@ -271,24 +264,12 @@ const getUnitLevel = (unitCode: string, title: string): string => {
 const getPaperFromUnitCode = (
     unitCode: string
 ): { paper: string; paperNumber: number } => {
-    if (unitCode.startsWith("MD")) {
-        return { paper: "Paper 1A: Medical-Surgical Nursing", paperNumber: 5 };
-    }
-    if (unitCode.startsWith("HNX2")) {
-        return { paper: "Paper 2", paperNumber: 2 };
-    }
-    if (unitCode.startsWith("HNX3")) {
-        return { paper: "Paper 3: NCLEX Mastery", paperNumber: 99 };
-    }
-    if (unitCode.startsWith("FP")) {
-        return { paper: "Practice Papers", paperNumber: 4 };
-    }
-    if (unitCode.startsWith("FUN")) {
-        return { paper: "Take a Break: Nursing Riddles", paperNumber: 1.5 };
-    }
-    if (unitCode.startsWith("HELP")) {
-        return { paper: "Help & Study Guides", paperNumber: 6 };
-    }
+    if (unitCode.startsWith("MD")) return { paper: "Paper 1A: Medical-Surgical Nursing", paperNumber: 5 };
+    if (unitCode.startsWith("HNX2")) return { paper: "Paper 2", paperNumber: 2 };
+    if (unitCode.startsWith("HNX3")) return { paper: "Paper 3: NCLEX Mastery", paperNumber: 99 };
+    if (unitCode.startsWith("FP")) return { paper: "Practice Papers", paperNumber: 4 };
+    if (unitCode.startsWith("FUN")) return { paper: "Take a Break: Nursing Riddles", paperNumber: 1.5 };
+    if (unitCode.startsWith("HELP")) return { paper: "Help & Study Guides", paperNumber: 6 };
     return { paper: "Paper 1", paperNumber: 1 };
 };
 
@@ -303,7 +284,7 @@ const transformUnits = (
             const level = getUnitLevel(quiz.unit_code, quiz.title);
 
             uniqueUnitsMap.set(quiz.unit_code, {
-                id: quiz.id,                                   // ✅ NEW
+                id: quiz.id,
                 code: quiz.unit_code,
                 title: quiz.title || quiz.unit || `Unit ${quiz.unit_code}`,
                 description: quiz.description || null,
@@ -320,6 +301,16 @@ const transformUnits = (
                 image_url: quiz.image_url || null,
                 image_alt: quiz.image_alt || null,
                 accent_color: quiz.accent_color || null,
+
+                // 🆕 creator fields
+                created_by: quiz.created_by ?? null,
+                creator_name: quiz.profiles?.name ?? null,
+                creator_avatar: quiz.profiles?.avatar_url ?? null,
+                creator_role: quiz.profiles?.role ?? null,
+                creator_institution: quiz.profiles?.institution ?? null,
+                creator_verified: quiz.profiles?.is_verified_contributor ?? null,
+                creator_tier: quiz.profiles?.contributor_tier ?? null,
+                creator_nck_verified: quiz.profiles?.nck_license_verified ?? null,
             });
         }
     });
@@ -442,8 +433,18 @@ export function useUnits() {
                     question_count,
                     image_url,
                     image_alt,
-                    accent_color
-                `
+                    accent_color,
+                    created_by,
+                    profiles:created_by (
+                        name,
+                        avatar_url,
+                        role,
+                        institution,
+                        is_verified_contributor,
+                        contributor_tier,
+                        nck_license_verified
+                    )
+                    `
                 )
                 .eq("is_active", true)
                 .order("created_at", { ascending: true });

@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-f87553f6'], (function (workbox) { 'use strict';
+define(['./workbox-c3a6383f'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -82,15 +82,16 @@ define(['./workbox-f87553f6'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.cscvknrse2c"
+    "revision": "0.ua2tgkr15os"
   }], {
     "directoryIndex": "index.html"
   });
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/],
-    denylist: [/[.][a-zA-Z0-9]+$/, /^\/api/, /^\/__/]
+    denylist: [/[.][a-zA-Z0-9]+$/, /^\/api/, /^\/__/, /^\/auth\//, /^\/rest\//]
   }));
+  workbox.registerRoute(/^https:\/\/[^/]+\.supabase\.co\/.*/i, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|woff2|webp)$/, new workbox.CacheFirst({
     "cacheName": "medrae-static-assets",
     plugins: [new workbox.ExpirationPlugin({
@@ -100,13 +101,6 @@ define(['./workbox-f87553f6'], (function (workbox) { 'use strict';
   }), 'GET');
   workbox.registerRoute(/^\/api\/.*/, new workbox.NetworkFirst({
     "cacheName": "medrae-api-cache",
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 50,
-      maxAgeSeconds: 3600
-    })]
-  }), 'GET');
-  workbox.registerRoute(/^https:\/\/.*\.supabase\.co\/.*/, new workbox.NetworkFirst({
-    "cacheName": "supabase-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 50,
       maxAgeSeconds: 3600

@@ -18,6 +18,11 @@ import {
     ErrorState
 } from '@/components/assessment';
 import { useAuth } from '@/context/AuthProvider';
+import { useUserRole } from "@/context/UserRoleContext";
+import {
+    getAssessmentCopy,
+    type AssessmentMode,
+} from "@/lib/assessment/assessmentCopy";
 import { playSound } from '@/lib/soundManager';
 
 /* ------------------------------------------------------------------ */
@@ -71,6 +76,9 @@ const cache = new DataCache();
 export const AssessmentHome: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { role } = useUserRole();
+    const mode: AssessmentMode = role === "tutor" ? "tutor" : "student";
+    const copy = React.useMemo(() => getAssessmentCopy(mode), [mode]);
 
     const [assessments, setAssessments] = useState<Assessment[]>(() => cache.get('assessments') || []);
     const [categories, setCategories] = useState<AssessmentCategory[]>(() => cache.get('categories') || []);
@@ -110,7 +118,7 @@ export const AssessmentHome: React.FC = () => {
         try {
             const needsAssessments = forceRefresh || cache.isStale('assessments', CACHE_CONFIG.TTL);
             const needsCategories = forceRefresh || cache.isStale('categories', CACHE_CONFIG.TTL);
-            const needsStats = user && (forceRefresh || cache.isStale('stats', CACHE_CONFIG.STATS_TTL));
+            const needsStats = user && copy.showStats && (forceRefresh || cache.isStale('stats', CACHE_CONFIG.STATS_TTL));
 
             const fetchPromises: Promise<any>[] = [];
             const fetchTypes: string[] = [];
@@ -170,7 +178,7 @@ export const AssessmentHome: React.FC = () => {
             setLoading(!cache.get('assessments') && !initialLoadDoneRef.current);
             isLoadingRef.current = false;
         }
-    }, [user, assessments.length, categories.length, stats]);
+    }, [user, assessments.length, categories.length, stats, copy.showStats]);
 
     useEffect(() => {
         const cachedAssessments = cache.get('assessments');
@@ -208,12 +216,11 @@ export const AssessmentHome: React.FC = () => {
         return () => window.removeEventListener('pageshow', handlePageShow);
     }, [loadHomeData]);
 
-
     const handleBack = useCallback(() => {
         playSound("ui-tap");
         if (navigator.vibrate) navigator.vibrate(20);
-        navigate("/dashboard/student");
-    }, [navigate]);
+        navigate(copy.backTo);
+    }, [navigate, copy.backTo]);
 
     const handleStartAssessment = (assessment: Assessment) => {
         tap();
@@ -315,7 +322,7 @@ export const AssessmentHome: React.FC = () => {
                     </button>
                     <div className="flex-1 min-w-0">
                         <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
-                            Assessments
+                            {copy.headerTitle}
                         </h1>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
                             Something went wrong
@@ -332,6 +339,7 @@ export const AssessmentHome: React.FC = () => {
     }
 
     const showLoadingIndicator = loading && cache.get('assessments');
+    const hasInProgress = stats?.recent_attempts?.some(a => a.status === 'in_progress');
 
     /* ─── Real page ───────────────────────────────────────────────── */
     return (
@@ -357,12 +365,10 @@ export const AssessmentHome: React.FC = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
-                        Assessments
+                        {copy.headerTitle}
                     </h1>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
-                        {assessments.length > 0
-                            ? `${assessments.length} available`
-                            : 'Clinical practice'}
+                        {copy.headerSubtitle(assessments.length)}
                     </p>
                 </div>
                 <button
@@ -383,7 +389,7 @@ export const AssessmentHome: React.FC = () => {
                 <div className="pointer-events-none absolute top-16 right-4 z-50">
                     <div className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider
                                     bg-slate-900 text-white dark:bg-white/[0.1] animate-pulse">
-                        Refreshing…
+                        {copy.refreshing}
                     </div>
                 </div>
             )}
@@ -398,11 +404,10 @@ export const AssessmentHome: React.FC = () => {
                     {/* Hero */}
                     <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4">
                         <h2 className="text-base font-bold leading-tight text-slate-900 dark:text-white">
-                            Test your clinical knowledge
+                            {copy.heroHeading}
                         </h2>
                         <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                            Practice real clinical scenarios with your AI nursing tutor.
-                            Get instant feedback and improve your clinical reasoning.
+                            {copy.heroBody}
                         </p>
                         <div className="flex flex-wrap gap-1.5 mt-3">
                             <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5
@@ -430,22 +435,24 @@ export const AssessmentHome: React.FC = () => {
                     </section>
 
                     {/* Stats */}
-                    {stats ? (
-                        <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <StatTile icon={Award} label="Completed" value={String(stats.completed_count || 0)} />
-                            <StatTile icon={TrendingUp} label="Avg score" value={`${Math.round(stats.average_score || 0)}%`} />
-                            <StatTile icon={Clock} label="Total time" value={`${Math.round((stats.total_time_spent || 0) / 60)}m`} />
-                            <StatTile icon={Star} label="Best score" value={`${Math.round(stats.best_score || 0)}%`} />
-                        </section>
-                    ) : (
-                        <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
-                                    <div className="h-3 w-1/2 bg-slate-200 dark:bg-white/[0.1] rounded mb-2" />
-                                    <div className="h-5 w-1/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
-                                </div>
-                            ))}
-                        </section>
+                    {copy.showStats && (
+                        stats ? (
+                            <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <StatTile icon={Award} label={copy.statCompleted} value={String(stats.completed_count || 0)} />
+                                <StatTile icon={TrendingUp} label={copy.statAvg} value={`${Math.round(stats.average_score || 0)}%`} />
+                                <StatTile icon={Clock} label={copy.statTime} value={`${Math.round((stats.total_time_spent || 0) / 60)}m`} />
+                                <StatTile icon={Star} label={copy.statBest} value={`${Math.round(stats.best_score || 0)}%`} />
+                            </section>
+                        ) : (
+                            <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="rounded-2xl bg-white dark:bg-[#161b22] p-3 animate-pulse">
+                                        <div className="h-3 w-1/2 bg-slate-200 dark:bg-white/[0.1] rounded mb-2" />
+                                        <div className="h-5 w-1/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                                    </div>
+                                ))}
+                            </section>
+                        )
                     )}
 
                     {/* Search */}
@@ -465,7 +472,7 @@ export const AssessmentHome: React.FC = () => {
                                     <BookOpen className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
                                     <h3 className="text-[11px] font-bold uppercase tracking-wider
                                                    text-slate-500 dark:text-slate-400 truncate">
-                                        Available
+                                        {copy.availableHeading}
                                         <span className="ml-1.5 text-slate-400 dark:text-slate-500 normal-case tracking-normal">
                                             ({assessments.length})
                                         </span>
@@ -479,7 +486,7 @@ export const AssessmentHome: React.FC = () => {
                                                transition-colors shrink-0"
                                     style={{ touchAction: 'manipulation' }}
                                 >
-                                    View all →
+                                    {copy.viewAllLabel} →
                                 </button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2">
@@ -501,7 +508,7 @@ export const AssessmentHome: React.FC = () => {
                                                    transition-colors"
                                         style={{ touchAction: 'manipulation' }}
                                     >
-                                        View all {assessments.length} →
+                                        {copy.viewAllLabel} {assessments.length} →
                                     </button>
                                 </div>
                             )}
@@ -514,7 +521,7 @@ export const AssessmentHome: React.FC = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-[11px] font-bold uppercase tracking-wider
                                                text-slate-500 dark:text-slate-400">
-                                    Categories
+                                    {copy.categoriesHeading}
                                 </h3>
                                 <button
                                     onClick={handleViewAll}
@@ -524,7 +531,7 @@ export const AssessmentHome: React.FC = () => {
                                                transition-colors shrink-0"
                                     style={{ touchAction: 'manipulation' }}
                                 >
-                                    View all →
+                                    {copy.viewAllLabel} →
                                 </button>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -540,7 +547,7 @@ export const AssessmentHome: React.FC = () => {
                     )}
 
                     {/* Continue Assessment */}
-                    {stats?.recent_attempts?.some(a => a.status === 'in_progress') && (
+                    {copy.showContinue && hasInProgress && (
                         <section className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                                 <div className="flex items-center gap-2.5 min-w-0">
@@ -551,10 +558,10 @@ export const AssessmentHome: React.FC = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-[12px] font-bold text-slate-900 dark:text-white leading-tight">
-                                            Continue assessment
+                                            {copy.continueTitle}
                                         </p>
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                                            You have an ongoing assessment in progress
+                                            {copy.continueBody}
                                         </p>
                                     </div>
                                 </div>
@@ -571,7 +578,7 @@ export const AssessmentHome: React.FC = () => {
                                     style={{ touchAction: 'manipulation' }}
                                 >
                                     <RotateCcw className="h-3.5 w-3.5" />
-                                    Continue
+                                    {copy.continueButton}
                                 </Link>
                             </div>
                         </section>
@@ -581,8 +588,8 @@ export const AssessmentHome: React.FC = () => {
                     {assessments.length === 0 && categories.length === 0 && !loading && (
                         <section>
                             <EmptyState
-                                title="No assessments available"
-                                description="There are currently no assessments to display. Check back later or create your first assessment."
+                                title={copy.emptyTitle}
+                                description={copy.emptyBody}
                                 icon={<BookOpen className="w-16 h-16 text-slate-300 dark:text-slate-600" />}
                             />
                         </section>

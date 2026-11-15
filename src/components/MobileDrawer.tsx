@@ -75,58 +75,19 @@ type IconTone =
     | "premium";
 
 const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
-    neutral: {
-        box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30",
-        icon: "text-white"
-    },
-    ai: {
-        box: "bg-gradient-to-br from-purple-500 to-purple-700 shadow-sm shadow-purple-500/30",
-        icon: "text-white"
-    },
-    learning: {
-        box: "bg-gradient-to-br from-blue-500 to-blue-700 shadow-sm shadow-blue-500/30",
-        icon: "text-white"
-    },
-    progress: {
-        box: "bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-sm shadow-emerald-500/30",
-        icon: "text-white"
-    },
-    practice: {
-        box: "bg-gradient-to-br from-rose-500 to-rose-700 shadow-sm shadow-rose-500/30",
-        icon: "text-white"
-    },
-    alert: {
-        box: "bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm shadow-amber-500/30",
-        icon: "text-white"
-    },
-    communication: {
-        box: "bg-gradient-to-br from-cyan-500 to-cyan-700 shadow-sm shadow-cyan-500/30",
-        icon: "text-white"
-    },
-    media: {
-        box: "bg-gradient-to-br from-violet-500 to-violet-700 shadow-sm shadow-violet-500/30",
-        icon: "text-white"
-    },
-    finance: {
-        box: "bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm shadow-teal-500/30",
-        icon: "text-white"
-    },
-    system: {
-        box: "bg-gradient-to-br from-gray-500 to-gray-700 shadow-sm shadow-gray-500/30",
-        icon: "text-white"
-    },
-    people: {
-        box: "bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-sm shadow-indigo-500/30",
-        icon: "text-white"
-    },
-    content: {
-        box: "bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 shadow-sm shadow-fuchsia-500/30",
-        icon: "text-white"
-    },
-    premium: {
-        box: "bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 shadow-md shadow-amber-500/40",
-        icon: "text-white"
-    },
+    neutral: { box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30", icon: "text-white" },
+    ai: { box: "bg-gradient-to-br from-purple-500 to-purple-700 shadow-sm shadow-purple-500/30", icon: "text-white" },
+    learning: { box: "bg-gradient-to-br from-blue-500 to-blue-700 shadow-sm shadow-blue-500/30", icon: "text-white" },
+    progress: { box: "bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-sm shadow-emerald-500/30", icon: "text-white" },
+    practice: { box: "bg-gradient-to-br from-rose-500 to-rose-700 shadow-sm shadow-rose-500/30", icon: "text-white" },
+    alert: { box: "bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm shadow-amber-500/30", icon: "text-white" },
+    communication: { box: "bg-gradient-to-br from-cyan-500 to-cyan-700 shadow-sm shadow-cyan-500/30", icon: "text-white" },
+    media: { box: "bg-gradient-to-br from-violet-500 to-violet-700 shadow-sm shadow-violet-500/30", icon: "text-white" },
+    finance: { box: "bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm shadow-teal-500/30", icon: "text-white" },
+    system: { box: "bg-gradient-to-br from-gray-500 to-gray-700 shadow-sm shadow-gray-500/30", icon: "text-white" },
+    people: { box: "bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-sm shadow-indigo-500/30", icon: "text-white" },
+    content: { box: "bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 shadow-sm shadow-fuchsia-500/30", icon: "text-white" },
+    premium: { box: "bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 shadow-md shadow-amber-500/40", icon: "text-white" },
 };
 
 const NATIVE_EASE = [0.32, 0.72, 0, 1];
@@ -139,9 +100,9 @@ const STREAK_SUMMARY_KEY = "sidebar_cache_streak_summary";
 const MISTAKE_COUNT_KEY = "sidebar_cache_mistake_count";
 const EPISODES_COUNT_KEY = "sidebar_cache_episodes_count";
 const ANNOUNCEMENTS_KEY = "sidebar_cache_announcements";
-const COINS_BALANCE_KEY = "sidebar_cache_coins";       // 👈 NEW — matches AppSidebar
-const IS_COINS_ADMIN_KEY = "sidebar_cache_is_coins_admin";   // 👈 NEW — matches AppSidebar
-/* ---------------- Cache readers (instant paint) ---------------- */
+const COINS_BALANCE_KEY = "sidebar_cache_coins";
+const IS_COINS_ADMIN_KEY = "sidebar_cache_is_coins_admin";
+
 const readNumberCache = (key: string): number => {
     try {
         const raw = localStorage.getItem(key);
@@ -178,10 +139,10 @@ const preloadUserProfile = () => {
                         streak: Number(localStorage.getItem('userStreak')) || 0
                     };
                 }
-            } catch (e) { /* silent */ }
+            } catch { }
         }
         return { name: "", email: "", role: "", avatar_url: "", streak: 0 };
-    } catch (e) {
+    } catch {
         return { name: "", email: "", role: "", avatar_url: "", streak: 0 };
     }
 };
@@ -206,7 +167,6 @@ const preloadUserRole = (): "student" | "tutor" | "staff" | null => {
     } catch { return null; }
 };
 
-/* ---------------- Row Item — now badge-aware ---------------- */
 const DrawerRow = memo(({
     item,
     tone,
@@ -251,7 +211,6 @@ const DrawerRow = memo(({
 });
 DrawerRow.displayName = "DrawerRow";
 
-/* ---------------- Section ---------------- */
 const DrawerSection = memo(({
     section,
     onNavigate,
@@ -282,7 +241,6 @@ const DrawerSection = memo(({
 });
 DrawerSection.displayName = "DrawerSection";
 
-/* ---------------- Custom Icons ---------------- */
 const QuizzesHeartIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -295,9 +253,6 @@ const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     </svg>
 );
 
-/* ============================================================
-   MAIN
-   ============================================================ */
 export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInternalNavigate }: MobileDrawerProps) {
     const { setIsOpen: setDrawerContext } = useDrawer();
     const navigate = useNavigate();
@@ -315,10 +270,12 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     const isTutor = userRole === 'tutor';
     const isStaff = userRole === 'staff';
 
+    // 🆕 "Learner" = student OR tutor
+    const isLearner = isStudent || isTutor;
+
     const [userProfile, setUserProfile] = useState(preloadUserProfile);
     const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(preloadUserRole);
 
-    /* ---- Subscription state ---- */
     const session = useSession();
     const user = session?.user || null;
 
@@ -327,13 +284,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         return null;
     });
 
-    /* ---- Badge counts — all seeded from the SAME cache AppSidebar writes ---- */
     const [mistakeCount, setMistakeCount] = useState<number>(() => readNumberCache(MISTAKE_COUNT_KEY));
     const [totalEpisodes, setTotalEpisodes] = useState<number>(() => readNumberCache(EPISODES_COUNT_KEY));
     const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(() => readNumberCache(ANNOUNCEMENTS_KEY));
-    // 👈 NEW — Medrae Wallet balance (students only). Seeded from the same cache AppSidebar writes.
     const [coinsBalance, setCoinsBalance] = useState<number>(() => readNumberCache(COINS_BALANCE_KEY));
-    // 👈 NEW — is the current user an admin of the coin program?
     const [isCoinsAdmin, setIsCoinsAdmin] = useState<boolean>(() => {
         try {
             const raw = localStorage.getItem(IS_COINS_ADMIN_KEY);
@@ -344,7 +298,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         } catch { }
         return false;
     });
-    /* ---- Streak summary — seeded for instant paint ---- */
     const [streakSummary, setStreakSummary] = useState<{ current: number; best: number }>(
         () => {
             try {
@@ -362,12 +315,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     useEffect(() => {
         if (!isOpen || !user?.id) return;
 
-        // Seed from cache immediately
         setMistakeCount(readNumberCache(MISTAKE_COUNT_KEY));
         setTotalEpisodes(readNumberCache(EPISODES_COUNT_KEY));
         setUnreadAnnouncements(readNumberCache(ANNOUNCEMENTS_KEY));
-        setCoinsBalance(readNumberCache(COINS_BALANCE_KEY));   // 👈 NEW
-        // 👈 NEW — admin flag from cache
+        setCoinsBalance(readNumberCache(COINS_BALANCE_KEY));
         try {
             const raw = localStorage.getItem(IS_COINS_ADMIN_KEY);
             if (raw) {
@@ -375,7 +326,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                 setIsCoinsAdmin(parsed?.data === true);
             }
         } catch { }
-        // If offline, stop — cache already painted
         if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
         let cancelled = false;
@@ -383,19 +333,19 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         (async () => {
             try {
                 const [mistakesRes, episodesRes, streakRes, walletRes, adminRes] = await Promise.allSettled([
-                    isStudent
+                    isLearner
                         ? supabase.from("user_mistakes").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false)
                         : Promise.resolve({ count: 0 } as any),
                     supabase.from("podcast_episodes").select("id", { count: "exact", head: true }).eq("is_hidden", false),
                     supabase.from("user_streak_summary").select("current_streak, best_streak").eq("user_id", user.id).maybeSingle(),
-                    isStudent
+                    isLearner
                         ? supabase.from("medrae_stu_wallets").select("balance").eq("user_id", user.id).maybeSingle()
                         : Promise.resolve({ data: null, error: null } as any),
-                    supabase.rpc("medrae_stu_is_admin"),   // 👈 NEW
+                    supabase.rpc("medrae_stu_is_admin"),
                 ]);
                 if (cancelled) return;
 
-                if (mistakesRes.status === 'fulfilled' && isStudent) {
+                if (mistakesRes.status === 'fulfilled' && isLearner) {
                     const count = (mistakesRes.value as any)?.count || 0;
                     setMistakeCount(count);
                     try {
@@ -422,8 +372,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                         localStorage.setItem(STREAK_SUMMARY_KEY, JSON.stringify({ data: summary, timestamp: Date.now() }));
                     } catch { }
                 }
-                // 👈 NEW — Medrae Wallet balance
-                if (walletRes.status === 'fulfilled' && isStudent) {
+                if (walletRes.status === 'fulfilled' && isLearner) {
                     const raw = (walletRes.value as any)?.data;
                     const balance = Number(raw?.balance) || 0;
                     setCoinsBalance(balance);
@@ -431,7 +380,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                         localStorage.setItem(COINS_BALANCE_KEY, JSON.stringify({ data: balance, timestamp: Date.now() }));
                     } catch { }
                 }
-                // 👈 NEW — admin status
                 if (adminRes.status === 'fulfilled') {
                     const isAdminNow = (adminRes.value as any)?.data === true;
                     setIsCoinsAdmin(isAdminNow);
@@ -443,9 +391,8 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         })();
 
         return () => { cancelled = true; };
-    }, [isOpen, user?.id, isStudent]);
+    }, [isOpen, user?.id, isLearner]);
 
-    /* ---- Streak updated event (from Restore page) ---- */
     useEffect(() => {
         const onStreakUpdated = () => {
             if (!user?.id) return;
@@ -467,7 +414,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         return () => window.removeEventListener("streak-updated", onStreakUpdated);
     }, [user?.id]);
 
-    /* ---- Subscription: cache-first, then background refresh ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
         let cancelled = false;
@@ -496,7 +442,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         return () => window.removeEventListener("online", onOnline);
     }, [isOpen, user?.id]);
 
-    /* ---- Theme sync ---- */
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         try {
             const stored = localStorage.getItem('medrae_dark_mode');
@@ -528,7 +473,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         };
     }, []);
 
-    /* ---- Lock body scroll when open ---- */
     useEffect(() => {
         if (isOpen) {
             ignoreTapsUntil.current = Date.now() + 400;
@@ -548,7 +492,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         });
     }, []);
 
-    /* ---- Load profile (cache first) ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
 
@@ -589,9 +532,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                     avatar_url: next.avatar_url,
                 });
                 localStorage.setItem("userProfile_ts", String(Date.now()));
-            } catch {
-                /* silent — cache already shown */
-            }
+            } catch { /* silent */ }
         })();
 
         return () => { cancelled = true; };
@@ -657,9 +598,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         localStorage.removeItem("readAnnouncements");
         localStorage.removeItem("userProfile");
 
-        // 🔧 Reset theme to LIGHT before signing out.
-        // Ensures the /login page's loader paints in light mode,
-        // even if the user had dark mode on during this session.
         try {
             localStorage.removeItem("medrae_dark_mode");
             document.documentElement.classList.remove("dark");
@@ -677,9 +615,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         setIsLoggingOut(false);
     }, [navigate, tapFeedback, setIsOpen, user?.id]);
 
-    /* ---------------- NCK EXAM PREP — students only ---------------- */
+    /* ---------------- NCK EXAM PREP — learners ---------------- */
     const nckExamPrepItems = useMemo(() => {
-        if (!isStudent) return [];
+        if (!isLearner) return [];
         return [
             { title: "Prep Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
             {
@@ -692,7 +630,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             { title: "NCK Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
             { title: "Proctorium (Dijiproctor styl) ", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice" as IconTone },
         ];
-    }, [isStudent]);
+    }, [isLearner]);
 
     /* ---------------- SECTIONS ---------------- */
     const sections = useMemo(() => {
@@ -700,7 +638,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
         ];
 
-        if (isStudent) {
+        if (isLearner) {
             mainItems.push(
                 { title: "Nursing Curriculum", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
                 { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
@@ -732,9 +670,8 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             { label: "Main", items: mainItems },
         ];
 
-        // 👈 Earn As You Study — students only, sits ABOVE NCK Exam Prep
-        // 👈 Earn As You Study — students only, sits ABOVE NCK Exam Prep
-        if (isStudent) {
+        // 👈 Earn As You Study — learners (students + tutors)
+        if (isLearner) {
             const earnItems: any[] = [
                 {
                     title: "Medrae Wallet",
@@ -747,9 +684,14 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                             : coinsBalance)
                         : undefined,
                 },
+                {
+                    title: "Create Quizzes",
+                    url: "/contribute",
+                    icon: BookOpenCheck,
+                    iconTone: "learning" as IconTone,
+                },
             ];
 
-            // 👈 Admin-only row
             if (isCoinsAdmin) {
                 earnItems.push({
                     title: "Coin Admin",
@@ -762,28 +704,36 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             sectionsArray.push({ label: "Earn As You Study", items: earnItems });
         }
 
-        // NCK Exam Prep — after Earn so wallet sits above
         sectionsArray.push({ label: "NCK Exam Prep", items: nckExamPrepItems });
+
         if (userRole === "tutor") {
             sectionsArray.push({
                 label: "Tutor Tools",
                 items: [
-
                     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
                 ],
             });
         }
 
-        if (isStudent) {
+        if (isStaff) {
+            sectionsArray.push({
+                label: "CPD",
+                items: [
+                    { title: "CPD Dashboard", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+                    { title: "CPD Catalog", url: "/cpd/catalog", icon: GraduationCap, iconTone: "learning" as IconTone },
+                    { title: "My CPD Progress", url: "/cpd/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
+                    { title: "My Certificates", url: "/cpd/certificates", icon: Crown, iconTone: "premium" as IconTone },
+                    { title: "CPD Admin", url: "/cpd/admin", icon: PenTool, iconTone: "system" as IconTone },
+                ],
+            });
+        }
+
+        // ── Media (learners get the full set) ──
+        if (isLearner) {
             sectionsArray.push({
                 label: "Media",
                 items: [
-                    {
-                        title: "MedTube",
-                        url: "/medtube",
-                        icon: Play,
-                        iconTone: "media" as IconTone,
-                    },
+                    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
                     {
                         title: "Podcasts",
                         url: "__open_music_player__",
@@ -811,35 +761,13 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             });
         }
 
-        if (isStaff) {
-            sectionsArray.push({
-                label: "CPD",
-                items: [
-                    { title: "CPD Dashboard", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
-                    { title: "CPD Catalog", url: "/cpd/catalog", icon: GraduationCap, iconTone: "learning" as IconTone },
-                    { title: "My CPD Progress", url: "/cpd/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
-                    { title: "My Certificates", url: "/cpd/certificates", icon: Crown, iconTone: "premium" as IconTone },
-                    { title: "CPD Admin", url: "/cpd/admin", icon: PenTool, iconTone: "system" as IconTone },
-                ],
-            });
-        }
-        // ── Institutional Exams ─────────────────────────────────
+        // ── Institutional Exams ──
         if (isStudent) {
             sectionsArray.push({
                 label: "Institutional Exams",
                 items: [
-                    {
-                        title: "Candidate Exams",
-                        url: "/exam/candidate",
-                        icon: GraduationCap,
-                        iconTone: "learning" as IconTone,
-                    },
-                    {
-                        title: "Exam Results",
-                        url: "/exam/results",
-                        icon: BarChart3,
-                        iconTone: "progress" as IconTone,
-                    },
+                    { title: "Candidate Exams", url: "/exam/candidate", icon: GraduationCap, iconTone: "learning" as IconTone },
+                    { title: "Exam Results", url: "/exam/results", icon: BarChart3, iconTone: "progress" as IconTone },
                 ],
             });
         }
@@ -848,30 +776,19 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             sectionsArray.push({
                 label: "Institutional Exams",
                 items: [
-                    {
-                        title: "Tutor Exams",
-                        url: "/tutor/exams",
-                        icon: GraduationCap,
-                        iconTone: "learning" as IconTone,
-                    },
-                    {
-                        title: "Exam Results",
-                        url: "/tutor/exams/results",
-                        icon: BarChart3,
-                        iconTone: "progress" as IconTone,
-                    },
+                    { title: "Tutor Exams", url: "/tutor/exams", icon: GraduationCap, iconTone: "learning" as IconTone },
+                    { title: "Exam Results", url: "/tutor/exams/results", icon: BarChart3, iconTone: "progress" as IconTone },
                 ],
             });
         }
 
-        // Staff — intentionally no Institutional Exams section
-        // (matches AppSidebar's `return [];` for staff)
+        // ── Learning (learners get Clinical Assessments) ──
         const learningItems: any[] = [
             { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
             { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
         ];
 
-        if (isStudent) {
+        if (isLearner) {
             learningItems.push({
                 title: "Clinical Assessments",
                 url: "/assessments",
@@ -889,6 +806,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
 
         sectionsArray.push({ label: "Learning", items: learningItems });
 
+        // ── Other (learners get Help Center + GroupPay) ──
         const otherItems: any[] = [
             { title: "NursMart", url: "/market", icon: ShoppingBag, iconTone: "finance" as IconTone },
             {
@@ -899,7 +817,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                 badge: unreadAnnouncements > 0 ? unreadAnnouncements : undefined,
             },
         ];
-        if (isStudent) {
+        if (isLearner) {
             otherItems.push({
                 title: "Help Center",
                 url: "/help",
@@ -915,25 +833,27 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         );
 
         if (isStudent) {
-            otherItems.push({
+            base.push({
                 title: "GroupPay",
                 url: "/grouppay",
                 icon: Users,
                 iconTone: "practice" as IconTone,
+                badge: "New",
             });
         }
 
         sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
-    }, [userRole, isStudent, isTutor, isStaff, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements, coinsBalance, isCoinsAdmin]);
+    }, [userRole, isStudent, isTutor, isStaff, isLearner, nckExamPrepItems, streakSummary.current, streakSummary.best, mistakeCount, totalEpisodes, unreadAnnouncements, coinsBalance, isCoinsAdmin]);
+
     /* ---------------- Horizontal identity strip ---------------- */
     const identityStrip = useMemo(() => {
         const base: any[] = [
             { title: "Home", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
         ];
 
-        if (isStudent) {
+        if (isLearner) {
             base.push(
                 { title: "Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
                 { title: "Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
@@ -941,7 +861,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                 { title: "Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
             );
         }
-        if (isStudent && streakSummary.best > streakSummary.current && streakSummary.current > 0) {
+        if (isLearner && streakSummary.best > streakSummary.current && streakSummary.current > 0) {
             base.push({
                 title: "Restore",
                 url: "/streak/restore",
@@ -993,7 +913,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
         }
 
         return base;
-    }, [userRole, isStudent, activePlan, streakSummary.current, streakSummary.best]);
+    }, [userRole, isLearner, activePlan, streakSummary.current, streakSummary.best]);
 
     const avatarUrl = getAvatarUrl(userProfile.avatar_url);
     const initials = userProfile.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -1003,7 +923,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop */}
                         <div
                             onClick={() => {
                                 if (Date.now() < ignoreTapsUntil.current) return;
@@ -1011,7 +930,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                             }}
                             className="fixed inset-0 z-[9999] bg-white/70 dark:bg-black/60 md:hidden"
                         />
-                        {/* FULL-SCREEN PAGE */}
                         <motion.div
                             ref={drawerRef}
                             variants={PAGE_VARIANTS}
@@ -1023,47 +941,19 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                             style={{ willChange: "transform", backfaceVisibility: "hidden" }}
                             data-drawer-root="true"
                         >
-                            {/* Header */}
+                            {/* Header — same as before */}
                             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-[#21262d] flex-shrink-0 bg-white dark:bg-[#0d1117]">
                                 <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-[#161b22] ring-1 ring-slate-200 dark:ring-[#30363d]">
-                                    <svg
-                                        viewBox="0 0 192 192"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-full w-full"
-                                        aria-label="MEDRAE Nursing Logo"
-                                    >
+                                    <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" className="h-full w-full" aria-label="MEDRAE Nursing Logo">
                                         <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
-                                        <path
-                                            d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
-                                            fill="#FF1F1F"
-                                        />
+                                        <path d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z" fill="#FF1F1F" />
                                         <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
-                                        <path
-                                            d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
-                                            fill="#FFFFFF"
-                                        />
-                                        <path
-                                            d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
-                                            fill="none"
-                                            stroke="#FF1F1F"
-                                            strokeWidth="3"
-                                            strokeLinecap="round"
-                                        />
+                                        <path d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z" fill="#FFFFFF" />
+                                        <path d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91" fill="none" stroke="#FF1F1F" strokeWidth="3" strokeLinecap="round" />
                                         <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
                                         <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
-                                        <path
-                                            d="M94 82 C86 86 75 88 63 89"
-                                            fill="none"
-                                            stroke="#FF1F1F"
-                                            strokeWidth="2"
-                                        />
-                                        <path
-                                            d="M63 89 C61 94 61 98 61 103"
-                                            fill="none"
-                                            stroke="#FFFFFF"
-                                            strokeWidth="2.5"
-                                            strokeLinecap="round"
-                                        />
+                                        <path d="M94 82 C86 86 75 88 63 89" fill="none" stroke="#FF1F1F" strokeWidth="2" />
+                                        <path d="M63 89 C61 94 61 98 61 103" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
                                         <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
                                         <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
                                     </svg>
@@ -1071,9 +961,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                 <h2 className="flex-1 text-[15px] font-bold tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
-                                    <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-1 align-middle">
-                                        2.0
-                                    </span>
+                                    <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-1 align-middle">2.0</span>
                                 </h2>
                                 <button
                                     onClick={() => {
@@ -1234,22 +1122,15 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                         </span>
                                     </button>
 
-                                    {/* MINIMAL FOOTER */}
+                                    {/* FOOTER — same as before */}
                                     <div className="mt-2 pt-5 pb-2 text-center select-none">
                                         <p className="text-[8px] tracking-[0.2em] text-slate-400 dark:text-[#6e7681] opacity-70 mb-3">
                                             Version 2.0 Medrae Learning System
                                         </p>
 
                                         <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                                            <a
-                                                href="https://medrae-nursing.vercel.app/"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                aria-label="MEDRAE Nursing Website"
-                                                className="group flex h-7 w-7 items-center justify-center rounded-full overflow-hidden
-                       bg-white dark:bg-[#161b22] ring-1 ring-slate-200 dark:ring-[#30363d]
-                       transition-transform active:scale-95"
-                                            >
+                                            <a href="https://medrae-nursing.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="MEDRAE Nursing Website"
+                                                className="group flex h-7 w-7 items-center justify-center rounded-full overflow-hidden bg-white dark:bg-[#161b22] ring-1 ring-slate-200 dark:ring-[#30363d] transition-transform active:scale-95">
                                                 <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" className="h-full w-full" aria-hidden="true">
                                                     <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
                                                     <path d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z" fill="#FF1F1F" />
@@ -1312,12 +1193,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                 )}
             </AnimatePresence>
 
-            {/* Logout Dialog */}
-            {/* Logout Confirmation — CenteredModal */}
+            {/* Logout Dialog — unchanged */}
             <CenteredModal
                 open={showLogoutDialog}
                 onClose={() => {
-                    if (isLoggingOut) return;     // don't close mid-logout
+                    if (isLoggingOut) return;
                     tapFeedback();
                     setShowLogoutDialog(false);
                 }}
@@ -1325,7 +1205,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                 maxWidthClass="max-w-sm"
             >
                 <div className="px-4 pb-4 pt-1 space-y-4">
-                    {/* Icon + copy */}
                     <div className="flex flex-col items-center text-center gap-3 pt-1">
                         <div className="h-14 w-14 rounded-full flex items-center justify-center
                             bg-rose-50 dark:bg-rose-400/10">
@@ -1338,7 +1217,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                         </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-2 pt-1">
                         <button
                             onClick={() => {
@@ -1347,12 +1225,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                 setShowLogoutDialog(false);
                             }}
                             disabled={isLoggingOut}
-                            className="flex-1 h-10 rounded-xl
-                           bg-slate-100 dark:bg-white/[0.06]
-                           text-slate-700 dark:text-slate-200
-                           text-[13px] font-bold
-                           active:scale-[0.97] transition-transform
-                           disabled:opacity-50"
+                            className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[13px] font-bold active:scale-[0.97] transition-transform disabled:opacity-50"
                             style={{ touchAction: "manipulation" }}
                         >
                             Cancel
@@ -1361,12 +1234,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                         <button
                             onClick={() => { tapFeedback("warning"); handleLogout(); }}
                             disabled={isLoggingOut}
-                            className="flex-1 h-10 rounded-xl
-                           bg-rose-600 text-white
-                           text-[13px] font-bold
-                           flex items-center justify-center gap-1.5
-                           active:scale-[0.97] transition-transform
-                           disabled:opacity-70"
+                            className="flex-1 h-10 rounded-xl bg-rose-600 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform disabled:opacity-70"
                             style={{ touchAction: "manipulation" }}
                         >
                             {isLoggingOut ? (
@@ -1381,7 +1249,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                     </div>
                 </div>
             </CenteredModal>
-
         </>
     );
 }
