@@ -14,9 +14,9 @@ import Referral from "@/components/Referral";
 import { TermsButton } from "@/components/ui/TermsButton";
 import { UnitBreakdown } from "@/components/UnitBreakdown";
 import { DeferredMount } from "@/components/DeferredMount";
-import StudentFilters, { type StudentFilter } from "@/components/Student/StudentFilters";
-import StudentSections from "@/components/Student/StudentSections";
-import StudentCommunityCards from "@/components/Student/StudentCommunityCards";
+import StudentFilters, { type StudentFilter } from "@/components/student/StudentFilters";
+import StudentSections from "@/components/student/StudentSections";
+import StudentCommunityCards from "@/components/student/StudentCommunityCards";
 
 /* ============================================================
    Rank Celebration Overlay (unchanged)
