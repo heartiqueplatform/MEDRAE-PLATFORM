@@ -24,13 +24,20 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     // The page's own background paints underneath when it mounts;
     // this overlay is white so no flash can appear during the gap.
     if (loading) {
+        const isDark =
+            typeof document !== "undefined" &&
+            document.documentElement.classList.contains("dark");
         return (
             <div
                 style={{
                     position: "fixed",
-                    inset: 0,
-                    backgroundColor: "#ffffff",
-                    zIndex: 99998,
+                    top: 0,
+                    left: 0,
+                    width: "100vw",
+                    height: "100dvh",
+                    backgroundColor: isDark ? "#0d1117" : "#ffffff",
+                    zIndex: 2147483647,
+                    pointerEvents: "none",
                 }}
                 aria-hidden
             />

@@ -17,49 +17,7 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <style>
-    /* ============================================ */
-    /* THEME VARIABLES — light is the DEFAULT.      */
-    /* Dark overrides only when <html class="dark"> */
-    /* ============================================ */
-    :root {
-      --bg-color: #ffffff;
-      --pattern-dot: rgba(255, 31, 31, 0.14);
-      --screen-fade: rgba(255, 255, 255, 0.85);
-      --loader-bg: #ffffff;
-      --loader-text: #111111;
-    }
 
-    html.dark {
-      --bg-color: #0d1117;
-      --pattern-dot: rgba(255, 31, 31, 0.22);
-      --screen-fade: rgba(13, 17, 23, 0.85);
-      --loader-bg: #0d1117;
-      --loader-text: #ffffff;
-    }
-
-    /* 🔧 Belt-and-suspenders: if <html> has class "light" (explicit),
-     force the light variables even if the OS prefers dark. This
-     overrides any UA-level "prefers-color-scheme: dark" leakage. */
-    html.light {
-      --bg-color: #ffffff;
-      --pattern-dot: rgba(255, 31, 31, 0.14);
-      --screen-fade: rgba(255, 255, 255, 0.85);
-      --loader-bg: #ffffff;
-      --loader-text: #111111;
-    }
-
-    html,
-    body {
-      background-color: var(--bg-color);
-      margin: 0;
-      padding: 0;
-    }
-
-    #initial-loader {
-      background-color: var(--bg-color);
-    }
-  </style>
 
   <!-- ============================================ -->
   <!-- PRIMARY SEO - COVERS ALL NURSING PROGRAMMES IN KENYA -->
@@ -848,211 +806,231 @@
   <meta name="roadmap_feature" content="Institutional CAT and local DigiProctor alternative by December 2026" />
   <meta name="roadmap_feature" content="Tutor result release under 12 hours with one click by December 2026" />
 
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --pattern-dot: rgba(255, 31, 31, 0.14);
+      --screen-fade: rgba(255, 255, 255, 0.85);
+    }
+
+    html.dark {
+      --bg-color: #0d1117;
+      --pattern-dot: rgba(255, 31, 31, 0.22);
+      --screen-fade: rgba(13, 17, 23, 0.85);
+    }
+
+    html.light {
+      --bg-color: #ffffff;
+      --pattern-dot: rgba(255, 31, 31, 0.14);
+      --screen-fade: rgba(255, 255, 255, 0.85);
+    }
+
+    html,
+    body {
+      background-color: var(--bg-color, #ffffff);
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    #initial-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100dvh;
+      z-index: 2147483647;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+      background-color: var(--bg-color, #ffffff);
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      opacity: 1;
+      transition: opacity 200ms ease-out;
+      contain: layout style paint;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    #initial-loader.is-hiding {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #initial-loader::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, var(--pattern-dot, rgba(255, 31, 31, 0.14)) 1.2px, transparent 1.4px);
+      background-size: 18px 18px;
+      opacity: 0.9;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #initial-loader::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, var(--screen-fade, rgba(255, 255, 255, 0.85)) 0%, transparent 70%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    #initial-loader .splash-logo-wrap {
+      position: relative;
+      z-index: 2;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: medrae-fade-up 500ms 100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    #initial-loader .splash-halo {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 31, 31, 0.20) 0%, rgba(255, 31, 31, 0.06) 45%, transparent 70%);
+      animation: medrae-halo-pulse 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    #initial-loader .splash-orbit {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: rgba(255, 31, 31, 0.85);
+      border-right-color: rgba(255, 31, 31, 0.20);
+      animation: medrae-orbit 1.6s linear infinite;
+      pointer-events: none;
+    }
+
+    #initial-loader .splash-orbit.secondary {
+      inset: -8px;
+      border-top-color: rgba(255, 31, 31, 0.25);
+      border-right-color: transparent;
+      border-left-color: rgba(255, 31, 31, 0.55);
+      animation: medrae-orbit-reverse 3.2s linear infinite;
+    }
+
+    #initial-loader .splash-logo {
+      position: relative;
+      z-index: 2;
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      display: block;
+    }
+
+    @keyframes medrae-halo-pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+
+      50% {
+        transform: scale(1.15);
+        opacity: 0.5;
+      }
+    }
+
+    @keyframes medrae-orbit {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes medrae-orbit-reverse {
+      to {
+        transform: rotate(-360deg);
+      }
+    }
+
+    #initial-loader .splash-wordmark {
+      position: relative;
+      z-index: 2;
+      overflow: hidden;
+      display: inline-block;
+      font-weight: 800;
+      font-size: 26px;
+      letter-spacing: -0.6px;
+      line-height: 1;
+      animation: medrae-fade-up 500ms 250ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    #initial-loader .splash-wordmark::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 40%;
+      height: 200%;
+      background: linear-gradient(115deg, transparent 0%, rgba(255, 31, 31, 0) 30%, rgba(255, 31, 31, 0.35) 50%, rgba(255, 31, 31, 0) 70%, transparent 100%);
+      transform: rotate(8deg) translateX(-150%);
+      animation: medrae-sword-slash 3.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      pointer-events: none;
+      filter: blur(0.5px);
+    }
+
+    #initial-loader .splash-wordmark .brand {
+      color: #FF1F1F;
+    }
+
+    #initial-loader .splash-wordmark .suffix {
+      color: #111111;
+      margin-left: 4px;
+    }
+
+    html.dark #initial-loader .splash-wordmark .suffix {
+      color: #ffffff;
+    }
+
+    @keyframes medrae-fade-up {
+      from {
+        transform: translateY(6px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes medrae-sword-slash {
+      0% {
+        transform: rotate(8deg) translateX(-180%);
+      }
+
+      40% {
+        transform: rotate(8deg) translateX(320%);
+      }
+
+      60% {
+        transform: rotate(8deg) translateX(320%);
+      }
+
+      100% {
+        transform: rotate(8deg) translateX(-180%);
+      }
+    }
+  </style>
 </head>
 
-<body style="margin:0; height:100%; background-color: var(--bg-color, #ffffff);">
-
+<body>
   <!-- ============================================ -->
   <!-- MEDRAE SPLASH — OPTION A2                    -->
   <!-- Skeleton Dashboard Loader                    -->
   <!-- ============================================ -->
   <div id="initial-loader" role="status" aria-label="Loading Medrae Nursing">
-    <style>
-      #initial-loader {
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        padding: 24px;
-        background-color: #ffffff;
-        /* ← always white */
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-        opacity: 1;
-        transition: opacity 200ms ease-out;
-        will-change: opacity;
-        contain: layout style paint;
-        box-sizing: border-box;
-        overflow: hidden;
-      }
-
-      #initial-loader.is-hiding {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      #initial-loader::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background-image: radial-gradient(circle, rgba(255, 31, 31, 0.14) 1.2px, transparent 1.4px);
-        background-size: 18px 18px;
-        opacity: 0.9;
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      #initial-loader::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.85) 0%, transparent 70%);
-        z-index: 1;
-        pointer-events: none;
-      }
-
-      #initial-loader .splash-logo-wrap {
-        position: relative;
-        z-index: 2;
-        width: 120px;
-        height: 120px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: medrae-fade-up 500ms 100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-      }
-
-      #initial-loader .splash-halo {
-        position: absolute;
-        inset: -10px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(255, 31, 31, 0.20) 0%, rgba(255, 31, 31, 0.06) 45%, transparent 70%);
-        animation: medrae-halo-pulse 2.4s ease-in-out infinite;
-        will-change: transform, opacity;
-        pointer-events: none;
-      }
-
-      #initial-loader .splash-orbit {
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        border: 2px solid transparent;
-        border-top-color: rgba(255, 31, 31, 0.85);
-        border-right-color: rgba(255, 31, 31, 0.20);
-        animation: medrae-orbit 1.6s linear infinite;
-        will-change: transform;
-        pointer-events: none;
-      }
-
-      #initial-loader .splash-orbit.secondary {
-        inset: -8px;
-        border-top-color: rgba(255, 31, 31, 0.25);
-        border-right-color: transparent;
-        border-left-color: rgba(255, 31, 31, 0.55);
-        animation: medrae-orbit-reverse 3.2s linear infinite;
-      }
-
-      #initial-loader .splash-logo {
-        position: relative;
-        z-index: 2;
-        width: 76px;
-        height: 76px;
-        object-fit: contain;
-        display: block;
-      }
-
-      @keyframes medrae-halo-pulse {
-
-        0%,
-        100% {
-          transform: scale(1);
-          opacity: 0.9;
-        }
-
-        50% {
-          transform: scale(1.15);
-          opacity: 0.5;
-        }
-      }
-
-      @keyframes medrae-orbit {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @keyframes medrae-orbit-reverse {
-        to {
-          transform: rotate(-360deg);
-        }
-      }
-
-      #initial-loader .splash-wordmark {
-        position: relative;
-        z-index: 2;
-        overflow: hidden;
-        display: inline-block;
-        font-weight: 800;
-        font-size: 26px;
-        letter-spacing: -0.6px;
-        line-height: 1;
-        animation: medrae-fade-up 500ms 250ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        will-change: transform, opacity;
-      }
-
-      #initial-loader .splash-wordmark::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -60%;
-        width: 40%;
-        height: 200%;
-        background: linear-gradient(115deg,
-            transparent 0%,
-            rgba(255, 31, 31, 0) 30%,
-            rgba(255, 31, 31, 0.35) 50%,
-            rgba(255, 31, 31, 0) 70%,
-            transparent 100%);
-        transform: rotate(8deg) translateX(-150%);
-        animation: medrae-sword-slash 3.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-        pointer-events: none;
-        filter: blur(0.5px);
-        will-change: transform;
-      }
-
-      #initial-loader .splash-wordmark .brand {
-        color: #FF1F1F;
-      }
-
-      #initial-loader .splash-wordmark .suffix {
-        color: #111111;
-        /* ← fixed dark */
-        margin-left: 4px;
-      }
-
-      @keyframes medrae-fade-up {
-        from {
-          transform: translateY(6px);
-          opacity: 0;
-        }
-
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes medrae-sword-slash {
-        0% {
-          transform: rotate(8deg) translateX(-180%);
-        }
-
-        40% {
-          transform: rotate(8deg) translateX(320%);
-        }
-
-        60% {
-          transform: rotate(8deg) translateX(320%);
-        }
-
-        100% {
-          transform: rotate(8deg) translateX(-180%);
-        }
-      }
-    </style>
 
     <!-- Logo + orbit spinner -->
     <div class="splash-logo-wrap">

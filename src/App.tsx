@@ -372,11 +372,11 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/streak/restore",
   "/last-minute",
 ];
-
 const FooterGate = ({ user }: { user: any }) => {
   const location = useLocation();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  const [shellReady, setShellReady] = useState(false);
 
   useEffect(() => {
     const onPlayerVisibility = (e: Event) => {
@@ -388,7 +388,6 @@ const FooterGate = ({ user }: { user: any }) => {
       window.removeEventListener("music-player-visibility", onPlayerVisibility);
   }, []);
 
-  // 📣 Referral popup hides the footer while it's open
   useEffect(() => {
     const onReferralVisibility = (e: Event) => {
       const detail = (e as CustomEvent<{ open: boolean }>).detail;
@@ -399,16 +398,23 @@ const FooterGate = ({ user }: { user: any }) => {
       window.removeEventListener("referral-popup-visibility", onReferralVisibility);
   }, []);
 
+  useEffect(() => {
+    if (!user) { setShellReady(false); return; }
+    const t = setTimeout(() => setShellReady(true), 80);
+    return () => clearTimeout(t);
+  }, [user, location.pathname]);
+
   if (!user) return null;
+  if (!shellReady) return null;
   if (playerOpen) return null;
-  if (referralOpen) return null;                       // ← NEW
+  if (referralOpen) return null;
   if (FOOTER_HIDDEN_PREFIXES.some((p) => location.pathname.startsWith(p))) {
     return null;
   }
   return <Footer />;
 };
 const AppContent = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [forceLogout, setForceLogout] = useState(false);
 
   // 🔔 Global security notice — shows on ANY page (/, /login, /dashboard, etc.)
@@ -846,11 +852,13 @@ const AppContent = () => {
                       {/* ✅ Footer — hidden on full-screen pages (overlays,
                           medtube, quiz, settings, etc.). Only shows on
                           dashboard-style routes. */}
-                      <FooterGate user={user} />
-
-                      {/* 🆕 SMART PWA INSTALL PROMPT — browser users only */}
-                      <InstallPrompt />
-                      <BottomBarWrapper />
+                      {!loading && (
+                        <>
+                          <FooterGate user={user} />
+                          <InstallPrompt />
+                          <BottomBarWrapper />
+                        </>
+                      )}
                     </AIWrapper>
                   </UserRoleProvider>
 
