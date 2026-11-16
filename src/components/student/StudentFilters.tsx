@@ -61,7 +61,7 @@ export default function StudentFilters({ activeId, onChange }: Props) {
     );
 
     return (
-        <div className="sticky top-0 z-20 -mx-2 sm:mx-0 px-2 sm:px-0 pt-1 pb-0 bg-transparent">
+        <div className="sticky top-0 z-20 px-2 sm:px-2 pt-1 pb-0 bg-transparent">
             <div
                 ref={railRef}
                 className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth"
@@ -75,8 +75,9 @@ export default function StudentFilters({ activeId, onChange }: Props) {
                         "shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] font-bold",
                         "transition-all duration-200 active:scale-95 shadow-sm",
                         activeId === "all" || !activeId
-                            ? "bg-slate-900 text-white shadow-slate-900/20 dark:bg-white dark:text-slate-900"
-                            : "bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                            ? "bg-indigo-600 text-white shadow-indigo-500/30 shadow-lg"
+                            : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200/70 " +
+                            "dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
                     )}
                 >
                     <LayoutGrid className="w-3.5 h-3.5" />

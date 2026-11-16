@@ -42,6 +42,8 @@ import {
 import { CenteredModal } from "./ui/CenteredModal";
 import { bumpPulse, clearPulse } from "@/lib/dailystatus/pulseStore";
 /* ─────────────────────────────  helpers  ───────────────────────────── */
+{/* Fullscreen Image */ }
+import { createPortal } from "react-dom";
 
 const uploadToCloudinary = async (file) => {
     const cloudName = "dpj5vprwf";
@@ -1493,27 +1495,33 @@ export default function DailyStatus() {
                 )}
             </AnimatePresence>
 
-            {/* Fullscreen Image */}
-            <AnimatePresence>
-                {fullscreenImage && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-slate-950/95 z-[999999] flex items-center justify-center p-0"
-                        onClick={() => setFullscreenImage(null)}
-                    >
-                        <img
-                            src={fullscreenImage}
-                            className="max-w-full max-h-full object-contain rounded-none shadow-2xl"
-                            alt="fullscreen"
-                        />
-                        <button className="absolute top-6 right-6 text-white p-2 hover:bg-white/10 rounded-full transition-colors">
-                            <X className="w-8 h-8" />
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+            {typeof document !== "undefined" && createPortal(
+                <AnimatePresence>
+                    {fullscreenImage && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[2147483647] bg-black flex items-center justify-center"
+                            onClick={() => setFullscreenImage(null)}
+                        >
+                            <img
+                                src={fullscreenImage}
+                                className="max-w-full max-h-full object-contain"
+                                alt="fullscreen"
+                            />
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setFullscreenImage(null); }}
+                                className="absolute top-6 right-6 z-[2147483647] text-white p-2 hover:bg-white/10 rounded-full"
+                            >
+                                <X className="w-8 h-8" />
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 }
