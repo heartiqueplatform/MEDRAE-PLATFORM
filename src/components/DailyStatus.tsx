@@ -1,4 +1,4 @@
-// components/DailyStatus.jsx
+// components/DailyStatus.tsx
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
     Card,
@@ -40,7 +40,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { CenteredModal } from "./ui/CenteredModal";
-
+import { bumpPulse, clearPulse } from "@/lib/dailystatus/pulseStore";
 /* ─────────────────────────────  helpers  ───────────────────────────── */
 
 const uploadToCloudinary = async (file) => {
@@ -462,7 +462,7 @@ export default function DailyStatus() {
     const latestCreatedAtRef = useRef(null);
     const realtimeRef = useRef(null);
     const hasLoadedOnceRef = useRef(false);
-
+    const cardRef = useRef<HTMLDivElement>(null);
     // ── Fetch current user's profile ──
     useEffect(() => {
         if (user?.id) {
@@ -528,9 +528,9 @@ export default function DailyStatus() {
                 const fresh = incoming.filter((p) => !existingIds.has(p.id));
                 if (fresh.length === 0) return prev;
                 setNewPostsBanner((n) => n + fresh.length);
+                bumpPulse(fresh.length);       // ✅ NEW — mirrors the in-card banner to the pill
                 return [...fresh, ...prev];
             });
-
             const newest = incoming.reduce(
                 (acc, p) => (!acc || p.created_at > acc ? p.created_at : acc),
                 latestCreatedAtRef.current
@@ -591,6 +591,7 @@ export default function DailyStatus() {
                     if (!newRow) return;
                     if (newRow.user_id === user.id) return;
                     setNewPostsBanner((n) => n + 1);
+                    bumpPulse(1);               // ✅ NEW — lights up the pill badge
                 }
             )
             .on(
@@ -640,7 +641,23 @@ export default function DailyStatus() {
             realtimeRef.current = null;
         };
     }, [user?.id]);
-
+    // ── Clear the pill badge when the Community Pulse card becomes visible ──
+    useEffect(() => {
+        if (!cardRef.current) return;
+        const obs = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((e) => {
+                    if (e.isIntersecting) {
+                        clearPulse();
+                        setNewPostsBanner(0);
+                    }
+                });
+            },
+            { threshold: 0.4 }
+        );
+        obs.observe(cardRef.current);
+        return () => obs.disconnect();
+    }, []);
     // ── IntersectionObserver: record views once per session, NO optimistic bump ──
     useEffect(() => {
         if (!user?.id) return;
@@ -936,7 +953,10 @@ export default function DailyStatus() {
     /* ───────────────────────────  Render  ─────────────────────────── */
     return (
         <>
-            <Card className="w-full border-0 bg-white dark:bg-muted/30 sm:bg-transparent sm:dark:bg-transparent shadow-sm sm:shadow-none rounded-xl sm:rounded-none overflow-hidden sm:overflow-visible">
+            <Card
+                ref={cardRef}
+                className="w-full border-0 bg-card sm:bg-transparent shadow-sm sm:shadow-none rounded-xl sm:rounded-none overflow-hidden sm:overflow-visible"
+            >
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -948,12 +968,9 @@ export default function DailyStatus() {
                         <button
                             onClick={handleManualRefresh}
                             disabled={refreshing}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-50 transition"
+                            className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition"
                         >
-                            <RefreshCw
-                                className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-                            />
-                            Refresh
+                            {refreshing ? "Refreshing..." : "Refresh"}
                         </button>
                     </div>
                 </CardHeader>

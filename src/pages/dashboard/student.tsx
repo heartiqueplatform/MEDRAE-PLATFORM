@@ -1,80 +1,35 @@
 import {
-  Users, Crown, Newspaper, ChevronRight, Laptop, Lightbulb, ArrowRight, Layout,
-  Brain, Calendar, MessageCircle, Target, TrendingUp,
-  Star, Clock, BookOpen, Trophy, ListChecks,
-  MapPin,
-  School,
-  X,
-  Globe,
-  ChevronUp,
-  Camera,
-  ChevronDown,
-  User
+  Crown, Newspaper, ChevronRight, ArrowRight, Star, Trophy, BookOpen,
 } from "lucide-react";
 import { CenteredModal } from "@/components/ui/CenteredModal";
-import Cropper from "react-easy-crop";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
-import {
-  Card, CardContent, CardDescription,
-  CardHeader, CardTitle
-} from "@/components/ui/card";
-import GreetingsCard from "@/components/GreetingsCard";
 import { Button } from "@/components/ui/button";
-import { toast as sonnerToast } from "sonner";
-import { DailyTriviaCard } from "@/components/TopStudentsPanel";
-import CountdownFloating from "@/components/CountdownFloating";
-
-import { UnitBreakdown } from "@/components/UnitBreakdown";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useToast } from "@/components/ui/use-toast";
-import { Link, useNavigate } from 'react-router-dom';
-import { Send, Trash2 } from "lucide-react";
-
-import FeedSeenTop10 from "@/components/FeedSeenTop10";
+import { useNavigate } from "react-router-dom";
 import Referral from "@/components/Referral";
-import { UserProfileModal } from "@/components/UserProfileModal";
-
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import DailyStatus from "@/components/DailyStatus";
 import { TermsButton } from "@/components/ui/TermsButton";
-import Algorithm from "@/components/Algorithm/Algorithm";
-import { QuickDuelStrip } from "@/components/QuickDuelStrip";
-import DailyDose from "@/components/DailyDose";
-import Short from "@/components/Short";
-import ShortPaper1 from "@/components/ShortPaper1";
-import ShortPaper2 from "@/components/ShortPaper2";
-import ShortMedical from "@/components/ShortMedical";
-import ShortPractice from "@/components/ShortPractice";
-import { SchoolWarsCard } from "@/components/school-wars/SchoolWarsCard";
+import { UnitBreakdown } from "@/components/UnitBreakdown";
 import { DeferredMount } from "@/components/DeferredMount";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import StudentFilters, { type StudentFilter } from "@/components/Student/StudentFilters";
+import StudentSections from "@/components/Student/StudentSections";
+import StudentCommunityCards from "@/components/Student/StudentCommunityCards";
 
-
-
-const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
-  const rankConfig = {
+/* ============================================================
+   Rank Celebration Overlay (unchanged)
+   ============================================================ */
+const RankCelebrationOverlay = ({ rank, name, onClose, navigate }: any) => {
+  const rankConfig: any = {
     1: {
       title: "TOP STUDENT!",
       subtitle: "You're 1 on the Leaderboard!",
       message: `Amazing work ${name}! You've reached the highest rank. Keep inspiring others with your dedication!`,
       gradient: "from-yellow-500 via-amber-500 to-yellow-500",
       icon: <Crown className="w-12 h-12 sm:w-16 sm:h-16 text-yellow-400" />,
-      bgGlow: "bg-yellow-500/20",
-      confettiColors: ["#FFD700", "#FFA500", "#FFE44D"]
+      confettiColors: ["#FFD700", "#FFA500", "#FFE44D"],
     },
     2: {
       title: "SILVER STAR!",
@@ -82,8 +37,7 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
       message: `Excellent progress ${name}! You're climbing fast. Just one more step to the top!`,
       gradient: "from-slate-400 via-gray-500 to-slate-400",
       icon: <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300" />,
-      bgGlow: "bg-slate-400/20",
-      confettiColors: ["#C0C0C0", "#E8E8E8", "#A9A9A9"]
+      confettiColors: ["#C0C0C0", "#E8E8E8", "#A9A9A9"],
     },
     3: {
       title: "BRONZE ACHIEVER!",
@@ -91,13 +45,13 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
       message: `Great job ${name}! You've made it to the podium. Keep pushing forward!`,
       gradient: "from-amber-700 via-orange-700 to-amber-700",
       icon: <Medal className="w-12 h-12 sm:w-16 sm:h-16 text-amber-600" />,
-      bgGlow: "bg-amber-600/20",
-      confettiColors: ["#CD7F32", "#D4A55A", "#B87333"]
-    }
+      confettiColors: ["#CD7F32", "#D4A55A", "#B87333"],
+    },
   };
 
   const config = rankConfig[rank];
   if (!config) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -106,13 +60,8 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80"
       onClick={onClose}
-      style={{
-        padding: '16px',
-        overflow: 'auto',
-        WebkitOverflowScrolling: 'touch'
-      }}
+      style={{ padding: "16px", overflow: "auto", WebkitOverflowScrolling: "touch" }}
     >
-      {/* Static confetti - CSS only, no JS animation loop */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(12)].map((_, i) => (
           <div
@@ -133,11 +82,9 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ delay: 0.1, duration: 0.25, ease: "easeOut" }}
         className="relative w-full max-w-[92%] sm:max-w-md"
-        style={{ margin: 'auto' }}
+        style={{ margin: "auto" }}
       >
         <div className={`relative bg-gradient-to-br ${config.gradient} rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-0`}>
-
-          {/* Static star badge - no ping, no rotate, no border */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -148,25 +95,12 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
           </motion.div>
 
           <div className="text-center space-y-3 sm:space-y-4">
-
-            {/* Static icon - no bounce */}
-            <div className="flex justify-center">
-              {config.icon}
-            </div>
-
+            <div className="flex justify-center">{config.icon}</div>
             <div className="space-y-0.5 sm:space-y-1">
-              <h2 className="text-xl sm:text-2xl   text-white px-2">
-                {config.title}
-              </h2>
-              <p className="text-sm sm:text-lg font-bold text-white/90 px-2">
-                {config.subtitle}
-              </p>
+              <h2 className="text-xl sm:text-2xl text-white px-2">{config.title}</h2>
+              <p className="text-sm sm:text-lg font-bold text-white/90 px-2">{config.subtitle}</p>
             </div>
-
-            <p className="text-white/90 text-xs sm:text-sm leading-relaxed px-1">
-              {config.message}
-            </p>
-
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed px-1">{config.message}</p>
             <div className="flex flex-col gap-2 pt-2 sm:pt-3">
               <Button
                 onClick={onClose}
@@ -175,19 +109,14 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
                 Continue Studying
               </Button>
               <Button
-                onClick={() => {
-                  onClose();
-                  navigate("/Medrae-quizzes");
-                }}
+                onClick={() => { onClose(); navigate("/Medrae-quizzes"); }}
                 className="w-full bg-white hover:bg-white/90 text-slate-900 font-bold text-xs sm:text-sm py-2 px-3 border-0"
               >
-                Improve My Rank
-                <ArrowRight className="w-3 h-3 ml-1.5" />
+                Improve My Rank <ArrowRight className="w-3 h-3 ml-1.5" />
               </Button>
             </div>
           </div>
         </div>
-
         <p className="text-center text-white/60 text-[10px] sm:text-xs mt-2 sm:mt-3">
           Tap anywhere to continue
         </p>
@@ -196,110 +125,60 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
   );
 };
 
-// 🏆 Medal Icon component
-const Medal = ({ className }) => (
+const Medal = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 2L15 8.5L22 9.5L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9.5L9 8.5L12 2Z" />
   </svg>
 );
 
-// ✅ Synchronous cache loader - runs BEFORE component renders
+/* ============================================================
+   Synchronous cache loader (unchanged)
+   ============================================================ */
 const getInitialCache = () => {
-  if (typeof window === 'undefined') return {};
-
+  if (typeof window === "undefined") return {};
   try {
     const savedData = localStorage.getItem("dashboardData");
     if (savedData) {
       const parsed = JSON.parse(savedData);
-
-      // The dedicated leaderboard cache is the authoritative leaderboard snapshot.
-      // dashboardData may be older because other dashboard sections save it separately.
       try {
         const rawLeaderboard = localStorage.getItem("leaderboard_fast");
         if (rawLeaderboard) {
-          const leaderboardCache = JSON.parse(rawLeaderboard);
-          const leaderboardData = Array.isArray(leaderboardCache)
-            ? leaderboardCache
-            : leaderboardCache?.data;
-
-          if (Array.isArray(leaderboardData)) {
-            parsed.topStudents = leaderboardData;
-          }
+          const lb = JSON.parse(rawLeaderboard);
+          const lbData = Array.isArray(lb) ? lb : lb?.data;
+          if (Array.isArray(lbData)) parsed.topStudents = lbData;
         }
-      } catch (e) { }
-
+      } catch { }
       return parsed;
     }
-  } catch (e) { }
-  // Fallback: load individual cache items
-  const result: any = {};
+  } catch { }
 
+  const result: any = {};
   try {
     const cachedSims = localStorage.getItem("simulationPapers");
     if (cachedSims) result.simulationPapers = JSON.parse(cachedSims);
-  } catch (e) { }
-
+  } catch { }
   try {
     const raw = localStorage.getItem("leaderboard_fast");
     if (raw) {
       const parsed = JSON.parse(raw);
-      // support both old format (array) and new format ({data, ts})
       const data = Array.isArray(parsed) ? parsed : parsed?.data;
       const ts = Array.isArray(parsed) ? 0 : (parsed?.ts ?? 0);
-      const TTL = 60 * 1000; // 60 seconds
-      if (Array.isArray(data) && Date.now() - ts < TTL) {
-        result.topStudents = data;
-      }
+      if (Array.isArray(data) && Date.now() - ts < 60000) result.topStudents = data;
     }
-  } catch (e) { }
-
+  } catch { }
   try {
-    const cachedStreak = localStorage.getItem("streakData");
-    if (cachedStreak) {
-      const parsed = JSON.parse(cachedStreak);
-      result.studyStreak = parsed.currentStreak || 0;
-      result.bestStreak = parsed.bestStreak || 0;
-    }
-  } catch (e) { }
-
-  try {
-    const cachedQuizCount = localStorage.getItem("quizCount");
-    if (cachedQuizCount) result.quizCount = JSON.parse(cachedQuizCount);
-  } catch (e) { }
-
-  try {
-    const cachedProgress = localStorage.getItem("dashboard_study_progress");
-    if (cachedProgress) result.studyProgress = JSON.parse(cachedProgress);
-  } catch (e) { }
-
-  try {
-    const raw = localStorage.getItem("quick_duel_history_v2");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.d) result.quickDuelHistory = parsed.d;
-    }
-  } catch (e) { }
-
-  try {
-    const raw = localStorage.getItem("quick_duel_players_v2");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.d) result.quickDuelPlayers = parsed.d;
-    }
-  } catch (e) { }
-
-  try {
-    const cachedProfile = localStorage.getItem("userProfile");
-    if (cachedProfile) result.profileState = JSON.parse(cachedProfile);
-  } catch (e) { }
-
+    const s = localStorage.getItem("streakData");
+    if (s) { const p = JSON.parse(s); result.studyStreak = p.currentStreak || 0; result.bestStreak = p.bestStreak || 0; }
+  } catch { }
+  try { const q = localStorage.getItem("quizCount"); if (q) result.quizCount = JSON.parse(q); } catch { }
+  try { const p = localStorage.getItem("dashboard_study_progress"); if (p) result.studyProgress = JSON.parse(p); } catch { }
+  try { const r = localStorage.getItem("quick_duel_history_v2"); if (r) { const p = JSON.parse(r); if (p?.d) result.quickDuelHistory = p.d; } } catch { }
+  try { const r = localStorage.getItem("quick_duel_players_v2"); if (r) { const p = JSON.parse(r); if (p?.d) result.quickDuelPlayers = p.d; } } catch { }
+  try { const c = localStorage.getItem("userProfile"); if (c) result.profileState = JSON.parse(c); } catch { }
   return result;
 };
-// ✅ Leaderboard cache helpers
-// Cached rankings are displayed immediately, but are never treated as a reason
-// to skip the fresh Supabase request when the dashboard loads.
-const LEADERBOARD_KEY = "leaderboard_fast";
 
+const LEADERBOARD_KEY = "leaderboard_fast";
 const readLeaderboardCache = (): { data: any[]; ts: number } | null => {
   try {
     const raw = localStorage.getItem(LEADERBOARD_KEY);
@@ -309,192 +188,94 @@ const readLeaderboardCache = (): { data: any[]; ts: number } | null => {
     const ts = Array.isArray(parsed) ? 0 : (parsed?.ts ?? 0);
     if (!Array.isArray(data)) return null;
     return { data, ts };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 };
 const writeLeaderboardCache = (data: any[]) => {
-  try {
-    localStorage.setItem(
-      LEADERBOARD_KEY,
-      JSON.stringify({ data, ts: Date.now() })
-    );
-  } catch { }
+  try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify({ data, ts: Date.now() })); } catch { }
 };
 
 /* ============================================================
-   Skeleton Loader — matches leaderboard row layout exactly
+   StudentDashboard
    ============================================================ */
-function SkeletonList({ count = 5 }) {
-  return (
-    <div className="flex flex-col" aria-hidden="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 px-2.5 py-2.5 animate-pulse"
-        >
-          {/* Rank */}
-          <div className="w-6 shrink-0 flex justify-center">
-            <div className="h-3 w-4 rounded bg-slate-200 dark:bg-white/10" />
-          </div>
-
-          {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
-
-          {/* Name + institution */}
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="h-3 w-2/3 rounded bg-slate-200 dark:bg-white/10" />
-            <div className="h-2.5 w-1/3 rounded bg-slate-200 dark:bg-white/10" />
-          </div>
-
-          {/* Stars pill */}
-          <div className="shrink-0 h-6 w-12 rounded-full bg-slate-200 dark:bg-white/10" />
-        </div>
-      ))}
-    </div>
-  );
-}
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const user = useUser();
-
-  // ✅ INITIALIZE ALL STATE WITH CACHE - NO WHITE FLASH
   const initialCache = getInitialCache();
 
-  // ===== STATE DECLARATIONS =====
-  const [name, setName] = useState<string | null>(() => {
-    if (initialCache.profileState?.name) {
-      return initialCache.profileState.name.split(" ")[0];
-    }
-    return null;
-  });
-
-  const [studyProgress, setStudyProgress] = useState<number | null>(
-    initialCache.studyProgress ?? null
+  // ─── Shared state ───
+  const [name, setName] = useState<string | null>(() =>
+    initialCache.profileState?.name?.split(" ")[0] ?? null
   );
-
-  const [quizCount, setQuizCount] = useState<number | null>(
-    initialCache.quizCount ?? null
-  );
-
-  const [targetScore, setTargetScore] = useState<number>(() => {
-    return initialCache.profileState?.target_score ?? 50;
-  });
-
-  const [isOpen, setIsOpen] = useState(false);
-
-  const [studyStreak, setStudyStreak] = useState<number | null>(
-    initialCache.studyStreak ?? null
-  );
-
-  const [bestStreak, setBestStreak] = useState<number | null>(
-    initialCache.bestStreak ?? null
-  );
-
-
-  const [dailyContent, setDailyContent] = useState("");
+  const [profileState, setProfileState] = useState<any | null>(initialCache.profileState ?? null);
+  const [studyProgress, setStudyProgress] = useState<number | null>(initialCache.studyProgress ?? null);
+  const [quizCount, setQuizCount] = useState<number | null>(initialCache.quizCount ?? null);
+  const [studyStreak, setStudyStreak] = useState<number | null>(initialCache.studyStreak ?? null);
+  const [bestStreak, setBestStreak] = useState<number | null>(initialCache.bestStreak ?? null);
   const [feedsAttemptCount, setFeedsAttemptCount] = useState(0);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [openProfileId, setOpenProfileId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showRankCelebration, setShowRankCelebration] = useState(false);
   const [newRank, setNewRank] = useState<number | null>(null);
-
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [dashboardLoaded, setDashboardLoaded] = useState(true);
-  const [previousRank, setPreviousRank] = useState(null);
   const [overlayOpen, setOverlayOpen] = useState(false);
 
-  const [profileState, setProfileState] = useState<any | null>(
-    initialCache.profileState ?? null
-  );
-
-  const [position, setPosition] = useState({ x: 24, y: 400 });
-  const [dragging, setDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  // ===== REFS =====
-  const leaderboardCacheRef = useRef({
-    data: initialCache.topStudents ?? null,
-    lastFetch: 0,
-    isLoading: false
-  });
-
-  const isLoadingDashboard = useRef(false);
-  const userRankPrevious = useRef<number | null>(null);
-  const dashboardRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<NodeJSIMEout>();
-
-  // ===== STATE FOR SIMULATION PAPERS & TOP STUDENTS =====
-  const [simulationPapers, setSimulationPapers] = useState<any[]>(
-    initialCache.simulationPapers ?? []
-  );
+  const [simulationPapers, setSimulationPapers] = useState<any[]>(initialCache.simulationPapers ?? []);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
-  const [cachedSimulationPapers, setCachedSimulationPapers] = useState<any[]>(
-    initialCache.simulationPapers ?? []
-  );
-
-  const [topStudents, setTopStudents] = useState<any[]>(
-    initialCache.topStudents ?? []
-  );
+  const [cachedSimulationPapers, setCachedSimulationPapers] = useState<any[]>(initialCache.simulationPapers ?? []);
+  const [topStudents, setTopStudents] = useState<any[]>(initialCache.topStudents ?? []);
   const [loadingTopStudents, setLoadingTopStudents] = useState(
     () => !initialCache.topStudents || initialCache.topStudents.length === 0
   );
   const [leaderboardUpdatedAt, setLeaderboardUpdatedAt] = useState<number | null>(null);
 
-  // ===== ALL FETCH FUNCTIONS =====
+  // ─── Filter ───
+  const [activeFilter, setActiveFilter] = useState<string | null>("all");
+  const handleFilterChange = useCallback((filter: StudentFilter) => {
+    if (navigator.vibrate) navigator.vibrate(10);
+    if (activeFilter === filter.id) {
+      setActiveFilter("all");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setActiveFilter(filter.id);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }, [activeFilter]);
+
+  // ─── Refs ───
+  const isLoadingDashboard = useRef(false);
+  const userRankPrevious = useRef<number | null>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  // ─── Fetch functions (all unchanged) ───
   const fetchFeedsAttemptCount = useCallback(async () => {
     if (!user?.id) return;
     const { count, error } = await supabase
       .from("quiz_attempts")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id);
-    if (!error && count !== null) {
-      setFeedsAttemptCount(count);
-    }
+    if (!error && count !== null) setFeedsAttemptCount(count);
   }, [user?.id]);
 
   const fetchQuizCount = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
-        .from("quiz_results")
-        .select("unit, score")
-        .eq("user_id", user.id);
-      if (error) {
-        console.error("Error fetching quiz results:", error.message);
-        return;
-      }
-      if (!data) return;
+      const { data, error } = await supabase.from("quiz_results").select("unit, score").eq("user_id", user.id);
+      if (error || !data) return;
       const grouped: Record<string, any[]> = {};
-      data.forEach((res) => {
-        const key = res.unit || "Unknown";
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(res);
-      });
-      const validUnits = Object.keys(grouped).filter((unitName) => {
-        const attempts = grouped[unitName];
-        const latestAttempt = attempts[attempts.length - 1];
-        return latestAttempt?.score && latestAttempt.score > 0;
+      data.forEach((res) => { const k = res.unit || "Unknown"; (grouped[k] ||= []).push(res); });
+      const validUnits = Object.keys(grouped).filter((u) => {
+        const a = grouped[u];
+        const last = a[a.length - 1];
+        return last?.score && last.score > 0;
       });
       setQuizCount(validUnits.length);
       localStorage.setItem("quizCount", JSON.stringify(validUnits.length));
-    } catch (err) {
-      console.error("Error fetching quiz count:", err);
-    }
+    } catch (err) { console.error("Error fetching quiz count:", err); }
   }, [user?.id]);
 
   const fetchProgress = useCallback(async () => {
     if (!user?.id) return;
     const { data: results, error } = await supabase
-      .from("quiz_results")
-      .select("unit, score, total_questions")
-      .eq("user_id", user.id);
-    if (error || !results) {
-      console.error("Failed to fetch progress");
-      return;
-    }
+      .from("quiz_results").select("unit, score, total_questions").eq("user_id", user.id);
+    if (error || !results) return;
     if (results.length === 0) {
       setStudyProgress(0);
       localStorage.setItem("dashboard_study_progress", JSON.stringify(0));
@@ -503,56 +284,33 @@ export default function StudentDashboard() {
     const grouped: Record<string, number> = {};
     results.forEach((res) => {
       const unit = res.unit || "Unknown";
-      const percent = res.total_questions > 0 ? (res.score / res.total_questions) * 100 : 0;
-      grouped[unit] = grouped[unit] ? Math.max(grouped[unit], percent) : percent;
+      const pct = res.total_questions > 0 ? (res.score / res.total_questions) * 100 : 0;
+      grouped[unit] = grouped[unit] ? Math.max(grouped[unit], pct) : pct;
     });
-    const unitProgressValues = Object.values(grouped);
-    const overallProgress = unitProgressValues.length > 0
-      ? Math.round(unitProgressValues.reduce((a, b) => a + b, 0) / unitProgressValues.length)
-      : 0;
-    setStudyProgress(overallProgress);
-    localStorage.setItem("dashboard_study_progress", JSON.stringify(overallProgress));
+    const vals = Object.values(grouped);
+    const overall = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+    setStudyProgress(overall);
+    localStorage.setItem("dashboard_study_progress", JSON.stringify(overall));
   }, [user?.id]);
-
 
   const updateBestStreakIfNeeded = useCallback(async (current: number) => {
     const { data, error } = await supabase
-      .from("login_activity")
-      .select("streak")
-      .eq("user_id", user.id)
-      .order("streak", { ascending: false })
-      .limit(1);
-
+      .from("login_activity").select("streak").eq("user_id", user.id)
+      .order("streak", { ascending: false }).limit(1);
     let historicalBest = 0;
-    if (!error && data && data.length > 0) {
-      historicalBest = data[0].streak || 0;
-    }
-
+    if (!error && data && data.length > 0) historicalBest = data[0].streak || 0;
     const finalBest = Math.max(current, historicalBest);
     setBestStreak(finalBest);
-    localStorage.setItem(
-      "streakData",
-      JSON.stringify({
-        currentStreak: current,
-        bestStreak: finalBest,
-      })
-    );
+    localStorage.setItem("streakData", JSON.stringify({ currentStreak: current, bestStreak: finalBest }));
   }, [user?.id]);
 
   const handleLoginAndStreak = useCallback(async () => {
     if (!user?.id) return;
     const deviceId = localStorage.getItem("device_id");
-    await supabase.rpc('handle_user_heartbeat', {
-      p_user_id: user.id,
-      p_device_id: deviceId || ""
-    });
+    await supabase.rpc("handle_user_heartbeat", { p_user_id: user.id, p_device_id: deviceId || "" });
     const { data, error } = await supabase
-      .from("login_activity")
-      .select("streak")
-      .eq("user_id", user.id)
-      .order("login_date", { ascending: false })
-      .limit(1)
-      .single();
+      .from("login_activity").select("streak").eq("user_id", user.id)
+      .order("login_date", { ascending: false }).limit(1).single();
     if (!error && data) {
       const newStreak = data.streak || 0;
       setStudyStreak(newStreak);
@@ -562,28 +320,17 @@ export default function StudentDashboard() {
 
   const fetchProfile = useCallback(async () => {
     if (!user?.id) return;
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-
+    const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
     if (!error && data) {
       if (data.name) setName(data.name.split(" ")[0]);
-
-      // ✅ Use ?? so that if target_score is 0, it stays 0.
-      // It only becomes 50 if the database value is null/undefined.
-      setTargetScore(data.target_score ?? 50);
-
       setProfileState(data);
       localStorage.setItem("userProfile", JSON.stringify(data));
     }
   }, [user?.id]);
 
   const fetchSimulationPapers = useCallback(async () => {
-    const CACHE_KEY = 'simulation_papers_v3';
+    const CACHE_KEY = "simulation_papers_v3";
     const CACHE_DURATION = 15 * 60 * 1000;
-
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
@@ -593,58 +340,41 @@ export default function StudentDashboard() {
           setCachedSimulationPapers(data);
           return;
         }
-      } catch (e) { }
+      } catch { }
     }
-
     try {
       const { data: papers, error: paperError } = await supabase
         .from("simulation_papers")
         .select("id, title, description, course, block, is_free, created_at, duration, image_url")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .eq("is_active", true).order("created_at", { ascending: false });
       if (paperError) throw paperError;
       if (!papers) return;
-
       const { data: results, error: resultsError } = await supabase
-        .from("simulation_results")
-        .select("paper_id, score, total_questions")
-        .eq("user_id", user.id);
+        .from("simulation_results").select("paper_id, score, total_questions").eq("user_id", user.id);
       if (resultsError) throw resultsError;
-
       const progressMap: Record<string, number> = {};
       const attemptCountMap: Record<string, number> = {};
       papers.forEach((paper) => {
-        const paperResults = results?.filter((r) => r.paper_id === paper.id) || [];
-        attemptCountMap[paper.id] = paperResults.length;
-        if (paperResults.length > 0) {
-          const highestScore = Math.max(...paperResults.map(r => r.score));
-          const totalQuestions = paper.total_questions || 10;
-          progressMap[paper.id] = Math.round((highestScore / totalQuestions) * 100);
+        const pr = results?.filter((r) => r.paper_id === paper.id) || [];
+        attemptCountMap[paper.id] = pr.length;
+        if (pr.length > 0) {
+          const highest = Math.max(...pr.map((r) => r.score));
+          const total = paper.total_questions || 10;
+          progressMap[paper.id] = Math.round((highest / total) * 100);
         } else {
           progressMap[paper.id] = 0;
         }
       });
-
       setSimulationProgress(progressMap);
-      const papersWithAttempts = papers.map((paper) => ({
-        ...paper,
-        attempt_count: attemptCountMap[paper.id] || 0,
-      }));
-
-      setSimulationPapers(papersWithAttempts);
-      setCachedSimulationPapers(papersWithAttempts);
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        data: papersWithAttempts,
-        timestamp: Date.now()
-      }));
-    } catch (error: any) {
-      console.log("Simulation papers: Offline mode, keeping current list");
-    }
+      const withAttempts = papers.map((p) => ({ ...p, attempt_count: attemptCountMap[p.id] || 0 }));
+      setSimulationPapers(withAttempts);
+      setCachedSimulationPapers(withAttempts);
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: withAttempts, timestamp: Date.now() }));
+    } catch { console.log("Simulation papers: offline mode"); }
   }, [user?.id]);
+
   const fetchTopStudents = useCallback(async () => {
     if (!user?.id) return;
-
-    // 1. Paint cache instantly (even if stale — better than blank)
     const cached = readLeaderboardCache();
     if (cached && cached.data.length > 0) {
       setTopStudents(cached.data);
@@ -652,34 +382,20 @@ export default function StudentDashboard() {
     } else {
       setLoadingTopStudents(true);
     }
-
-    // 2. Always revalidate with Supabase. A cache entry is only for instant
-    // display; it must not prevent the dashboard from requesting current rankings.
     try {
       const { data, error } = await supabase.rpc("get_leaderboard_v2");
       if (error) throw error;
-
-      // An empty array is also a valid response and must clear old rankings.
       if (Array.isArray(data)) {
         setTopStudents(data);
         writeLeaderboardCache(data);
         setLeaderboardUpdatedAt(Date.now());
-
-        // sync into dashboardData blob
         try {
-          const dashboardData = localStorage.getItem("dashboardData");
-          if (dashboardData) {
-            const parsed = JSON.parse(dashboardData);
-            parsed.topStudents = data;
-            localStorage.setItem("dashboardData", JSON.stringify(parsed));
-          }
+          const dd = localStorage.getItem("dashboardData");
+          if (dd) { const p = JSON.parse(dd); p.topStudents = data; localStorage.setItem("dashboardData", JSON.stringify(p)); }
         } catch { }
-
-        // rank celebration only applies when the returned leaderboard is non-empty.
         if (data.length > 0) {
-          const myIndex = data.findIndex((s: any) => s.userid === user.id);
-          const myRank = myIndex !== -1 ? myIndex + 1 : null;
-
+          const myIdx = data.findIndex((s: any) => s.userid === user.id);
+          const myRank = myIdx !== -1 ? myIdx + 1 : null;
           if (myRank && myRank <= 3 && myRank !== userRankPrevious.current) {
             setNewRank(myRank);
             setShowRankCelebration(true);
@@ -687,804 +403,229 @@ export default function StudentDashboard() {
           }
         }
       }
-    } catch (err) {
-      console.error("Leaderboard Error:", err);
-    } finally {
-      setLoadingTopStudents(false);
-    }
+    } catch (err) { console.error("Leaderboard Error:", err); }
+    finally { setLoadingTopStudents(false); }
   }, [user?.id]);
 
-  // ✅ handleOpenDialog - OPENS INSTANTLY, LOADS DATA IN BACKGROUND
-  // ✅ Opens instantly. Always revalidates in background.
   const handleOpenDialog = useCallback(() => {
     if (!user?.id) return;
-
-    setOverlayOpen(true); // open immediately
-
-    // Always refresh when dialog opens (cheap: 1 RPC, ≤20 rows)
+    setOverlayOpen(true);
     fetchTopStudents();
   }, [user?.id, fetchTopStudents]);
 
-  // ===== LOAD DASHBOARD DATA =====
   const loadDashboardData = useCallback(async () => {
     if (!user?.id || isLoadingDashboard.current) return;
     isLoadingDashboard.current = true;
-
     try {
-      // 1. Run all fetches in parallel
-      // 1. Run all fetches in parallel
-      // NOTE: leaderboard is fetched by its own effect, not here.
       await Promise.allSettled([
-        fetchProfile(),
-        handleLoginAndStreak(),
-        fetchProgress(),
-        fetchSimulationPapers(),
-        fetchQuizCount(),
-        fetchFeedsAttemptCount()
+        fetchProfile(), handleLoginAndStreak(), fetchProgress(),
+        fetchSimulationPapers(), fetchQuizCount(), fetchFeedsAttemptCount(),
       ]);
-
-      // 2. Final sync to LocalStorage so the next refresh is instant
-      // 2. Final sync to LocalStorage so the next refresh is instant
-      const dashboardData = {
-        name,
-        studyProgress,
-        quizCount,
-        studyStreak,
-        bestStreak,
-        topStudents,
-        profileState
-      };
-      localStorage.setItem("dashboardData", JSON.stringify(dashboardData));
+      localStorage.setItem("dashboardData", JSON.stringify({
+        name, studyProgress, quizCount, studyStreak, bestStreak, topStudents, profileState,
+      }));
       localStorage.setItem("last_dashboard_fetch", Date.now().toString());
+    } catch { console.log("Offline mode - cached data displayed"); }
+    finally { isLoadingDashboard.current = false; }
+  }, [user?.id, fetchProfile, handleLoginAndStreak, fetchProgress, fetchSimulationPapers, fetchQuizCount, fetchFeedsAttemptCount]);
 
-    } catch (err) {
-      console.log("Working in offline mode - cached data displayed");
-    } finally {
-      isLoadingDashboard.current = false;
-    }
-  }, [
-    user?.id, fetchProfile, handleLoginAndStreak,
-    fetchProgress, fetchSimulationPapers,
-    fetchQuizCount, fetchFeedsAttemptCount
-  ]);
-  // ===== EFFECTS =====
+  // ─── Effects ───
+  useEffect(() => { if (user?.id) loadDashboardData(); }, [user?.id]);
   useEffect(() => {
     if (!user?.id) return;
-    loadDashboardData();
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        loadDashboardData();
-      }
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
+    const id = setInterval(() => { if (!document.hidden) loadDashboardData(); }, 5 * 60 * 1000);
+    return () => clearInterval(id);
   }, [user?.id, loadDashboardData]);
-
   useEffect(() => {
     if (!user?.id) return;
-
-    // initial load (SWR — paints cache, then revalidates)
     fetchTopStudents();
-
-    // background refresh every 60s, only when tab is visible
-    const intervalId = setInterval(() => {
-      if (!document.hidden) fetchTopStudents();
-    }, 60 * 1000);
-
-    // refresh when user returns to the tab
-    const onFocus = () => {
-      if (!document.hidden) fetchTopStudents();
-    };
+    const id = setInterval(() => { if (!document.hidden) fetchTopStudents(); }, 60 * 1000);
+    const onFocus = () => { if (!document.hidden) fetchTopStudents(); };
     window.addEventListener("focus", onFocus);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener("focus", onFocus);
-    };
+    return () => { clearInterval(id); window.removeEventListener("focus", onFocus); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const handleSmoothNavigate = useCallback((url: string, scrollToTop = true) => {
     if (navigator.vibrate) navigator.vibrate(10);
-    if (scrollToTop && dashboardRef.current) {
-      dashboardRef.current.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }
-    setTimeout(() => {
-      navigate(url);
-    }, 50);
+    if (scrollToTop) window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => navigate(url), 50);
   }, [navigate]);
 
-
-  // ✅ RENDER
+  // ─── Render ───
   return (
     <div
       ref={dashboardRef}
       className="dashboard-no-select min-h-screen md:flex md:items-center md:justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] w-full"
-      style={{
-        scrollBehavior: 'smooth',
-        WebkitOverflowScrolling: 'touch'
-      }}
+      style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
     >
       <AnimatePresence>
         {showRankCelebration && newRank && (
           <RankCelebrationOverlay
             rank={newRank}
-            name={profileState?.name?.split(' ')[0] || "Learner"}
+            name={profileState?.name?.split(" ")[0] || "Learner"}
             onClose={() => setShowRankCelebration(false)}
             navigate={navigate}
           />
         )}
       </AnimatePresence>
-      {/* 🧪 Dev-only: force popup visible on every refresh, bypassing weekend gate */}
+
       <Referral />
+
       <div className="w-full space-y-2 md:px-4 lg:px-6">
+        <StudentFilters activeId={activeFilter} onChange={handleFilterChange} />
 
-        {/* ---- ABOVE THE FOLD: keep as-is, mounts immediately ---- */}
-        <QuickDuelStrip
-          userId={user?.id ?? ""}
-          initialHistory={initialCache.quickDuelHistory}
-          initialPlayers={initialCache.quickDuelPlayers}
+        {/* ✅ ALL filterable sections including Proctorium now live inside StudentSections */}
+        <StudentSections
+          activeFilter={activeFilter}
+          user={user}
+          initialCache={initialCache}
+          profileState={profileState}
+          topStudents={topStudents}
+          loadingTopStudents={loadingTopStudents}
+          setSelectedUserId={setSelectedUserId}
+          selectedUserId={selectedUserId}
+          simulationPapers={cachedSimulationPapers}
+          simulationProgress={simulationProgress}
+          onOpenPaper={(id) => handleSmoothNavigate(`/simulation/${id}`)}
         />
-        <DailyTriviaCard />
 
-        <SchoolWarsCard currentUserInstitution={profileState?.institution} />
-        <DeferredMount fallback={<div className="h-[320px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <Algorithm />
-        </DeferredMount>
-        {/* ---- BELOW THE FOLD: everything else deferred ---- */}
-        <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />
-        </DeferredMount>
-
-        <DeferredMount fallback={<div className="h-[240px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <ShortPaper1 limit={5} />
-        </DeferredMount>
-
-        <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <CountdownFloating />
-        </DeferredMount>
-
-        <DeferredMount fallback={<div className="h-[240px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <ShortPaper2 limit={5} />
-        </DeferredMount>
-
-        {/* Top Students Leaderboard */}
-        <DeferredMount fallback={<div className="h-[400px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <Card className="relative overflow-hidden rounded-2xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-none mt-1">
-            {/* Single ambient blur — cheap, GPU-friendly */}
-            <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px] pointer-events-none" />
-
-            <CardHeader className="relative z-10 pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Top Students
-                </CardTitle>
-                <Link
-                  to="/Medrae-quizzes"
-                  className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400
-                   hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                >
-                  VIEW ALL →
-                </Link>
-              </div>
-
-              {/* === Compact Explainer === */}
-              <details className="group mt-3 bg-slate-100/60 dark:bg-white/[0.04] rounded-xl border-0 overflow-hidden">
-                <summary className="cursor-pointer list-none p-3 flex items-center justify-between
-                          text-[11px] font-bold text-slate-600 dark:text-slate-400
-                          tracking-wider select-none">
-                  <span className="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      className="w-3.5 h-3.5 text-blue-500">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v-4M12 8h.01" />
-                    </svg>
-                    How winners are chosen
-                  </span>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                    className="w-3.5 h-3.5 transition-transform duration-200 group-open:rotate-180">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </summary>
-
-                <div className="px-3 pb-3 pt-1 space-y-3">
-                  {/* Star tiers — single row of pills instead of grid */}
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-2">
-                      1. STAR CALCULATION
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { r: "90%+", s: 5 },
-                        { r: "75–89%", s: 4 },
-                        { r: "60–74%", s: 3 },
-                        { r: "40–59%", s: 2 },
-                        { r: "1–39%", s: 1 },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-1.5 px-2 py-1 rounded-md
-                           bg-white/70 dark:bg-black/20 text-[10px] font-bold"
-                        >
-                          <span className="text-slate-700 dark:text-slate-300 tabular-nums">{item.r}</span>
-                          <span className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400">
-                            <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
-                            {item.s}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tie-breakers — numbered list, tighter */}
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-2">
-                      2. RANKING TIE-BREAKERS
-                    </p>
-                    <ol className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                      <li className="flex items-start gap-2">
-                        <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600
-                               dark:text-emerald-400 text-[9px] font-bold
-                               flex items-center justify-center mt-0.5">1</span>
-                        Total Stars Earned <span className="text-slate-400 dark:text-slate-500">(primary)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600
-                               dark:text-emerald-400 text-[9px] font-bold
-                               flex items-center justify-center mt-0.5">2</span>
-                        Average Quiz Score <span className="text-slate-400 dark:text-slate-500">(secondary)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600
-                               dark:text-emerald-400 text-[9px] font-bold
-                               flex items-center justify-center mt-0.5">3</span>
-                        Units Attempted <span className="text-slate-400 dark:text-slate-500">(tie-breaker)</span>
-                      </li>
-                    </ol>
-                  </div>
-
-                  {/* CTA — smaller, inline */}
-                  <Button
-                    asChild
-                    className="w-full h-8 bg-blue-600 hover:bg-blue-700 text-white
-                     font-bold text-[10px] tracking-wider rounded-lg shadow-none
-                     transition-colors duration-150"
-                  >
-                    <Link to="/Medrae-quizzes">IMPROVE MY RANK</Link>
-                  </Button>
-                </div>
-              </details>
-            </CardHeader>
-
-            {/* === Leaderboard List === */}
-            <CardContent className="px-2 sm:px-3 relative z-10 pt-1 pb-2">
-              {loadingTopStudents && topStudents.length === 0 ? (
-                <SkeletonList count={5} />
-              ) : topStudents.length > 0 ? (
-                <div className="flex flex-col">
-                  {topStudents.map((s, idx) => {
-                    const isTop3 = idx < 3;
-                    const medals = ["🥇", "🥈", "🥉"];
-
-                    return (
-                      <button
-                        key={s.userid}
-                        onClick={() => setSelectedUserId(s.userid)}
-                        className="group flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left
-             transition-colors duration-150
-             hover:bg-slate-50 dark:hover:bg-white/5
-             active:bg-slate-100 dark:active:bg-white/10"
-                      >
-                        {/* Avatar */}
-                        <img
-                          src={s.avatar_url || "/UsersAvatar.jpg"}
-                          alt={s.name}
-                          loading="lazy"
-                          decoding="async"
-                          className={`w-16 h-16 rounded-full object-cover shrink-0
-               ${isTop3
-                              ? "ring-2 ring-yellow-400/60"
-                              : "ring-1 ring-slate-200 dark:ring-white/10"}`}
-                        />
-
-                        {/* Name + institution */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[13px] text-slate-900 dark:text-white truncate leading-tight">
-                            {s.name || "Unknown"}
-                          </p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-                            {s.institution || "Institution"}
-                          </p>
-                        </div>
-
-                        {/* Rank + Stars, grouped on the right */}
-                        <div className="shrink-0 flex items-center gap-2">
-                          <div className="w-6 text-center">
-                            {isTop3 ? (
-                              <span className="text-lg leading-none">{medals[idx]}</span>
-                            ) : (
-                              <span className="text-[11px] font-bold text-slate-400 tabular-nums">
-                                {idx + 1}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-full
-        bg-yellow-50 dark:bg-yellow-500/10">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span className="text-[11px] font-bold text-yellow-700 dark:text-yellow-400 tabular-nums">
-                              {s.stars}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <p className="text-sm font-bold text-slate-500 tracking-wider">
-                    Competition Starting Soon...
-                  </p>
-                </div>
-              )}
-            </CardContent>
-
-            <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
-          </Card>
-        </DeferredMount>
-        <DeferredMount fallback={<div className="h-[240px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <ShortPractice limit={5} />
-        </DeferredMount>
-
-        <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <FeedSeenTop10 />
-        </DeferredMount>
-        {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
-        <div
-          className={cn(
-            "fixed z-30 right-4",
-            // ── Mobile: EXACT previous position (bottom calc) ──
-            "max-md:bottom-[calc(60px+env(safe-area-inset-bottom,0px)+32px)]",
-            // ── Desktop: clearly lower, right-aligned ──
-            "md:bottom-8 md:right-5"
-          )}
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            onClick={() => {
-              if (navigator.vibrate) navigator.vibrate(40);
-              handleOpenDialog();
-            }}
-            aria-label="Open leaderboard"
-            className={cn(
-              "group flex items-center justify-center rounded-full",
-              // ---- SHAPE & SIZE ----
-              "w-14 h-14 p-0",
-              "md:w-auto md:h-auto md:min-w-[110px] md:pl-3 md:pr-4 md:py-2.5",
-              // ---- LAYOUT ----
-              "gap-0 md:gap-2",
-              // ---- COLORS: SOLID AMBER FAB ----
-              "bg-amber-500 hover:bg-amber-600",
-              "text-white",
-              "ring-1 ring-amber-400/50 hover:ring-amber-400/70",
-              // ---- DARK: same amber, slightly deeper ring ----
-              "dark:bg-amber-500 dark:hover:bg-amber-600",
-              "dark:ring-amber-400/30 dark:hover:ring-amber-400/50",
-              // ---- SHADOW: color-tinted, matches FAB ----
-              "shadow-lg shadow-amber-500/30",
-              "dark:shadow-amber-900/40",
-              // ---- MOTION ----
-              "transition-colors duration-300 ease-out",
-              "focus:outline-none focus-visible:ring-2",
-              "focus-visible:ring-white/80 dark:focus-visible:ring-white/70"
-            )}
-          >
-            {/* Icon chip — full-size on mobile, small chip on desktop */}
-            <span
-              className={cn(
-                "relative flex items-center justify-center rounded-full overflow-visible",
-                "w-full h-full bg-transparent",
-                // Desktop: subtle white tint chip inside the amber button
-                "md:w-7 md:h-7 md:bg-white/15",
-                "text-white"
-              )}
-            >
-              {/* White Lucide icon — Crown when leader exists, Trophy otherwise */}
-              {topStudents.length > 0 ? (
-                <Crown
-                  className="w-6 h-6 md:w-4 md:h-4 text-white"
-                  strokeWidth={2.2}
-                />
-              ) : (
-                <Trophy
-                  className="w-6 h-6 md:w-4 md:h-4 text-white/85"
-                  strokeWidth={2.2}
-                />
-              )}
-            </span>
-
-            {/* Label — desktop only */}
-            <span className="hidden md:inline text-sm font-semibold text-white">
-              Best
-            </span>
-          </motion.button>
-        </div>
-        {/* ✅ LEADERBOARD SHEET — bottom-up, drag-to-dismiss */}
-        {/* ✅ LEADERBOARD — bottom sheet on phone, centered modal on desktop */}
-        <CenteredModal
-          open={overlayOpen}
-          onClose={() => setOverlayOpen(false)}
-          maxWidthClass="max-w-md"
-        >
-          <div className="px-5 pt-2 pb-8">
-            <div className="flex items-center justify-center gap-2 mb-5">
-              <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
-                <Newspaper className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                Quizzes Bank Insights
-              </h2>
-            </div>
-
-            <div className="space-y-5">
-              <p className="text-sm text-center text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                "Practice makes permanent. Engage with the community Quizzes Bank(Q.B) to climb the ranks."
-              </p>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
-                  <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
-                  <span className="text-[10px] font-bold text-slate-500 tracking-wider">Your Feed Attempts</span>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col items-center text-center">
-                  <Trophy className="w-4 h-4 text-amber-500 mb-2" />
-                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider">Current Leader</span>
-
-                  {loadingTopStudents ? (
-                    <div className="mt-2 flex flex-col items-center animate-pulse">
-                      <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
-                      <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
-                    </div>
-                  ) : topStudents.length > 0 ? (
-                    <div className="mt-2 flex flex-col items-center">
-                      <img
-                        src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                        className="h-10 w-10 rounded-full border-2 border-white dark:border-slate-800 object-cover"
-                        alt="Leader"
-                        loading="lazy"
-                      />
-                      <p className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate max-w-[80px]">
-                        {topStudents[0].name.split(' ')[0]}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-2 flex flex-col items-center">
-                      <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
-                      <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {loadingTopStudents ? (
-                <div className="flex items-center justify-center">
-                  <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
-                </div>
-              ) : topStudents.length > 0 ? (
-                <div className="flex items-center justify-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full">
-                    <Crown className="w-3.5 h-3.5 fill-current" />
-                    <span className="text-xs font-bold tracking-tight">Top Performer This Week</span>
-                  </div>
-                </div>
-              ) : null}
-
-              {leaderboardUpdatedAt && (
-                <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest">
-                  Updated {formatDistanceToNow(leaderboardUpdatedAt)} ago
-                </p>
-              )}
-
-              <div className="pt-1">
-                <Button
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                  onClick={() => {
-                    if (navigator.vibrate) navigator.vibrate(50);
-                    navigate("/Medrae-quizzes");
-                    setOverlayOpen(false);
-                  }}
-                >
-                  Start Quizzing
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest mt-4">
-                  Complete Units to Climb the Leaderboard
-                </p>
-                <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest mt-2">
-                  Medrae Community Hub
-                </p>
-              </div>
-            </div>
-          </div>
-        </CenteredModal>
-        <DeferredMount fallback={<div className="h-[140px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <DailyStatus />
-        </DeferredMount>
-
-
-        {/* --- SIMULATION PAPERS SECTION --- */}
-        <DeferredMount fallback={<div className="h-[400px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <section className="mt-1 space-y-2">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 px-2 sm:px-0">
-              <div>
-                <h2 className="text-2xl   tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-                  Proctorium Papers V1
-                  <span className="text-xs font-bold px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full">
-                    {cachedSimulationPapers.length} Available
-                  </span>
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                  Simulations designed to mirror NCK exam conditions. Practice time management,
-                  reduce anxiety, and identify weak areas before the real exam.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 px-2 sm:px-0">
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border-0">
-                <Laptop className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs font-medium text-amber-800 dark:text-amber-200/80 leading-relaxed">
-                  <span className="font-bold">Desktop Recommended:</span> For the smoothest DigiProctor experience, we suggest using a laptop or tablet.
-                </p>
-              </div>
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/5 border-0">
-                <Lightbulb className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <p className="text-xs font-medium text-blue-800 dark:text-blue-200/80 leading-relaxed">
-                  <span className="font-bold">Pro Tip:</span> Treat this as the real exam—find a quiet space, set a timer, and avoid breaks to build true stamina.
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-2 gap-3 px-2 sm:px-0">
-              {cachedSimulationPapers.length > 0 ? (
-                cachedSimulationPapers.map((paper) => (
-                  <Card
-                    key={paper.id}
-                    className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-none hover:-translate-y-1 border-0 bg-white dark:bg-muted/30 rounded-2xl"
-                    onClick={() => handleSmoothNavigate(`/simulation/${paper.id}`)}
-                  >
-                    {/* ✅ NEW: Cover image */}
-                    <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                      <img
-                        src={paper.image_url || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80"}
-                        alt={paper.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      {/* gradient overlay for readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                      {/* Badges moved on top of image */}
-                      <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
-                        <Badge variant={paper.is_free ? "default" : "secondary"} className={paper.is_free ? "bg-emerald-500 hover:bg-emerald-600" : "bg-blue-600 text-white"}>
-                          {paper.is_free ? "Free" : "Premium"}
-                        </Badge>
-                        <div className="flex gap-1">
-                          {paper.difficulty && (
-                            <Badge variant="outline" className="capitalize text-[10px] bg-white/90">{paper.difficulty}</Badge>
-                          )}
-                          {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
-                            <Badge className="bg-orange-500 text-[10px]">New</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <CardHeader className="p-5 pb-2">
-
-                      <CardTitle className="text-lg font-bold leading-tight group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {paper.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                        <Layout className="w-3.5 h-3.5" />
-                        <span className="line-clamp-1">{paper.course || "General Nursing"} • {paper.block || "Block I"}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-5 pt-2 flex-1">
-                      <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-4">
-                        {paper.description || "Comprehensive NCK-style simulation paper for self-assessment."}
-                      </p>
-                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-100 dark:border-white/5">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-slate-400" />
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            {(() => {
-                              const duration = Number(paper.duration) || 30;
-                              return duration < 60 ? `${duration}m` : `${Math.floor(duration / 60)}h ${duration % 60}m`;
-                            })()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <ListChecks className="w-4 h-4 text-slate-400" />
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            {paper.attempt_count || 0} {paper.attempt_count === 1 ? 'Attempt' : 'Attempts'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-1.5">
-                          <span className="text-[10px] font-bold   tracking-wider text-slate-400">Completion</span>
-                          <span className="text-[10px] font-bold text-blue-600">{simulationProgress[paper.id] || 0}%</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500 transition-all duration-1000"
-                            style={{ width: `${simulationProgress[paper.id] || 0}%` }}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-400 font-medium italic">
-                          Added {formatDistanceToNow(new Date(paper.created_at))} ago
-                        </span>
-                        <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                          Start <ArrowRight className="w-3 h-3" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-10">
-                  <p className="text-sm font-bold text-slate-500   tracking-[2px]">No simulation papers available</p>
-                </div>
-              )}
-            </div>
-
-            <div className="py-8 text-center">
-              <p className="text-sm font-bold text-slate-400 dark:text-slate-500 italic">
-                "Every simulation you complete brings you one step closer to exam success."
-              </p>
-            </div>
-          </section>
-        </DeferredMount>
-
-
+        {/* Always-visible utility sections (still not filterable — by design) */}
         <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
           <UnitBreakdown />
         </DeferredMount>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full mt-2 px-2 sm:px-0">
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                </div>
-                <CardTitle className="text-lg font-bold">Share Medrae</CardTitle>
-              </div>
-              <CardDescription className="text-xs leading-relaxed mt-2">
-                Invite colleagues to join Kenya's premier network for medical education and career growth.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 font-bold shadow-none transition-all active:scale-95"
-                onClick={() => {
-                  const shareMessage = `Medrae – The Professional Medical Education & Career Network\n\n• Structured modules\n• Expert-led lectures\n• NCK Exam Prep\n\nJoin today: https://medrae.vercel.app`;
-                  if (navigator.share) {
-                    navigator.share({ title: "Medrae Network", text: shareMessage, url: "https://medrae.vercel.app" });
-                  } else {
-                    navigator.clipboard.writeText(shareMessage);
-                    alert("Link copied to clipboard!");
-                  }
-                }}
-              >
-                Spread the Word
-              </Button>
-            </CardContent>
-          </Card>
 
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all ">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600">
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
-                </div>
-                <CardTitle className="text-lg font-bold">Official Channel</CardTitle>
-              </div>
-              <CardDescription className="text-xs mt-2">
-                Instant updates on new study content and professional announcements.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
-                <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 rounded-xl h-11 font-bold transition-all">
-                  Join Channel
-                </Button>
-              </a>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all ">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600">
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0a12 12 0 100 24 12 12 0 000-24zm0 22a10 10 0 110-20 10 10 0 010 20z" /></svg>
-                </div>
-                <CardTitle className="text-lg font-bold">Student Community</CardTitle>
-              </div>
-              <CardDescription className="text-xs mt-2">
-                Connect with peers, share resources, and ask questions in real-time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
-                <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 rounded-xl h-11 font-bold transition-all">
-                  WhatsApp Group
-                </Button>
-              </a>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-0 bg-white dark:bg-slate-900 rounded-2xl">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 bg-sky-100 dark:bg-sky-500/20 rounded-lg text-sky-600 dark:text-sky-400">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.28 8.13c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27a.55.55 0 01.01.16z" />
-                  </svg>
-                </div>
-                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
-                  Telegram Hub
-                </CardTitle>
-              </div>
-              <CardDescription className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                Complete repository of nursing and medical scholarship materials.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-1 flex flex-col sm:flex-row gap-2">
-              <a
-                href="https://t.me/heartiquenursingnexusscholar"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:flex-1"
-              >
-                <Button className="w-full h-9 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-bold border-0 shadow-none">
-                  Telegram
-                </Button>
-              </a>
-              <a
-                href="https://web.facebook.com/share/g/1AY4nC9Hcp/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:flex-1"
-              >
-                <Button className="w-full h-9 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold border-0 shadow-none">
-                  Facebook
-                </Button>
-              </a>
-            </CardContent>
-          </Card>
-
-        </div>
+        <StudentCommunityCards />
 
         <TermsButton />
       </div>
-    </div >
+
+      {/* ─── Floating Leaderboard FAB ─── */}
+      <div className={cn(
+        "fixed z-30 right-4",
+        "max-md:bottom-[calc(60px+env(safe-area-inset-bottom,0px)+32px)]",
+        "md:bottom-8 md:right-5"
+      )}>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          onClick={() => { if (navigator.vibrate) navigator.vibrate(40); handleOpenDialog(); }}
+          aria-label="Open leaderboard"
+          className={cn(
+            "group flex items-center justify-center rounded-full",
+            "w-14 h-14 p-0 md:w-auto md:h-auto md:min-w-[110px] md:pl-3 md:pr-4 md:py-2.5",
+            "gap-0 md:gap-2 bg-amber-500 hover:bg-amber-600 text-white",
+            "ring-1 ring-amber-400/50 hover:ring-amber-400/70",
+            "dark:bg-amber-500 dark:hover:bg-amber-600",
+            "shadow-lg shadow-amber-500/30 dark:shadow-amber-900/40",
+            "transition-colors duration-300 ease-out",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+          )}
+        >
+          <span className="relative flex items-center justify-center rounded-full w-full h-full md:w-7 md:h-7 md:bg-white/15 text-white">
+            {topStudents.length > 0 ? (
+              <Crown className="w-6 h-6 md:w-4 md:h-4 text-white" strokeWidth={2.2} />
+            ) : (
+              <Trophy className="w-6 h-6 md:w-4 md:h-4 text-white/85" strokeWidth={2.2} />
+            )}
+          </span>
+          <span className="hidden md:inline text-sm font-semibold text-white">Best</span>
+        </motion.button>
+      </div>
+
+      {/* ─── Leaderboard Modal ─── */}
+      <CenteredModal open={overlayOpen} onClose={() => setOverlayOpen(false)} maxWidthClass="max-w-md">
+        <div className="px-5 pt-2 pb-8">
+          <div className="flex items-center justify-center gap-2 mb-5">
+            <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
+              <Newspaper className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+              Quizzes Bank Insights
+            </h2>
+          </div>
+
+          <div className="space-y-5">
+            <p className="text-sm text-center text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              "Practice makes permanent. Engage with the community Quizzes Bank(Q.B) to climb the ranks."
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
+                <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
+                <span className="text-[10px] font-bold text-slate-500 tracking-wider">Your Feed Attempts</span>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col items-center text-center">
+                <Trophy className="w-4 h-4 text-amber-500 mb-2" />
+                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider">Current Leader</span>
+                {loadingTopStudents ? (
+                  <div className="mt-2 flex flex-col items-center animate-pulse">
+                    <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
+                  </div>
+                ) : topStudents.length > 0 ? (
+                  <div className="mt-2 flex flex-col items-center">
+                    <img
+                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                      className="h-10 w-10 rounded-full border-2 border-white dark:border-slate-800 object-cover"
+                      alt="Leader"
+                      loading="lazy"
+                    />
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate max-w-[80px]">
+                      {topStudents[0].name.split(" ")[0]}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex flex-col items-center">
+                    <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-1" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {loadingTopStudents ? (
+              <div className="flex items-center justify-center">
+                <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+              </div>
+            ) : topStudents.length > 0 ? (
+              <div className="flex items-center justify-center">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full">
+                  <Crown className="w-3.5 h-3.5 fill-current" />
+                  <span className="text-xs font-bold tracking-tight">Top Performer This Week</span>
+                </div>
+              </div>
+            ) : null}
+
+            {leaderboardUpdatedAt && (
+              <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest">
+                Updated {formatDistanceToNow(leaderboardUpdatedAt)} ago
+              </p>
+            )}
+
+            <div className="pt-1">
+              <Button
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                onClick={() => {
+                  if (navigator.vibrate) navigator.vibrate(50);
+                  navigate("/Medrae-quizzes");
+                  setOverlayOpen(false);
+                }}
+              >
+                Start Quizzing <ChevronRight className="w-4 h-4" />
+              </Button>
+              <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest mt-4">
+                Complete Units to Climb the Leaderboard
+              </p>
+              <p className="text-center text-[10px] text-slate-400 font-bold tracking-widest mt-2">
+                Medrae Community Hub
+              </p>
+            </div>
+          </div>
+        </div>
+      </CenteredModal>
+    </div>
   );
 }

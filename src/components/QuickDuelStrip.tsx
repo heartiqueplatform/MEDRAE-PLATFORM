@@ -561,7 +561,7 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                    DESKTOP (md+): rounded card, generous padding. */
                 className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl
                rounded-none md:rounded-2xl
-               px-3 pt-3 pb-6 md:px-5 md:pt-5 md:pb-5
+               px-3 pt-1 pb-6 md:px-5 md:pt-5 md:pb-5
                font-sans"
                 style={{ contain: "layout paint" }}
             >

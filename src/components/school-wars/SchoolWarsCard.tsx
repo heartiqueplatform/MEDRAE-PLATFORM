@@ -28,8 +28,8 @@ function initialOf(label: string) {
     return label.replace(/^university of /i, "").charAt(0).toUpperCase() || "?";
 }
 
-/* ─────────────────────────  SUBCOMPONENTS  ───────────────────────── */
-
+/* Avatar — #1 chip stays inverted (it's the "winner" signal).
+   Everyone else neutral on both modes. */
 const SchoolAvatar = memo(function SchoolAvatar({
     label, size = 44, dimmed = false, top = false,
 }: {
@@ -42,7 +42,7 @@ const SchoolAvatar = memo(function SchoolAvatar({
         <div
             className={`rounded-2xl flex items-center justify-center shrink-0
                         ${top
-                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold"
+                    ? "bg-zinc-900 dark:bg-white/[0.12] text-white font-bold"
                     : "bg-zinc-100 dark:bg-white/[0.06] text-zinc-900 dark:text-white font-semibold"}
                         ${dimmed ? "opacity-55" : ""}`}
             style={{ width: size, height: size, fontSize: size * 0.38 }}
@@ -112,8 +112,6 @@ const SchoolCard = memo(function SchoolCard({
     );
 });
 
-/* ─────────────────────────  MAIN COMPONENT  ───────────────────────── */
-
 export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }: Props) {
     const initial = readCache();
     const cachedInstitution = readCachedInstitution();
@@ -143,7 +141,6 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
 
     useEffect(() => { writeCachedInstitution(effectiveInstitution); }, [effectiveInstitution]);
 
-    /* ---- data fetch ---- */
     const fetchLeaderboard = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         try {
@@ -227,7 +224,6 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
         return () => window.removeEventListener("storage", onStorage);
     }, []);
 
-    /* ---- derived ---- */
     const rowsBySlug = useMemo(() => {
         const m = new Map<string, LeaderboardRow>();
         for (const r of rows) m.set(r.institution, r);
@@ -252,7 +248,6 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
         return null;
     }, [mySchool, effectiveInstitution]);
 
-    /* ---- invite builders ---- */
     const buildInviteCoursemate = useCallback(() => {
         if (!schoolLabelForInvites) return null;
         const label = schoolLabelForInvites;
@@ -273,7 +268,6 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
         const url = builder(); if (url) window.open(url, "_blank"); setInviteMenuOpen(false);
     };
 
-    /* ---- save institution ---- */
     const handleSaveInstitution = useCallback(async () => {
         if (!pickedInstitution) {
             toast({ title: "Pick a school first", description: "Choose from the list.", variant: "destructive" });
@@ -306,7 +300,6 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
     const showInvite = !!schoolLabelForInvites;
     const handleOpenCard = useCallback((row: LeaderboardRow) => setStudentsSheet({ open: true, school: row }), []);
 
-    /* ─────────────────────────  LOADING  ───────────────────────── */
     if (loading) {
         return (
             <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
@@ -323,13 +316,12 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
         );
     }
 
-    /* ─────────────────────────  EMPTY  ───────────────────────── */
     if (rows.length === 0) {
         return (
             <div className="rounded-2xl bg-white dark:bg-[#161b22] p-5">
                 <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-white/[0.08] flex items-center justify-center">
-                        <Trophy className="w-3.5 h-3.5 text-white dark:text-white" />
+                    <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-white/[0.1] flex items-center justify-center">
+                        <Trophy className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                     </div>
                     <p className="text-[13px] font-semibold text-zinc-900 dark:text-white">School Board</p>
                 </div>
@@ -340,15 +332,14 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
         );
     }
 
-    /* ─────────────────────────  MAIN CARD  ───────────────────────── */
     return (
         <>
             <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
-                {/* ── HEADER ── */}
+                {/* HEADER */}
                 <div className="px-4 pt-4 pb-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-white/[0.08] flex items-center justify-center">
-                            <Trophy className="w-3.5 h-3.5 text-white dark:text-white" />
+                        <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-white/[0.1] flex items-center justify-center shrink-0">
+                            <Trophy className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                         </div>
                         <div className="min-w-0">
                             <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-white leading-tight truncate">
@@ -388,12 +379,16 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                     )}
                 </div>
 
-                {/* ── SET INSTITUTION CTA ── */}
+                {/* SET INSTITUTION CTA — neutral chip on both modes */}
                 {!showInvite && !pickerOpen && (
                     <div className="px-4 pt-2 pb-2">
                         <button
                             onClick={() => setPickerOpen(true)}
-                            className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-medium px-3 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 active:scale-[0.99] transition-all"
+                            className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold px-3 py-2.5 rounded-xl
+                                       bg-zinc-100 dark:bg-white/[0.08]
+                                       text-zinc-900 dark:text-white
+                                       hover:bg-zinc-200 dark:hover:bg-white/[0.12]
+                                       active:scale-[0.99] transition-colors"
                         >
                             <GraduationCap className="w-4 h-4" />
                             Set your institution
@@ -402,7 +397,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                     </div>
                 )}
 
-                {/* ── PICKER ── */}
+                {/* PICKER */}
                 {pickerOpen && (
                     <div className="px-4 pt-2 pb-3">
                         <div className="rounded-xl bg-zinc-50 dark:bg-white/[0.03] p-3 space-y-2">
@@ -415,7 +410,11 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                             <InstitutionPicker value={pickedInstitution} onChange={setPickedInstitution} />
                             <div className="flex gap-2">
                                 <button onClick={handleSaveInstitution} disabled={!pickedInstitution || savingInstitution}
-                                    className="flex-1 inline-flex items-center justify-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 disabled:opacity-40 transition-opacity">
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold px-3 py-2 rounded-lg
+                                               bg-zinc-100 dark:bg-white/[0.1]
+                                               text-zinc-900 dark:text-white
+                                               hover:bg-zinc-200 dark:hover:bg-white/[0.14]
+                                               disabled:opacity-40 transition-colors">
                                     {savingInstitution ? (<><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>) : (<><Check className="w-3.5 h-3.5" /> Save &amp; join</>)}
                                 </button>
                                 <button onClick={() => { setPickerOpen(false); setPickedInstitution(""); }}
@@ -427,7 +426,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                     </div>
                 )}
 
-                {/* ── HORIZONTAL RAIL ── */}
+                {/* HORIZONTAL RAIL */}
                 <div className="px-4 pt-1 pb-1">
                     <div
                         className="flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-px-4 pb-2
@@ -444,7 +443,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                     </div>
                 </div>
 
-                {/* ── YOUR SCHOOL SPOTLIGHT ── */}
+                {/* YOUR SCHOOL SPOTLIGHT */}
                 {mySchool ? (
                     <div className="px-4 pb-3">
                         <button
@@ -509,7 +508,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                     </div>
                 )}
 
-                {/* ── FOOTER ── */}
+                {/* FOOTER */}
                 <button
                     onClick={() => setAllSchoolsOpen(true)}
                     className="w-full flex items-center justify-between px-4 py-3 bg-zinc-50/60 dark:bg-white/[0.02] hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
@@ -522,7 +521,6 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                 </button>
             </div>
 
-            {/* ── SHEETS ── */}
             <AllSchoolsSheet
                 open={allSchoolsOpen} onClose={() => setAllSchoolsOpen(false)}
                 rows={rows} mySchoolSlug={mySchoolSlug}

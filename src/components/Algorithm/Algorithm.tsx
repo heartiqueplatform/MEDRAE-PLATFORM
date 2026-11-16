@@ -34,10 +34,6 @@ import {
 } from "recharts";
 import { playSound } from "@/lib/soundManager";
 
-/* ------------------------------------------------------------------ */
-/*  Tap helper                                                        */
-/* ------------------------------------------------------------------ */
-
 const vibrate = (pattern: number | number[] = 20) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(pattern);
@@ -45,7 +41,7 @@ const vibrate = (pattern: number | number[] = 20) => {
 };
 
 const tap = () => {
-    try { playSound("ui-tap"); } catch { /* no-op */ }
+    try { playSound("ui-tap"); } catch { }
     vibrate(15);
 };
 
@@ -62,41 +58,34 @@ interface AlgorithmData {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Skeleton — GitHub palette, matches real card shape                */
+/*  Skeleton                                                          */
 /* ------------------------------------------------------------------ */
 
 function AlgorithmSkeleton() {
     return (
         <div className="w-full space-y-3 px-1">
-            {/* Hero card skeleton */}
             <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 md:p-4 space-y-3 animate-pulse">
-                <div className="h-5 w-32 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
-                <div className="h-16 w-40 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
-                <div className="h-5 w-24 bg-slate-200 dark:bg-white/[0.1] rounded-full" />
-                <div className="h-4 w-2/3 bg-slate-200 dark:bg-white/[0.1] rounded" />
+                <div className="h-5 w-32 bg-slate-200 dark:bg-white/[0.06] rounded-full" />
+                <div className="h-16 w-40 bg-slate-200 dark:bg-white/[0.06] rounded-xl" />
+                <div className="h-5 w-24 bg-slate-200 dark:bg-white/[0.06] rounded-full" />
+                <div className="h-4 w-2/3 bg-slate-200 dark:bg-white/[0.06] rounded" />
                 <div className="h-[140px] w-full bg-slate-200 dark:bg-white/[0.06] rounded-xl" />
                 <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="h-10 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
-                    <div className="h-10 bg-slate-200 dark:bg-white/[0.1] rounded-xl" />
+                    <div className="h-10 bg-slate-200 dark:bg-white/[0.06] rounded-xl" />
+                    <div className="h-10 bg-slate-200 dark:bg-white/[0.06] rounded-xl" />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="space-y-1.5">
-                            <div className="h-5 w-10 mx-auto bg-slate-200 dark:bg-white/[0.1] rounded" />
-                            <div className="h-3 w-16 mx-auto bg-slate-200 dark:bg-white/[0.1] rounded" />
+                            <div className="h-5 w-10 mx-auto bg-slate-200 dark:bg-white/[0.06] rounded" />
+                            <div className="h-3 w-16 mx-auto bg-slate-200 dark:bg-white/[0.06] rounded" />
                         </div>
                     ))}
                 </div>
             </div>
-
-            {/* Unit mastery carousel skeleton */}
             <div className="flex gap-2 overflow-hidden">
                 {[1, 2, 3].map((i) => (
-                    <div
-                        key={i}
-                        className="min-w-[62vw] sm:min-w-[240px] h-[140px]
-                                   rounded-2xl bg-white dark:bg-[#161b22] animate-pulse"
-                    />
+                    <div key={i} className="min-w-[62vw] sm:min-w-[240px] h-[140px] rounded-2xl bg-white dark:bg-[#161b22] animate-pulse" />
                 ))}
             </div>
         </div>
@@ -104,7 +93,7 @@ function AlgorithmSkeleton() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Tier helpers                                                      */
+/*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
 function scoreTier(s: number) {
@@ -120,7 +109,7 @@ function barColorFor(score: number) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Horizontal Snap Carousel                                          */
+/*  Snap Carousel                                                     */
 /* ------------------------------------------------------------------ */
 
 function SnapCarousel({
@@ -171,8 +160,8 @@ function SnapCarousel({
                 disabled={!canLeft}
                 className={`hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-20
                             h-8 w-8 items-center justify-center rounded-full
-                            bg-white dark:bg-[#161b22]
-                            text-slate-700 dark:text-slate-200
+                            bg-white dark:bg-white/[0.08]
+                            text-zinc-700 dark:text-zinc-200
                             active:scale-[0.92] transition-transform
                             ${canLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                 style={{ touchAction: "manipulation" }}
@@ -186,8 +175,8 @@ function SnapCarousel({
                 disabled={!canRight}
                 className={`hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-20
                             h-8 w-8 items-center justify-center rounded-full
-                            bg-white dark:bg-[#161b22]
-                            text-slate-700 dark:text-slate-200
+                            bg-white dark:bg-white/[0.08]
+                            text-zinc-700 dark:text-zinc-200
                             active:scale-[0.92] transition-transform
                             ${canRight ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                 style={{ touchAction: "manipulation" }}
@@ -203,11 +192,7 @@ function SnapCarousel({
             >
                 {Array.isArray(children)
                     ? children.map((child, i) => (
-                        <div
-                            key={i}
-                            data-card
-                            className={`snap-start shrink-0 ${itemWidthClass}`}
-                        >
+                        <div key={i} data-card className={`snap-start shrink-0 ${itemWidthClass}`}>
                             {child}
                         </div>
                     ))
@@ -230,7 +215,7 @@ function MasteryDots({ score }: { score: number }) {
                     key={i}
                     className={`h-1.5 w-1.5 rounded-full ${i < filled
                         ? "bg-current"
-                        : "bg-slate-200 dark:bg-white/[0.08]"
+                        : "bg-zinc-200 dark:bg-white/[0.08]"
                         }`}
                 />
             ))}
@@ -239,7 +224,7 @@ function MasteryDots({ score }: { score: number }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Custom CSS Bar Chart                                              */
+/*  Custom Bar Chart                                                  */
 /* ------------------------------------------------------------------ */
 
 function HugeBarChart({
@@ -253,20 +238,16 @@ function HugeBarChart({
     return (
         <div className="relative">
             {active && (
-                <div
-                    className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 z-30
-                               rounded-xl bg-white dark:bg-[#161b22] px-3 py-2
-                               min-w-[140px] max-w-[200px]"
-                >
-                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 z-30
+                               rounded-xl bg-white dark:bg-[#1c2128] px-3 py-2
+                               min-w-[140px] max-w-[200px]
+                               shadow-lg shadow-black/5 dark:shadow-black/40">
+                    <p className="text-[11px] font-bold text-zinc-900 dark:text-white truncate">
                         {active.fullName}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                        <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: active.fill }}
-                        />
-                        <span className="text-[11px] font-bold tabular-nums text-slate-600 dark:text-slate-300">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: active.fill }} />
+                        <span className="text-[11px] font-bold tabular-nums text-zinc-600 dark:text-zinc-300">
                             {active.score}% avg · {active.attempts}×
                         </span>
                     </div>
@@ -305,10 +286,8 @@ function HugeBarChart({
                             style={{ touchAction: "manipulation" }}
                             aria-label={`${d.fullName}: ${d.score}%`}
                         >
-                            <span
-                                className="text-[11px] font-bold tabular-nums leading-none transition-opacity"
-                                style={{ color: d.fill, opacity: isActive ? 1 : 0.85 }}
-                            >
+                            <span className="text-[11px] font-bold tabular-nums leading-none transition-opacity"
+                                style={{ color: d.fill, opacity: isActive ? 1 : 0.85 }}>
                                 {d.score}%
                             </span>
 
@@ -316,19 +295,12 @@ function HugeBarChart({
                                 <div
                                     className={`w-full rounded-t-lg transition-all duration-300 ease-out
                                                 ${isActive ? "brightness-110 scale-y-[1.03]" : ""}`}
-                                    style={{
-                                        height: `${heightPct}%`,
-                                        backgroundColor: d.fill,
-                                    }}
+                                    style={{ height: `${heightPct}%`, backgroundColor: d.fill }}
                                 />
                             </div>
 
-                            <span
-                                className={`text-[9px] font-semibold truncate w-full text-center
-                                            ${isActive
-                                        ? "text-slate-900 dark:text-white"
-                                        : "text-slate-500 dark:text-slate-400"}`}
-                            >
+                            <span className={`text-[9px] font-semibold truncate w-full text-center
+                                            ${isActive ? "text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>
                                 {d.name}
                             </span>
                         </button>
@@ -340,7 +312,7 @@ function HugeBarChart({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Strengths & Focus                                                 */
+/*  Strengths & Focus — Option A pattern applied                      */
 /* ------------------------------------------------------------------ */
 
 interface StrengthsFocusStripProps {
@@ -358,7 +330,7 @@ function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusSt
                 <div className="flex justify-center mb-1">
                     <SproutMascot size={40} />
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
                     Complete a few units to unlock your coach insights
                 </p>
             </div>
@@ -368,19 +340,19 @@ function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusSt
     const totalCount = strongest.length + weakest.length;
 
     return (
-        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2">
+        <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-3">
             <div className="flex items-center justify-between px-0.5">
                 <div className="flex items-center gap-1.5">
                     <MiniChampion size={18} />
-                    <h4 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <h4 className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                         Your coach says
                     </h4>
                 </div>
                 {totalCount > 2 && (
                     <button
                         onClick={() => { tap(); onViewAll(); }}
-                        className="text-[10px] font-bold text-blue-600 dark:text-blue-400
-                                   active:text-blue-700 dark:active:text-blue-300 transition-colors"
+                        className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400
+                                   active:text-zinc-700 dark:active:text-zinc-200 transition-colors"
                         style={{ touchAction: "manipulation" }}
                     >
                         View all ({totalCount}) →
@@ -388,48 +360,46 @@ function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusSt
                 )}
             </div>
 
-            {weakest.length > 0 && (
+            {strongest.length > 0 && (
                 <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
-                        Needs love
+                    <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-0.5">
+                        Champion areas
                     </span>
-                    <div className="space-y-1">
-                        {weakest.slice(0, 2).map((item, i) => (
-                            <motion.button
-                                key={`w-${i}`}
-                                onClick={() => { tap(); onViewAll(); }}
-                                initial={{ opacity: 0, x: -8 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full flex items-center gap-3 p-3 rounded-lg text-left
-                               bg-slate-50 dark:bg-white/[0.03]
-                               hover:bg-slate-100 dark:hover:bg-white/[0.06]
-                               active:bg-slate-100 dark:active:bg-white/[0.08]
-                               transition-colors border-l-2 border-rose-500"
-                                style={{ touchAction: "manipulation" }}
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
-                                        {item.value.unit_name}
-                                    </p>
-                                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                                        Practice to level up
-                                    </p>
-                                </div>
-                                <span className="text-[15px] font-bold tabular-nums text-slate-900 dark:text-white shrink-0">
-                                    {item.value.average_score.toFixed(0)}%
-                                </span>
-                                <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
-                            </motion.button>
-                        ))}
-                    </div>
+                    {strongest.slice(0, 2).map((item, i) => (
+                        <motion.button
+                            key={`s-${i}`}
+                            onClick={() => { tap(); onViewAll(); }}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.06, duration: 0.25 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg text-left
+                                       bg-zinc-50 dark:bg-white/[0.03]
+                                       hover:bg-zinc-100 dark:hover:bg-white/[0.06]
+                                       active:bg-zinc-100 dark:active:bg-white/[0.08]
+                                       transition-colors border-l-2 border-emerald-500"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-semibold text-zinc-900 dark:text-white truncate">
+                                    {item.value.unit_name}
+                                </p>
+                                <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                    Your best zone
+                                </p>
+                            </div>
+                            <span className="text-[15px] font-bold tabular-nums text-zinc-900 dark:text-white shrink-0">
+                                {item.value.average_score.toFixed(0)}%
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-zinc-400 shrink-0" />
+                        </motion.button>
+                    ))}
                 </div>
             )}
 
             {weakest.length > 0 && (
                 <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
+                    <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-0.5">
                         Needs love
                     </span>
                     {weakest.slice(0, 2).map((item, i) => (
@@ -441,73 +411,34 @@ function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusSt
                             transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
                             whileTap={{ scale: 0.98 }}
                             className="w-full flex items-center gap-3 p-3 rounded-lg text-left
-                           bg-slate-50 dark:bg-white/[0.03]
-                           hover:bg-slate-100 dark:hover:bg-white/[0.06]
-                           active:bg-slate-100 dark:active:bg-white/[0.08]
-                           transition-colors border-l-2 border-rose-500"
+                                       bg-zinc-50 dark:bg-white/[0.03]
+                                       hover:bg-zinc-100 dark:hover:bg-white/[0.06]
+                                       active:bg-zinc-100 dark:active:bg-white/[0.08]
+                                       transition-colors border-l-2 border-rose-500"
                             style={{ touchAction: "manipulation" }}
                         >
                             <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                                <p className="text-[13px] font-semibold text-zinc-900 dark:text-white truncate">
                                     {item.value.unit_name}
                                 </p>
-                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                                     Practice to level up
                                 </p>
                             </div>
-                            <span className="text-[15px] font-bold tabular-nums text-slate-900 dark:text-white shrink-0">
+                            <span className="text-[15px] font-bold tabular-nums text-zinc-900 dark:text-white shrink-0">
                                 {item.value.average_score.toFixed(0)}%
                             </span>
-                            <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                            <ChevronRight className="h-4 w-4 text-zinc-400 shrink-0" />
                         </motion.button>
                     ))}
                 </div>
             )}
-
-            {weakest.length > 0 && (
-                <div className="space-y-1">
-                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
-                        Needs love
-                    </span>
-                    <div className="space-y-1">
-                        {weakest.slice(0, 2).map((item, i) => (
-                            <motion.button
-                                key={`w-${i}`}
-                                onClick={() => { tap(); onViewAll(); }}
-                                initial={{ opacity: 0, x: -8 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full flex items-center gap-2.5 p-2 rounded-lg text-left
-                               bg-slate-50 dark:bg-white/[0.03]
-                               hover:bg-slate-100 dark:hover:bg-white/[0.06]
-                               active:bg-slate-100 dark:active:bg-white/[0.08]
-                               transition-colors border-l-2 border-rose-500"
-                                style={{ touchAction: "manipulation" }}
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-semibold text-slate-900 dark:text-white truncate">
-                                        {item.value.unit_name}
-                                    </p>
-                                    <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400">
-                                        Practice to level up
-                                    </p>
-                                </div>
-                                <span className="text-[13px] font-bold tabular-nums text-slate-900 dark:text-white shrink-0">
-                                    {item.value.average_score.toFixed(0)}%
-                                </span>
-                                <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
-                            </motion.button>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div >
+        </div>
     );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                    */
+/*  Main                                                              */
 /* ------------------------------------------------------------------ */
 
 export default function Algorithm() {
@@ -525,7 +456,7 @@ export default function Algorithm() {
                 const parsed = JSON.parse(cached);
                 setData(parsed);
                 setLoading(false);
-            } catch (e) { /* ignore */ }
+            } catch (e) { }
         }
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -565,14 +496,10 @@ export default function Algorithm() {
 
     const scoreSeries = useMemo(() => {
         if (!data) return [];
-        if (Array.isArray(data.score_history) && data.score_history.length >= 2) {
-            return data.score_history;
-        }
+        if (Array.isArray(data.score_history) && data.score_history.length >= 2) return data.score_history;
         const u = data.unit_predictions || [];
         if (u.length >= 2) {
-            return [...u]
-                .sort((a, b) => (a.attempts || 0) - (b.attempts || 0))
-                .map(x => Number(x.average_score) || 0);
+            return [...u].sort((a, b) => (a.attempts || 0) - (b.attempts || 0)).map(x => Number(x.average_score) || 0);
         }
         const s = data.overall_prediction?.predicted_score;
         return s != null ? [0, s] : [];
@@ -580,40 +507,24 @@ export default function Algorithm() {
 
     const lineChartData = useMemo(() => {
         if (!data) return [];
-
         if (Array.isArray(data.score_history) && data.score_history.length >= 2) {
             const n = data.score_history.length;
             return data.score_history.map((s, i) => {
                 const fromEnd = n - 1 - i;
-                const label =
-                    fromEnd === 0 ? "Now"
-                        : fromEnd === 1 ? "1 ago"
-                            : `${fromEnd} ago`;
+                const label = fromEnd === 0 ? "Now" : fromEnd === 1 ? "1 ago" : `${fromEnd} ago`;
                 return { name: label, score: Number(s.toFixed(1)) };
             });
         }
-
         const u = data.unit_predictions || [];
         if (u.length >= 2) {
-            const sorted = [...u]
-                .sort((a, b) => (a.attempts || 0) - (b.attempts || 0))
-                .map(x => Number(x.average_score) || 0);
+            const sorted = [...u].sort((a, b) => (a.attempts || 0) - (b.attempts || 0)).map(x => Number(x.average_score) || 0);
             return sorted.map((s, i) => {
-                const label =
-                    i === 0 ? "Start"
-                        : i === sorted.length - 1 ? "Now"
-                            : `Step ${i}`;
+                const label = i === 0 ? "Start" : i === sorted.length - 1 ? "Now" : `Step ${i}`;
                 return { name: label, score: Number(s.toFixed(1)) };
             });
         }
-
         const s = data.overall_prediction?.predicted_score;
-        if (s != null) {
-            return [
-                { name: "Start", score: 0 },
-                { name: "Now", score: Number(s.toFixed(1)) },
-            ];
-        }
+        if (s != null) return [{ name: "Start", score: 0 }, { name: "Now", score: Number(s.toFixed(1)) }];
         return [];
     }, [data]);
 
@@ -629,13 +540,10 @@ export default function Algorithm() {
         }));
     }, [data]);
 
-    const handleUnitClick = useCallback(
-        (unitId: string) => {
-            tap();
-            navigate(`/Medrae-quizzes?unit=${unitId}`);
-        },
-        [navigate]
-    );
+    const handleUnitClick = useCallback((unitId: string) => {
+        tap();
+        navigate(`/Medrae-quizzes?unit=${unitId}`);
+    }, [navigate]);
 
     if (loading && !data) return <AlgorithmSkeleton />;
     if (!data) return null;
@@ -645,64 +553,37 @@ export default function Algorithm() {
     const isHighScore = score >= 70;
     const isMediumScore = score >= 50 && score < 70;
 
-    const tier =
-        isHighScore ? "high" : isMediumScore ? "medium" : "low";
+    const tier = isHighScore ? "high" : isMediumScore ? "medium" : "low";
     const accent =
         tier === "high"
-            ? {
-                bg: "bg-emerald-50 dark:bg-emerald-400/10",
-                text: "text-emerald-700 dark:text-emerald-400",
-                bar: "bg-emerald-600",
-                stroke: "#10b981",
-            }
+            ? { bg: "bg-emerald-50 dark:bg-emerald-400/10", text: "text-emerald-700 dark:text-emerald-400", bar: "bg-emerald-600", stroke: "#10b981" }
             : tier === "medium"
-                ? {
-                    bg: "bg-amber-50 dark:bg-amber-400/10",
-                    text: "text-amber-700 dark:text-amber-400",
-                    bar: "bg-amber-500",
-                    stroke: "#f59e0b",
-                }
-                : {
-                    bg: "bg-rose-50 dark:bg-rose-400/10",
-                    text: "text-rose-700 dark:text-rose-400",
-                    bar: "bg-rose-600",
-                    stroke: "#ef4444",
-                };
+                ? { bg: "bg-amber-50 dark:bg-amber-400/10", text: "text-amber-700 dark:text-amber-400", bar: "bg-amber-500", stroke: "#f59e0b" }
+                : { bg: "bg-rose-50 dark:bg-rose-400/10", text: "text-rose-700 dark:text-rose-400", bar: "bg-rose-600", stroke: "#ef4444" };
 
     return (
         <div className="w-full space-y-3 px-1">
-            {/* ── HERO CARD ──────────────────────────────────────── */}
+            {/* ── HERO CARD ── */}
             <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
-                {/* Score section */}
                 <div className="p-4 md:p-6">
                     <div className="flex flex-col items-center text-center">
                         <div className="flex items-center justify-center gap-2 mb-3">
-                            <Brain className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider
-                                             text-slate-500 dark:text-slate-400">
+                            <Brain className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                                 Exam prediction readiness
                             </span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
-                            <span className="text-5xl font-bold tabular-nums leading-none tracking-tight
-                                             text-slate-900 dark:text-white">
+                            <span className="text-5xl font-bold tabular-nums leading-none tracking-tight text-zinc-900 dark:text-white">
                                 {score.toFixed(1)}
                             </span>
-                            <span className="text-2xl font-normal text-slate-500 dark:text-slate-400">
-                                %
-                            </span>
+                            <span className="text-2xl font-normal text-zinc-500 dark:text-zinc-400">%</span>
                         </div>
-                        <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1
-                                         ${accent.bg} ${accent.text}
-                                         text-[11px] font-bold`}>
+                        <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 ${accent.bg} ${accent.text} text-[11px] font-bold`}>
                             {readiness} readiness
                         </div>
-                        <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                            {isHighScore
-                                ? "Strong performance — keep it up"
-                                : isMediumScore
-                                    ? "On track — a few more sessions to peak"
-                                    : "Focus on weak units to raise this score"}
+                        <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+                            {isHighScore ? "Strong performance — keep it up" : isMediumScore ? "On track — a few more sessions to peak" : "Focus on weak units to raise this score"}
                         </p>
                     </div>
                 </div>
@@ -710,22 +591,19 @@ export default function Algorithm() {
                 {/* Chart panel */}
                 {(scoreSeries.length >= 2 || barData.length >= 1) && (
                     <div className="px-3 md:px-6 pb-3">
-                        <div className={`rounded-xl p-3 ${accent.bg}`}>
+                        <div className="rounded-xl p-3 bg-zinc-50 dark:bg-white/[0.03]">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider
-                                                 text-slate-500 dark:text-slate-400">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                                     {chartMode === "bars" ? "Unit performance" : "Score trend"}
                                 </span>
-                                <div className="flex items-center gap-0.5 rounded-full
-                                                bg-white dark:bg-white/[0.06] p-0.5">
+                                <div className="flex items-center gap-0.5 rounded-full bg-zinc-100 dark:bg-white/[0.06] p-0.5">
                                     <button
                                         onClick={() => { tap(); setChartMode("bars"); }}
                                         aria-label="Bar chart"
-                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full
-                                                    text-[10px] font-bold transition-colors
-                                                 ${chartMode === "line"
-                                                ? "bg-slate-900 dark:bg-white/[0.1] text-white dark:text-white"
-                                                : "text-slate-500 dark:text-slate-400"}`}
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors
+        ${chartMode === "bars"
+                                                ? "bg-white dark:bg-white/[0.12] text-zinc-900 dark:text-white shadow-sm dark:shadow-black/20"
+                                                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"}`}
                                         style={{ touchAction: "manipulation" }}
                                     >
                                         <BarChart3 className="h-3 w-3" />
@@ -734,11 +612,10 @@ export default function Algorithm() {
                                     <button
                                         onClick={() => { tap(); setChartMode("line"); }}
                                         aria-label="Line chart"
-                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full
-                                                    text-[10px] font-bold transition-colors
-                                                    ${chartMode === "line"
-                                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
-                                                : "text-slate-500 dark:text-slate-400"}`}
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors
+        ${chartMode === "line"
+                                                ? "bg-white dark:bg-white/[0.12] text-zinc-900 dark:text-white shadow-sm dark:shadow-black/20"
+                                                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"}`}
                                         style={{ touchAction: "manipulation" }}
                                     >
                                         <LineChartIcon className="h-3 w-3" />
@@ -750,96 +627,51 @@ export default function Algorithm() {
                             {chartMode === "line" && scoreSeries.length >= 2 && (
                                 <div className="w-full h-[200px]" style={{ touchAction: "pan-y" }}>
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart
-                                            data={lineChartData}
-                                            margin={{ top: 10, right: 12, left: -18, bottom: 0 }}
-                                        >
+                                        <AreaChart data={lineChartData} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
                                                     <stop offset="0%" stopColor={accent.stroke} stopOpacity={0.35} />
                                                     <stop offset="100%" stopColor={accent.stroke} stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
-                                            <CartesianGrid
-                                                strokeDasharray="3 3"
-                                                stroke="currentColor"
-                                                className="text-slate-200 dark:text-white/[0.06]"
-                                                vertical={false}
-                                            />
-                                            <XAxis
-                                                dataKey="name"
-                                                tick={{ fontSize: 10, fill: "#94a3b8" }}
-                                                axisLine={false}
-                                                tickLine={false}
-                                                interval="preserveStartEnd"
-                                            />
-                                            <YAxis
-                                                domain={[0, 100]}
-                                                tick={{ fontSize: 10, fill: "#94a3b8" }}
-                                                axisLine={false}
-                                                tickLine={false}
-                                                width={40}
-                                            />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-zinc-200 dark:text-white/[0.06]" vertical={false} />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                                            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
                                             <Tooltip
                                                 contentStyle={{
-                                                    borderRadius: 10,
-                                                    border: "none",
-                                                    fontSize: 12,
-                                                    padding: "8px 10px",
-                                                    backgroundColor: "rgba(255,255,255,0.98)",
-                                                    color: "#0f172a",
+                                                    borderRadius: 10, border: "none", fontSize: 12, padding: "8px 10px",
+                                                    backgroundColor: "rgba(255,255,255,0.98)", color: "#0f172a",
                                                 }}
                                                 labelStyle={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}
                                                 formatter={(value: number) => [`${value}%`, "Score"]}
                                             />
-                                            <Area
-                                                type="monotone"
-                                                dataKey="score"
-                                                stroke={accent.stroke}
-                                                strokeWidth={2.5}
-                                                fill="url(#scoreFill)"
-                                                dot={{ r: 3, fill: accent.stroke }}
-                                                activeDot={{ r: 6 }}
-                                            />
+                                            <Area type="monotone" dataKey="score" stroke={accent.stroke} strokeWidth={2.5} fill="url(#scoreFill)" dot={{ r: 3, fill: accent.stroke }} activeDot={{ r: 6 }} />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
                             )}
 
-                            {chartMode === "bars" && barData.length > 0 && (
-                                <HugeBarChart data={barData} />
-                            )}
+                            {chartMode === "bars" && barData.length > 0 && <HugeBarChart data={barData} />}
 
                             {chartMode === "bars" && (
-                                <div className="flex items-center justify-center gap-3 mt-2 text-[9px] font-bold">
-                                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                        70%+
-                                    </span>
-                                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                                        <span className="h-2 w-2 rounded-full bg-amber-500" />
-                                        50–69%
-                                    </span>
-                                    <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-                                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                                        &lt;50%
-                                    </span>
-                                </div>
+                                <p className="mt-2 text-center text-[9px] font-medium text-zinc-400 dark:text-zinc-500">
+                                    Bars colored by score tier · green ≥70% · amber ≥50% · red &lt;50%
+                                </p>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Actions + stats */}
                 <div className="px-4 md:px-6 pb-4 md:pb-6">
-                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-zinc-100 dark:border-white/[0.06]">
                         <button
                             onClick={() => { tap(); navigate("/Medrae-quizzes"); }}
-                            className="h-10 rounded-xl bg-slate-900 dark:bg-white/[0.12]
-           text-white dark:text-white
-           text-sm font-bold
-                            flex items-center justify-center gap-1.5
-                        active:scale-[0.97] transition-transform"
+                            className="h-10 rounded-xl bg-zinc-100 dark:bg-white/[0.08]
+                                       text-zinc-900 dark:text-white
+                                       text-sm font-bold
+                                       flex items-center justify-center gap-1.5
+                                       hover:bg-zinc-200 dark:hover:bg-white/[0.12]
+                                       active:scale-[0.97] transition-colors"
                             style={{ touchAction: "manipulation" }}
                         >
                             <PlayCircle className="h-4 w-4" />
@@ -847,12 +679,12 @@ export default function Algorithm() {
                         </button>
                         <button
                             onClick={() => { tap(); navigate("/simulation/latest"); }}
-                            className="h-10 rounded-xl
-                                       bg-slate-100 dark:bg-white/[0.06]
-                                       text-slate-700 dark:text-slate-200
+                            className="h-10 rounded-xl bg-zinc-100 dark:bg-white/[0.06]
+                                       text-zinc-700 dark:text-zinc-200
                                        text-sm font-bold
                                        flex items-center justify-center gap-1.5
-                                       active:scale-[0.97] transition-transform"
+                                       hover:bg-zinc-200 dark:hover:bg-white/[0.1]
+                                       active:scale-[0.97] transition-colors"
                             style={{ touchAction: "manipulation" }}
                         >
                             <Target className="h-4 w-4" />
@@ -860,51 +692,39 @@ export default function Algorithm() {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-3 mt-4 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+                    <div className="grid grid-cols-3 mt-4 pt-4 border-t border-zinc-100 dark:border-white/[0.06]">
                         <div className="text-center">
-                            <p className="text-base font-bold tabular-nums text-slate-900 dark:text-white">
+                            <p className="text-base font-bold tabular-nums text-zinc-900 dark:text-white">
                                 {data.simulation_analysis?.attempts || 0}
                             </p>
-                            <p className="text-[10px] font-bold uppercase tracking-wider
-                                          text-slate-500 dark:text-slate-400 mt-0.5">
-                                Simulations
-                            </p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-0.5">Simulations</p>
                         </div>
-                        <div className="text-center border-x border-slate-100 dark:border-white/[0.06]">
-                            <p className="text-base font-bold tabular-nums text-slate-900 dark:text-white">
+                        <div className="text-center border-x border-zinc-100 dark:border-white/[0.06]">
+                            <p className="text-base font-bold tabular-nums text-zinc-900 dark:text-white">
                                 {data.simulation_analysis?.average_score?.toFixed(1) || 0}%
                             </p>
-                            <p className="text-[10px] font-bold uppercase tracking-wider
-                                          text-slate-500 dark:text-slate-400 mt-0.5">
-                                Avg score
-                            </p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-0.5">Avg score</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-base font-bold tabular-nums text-slate-900 dark:text-white">
+                            <p className="text-base font-bold tabular-nums text-zinc-900 dark:text-white">
                                 {data.unit_predictions?.length || 0}
                             </p>
-                            <p className="text-[10px] font-bold uppercase tracking-wider
-                                          text-slate-500 dark:text-slate-400 mt-0.5">
-                                Units
-                            </p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-0.5">Units</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── UNIT MASTERY ─────────────────────────────────── */}
+            {/* ── UNIT MASTERY ── */}
             <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-1.5">
                         <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-[11px] font-bold uppercase tracking-wider
-                                       text-slate-500 dark:text-slate-400">
+                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             Unit mastery
                         </h3>
                     </div>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                        Swipe to explore →
-                    </span>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Swipe to explore →</span>
                 </div>
 
                 {visibleUnitsData.length > 0 ? (
@@ -913,10 +733,8 @@ export default function Algorithm() {
                             const isWeak = unit.average_score < 60;
                             const unitTier = scoreTier(unit.average_score);
                             const tierText =
-                                unitTier === "high"
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : unitTier === "medium"
-                                        ? "text-amber-600 dark:text-amber-400"
+                                unitTier === "high" ? "text-emerald-600 dark:text-emerald-400"
+                                    : unitTier === "medium" ? "text-amber-600 dark:text-amber-400"
                                         : "text-rose-600 dark:text-rose-400";
                             const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : null;
 
@@ -934,8 +752,7 @@ export default function Algorithm() {
                                             {medal ? (
                                                 <span className="text-base leading-none">{medal}</span>
                                             ) : (
-                                                <span className="text-[10px] font-bold tabular-nums
-                                                                 text-slate-400 dark:text-slate-500">
+                                                <span className="text-[10px] font-bold tabular-nums text-zinc-400 dark:text-zinc-500">
                                                     #{idx + 1}
                                                 </span>
                                             )}
@@ -951,8 +768,7 @@ export default function Algorithm() {
                                             {unit.trend === "Improving" ? "▲" : unit.trend === "Declining" ? "▼" : "—"}
                                         </span>
                                     </div>
-                                    <h4 className="text-[12px] font-bold text-slate-900 dark:text-white
-                                                   line-clamp-2 leading-tight mb-1.5 min-h-[2em]">
+                                    <h4 className="text-[12px] font-bold text-zinc-900 dark:text-white line-clamp-2 leading-tight mb-1.5 min-h-[2em]">
                                         {unit.unit_name}
                                     </h4>
                                     <div className="flex items-end justify-between mb-1.5">
@@ -964,24 +780,16 @@ export default function Algorithm() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-0.5 text-[8px] font-semibold">
-                                        <span className="px-1.5 py-0.5 rounded
-                                                         bg-emerald-50 dark:bg-emerald-400/10
-                                                         text-emerald-700 dark:text-emerald-400">
+                                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400">
                                             B{unit.best_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded
-                                                         bg-blue-50 dark:bg-blue-400/10
-                                                         text-blue-700 dark:text-blue-400">
+                                        <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400">
                                             L{unit.latest_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded
-                                                         bg-rose-50 dark:bg-rose-400/10
-                                                         text-rose-700 dark:text-rose-400">
+                                        <span className="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400">
                                             W{unit.worst_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded ml-auto
-                                                         bg-slate-100 dark:bg-white/[0.06]
-                                                         text-slate-600 dark:text-slate-300">
+                                        <span className="px-1.5 py-0.5 rounded ml-auto bg-zinc-100 dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300">
                                             {unit.attempts}×
                                         </span>
                                     </div>
@@ -991,46 +799,40 @@ export default function Algorithm() {
                     </SnapCarousel>
                 ) : (
                     <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-center">
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                             No units tracked yet — practice a quiz to start.
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* ── STRENGTHS & FOCUS ────────────────────────────── */}
+            {/* ── STRENGTHS & FOCUS ── */}
             <StrengthsFocusStrip
                 strongest={data.rankings?.strongest || []}
                 weakest={data.rankings?.weakest || []}
                 onViewAll={() => setOverlayOpen(true)}
             />
 
-            {/* ── STUDY PLAN ───────────────────────────────────── */}
-            {
-                data.recommendations?.length > 0 && (
-                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                            <MiniChampion size={18} />
-                            <h3 className="text-[10px] font-bold uppercase tracking-wider
-                                       text-blue-600 dark:text-blue-400">
-                                Study plan
-                            </h3>
-                        </div>
-                        <div className="space-y-2">
-                            {data.recommendations.map((rec, i) => (
-                                <div key={i} className="flex gap-2 items-start">
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
-                                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                                        {rec}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
+            {/* ── STUDY PLAN ── */}
+            {data.recommendations?.length > 0 && (
+                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <MiniChampion size={18} />
+                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                            Study plan
+                        </h3>
                     </div>
-                )
-            }
+                    <div className="space-y-2">
+                        {data.recommendations.map((rec, i) => (
+                            <div key={i} className="flex gap-2 items-start">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">{rec}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-            {/* ── OVERLAY ──────────────────────────────────────── */}
             <CoachInsightsOverlay
                 open={overlayOpen}
                 onClose={() => setOverlayOpen(false)}
@@ -1038,6 +840,6 @@ export default function Algorithm() {
                 weakest={data.rankings?.weakest || []}
                 onUnitClick={handleUnitClick}
             />
-        </div >
+        </div>
     );
 }
