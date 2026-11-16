@@ -4,20 +4,14 @@ import { authManager } from "@/lib/authManager";
 
 export default function PublicOnlyRoute({ children }: { children: JSX.Element }) {
     const { user, loading } = useAuth();
+    const cachedUser = authManager.getUser();
+    const effectiveUser = user ?? cachedUser;
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0d1117]">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
+    // Don't paint a spinner — AuthGate's overlay already covers the screen.
+    // If a cached user exists we can decide immediately.
+    if (loading && !cachedUser) return null;
 
-    const effectiveUser = user ?? authManager.getUser();
-
-    if (effectiveUser) {
-        return <Navigate to="/dashboard" replace />;
-    }
+    if (effectiveUser) return <Navigate to="/dashboard" replace />;
 
     return children;
 }
