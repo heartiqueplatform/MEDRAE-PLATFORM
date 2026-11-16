@@ -590,8 +590,7 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                     <div
 
                         className="flex gap-5 overflow-x-auto pb-2 pt-2
-                px-2
-               md:mx-0 md:px-4"
+                px-1 md:px-1"
                         style={{
                             scrollbarWidth: "none",
                             msOverflowStyle: "none",
