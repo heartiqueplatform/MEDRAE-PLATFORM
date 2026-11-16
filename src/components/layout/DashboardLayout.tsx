@@ -19,6 +19,7 @@ import { useUserRole } from "@/context/UserRoleContext";
 // ✅ Import shared profile cache
 import { getProfileCache, setProfileCache } from "@/lib/profileCache";
 import { FloatingChatButton } from "../FloatingChatButton";
+import { AdminNotificationPanel } from "@/components/AdminNotificationPanel";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { TabStack } from "./TabStack";
 // ✅ Lazy load heavy components
@@ -86,6 +87,8 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
   const isListenRoute = location.pathname === "/listen";
   // 🎯 Chat FAB only on student dashboard — matches the amber crown FAB.
   const showChatFab = location.pathname === "/dashboard/student";
+  // Admin panel follows the same rule as the chat FAB
+  const showAdminPanel = location.pathname === "/dashboard/student";
   useEffect(() => {
     if (!loaderHiddenRef.current && user && user.name && user.name !== "Unknown User") {
       loaderHiddenRef.current = true;
@@ -110,8 +113,10 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
     }
   }, []);
   return (
-    <div className="fixed inset-0 flex h-[100dvh] w-full overflow-hidden bg-background selection:bg-primary/30">
-
+    <div
+      className="fixed inset-0 flex h-[100dvh] w-full overflow-hidden selection:bg-primary/30"
+      style={{ backgroundColor: isDarkMode ? '#0d1117' : '#ffffff' }}
+    >
       <div className="relative z-10 flex w-full h-full">
         <AppSidebar userRole={role} className="flex-shrink-0" />
 
@@ -149,6 +154,12 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
       {showChatFab && (
         <ErrorBoundary label="FloatingChatButton">
           <FloatingChatButton userId={userId || user?.id} />
+        </ErrorBoundary>
+      )}
+
+      {showAdminPanel && (
+        <ErrorBoundary label="AdminNotificationPanel">
+          <AdminNotificationPanel />
         </ErrorBoundary>
       )}
     </div>
