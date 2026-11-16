@@ -557,11 +557,11 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
     return (
         <>
             <section
-                /* 🍼 PHONE: no rounding, no top padding, full-bleed.
-                   DESKTOP (md+): rounded card with padding, like before. */
+                /* 🍼 PHONE: full-bleed, zero rounding, minimal but not cramped gutters.
+                   DESKTOP (md+): rounded card, generous padding. */
                 className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl
                rounded-none md:rounded-2xl
-               px-0 pt-0 pb-5 md:p-5
+               px-3 pt-3 pb-6 md:px-5 md:pt-5 md:pb-5
                font-sans"
                 style={{ contain: "layout paint" }}
             >
@@ -588,9 +588,10 @@ function QuickDuelStripBase({ userId, initialHistory, initialPlayers }: Props) {
                 {/* ── Players row — EDGE-TO-EDGE on phone ── */}
                 {sortedPlayers.length > 0 ? (
                     <div
-                        className="flex gap-5 overflow-x-auto pb-2 pt-1
-                                   -mx-5 px-2       /* kills outer p-5 on phone */
-                                   md:mx-0 md:px-0" /* restores on desktop */
+
+                        className="flex gap-5 overflow-x-auto pb-2 pt-2
+                px-2
+               md:mx-0 md:px-4"
                         style={{
                             scrollbarWidth: "none",
                             msOverflowStyle: "none",
@@ -952,7 +953,7 @@ function StripSkeleton() {
         <section className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-none md:rounded-2xl px-0 pt-0 pb-5 md:p-5 space-y-5 font-sans"
             style={{ contain: "layout paint" }}
         >
-            <div className="flex gap-5 -mx-5 px-5 md:mx-0 md:px-0">
+            <div className="flex gap-5 -mx-5 px-4 md:mx-0 md:px-0">
                 {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="shrink-0 w-[116px] flex flex-col items-center">
                         <div className="w-[80px] h-[80px] rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse mb-2" />

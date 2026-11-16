@@ -16,9 +16,7 @@ export function StatusBanner({ enrollment, applying, onApply }: Props) {
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl p-4 bg-gradient-to-br from-amber-50 to-orange-50
-                   dark:from-amber-500/10 dark:to-orange-500/10
-                   border border-amber-200/60 dark:border-amber-500/20"
+                className="rounded-2xl p-4 bg-amber-500/10"
             >
                 <div className="flex items-start gap-3">
                     <div className="h-9 w-9 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
@@ -38,6 +36,7 @@ export function StatusBanner({ enrollment, applying, onApply }: Props) {
                          bg-amber-600 hover:bg-amber-700 disabled:opacity-50
                          text-white text-[12px] font-bold
                          active:scale-95 transition-transform"
+                            style={{ touchAction: "manipulation" }}
                         >
                             {applying ? (
                                 <>
@@ -117,21 +116,21 @@ function BannerRow({
 }) {
     const styles = {
         amber: {
-            bg: "bg-amber-50 dark:bg-amber-500/10 border-amber-200/60 dark:border-amber-500/20",
+            bg: "bg-amber-500/10",
             iconBg: "bg-amber-500/15",
             iconColor: "text-amber-600 dark:text-amber-400",
             titleColor: "text-amber-900 dark:text-amber-200",
             subColor: "text-amber-700/80 dark:text-amber-300/80",
         },
         rose: {
-            bg: "bg-rose-50 dark:bg-rose-500/10 border-rose-200/60 dark:border-rose-500/20",
+            bg: "bg-rose-500/10",
             iconBg: "bg-rose-500/15",
             iconColor: "text-rose-600 dark:text-rose-400",
             titleColor: "text-rose-900 dark:text-rose-200",
             subColor: "text-rose-700/80 dark:text-rose-300/80",
         },
         emerald: {
-            bg: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200/60 dark:border-emerald-500/20",
+            bg: "bg-emerald-500/10",
             iconBg: "bg-emerald-500/15",
             iconColor: "text-emerald-600 dark:text-emerald-400",
             titleColor: "text-emerald-900 dark:text-emerald-200",
@@ -139,7 +138,6 @@ function BannerRow({
         },
     }[tone];
 
-    /* Truncate long admin notes (200 chars is enough for a banner) */
     const safeSubtitle =
         subtitle.length > 200 ? `${subtitle.slice(0, 200).trimEnd()}…` : subtitle;
 
@@ -147,7 +145,7 @@ function BannerRow({
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`rounded-2xl p-4 border ${styles.bg}`}
+            className={`rounded-2xl p-4 ${styles.bg}`}
         >
             <div className="flex items-start gap-3">
                 <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${styles.iconBg}`}>
@@ -157,9 +155,7 @@ function BannerRow({
                     <p className={`text-[13px] font-bold ${styles.titleColor} truncate`}>
                         {title}
                     </p>
-                    <p
-                        className={`text-[11.5px] mt-0.5 leading-snug ${styles.subColor} break-words`}
-                    >
+                    <p className={`text-[11.5px] mt-0.5 leading-snug ${styles.subColor} break-words`}>
                         {safeSubtitle}
                     </p>
                 </div>

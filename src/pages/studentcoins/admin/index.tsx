@@ -251,19 +251,22 @@ export default function CoinsAdminPage() {
                 </div>
 
                 <button
-                    onClick={() => { playSound("ui-tap"); tab === "config" ? loadConfig() : load(); }}
+                    onClick={() => {
+                        playSound("ui-tap");
+                        tab === "config" ? loadConfig() : load();
+                    }}
                     disabled={loading || configLoading}
                     aria-label="Refresh"
-                    className="h-10 w-10 rounded-full flex items-center justify-center
-                               text-slate-700 dark:text-slate-200
-                               active:bg-slate-100 dark:active:bg-white/5
-                               transition-colors disabled:opacity-50"
+                    className="h-9 px-3 rounded-full flex items-center gap-1.5
+               bg-slate-100 dark:bg-white/[0.06]
+               text-slate-700 dark:text-slate-200
+               text-[12px] font-bold
+               active:scale-[0.97] transition-transform
+               disabled:opacity-50"
                     style={{ touchAction: "manipulation" }}
                 >
-                    <RefreshCw
-                        className={`h-4 w-4 ${loading || configLoading ? "animate-spin" : ""}`}
-                        strokeWidth={2.5}
-                    />
+
+                    <span>{loading || configLoading ? "Refreshing…" : "Refresh"}</span>
                 </button>
             </header>
 
@@ -277,7 +280,7 @@ export default function CoinsAdminPage() {
                             onClick={selfEnroll}
                             disabled={busyId === "self"}
                             className="w-full p-3 rounded-2xl bg-blue-50 dark:bg-blue-500/10
-                                       border border-blue-100 dark:border-blue-500/20
+                                       border-0
                                        text-left active:scale-[0.99] transition
                                        disabled:opacity-60"
                             style={{ touchAction: "manipulation" }}

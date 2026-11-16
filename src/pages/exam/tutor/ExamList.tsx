@@ -143,11 +143,12 @@ const TutorExamList = () => {
 
     // All exams created by the tutor
     const [allExams, setAllExams] = useState<any[]>([]);
-
     const handleBack = useCallback(() => {
         tap();
-        if (window.history.length > 1) navigate(-1);
-        else navigate("/dashboard/tutor", { replace: true });
+        // Section root → always go to tutor dashboard, never history(-1).
+        // Prevents loops when the tutor reached /tutor/exams via /dashboard redirect,
+        // a share link, or a page reload.
+        navigate("/dashboard/tutor", { replace: true });
     }, [navigate]);
 
     useEffect(() => {

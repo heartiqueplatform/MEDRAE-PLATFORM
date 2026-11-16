@@ -833,8 +833,9 @@ export default function StudentDashboard() {
           initialHistory={initialCache.quickDuelHistory}
           initialPlayers={initialCache.quickDuelPlayers}
         />
-        <SchoolWarsCard currentUserInstitution={profileState?.institution} />
         <DailyTriviaCard />
+
+        <SchoolWarsCard currentUserInstitution={profileState?.institution} />
         <DeferredMount fallback={<div className="h-[320px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
           <Algorithm />
         </DeferredMount>

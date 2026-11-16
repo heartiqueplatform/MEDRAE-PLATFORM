@@ -23,6 +23,15 @@ export function TabStack() {
         return <Outlet />;
     }
 
+    // 🆕 If the current path isn't a student tab (tutor/staff dashboard,
+    //    etc.), let the route's real element render via <Outlet />.
+    //    Without this, the map below matches nothing and returns an
+    //    empty <div> → black screen on every non-student dashboard.
+    const isStudentTab = STUDENT_TABS.some((t) => t.path === location.pathname);
+    if (!isStudentTab) {
+        return <Outlet />;
+    }
+
     mountedTabs.current.add(location.pathname);
 
     return (

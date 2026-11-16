@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Volume2, VolumeX, Heart, MessageCircle } from "lucide-react";
 import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
 import FeedMediaPanel from "@/components/Feed/FeedMediaPanel";
 import { playSound } from "@/lib/soundManager";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 interface Props {
     questions: any[];
@@ -58,24 +59,17 @@ const tap = () => {
 function SkeletonCard() {
     return (
         <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3 mb-2 animate-pulse">
-            {/* Eyebrow */}
             <div className="h-3 w-24 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
-
-            {/* Question line */}
             <div className="mt-3 space-y-1.5">
                 <div className="h-4 w-full rounded-md bg-slate-100 dark:bg-white/[0.06]" />
                 <div className="h-4 w-4/5 rounded-md bg-slate-100 dark:bg-white/[0.06]" />
             </div>
-
-            {/* Options */}
             <div className="mt-3 space-y-1.5">
                 <div className="h-11 w-full rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
                 <div className="h-11 w-full rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
                 <div className="h-11 w-full rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
                 <div className="h-11 w-full rounded-xl bg-slate-100 dark:bg-white/[0.06]" />
             </div>
-
-            {/* Action row */}
             <div className="mt-3 flex items-center gap-2">
                 <div className="h-9 w-20 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
                 <div className="h-9 w-20 rounded-full bg-slate-100 dark:bg-white/[0.06]" />
@@ -100,6 +94,7 @@ function QuestionCard({
     onAnswer,
     onLike,
     onOpenComments,
+    onOpenAuthor,
 }: {
     q: any;
     index: number;
@@ -112,6 +107,7 @@ function QuestionCard({
     onAnswer: (q: any, opt: string) => void;
     onLike: (questionId: string, liked: boolean) => void;
     onOpenComments: (questionId: string) => void;
+    onOpenAuthor: (userId: string) => void;
 }) {
     return (
         <motion.div
@@ -146,6 +142,90 @@ function QuestionCard({
                         )}
                     </button>
                 </div>
+
+                {/* 🆕 Author row — tappable */}
+                {q.author_id && q.author_name && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            tap();
+                            onOpenAuthor(q.author_id);
+                        }}
+                        className="flex items-center gap-2.5 -mt-1 mb-1 active:scale-[0.98] transition-transform group w-full text-left"
+                        aria-label={`View ${q.author_name}'s profile`}
+                    >
+                        {/* Bigger avatar with verified ring */}
+                        <div className="relative shrink-0">
+                            {q.author_avatar ? (
+                                <img
+                                    src={q.author_avatar}
+                                    alt={q.author_name}
+                                    className={`h-9 w-9 rounded-full object-cover ${q.author_verified
+                                        ? "ring-2 ring-amber-400/70 ring-offset-1 ring-offset-white dark:ring-offset-[#161b22]"
+                                        : "ring-1 ring-slate-200 dark:ring-white/[0.06]"
+                                        }`}
+                                />
+                            ) : (
+                                <div
+                                    className={`h-9 w-9 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[13px] font-bold ${q.author_verified
+                                        ? "ring-2 ring-amber-400/70 ring-offset-1 ring-offset-white dark:ring-offset-[#161b22]"
+                                        : ""
+                                        }`}
+                                >
+                                    {q.author_name[0]?.toUpperCase() ?? "U"}
+                                </div>
+                            )}
+
+                            {/* Verified checkmark badge on the avatar */}
+                            {q.author_verified && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-amber-500 flex items-center justify-center ring-2 ring-white dark:ring-[#161b22]">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-2.5 w-2.5 text-white"
+                                        strokeWidth={3.5}
+                                        stroke="currentColor"
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Author name + tier + role */}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[12.5px] font-bold text-slate-900 dark:text-white truncate group-hover:underline underline-offset-2">
+                                    {q.author_name}
+                                </span>
+
+                                {/* Verified badge pill next to name */}
+                                {q.author_verified && (
+                                    <span className="shrink-0 inline-flex items-center gap-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            className="h-2 w-2"
+                                            strokeWidth={4}
+                                            stroke="currentColor"
+                                        >
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        {q.author_tier
+                                            ? q.author_tier.charAt(0).toUpperCase() + q.author_tier.slice(1)
+                                            : "Verified"}
+                                    </span>
+                                )}
+                            </div>
+
+                            {q.author_role && (
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-0.5">
+                                    {q.author_role}
+                                </p>
+                            )}
+                        </div>
+                    </button>
+                )}
 
                 {/* Question */}
                 <p className="text-[14.5px] font-bold text-slate-900 dark:text-white leading-snug">
@@ -381,6 +461,9 @@ export default function FeedQuestionsTab({
 }: Props) {
     const sentinelRef = useRef<HTMLDivElement>(null);
 
+    // 🆕 Author profile modal state
+    const [profileModalUser, setProfileModalUser] = useState<string | null>(null);
+
     useEffect(() => {
         const node = sentinelRef.current;
         if (!node) return;
@@ -446,6 +529,7 @@ export default function FeedQuestionsTab({
                             onAnswer={onAnswer}
                             onLike={onLike}
                             onOpenComments={onOpenComments}
+                            onOpenAuthor={(uid) => setProfileModalUser(uid)}
                         />
 
                         {shouldInjectMedia && mediaGroupKey && (
@@ -490,6 +574,15 @@ export default function FeedQuestionsTab({
                         <div className="h-10 w-full" />
                     )}
                 </div>
+            )}
+
+            {/* 🆕 Author profile modal */}
+            {profileModalUser && (
+                <UserProfileModal
+                    open={!!profileModalUser}
+                    userId={profileModalUser}
+                    onClose={() => setProfileModalUser(null)}
+                />
             )}
         </div>
     );

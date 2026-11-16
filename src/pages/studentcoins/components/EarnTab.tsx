@@ -8,9 +8,7 @@ export function EarnTab() {
     return (
         <div className="space-y-4">
             {/* Hero */}
-            <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50
-                      dark:from-blue-500/10 dark:to-indigo-500/10
-                      border border-blue-100 dark:border-blue-500/20 p-4">
+            <div className="rounded-2xl bg-blue-500/10 p-4">
                 <div className="flex items-start gap-3">
                     <div className="h-9 w-9 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
                         <Sparkles className="w-4 h-4 text-white" />
@@ -53,7 +51,7 @@ export function EarnTab() {
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: idx * 0.04 + i * 0.02 }}
                                     className="flex items-center gap-3 p-3 rounded-2xl
-                             bg-white dark:bg-[#161b22] shadow-sm"
+                             bg-white dark:bg-[#161b22]"
                                 >
                                     <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${meta.tone}`}>
                                         <meta.icon className="w-4 h-4" />

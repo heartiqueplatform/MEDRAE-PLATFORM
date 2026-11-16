@@ -12,7 +12,6 @@ import {
     Wallet,
     Swords,
     Trophy,
-    Flame,
     Heart,
     MessageCircle,
     Star,
@@ -35,19 +34,17 @@ type CoinConfig = {
 
 type CoinState = {
     loading: boolean;
-    config: CoinConfig;
+    /** true = data loaded from network at least once this session */
+    loaded: boolean;
+    config: CoinConfig | null;
     rules: Record<string, number>;
-};
-
-const DEFAULT_CONFIG: CoinConfig = {
-    ksh_per_coin: 0.01,
-    min_redeem_coins: 100,
 };
 
 function useLiveCoinData(): CoinState {
     const [state, setState] = useState<CoinState>({
         loading: true,
-        config: DEFAULT_CONFIG,
+        loaded: false,
+        config: null,
         rules: {},
     });
 
@@ -70,13 +67,17 @@ function useLiveCoinData(): CoinState {
 
                 if (cancelled) return;
 
-                const nextConfig: CoinConfig = configRes.data
+                // Only build config if we actually got a row.
+                // No fallback defaults — showing fake rates is worse than
+                // showing "unavailable".
+                const nextConfig: CoinConfig | null = configRes.data
                     ? {
-                        ksh_per_coin: Number(configRes.data.ksh_per_coin) || 0.01,
+                        ksh_per_coin:
+                            Number(configRes.data.ksh_per_coin) || 0,
                         min_redeem_coins:
-                            Number(configRes.data.min_redeem_coins) || 100,
+                            Number(configRes.data.min_redeem_coins) || 0,
                     }
-                    : DEFAULT_CONFIG;
+                    : null;
 
                 const nextRules: Record<string, number> = {};
                 if (rulesRes.data) {
@@ -89,13 +90,19 @@ function useLiveCoinData(): CoinState {
 
                 setState({
                     loading: false,
+                    loaded: true,
                     config: nextConfig,
                     rules: nextRules,
                 });
             } catch (err) {
                 console.warn("[learnContent] coin data load failed:", err);
                 if (!cancelled) {
-                    setState((s) => ({ ...s, loading: false }));
+                    setState({
+                        loading: false,
+                        loaded: false,
+                        config: null,
+                        rules: {},
+                    });
                 }
             }
         })();
@@ -112,7 +119,6 @@ function useLiveCoinData(): CoinState {
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Format a KSh value cleanly — `KSh 10`, `KSh 0.01`, `KSh 100.50` */
 function formatKsh(amount: number): string {
     if (amount > 0 && amount < 1) {
         return `KSh ${amount.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}`;
@@ -123,7 +129,6 @@ function formatKsh(amount: number): string {
     })}`;
 }
 
-/** Resolve a coin amount for a given action, with fallback. */
 function coinFor(
     rules: Record<string, number>,
     action: string,
@@ -193,17 +198,40 @@ function Bullet({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Offline-aware rate display                                        */
+/* ------------------------------------------------------------------ */
+
+function RateDisplay({
+    config,
+    suffix,
+}: {
+    config: CoinConfig | null;
+    suffix?: React.ReactNode;
+}) {
+    if (!config || config.ksh_per_coin <= 0) {
+        return <span className="text-slate-400 dark:text-slate-500 italic">unavailable</span>;
+    }
+    return (
+        <>
+            {formatKsh(config.ksh_per_coin)}
+            {suffix}
+        </>
+    );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Sections                                                          */
 /* ------------------------------------------------------------------ */
 
 export function WhatAreCoinsSection({ state }: { state: CoinState }) {
-    const { config } = state;
-    const tenThousandWorth = formatKsh(10000 * config.ksh_per_coin);
+    const hasRate = !!state.config && state.config.ksh_per_coin > 0;
+    const tenThousandWorth =
+        hasRate && state.config ? formatKsh(10000 * state.config.ksh_per_coin) : null;
 
     return (
         <Section
             icon={Coins}
-            tone="text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400"
+            tone="text-amber-600 bg-amber-500/10"
             eyebrow="Getting started"
             title="What are Medrae Coins?"
         >
@@ -215,16 +243,18 @@ export function WhatAreCoinsSection({ state }: { state: CoinState }) {
             <p>
                 Each coin has a real cash value:{" "}
                 <strong className="text-slate-900 dark:text-white">
-                    1 coin = {formatKsh(config.ksh_per_coin)}
+                    1 coin = <RateDisplay config={state.config} />
                 </strong>
                 . Redeem them for cash to MPesa, premium access, or bonus content.
             </p>
-            <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 p-3 border border-blue-100 dark:border-blue-500/20">
-                <p className="text-[11px] text-blue-800 dark:text-blue-300 leading-snug">
-                    💡 <strong>Example:</strong> 10,000 coins = {tenThousandWorth}.
-                    Redeemable instantly once you're approved.
-                </p>
-            </div>
+            {tenThousandWorth && (
+                <div className="rounded-xl bg-blue-500/10 p-3">
+                    <p className="text-[11px] text-blue-800 dark:text-blue-300 leading-snug">
+                        💡 <strong>Example:</strong> 10,000 coins = {tenThousandWorth}.
+                        Redeemable instantly once you're approved.
+                    </p>
+                </div>
+            )}
         </Section>
     );
 }
@@ -235,7 +265,7 @@ export function HowToEarnSection({ state }: { state: CoinState }) {
     return (
         <Section
             icon={Sparkles}
-            tone="text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400"
+            tone="text-emerald-600 bg-emerald-500/10"
             eyebrow="Earning"
             title="How do you earn coins?"
         >
@@ -281,7 +311,7 @@ export function HowToEarnSection({ state }: { state: CoinState }) {
                                         </p>
                                         <span className="shrink-0 text-[11px] font-bold tabular-nums
                                                          text-emerald-600 dark:text-emerald-400
-                                                         bg-emerald-50 dark:bg-emerald-500/10
+                                                         bg-emerald-500/10
                                                          px-2 py-0.5 rounded-full whitespace-nowrap">
                                             +{liveCoins}
                                         </span>
@@ -301,8 +331,6 @@ export function DailyLimitsSection({ state }: { state: CoinState }) {
     const likeCoins = coinFor(rules, "receive_like", 2);
     const commentCoins = coinFor(rules, "receive_comment", 5);
 
-    // Recompute the daily caps from the live per-action coin amounts,
-    // so if a rule changes from 2 → 3, the "up to X coins" stays honest.
     const likeDailyCoins = 60;
     const commentDailyCoins = 100;
     const likesPerDay = Math.round(likeDailyCoins / Math.max(likeCoins, 1));
@@ -313,7 +341,7 @@ export function DailyLimitsSection({ state }: { state: CoinState }) {
     return (
         <Section
             icon={Clock}
-            tone="text-blue-600 bg-blue-50 dark:bg-blue-500/10 dark:text-blue-400"
+            tone="text-blue-600 bg-blue-500/10"
             eyebrow="Fair usage"
             title="Daily limits"
         >
@@ -322,31 +350,19 @@ export function DailyLimitsSection({ state }: { state: CoinState }) {
                 can't farm unlimited coins by spamming likes or repeating the
                 same action over and over.
             </p>
-            <Bullet
-                icon={Heart}
-                tone="text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-            >
+            <Bullet icon={Heart} tone="text-rose-500 bg-rose-500/10">
                 <strong>Likes:</strong> up to {likeDailyCoins} coins per day
                 (≈ {likesPerDay} likes at +{likeCoins} each).
             </Bullet>
-            <Bullet
-                icon={MessageCircle}
-                tone="text-blue-500 bg-blue-50 dark:bg-blue-500/10"
-            >
+            <Bullet icon={MessageCircle} tone="text-blue-500 bg-blue-500/10">
                 <strong>Comments:</strong> up to {commentDailyCoins} coins per day
                 (≈ {commentsPerDay} comments at +{commentCoins} each).
             </Bullet>
-            <Bullet
-                icon={Swords}
-                tone="text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
-            >
+            <Bullet icon={Swords} tone="text-emerald-500 bg-emerald-500/10">
                 <strong>Challenges:</strong> no daily cap — each one pays a
                 fresh bonus.
             </Bullet>
-            <Bullet
-                icon={Trophy}
-                tone="text-amber-500 bg-amber-50 dark:bg-amber-500/10"
-            >
+            <Bullet icon={Trophy} tone="text-amber-500 bg-amber-500/10">
                 <strong>Quiz completions:</strong> uncapped, but each unique
                 quiz pays once.
             </Bullet>
@@ -358,7 +374,7 @@ export function ApprovalSection() {
     return (
         <Section
             icon={ShieldCheck}
-            tone="text-violet-600 bg-violet-50 dark:bg-violet-500/10 dark:text-violet-400"
+            tone="text-violet-600 bg-violet-500/10"
             eyebrow="Getting approved"
             title="How approval works"
         >
@@ -367,29 +383,20 @@ export function ApprovalSection() {
                 invite-only. You apply once, our team reviews it, and you're
                 approved within 24 hours.
             </p>
-            <Bullet
-                icon={CheckCircle2}
-                tone="text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
-            >
+            <Bullet icon={CheckCircle2} tone="text-emerald-500 bg-emerald-500/10">
                 <strong>Step 1 — Apply:</strong> On the wallet page, tap{" "}
                 <em>"Apply to earn coins."</em> You can add a short note about
                 your nursing journey (optional).
             </Bullet>
-            <Bullet
-                icon={Clock}
-                tone="text-amber-500 bg-amber-50 dark:bg-amber-500/10"
-            >
+            <Bullet icon={Clock} tone="text-amber-500 bg-amber-500/10">
                 <strong>Step 2 — Wait:</strong> An admin reviews your
                 application. You'll get a notification once it's decided.
             </Bullet>
-            <Bullet
-                icon={Sparkles}
-                tone="text-blue-500 bg-blue-50 dark:bg-blue-500/10"
-            >
+            <Bullet icon={Sparkles} tone="text-blue-500 bg-blue-500/10">
                 <strong>Step 3 — Earn:</strong> Once approved, every
                 qualifying action starts paying out immediately.
             </Bullet>
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 border border-amber-100 dark:border-amber-500/20">
+            <div className="rounded-xl bg-amber-500/10 p-3">
                 <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
                     ⚠️ If your application is <strong>declined</strong>, you
                     can re-apply after 7 days. Repeated declines may result in
@@ -401,16 +408,21 @@ export function ApprovalSection() {
 }
 
 export function RedemptionSection({ state }: { state: CoinState }) {
-    const { config } = state;
-    // Cash example uses the live rate so it stays accurate
-    const tenThousandWorth = formatKsh(10000 * config.ksh_per_coin);
-    const minRedeem = config.min_redeem_coins;
-    const minRedeemWorth = formatKsh(minRedeem * config.ksh_per_coin);
+    const hasRate = !!state.config && state.config.ksh_per_coin > 0;
+    const minRedeem = state.config?.min_redeem_coins ?? 0;
+    const minRedeemWorth =
+        hasRate && state.config
+            ? formatKsh(minRedeem * state.config.ksh_per_coin)
+            : null;
+    const tenThousandWorth =
+        hasRate && state.config
+            ? formatKsh(10000 * state.config.ksh_per_coin)
+            : null;
 
     return (
         <Section
             icon={Gift}
-            tone="text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400"
+            tone="text-rose-600 bg-rose-500/10"
             eyebrow="Cash-out"
             title="Redeeming your coins"
         >
@@ -419,33 +431,33 @@ export function RedemptionSection({ state }: { state: CoinState }) {
                 tab and choose a reward. Coins are deducted instantly from your
                 balance, and the reward is processed within 24 hours.
             </p>
-            <Bullet
-                icon={Wallet}
-                tone="text-teal-500 bg-teal-50 dark:bg-teal-500/10"
-            >
-                <strong>Cash to MPesa:</strong> {minRedeem.toLocaleString()} coins →{" "}
-                {minRedeemWorth} (minimum). Processed via MPesa B2C.
+            <Bullet icon={Wallet} tone="text-teal-500 bg-teal-500/10">
+                <strong>Cash to MPesa:</strong>{" "}
+                {minRedeem > 0 && minRedeemWorth ? (
+                    <>
+                        {minRedeem.toLocaleString()} coins → {minRedeemWorth} (minimum).
+                        Processed via MPesa B2C.
+                    </>
+                ) : (
+                    <span className="text-slate-400 dark:text-slate-500 italic">
+                        minimum redemption unavailable — check back online.
+                    </span>
+                )}
             </Bullet>
-            <Bullet
-                icon={Crown}
-                tone="text-amber-500 bg-amber-50 dark:bg-amber-500/10"
-            >
+            <Bullet icon={Crown} tone="text-amber-500 bg-amber-500/10">
                 <strong>Premium access:</strong> Unlock premium quizzes and
                 content without paying cash.
             </Bullet>
-            <Bullet
-                icon={Star}
-                tone="text-violet-500 bg-violet-50 dark:bg-violet-500/10"
-            >
+            <Bullet icon={Star} tone="text-violet-500 bg-violet-500/10">
                 <strong>Bonus content:</strong> Exclusive quiz packs and
                 study material.
             </Bullet>
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3 border border-emerald-100 dark:border-emerald-500/20">
+            <div className="rounded-xl bg-emerald-500/10 p-3">
                 <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
                     ✓ Redemptions are <strong>irreversible</strong> once
                     approved. Your balance updates instantly, and a receipt
                     (MPesa code or voucher) appears in your history.
-                    {tenThousandWorth !== "KSh 100" && (
+                    {tenThousandWorth && (
                         <>
                             {" "}
                             At the current rate, 10,000 coins ={" "}
@@ -462,7 +474,7 @@ export function AntiAbuseSection() {
     return (
         <Section
             icon={Lock}
-            tone="text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400"
+            tone="text-rose-600 bg-rose-500/10"
             eyebrow="Ground rules"
             title="Anti-abuse policy"
         >
@@ -471,31 +483,19 @@ export function AntiAbuseSection() {
                 in suspension of earning privileges, forfeiture of coins, and
                 potentially account-level action:
             </p>
-            <Bullet
-                icon={AlertCircle}
-                tone="text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-            >
+            <Bullet icon={AlertCircle} tone="text-rose-500 bg-rose-500/10">
                 <strong>Self-engagement:</strong> Liking, commenting, or
                 bookmarking your own content does <em>not</em> pay coins.
             </Bullet>
-            <Bullet
-                icon={AlertCircle}
-                tone="text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-            >
+            <Bullet icon={AlertCircle} tone="text-rose-500 bg-rose-500/10">
                 <strong>Bot activity:</strong> Automated liking, commenting,
                 or quiz attempts are detected and blocked.
             </Bullet>
-            <Bullet
-                icon={AlertCircle}
-                tone="text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-            >
+            <Bullet icon={AlertCircle} tone="text-rose-500 bg-rose-500/10">
                 <strong>Multi-accounting:</strong> One account per student.
                 Using multiple accounts to farm coins = permanent ban.
             </Bullet>
-            <Bullet
-                icon={AlertCircle}
-                tone="text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-            >
+            <Bullet icon={AlertCircle} tone="text-rose-500 bg-rose-500/10">
                 <strong>Reciprocal rings:</strong> Artificially liking or
                 commenting in groups to game the system is not allowed.
             </Bullet>
@@ -511,8 +511,10 @@ export function AntiAbuseSection() {
 }
 
 export function FaqSection({ state }: { state: CoinState }) {
-    const { config } = state;
-    const rateLabel = formatKsh(config.ksh_per_coin);
+    const rateLabel =
+        state.config && state.config.ksh_per_coin > 0
+            ? formatKsh(state.config.ksh_per_coin)
+            : null;
 
     const faqs: { q: string; a: string }[] = [
         {
@@ -535,10 +537,15 @@ export function FaqSection({ state }: { state: CoinState }) {
             q: "Can I lose coins I already have?",
             a: "Only by redeeming them. Your balance is safe as long as your account is in good standing.",
         },
-        {
-            q: `How is 1 coin worth ${rateLabel} calculated?`,
-            a: `It's set by Medrae admins. The current rate is 1 coin = ${rateLabel}. If it changes, we'll notify everyone before any change takes effect.`,
-        },
+        rateLabel
+            ? {
+                q: `How is 1 coin worth ${rateLabel} calculated?`,
+                a: `It's set by Medrae admins. The current rate is 1 coin = ${rateLabel}. If it changes, we'll notify everyone before any change takes effect.`,
+            }
+            : {
+                q: "How is the coin rate calculated?",
+                a: "It's set by Medrae admins and shown live when you're online. Check back when connected to see the current rate.",
+            },
         {
             q: "What if my MPesa redemption fails?",
             a: "The coins are automatically refunded to your balance, and you'll be notified. Try again or contact support.",
@@ -552,7 +559,7 @@ export function FaqSection({ state }: { state: CoinState }) {
     return (
         <Section
             icon={HelpCircle}
-            tone="text-slate-600 bg-slate-100 dark:bg-white/[0.06] dark:text-slate-300"
+            tone="text-slate-600 bg-slate-500/10"
             eyebrow="FAQ"
             title="Frequently asked questions"
         >
@@ -589,6 +596,14 @@ export function LearnContent() {
                 </div>
             )}
 
+            {!state.loading && !state.loaded && (
+                <div className="rounded-2xl bg-amber-500/10 p-3 text-[11px]
+                                text-amber-800 dark:text-amber-300 leading-snug">
+                    ⚠️ Live coin rates couldn't load — check your connection.
+                    Rates will show once you're back online.
+                </div>
+            )}
+
             <WhatAreCoinsSection state={state} />
             <HowToEarnSection state={state} />
             <DailyLimitsSection state={state} />
@@ -597,7 +612,6 @@ export function LearnContent() {
             <AntiAbuseSection />
             <FaqSection state={state} />
 
-            {/* Footer note */}
             <div className="pt-2 text-center">
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">
                     Last updated ·{" "}

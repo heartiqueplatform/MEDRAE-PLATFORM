@@ -11,14 +11,15 @@ import React, {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useUserRole } from "@/context/UserRoleContext";
-import { ChevronLeft, RefreshCw, Sparkles, ArrowRight } from "lucide-react";
-import dayjs from "dayjs";
+import { ChevronLeft, RefreshCw, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { playSound } from "@/lib/soundManager";
 import { cn } from "@/lib/utils";
-
+import confetti from "canvas-confetti";
 import { MistakesCard } from "@/components/MistakesCard";
 import { MistakesListSkeleton } from "@/components/mistakes/MistakesListSkeleton";
 import { InstitutionFilter } from "@/components/mistakes/InstitutionFilter";
+import { MistakeRow, type Mistake, type Tab } from "@/components/mistakes/MistakeRow";
 import { getCopy, type MistakesMode } from "@/lib/mistakes/roleCopy";
 import {
     CACHE_KEYS,
@@ -28,51 +29,26 @@ import {
     clearMistakesCache,
 } from "@/lib/mistakes/mistakesCache";
 
-/* ────────────────────────────────────────────────────────────── */
-/*  Types                                                          */
-/* ────────────────────────────────────────────────────────────── */
-
-interface Question {
-    id: string;
-    question_text: string;
-    option_a: string;
-    option_b: string;
-    option_c: string;
-    option_d: string;
-    correct_answer: string;
-    explanation: string;
-    additional?: string;
-    topic?: string;
-    difficulty?: string;
-    user_selected?: string;
-}
-
-interface Mistake {
-    id: string;
-    times_wrong: number;
-    first_wrong_at: string;
-    last_wrong_at: string;
-    resolved: boolean;
-    quiz_id: string;
-    user_id?: string;
-    user_selected?: string;
-    questions: Question;
-    mistake_reason?: string;
-}
-
-type Tab = "needs-work" | "understood";
-type FetchResult = { rows: Mistake[]; total: number; hasMore: boolean };
-
 const BATCH_SIZE = 25;
 
 const vibrate = (p: number | number[] = 12) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator)
-        navigator.vibrate(p);
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(p);
 };
-
-/* ────────────────────────────────────────────────────────────── */
-/*  Component                                                      */
-/* ────────────────────────────────────────────────────────────── */
+const fireConfetti = () => {
+    try {
+        confetti({
+            particleCount: 25,
+            spread: 50,
+            origin: { y: 0.6 },
+            startVelocity: 35,
+            scalar: 0.8,
+            ticks: 120,
+            colors: ["#10b981", "#34d399", "#6ee7b7"],
+            disableForReducedMotion: true,
+        });
+    } catch { }
+};
+type FetchResult = { rows: Mistake[]; total: number; hasMore: boolean };
 
 export default function MyMistakes() {
     const navigate = useNavigate();
@@ -82,16 +58,12 @@ export default function MyMistakes() {
 
     const [user, setUser] = useState<any>(null);
     const [authReady, setAuthReady] = useState(false);
-
-    const [institution, setInstitution] = useState<string | null>(() =>
-        readCachedInstitution()
-    );
+    const [institution, setInstitution] = useState<string | null>(() => readCachedInstitution());
 
     const [openRows, setOpenRows] = useState<Mistake[]>([]);
     const [resolvedRows, setResolvedRows] = useState<Mistake[]>([]);
     const [openTotal, setOpenTotal] = useState(0);
     const [resolvedTotal, setResolvedTotal] = useState(0);
-
     const [openOffset, setOpenOffset] = useState(0);
     const [resolvedOffset, setResolvedOffset] = useState(0);
     const [openDone, setOpenDone] = useState(false);
@@ -105,6 +77,8 @@ export default function MyMistakes() {
         typeof navigator !== "undefined" ? !navigator.onLine : false
     );
     const [activeTab, setActiveTab] = useState<Tab>("needs-work");
+    const [exitDirection, setExitDirection] = useState<"left" | "right">("right");
+    const [movingIds, setMovingIds] = useState<Set<string>>(new Set());
 
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const isMounted = useRef(true);
@@ -131,7 +105,6 @@ export default function MyMistakes() {
         };
     }, []);
 
-    /* ── online/offline ── */
     useEffect(() => {
         const on = () => setOffline(false);
         const off = () => setOffline(true);
@@ -143,7 +116,6 @@ export default function MyMistakes() {
         };
     }, []);
 
-    /* ── mounted ref ── */
     useEffect(() => {
         isMounted.current = true;
         return () => {
@@ -158,15 +130,13 @@ export default function MyMistakes() {
 
             // Primary: RPC
             try {
-                const { data, error } = await supabase.rpc(
-                    "get_cohort_mistakes",
-                    {
-                        p_institution: inst,
-                        p_limit: BATCH_SIZE,
-                        p_offset: offset,
-                        p_resolved: resolved,
-                    }
-                );
+                const { data, error } = await supabase.rpc("get_cohort_mistakes", {
+                    p_institution: inst,
+                    p_user_id: mode === "student" ? user?.id ?? null : null,
+                    p_limit: BATCH_SIZE,
+                    p_offset: offset,
+                    p_resolved: resolved,
+                });
                 if (!error && Array.isArray(data)) {
                     const rows = data.map((r: any) => ({
                         id: r.id,
@@ -181,11 +151,7 @@ export default function MyMistakes() {
                         questions: r.questions ?? r.question,
                     })) as Mistake[];
                     const total = Number(data[0]?.total_count ?? rows.length);
-                    return {
-                        rows,
-                        total,
-                        hasMore: offset + rows.length < total,
-                    };
+                    return { rows, total, hasMore: offset + rows.length < total };
                 }
             } catch {
                 /* fall through */
@@ -211,22 +177,15 @@ export default function MyMistakes() {
             if (error) throw error;
 
             const rows = ((data ?? []) as any[])
-                .filter(
-                    (m) =>
-                        m.questions && Object.keys(m.questions).length > 0
-                )
-                .map((m) => ({
-                    ...m,
-                    user_selected: m.user_selected ?? null,
-                })) as Mistake[];
-
+                .filter((m) => m.questions && Object.keys(m.questions).length > 0)
+                .map((m) => ({ ...m, user_selected: m.user_selected ?? null })) as Mistake[];
             const total = count ?? rows.length;
             return { rows, total, hasMore: offset + rows.length < total };
         },
         [mode, institution, user]
     );
 
-    /* ── initial load + reset on tab / institution / mode ── */
+    /* ── initial load ── */
     useEffect(() => {
         if (!authReady) return;
         if (mode === "student" && !user) {
@@ -235,13 +194,10 @@ export default function MyMistakes() {
         }
 
         const myId = ++requestIdRef.current;
-
-        const cacheKey =
-            activeTab === "needs-work" ? CACHE_KEYS.open : CACHE_KEYS.resolved;
+        const cacheKey = activeTab === "needs-work" ? CACHE_KEYS.open : CACHE_KEYS.resolved;
         const scope = mode === "tutor" ? institution : null;
         const cached = readEnvelope<Mistake[]>(cacheKey);
 
-        // Instant paint from cache (only if the scope matches)
         let hadCache = false;
         if (cached && cached.institution === scope) {
             hadCache = true;
@@ -259,18 +215,12 @@ export default function MyMistakes() {
             setLoading(false);
         } else {
             setLoading(true);
-        }
-
-        // Reset the other tab's paging state so a tab switch starts fresh
-        if (activeTab === "needs-work") {
-            if (!hadCache) {
+            if (activeTab === "needs-work") {
                 setOpenRows([]);
                 setOpenTotal(0);
                 setOpenOffset(0);
                 setOpenDone(false);
-            }
-        } else {
-            if (!hadCache) {
+            } else {
                 setResolvedRows([]);
                 setResolvedTotal(0);
                 setResolvedOffset(0);
@@ -286,13 +236,8 @@ export default function MyMistakes() {
         let cancelled = false;
         (async () => {
             try {
-                const { rows, total, hasMore } = await fetchPage(
-                    activeTab === "understood",
-                    0
-                );
-                if (cancelled || !isMounted.current) return;
-                if (myId !== requestIdRef.current) return;
-
+                const { rows, total, hasMore } = await fetchPage(activeTab === "understood", 0);
+                if (cancelled || !isMounted.current || myId !== requestIdRef.current) return;
                 if (activeTab === "needs-work") {
                     setOpenRows(rows);
                     setOpenTotal(total);
@@ -307,13 +252,11 @@ export default function MyMistakes() {
                 writeEnvelope(cacheKey, rows, scope);
                 setHardError(false);
             } catch {
-                if (isMounted.current && myId === requestIdRef.current) {
-                    if (!hadCache) setHardError(true);
+                if (isMounted.current && myId === requestIdRef.current && !hadCache) {
+                    setHardError(true);
                 }
             } finally {
-                if (isMounted.current && myId === requestIdRef.current) {
-                    setLoading(false);
-                }
+                if (isMounted.current && myId === requestIdRef.current) setLoading(false);
             }
         })();
 
@@ -343,26 +286,18 @@ export default function MyMistakes() {
 
                 try {
                     const offset = isOpen ? openOffset : resolvedOffset;
-                    const { rows, total, hasMore } = await fetchPage(
-                        !isOpen,
-                        offset
-                    );
-                    if (!isMounted.current || myId !== requestIdRef.current)
-                        return;
+                    const { rows, total, hasMore } = await fetchPage(!isOpen, offset);
+                    if (!isMounted.current || myId !== requestIdRef.current) return;
                     if (rows.length === 0) {
                         if (isOpen) setOpenDone(true);
                         else setResolvedDone(true);
                         return;
                     }
-
                     const scope = mode === "tutor" ? institution : null;
                     if (isOpen) {
                         setOpenRows((prev) => {
                             const seen = new Set(prev.map((r) => r.id));
-                            const merged = [
-                                ...prev,
-                                ...rows.filter((r) => !seen.has(r.id)),
-                            ];
+                            const merged = [...prev, ...rows.filter((r) => !seen.has(r.id))];
                             writeEnvelope(CACHE_KEYS.open, merged, scope);
                             return merged;
                         });
@@ -372,10 +307,7 @@ export default function MyMistakes() {
                     } else {
                         setResolvedRows((prev) => {
                             const seen = new Set(prev.map((r) => r.id));
-                            const merged = [
-                                ...prev,
-                                ...rows.filter((r) => !seen.has(r.id)),
-                            ];
+                            const merged = [...prev, ...rows.filter((r) => !seen.has(r.id))];
                             writeEnvelope(CACHE_KEYS.resolved, merged, scope);
                             return merged;
                         });
@@ -410,17 +342,33 @@ export default function MyMistakes() {
         institution,
     ]);
 
-    /* ── actions ── */
+    /* ── OPTIMISTIC actions ──
+       These move a row from one tab to the other WITHOUT a page reload.
+       The exitDirection triggers the slide animation, and the row lands
+       in the other tab. Then we sync with Supabase in the background. */
+
     const markResolved = useCallback(
         async (questionId: string) => {
             vibrate(40);
             if (mode !== "student" || !user) return;
 
-            // Optimistic UI
-            setOpenRows((prev) =>
-                prev.filter((m) => m.questions.id !== questionId)
-            );
+            const item = openRows.find((m) => m.questions.id === questionId);
+            if (!item) return;
+
+            // Trigger exit animation toward the "understood" direction
+            setExitDirection("right");
+            setMovingIds((prev) => new Set(prev).add(questionId));
+            // 🎉 Reward feedback
+            fireConfetti();
+            try {
+                playSound("tap-correct", false);
+            } catch { }
+            // Animate out of `needs-work`, into `understood`
+            setOpenRows((prev) => prev.filter((m) => m.questions.id !== questionId));
             setOpenTotal((t) => Math.max(0, t - 1));
+            const moved = { ...item, resolved: true, last_wrong_at: new Date().toISOString() };
+            setResolvedRows((prev) => [moved, ...prev]);
+            setResolvedTotal((t) => t + 1);
 
             try {
                 const { error } = await supabase
@@ -431,19 +379,25 @@ export default function MyMistakes() {
                 if (error) throw error;
                 clearMistakesCache();
             } catch {
-                // Roll back on failure — refetch quietly
+                // rollback
+                setOpenRows((prev) => [item, ...prev]);
+                setOpenTotal((t) => t + 1);
+                setResolvedRows((prev) => prev.filter((m) => m.questions.id !== questionId));
+                setResolvedTotal((t) => Math.max(0, t - 1));
                 try {
-                    const { rows, total } = await fetchPage(false, 0);
-                    setOpenRows(rows);
-                    setOpenTotal(total);
-                    setOpenOffset(rows.length);
-                    setOpenDone(rows.length >= total);
-                } catch {
-                    /* ignore */
-                }
+                    playSound("tap-wrong", false);
+                } catch { }
+            } finally {
+                setTimeout(() => {
+                    setMovingIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(questionId);
+                        return next;
+                    });
+                }, 600);
             }
         },
-        [mode, user, fetchPage]
+        [mode, user, openRows]
     );
 
     const reopen = useCallback(
@@ -451,10 +405,19 @@ export default function MyMistakes() {
             vibrate(40);
             if (mode !== "student" || !user) return;
 
-            setResolvedRows((prev) =>
-                prev.filter((m) => m.questions.id !== questionId)
-            );
+            const item = resolvedRows.find((m) => m.questions.id === questionId);
+            if (!item) return;
+
+            setExitDirection("left");
+            setMovingIds((prev) => new Set(prev).add(questionId));
+            try {
+                playSound("tap", false);
+            } catch { }
+            setResolvedRows((prev) => prev.filter((m) => m.questions.id !== questionId));
             setResolvedTotal((t) => Math.max(0, t - 1));
+            const moved = { ...item, resolved: false };
+            setOpenRows((prev) => [moved, ...prev]);
+            setOpenTotal((t) => t + 1);
 
             try {
                 const { error } = await supabase
@@ -465,18 +428,21 @@ export default function MyMistakes() {
                 if (error) throw error;
                 clearMistakesCache();
             } catch {
-                try {
-                    const { rows, total } = await fetchPage(true, 0);
-                    setResolvedRows(rows);
-                    setResolvedTotal(total);
-                    setResolvedOffset(rows.length);
-                    setResolvedDone(rows.length >= total);
-                } catch {
-                    /* ignore */
-                }
+                setResolvedRows((prev) => [item, ...prev]);
+                setResolvedTotal((t) => t + 1);
+                setOpenRows((prev) => prev.filter((m) => m.questions.id !== questionId));
+                setOpenTotal((t) => Math.max(0, t - 1));
+            } finally {
+                setTimeout(() => {
+                    setMovingIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(questionId);
+                        return next;
+                    });
+                }, 600);
             }
         },
-        [mode, user, fetchPage]
+        [mode, user, resolvedRows]
     );
 
     const manualRefresh = useCallback(async () => {
@@ -484,10 +450,7 @@ export default function MyMistakes() {
         setRefreshing(true);
         clearMistakesCache();
         try {
-            const { rows, total, hasMore } = await fetchPage(
-                activeTab === "understood",
-                0
-            );
+            const { rows, total, hasMore } = await fetchPage(activeTab === "understood", 0);
             if (activeTab === "needs-work") {
                 setOpenRows(rows);
                 setOpenTotal(total);
@@ -509,13 +472,9 @@ export default function MyMistakes() {
 
     const back = () => {
         vibrate();
-        navigate(
-            mode === "tutor" ? "/dashboard/tutor" : "/dashboard/student",
-            { replace: true }
-        );
+        navigate(mode === "tutor" ? "/dashboard/tutor" : "/dashboard/student", { replace: true });
     };
 
-    /* ── derived ── */
     const activeRows = activeTab === "needs-work" ? openRows : resolvedRows;
     const activeTotal = activeTab === "needs-work" ? openTotal : resolvedTotal;
     const activeDone = activeTab === "needs-work" ? openDone : resolvedDone;
@@ -528,11 +487,7 @@ export default function MyMistakes() {
         openTotal === 0 &&
         resolvedTotal === 0;
 
-    /* ── early states ── */
-    if (
-        (!authReady && openRows.length === 0) ||
-        (loading && activeRows.length === 0)
-    ) {
+    if ((!authReady && openRows.length === 0) || (loading && activeRows.length === 0)) {
         return (
             <Shell copy={copy} onBack={back}>
                 <MistakesListSkeleton tabs headerCard />
@@ -547,15 +502,11 @@ export default function MyMistakes() {
                     <div className="h-14 w-14 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center mb-3">
                         <RefreshCw className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                        {copy.offlineTitle}
-                    </h2>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[240px]">
-                        {copy.offlineDesc}
-                    </p>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">{copy.offlineTitle}</h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[240px]">{copy.offlineDesc}</p>
                     <button
                         onClick={manualRefresh}
-                        className="mt-4 h-10 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[12px] font-bold"
+                        className="mt-4 h-10 px-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-[12px] font-bold"
                     >
                         {copy.refresh}
                     </button>
@@ -571,42 +522,31 @@ export default function MyMistakes() {
                     <div className="h-14 w-14 rounded-full bg-emerald-50 dark:bg-emerald-400/10 flex items-center justify-center mb-3">
                         <Sparkles className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                        {copy.emptyFlawlessTitle}
-                    </h2>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[260px]">
-                        {copy.emptyFlawlessDesc}
-                    </p>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">{copy.emptyFlawlessTitle}</h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[260px]">{copy.emptyFlawlessDesc}</p>
                     <button
                         onClick={() => navigate("/Medrae-quizzes")}
-                        className="mt-4 h-10 px-4 rounded-xl bg-blue-600 text-white text-[12px] font-bold flex items-center gap-1.5"
+                        className="mt-4 h-10 px-2 rounded-xl bg-blue-600 text-white text-[12px] font-bold flex items-center gap-1.5"
                     >
-                        {copy.continueJourney}{" "}
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        {copy.continueJourney} <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                 </div>
             </Shell>
         );
     }
 
-    /* ── main render ── */
     return (
         <Shell copy={copy} onBack={back}>
-            <div className="w-full max-w-3xl mx-auto px-4 py-4 space-y-3 safe-bottom pb-6">
+            <div className="w-full max-w-3xl mx-auto px-2 py-4 space-y-3 safe-bottom pb-6">
                 {offline && (
                     <div className="rounded-xl bg-amber-50 dark:bg-amber-400/10 p-2.5 flex items-start gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
-                        <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                            {copy.offlineDesc}
-                        </p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-300">{copy.offlineDesc}</p>
                     </div>
                 )}
 
                 {mode === "tutor" && (
-                    <InstitutionFilter
-                        value={institution}
-                        onChange={setInstitution}
-                    />
+                    <InstitutionFilter value={institution} onChange={setInstitution} />
                 )}
 
                 {mode === "tutor" ? (
@@ -615,7 +555,6 @@ export default function MyMistakes() {
                     <MistakesCard mode="student" />
                 )}
 
-                {/* Tabs */}
                 <div className="flex items-center gap-1.5 pt-1">
                     <TabPill
                         active={activeTab === "needs-work"}
@@ -631,7 +570,6 @@ export default function MyMistakes() {
                     />
                 </div>
 
-                {/* Header card */}
                 <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3">
                     <div className="flex items-center gap-2">
                         <div
@@ -642,7 +580,11 @@ export default function MyMistakes() {
                                     : "bg-emerald-400/10 text-emerald-600"
                             )}
                         >
-                            <Sparkles className="h-4 w-4" />
+                            {activeTab === "needs-work" ? (
+                                <Sparkles className="h-4 w-4" />
+                            ) : (
+                                <CheckCircle2 className="h-4 w-4" />
+                            )}
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-bold uppercase tracking-wider leading-none mb-1 text-slate-500">
@@ -678,7 +620,7 @@ export default function MyMistakes() {
                     </p>
                 </section>
 
-                {/* List */}
+                {/* Swipeable rows with slide-in/out animations */}
                 <AnimatePresence mode="popLayout" initial={false}>
                     {activeRows.map((m, i) => (
                         <MistakeRow
@@ -688,31 +630,25 @@ export default function MyMistakes() {
                             copy={copy}
                             mode={mode}
                             activeTab={activeTab}
+                            exitDirection={exitDirection}
+                            movingIds={movingIds}
                             onMarkUnderstood={markResolved}
                             onReopen={reopen}
                         />
                     ))}
                 </AnimatePresence>
 
-                {/* Sentinel / end */}
-                <div
-                    ref={sentinelRef}
-                    className="h-10 flex items-center justify-center"
-                >
+                <div ref={sentinelRef} className="h-10 flex items-center justify-center">
                     {loadingMore && (
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
-                            <RefreshCw className="h-3 w-3 animate-spin" />{" "}
-                            Loading…
+                            <RefreshCw className="h-3 w-3 animate-spin" /> Loading…
                         </div>
                     )}
                     {!loadingMore && activeDone && activeRows.length > 0 && (
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                            End of list
-                        </p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">End of list</p>
                     )}
                 </div>
 
-                {/* Empty tab */}
                 {activeRows.length === 0 && !loading && (
                     <div className="rounded-2xl bg-white dark:bg-[#161b22] p-6 text-center space-y-2">
                         <p className="text-[12px] font-bold text-slate-700 dark:text-slate-300">
@@ -728,7 +664,6 @@ export default function MyMistakes() {
                     </div>
                 )}
 
-                {/* Refresh */}
                 {activeRows.length > 0 && !refreshing && (
                     <div className="flex justify-center pt-2">
                         <button
@@ -744,10 +679,6 @@ export default function MyMistakes() {
         </Shell>
     );
 }
-
-/* ────────────────────────────────────────────────────────────── */
-/*  Shell                                                          */
-/* ────────────────────────────────────────────────────────────── */
 
 function Shell({
     onBack,
@@ -776,16 +707,10 @@ function Shell({
                     </p>
                 </div>
             </header>
-            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                {children}
-            </main>
+            <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">{children}</main>
         </div>
     );
 }
-
-/* ────────────────────────────────────────────────────────────── */
-/*  Tab pill                                                       */
-/* ────────────────────────────────────────────────────────────── */
 
 function TabPill({
     active,
@@ -816,154 +741,5 @@ function TabPill({
                 {count}
             </span>
         </button>
-    );
-}
-
-/* ────────────────────────────────────────────────────────────── */
-/*  Mistake row                                                    */
-/* ────────────────────────────────────────────────────────────── */
-
-function MistakeRow({
-    mistake,
-    index,
-    copy,
-    mode,
-    activeTab,
-    onMarkUnderstood,
-    onReopen,
-}: {
-    mistake: Mistake;
-    index: number;
-    copy: ReturnType<typeof getCopy>;
-    mode: MistakesMode;
-    activeTab: Tab;
-    onMarkUnderstood: (qid: string) => void;
-    onReopen: (qid: string) => void;
-}) {
-    const m = mistake;
-    const isNeedsWork = activeTab === "needs-work";
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.22 }}
-            className="relative mb-2"
-        >
-            <article className="rounded-2xl bg-white dark:bg-[#161b22] p-3 space-y-2.5">
-                <div>
-                    <p
-                        className={`text-[10px] font-bold uppercase tracking-wider leading-none mb-1.5 ${isNeedsWork ? "text-rose-600" : "text-emerald-700"
-                            }`}
-                    >
-                        {isNeedsWork
-                            ? copy.wrongTimes(m.times_wrong)
-                            : `${copy.markedAt} · ${dayjs(
-                                m.last_wrong_at
-                            ).format("DD MMM YYYY, h:mm A")}`}
-                    </p>
-                    <h3 className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug">
-                        Q{index + 1}:{" "}
-                        {m.questions?.question_text ?? "Question unavailable"}
-                    </h3>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                        Last attempt ·{" "}
-                        {dayjs(m.last_wrong_at).format(
-                            "DD MMM YYYY, h:mm A"
-                        )}
-                        {mode === "tutor" && m.user_id && (
-                            <p className="text-[10px] text-slate-400 font-mono">
-                                Student · {m.user_id.slice(0, 8)}
-                            </p>
-                        )}
-                    </p>
-                </div>
-
-                <div className="space-y-1.5">
-                    {["A", "B", "C", "D"].map((letter) => {
-                        const optionText =
-                            (m.questions?.[
-                                `option_${letter.toLowerCase()}` as keyof Question
-                            ] as string | undefined) ?? "—";
-                        const isCorrect =
-                            letter === m.questions?.correct_answer;
-                        const isUserChoice = letter === m.user_selected;
-
-                        return (
-                            <div
-                                key={letter}
-                                className={`flex items-start justify-between gap-2 rounded-xl px-2.5 py-2 ${isCorrect
-                                    ? "bg-emerald-50 dark:bg-emerald-400/10"
-                                    : isUserChoice
-                                        ? "bg-rose-50 dark:bg-rose-400/10"
-                                        : "bg-slate-50 dark:bg-[#0d1117]"
-                                    }`}
-                            >
-                                <span
-                                    className={`text-[12px] leading-snug break-words ${isCorrect
-                                        ? "font-bold text-emerald-700"
-                                        : isUserChoice
-                                            ? "font-bold text-rose-700"
-                                            : "text-slate-700"
-                                        }`}
-                                >
-                                    <strong>{letter}.</strong> {optionText}
-                                </span>
-                                {isCorrect && (
-                                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-emerald-700">
-                                        {copy.correctChoiceLabel}
-                                    </span>
-                                )}
-                                {isUserChoice && !isCorrect && (
-                                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-rose-700">
-                                        {copy.studentChoiceLabel}
-                                    </span>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {m.mistake_reason && (
-                    <div className="rounded-xl bg-amber-50 dark:bg-amber-400/10 p-2.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-0.5">
-                            {copy.whyMissed}
-                        </p>
-                        <p className="text-[11px] text-amber-800 leading-snug">
-                            {m.mistake_reason}
-                        </p>
-                    </div>
-                )}
-
-                <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                        Explanation
-                    </p>
-                    <p className="text-[12px] leading-relaxed text-slate-700 dark:text-slate-300">
-                        {m.questions?.explanation ??
-                            "No explanation available."}
-                    </p>
-                </div>
-
-                {mode === "student" && (
-                    <button
-                        onClick={() =>
-                            isNeedsWork
-                                ? onMarkUnderstood(m.questions.id)
-                                : onReopen(m.questions.id)
-                        }
-                        className={`w-full h-10 rounded-xl text-[12px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-transform ${isNeedsWork
-                            ? "bg-emerald-600 text-white"
-                            : "bg-rose-50 dark:bg-rose-400/10 text-rose-700"
-                            }`}
-                    >
-                        {isNeedsWork
-                            ? copy.markUnderstood
-                            : copy.moveBack}
-                    </button>
-                )}
-            </article>
-        </motion.div>
     );
 }

@@ -196,7 +196,24 @@ export default function StaffDashboard() {
         cta: "Apply", to: "/cpd/apply", tone: "blue" as Tone
       },
   ];
-
+  // 🆕 First-paint skeleton — shown while auth/session hydrates.
+  //    Without this, the shell renders with zero values for ~1 frame,
+  //    and on a cold refresh that frame reads as blank/empty.
+  if (!userId) {
+    return (
+      <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-2.5">
+        <div className="h-16 rounded-2xl bg-slate-100 dark:bg-white/[0.04] animate-pulse" />
+        <div className="grid grid-cols-2 gap-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <div
+              key={i}
+              className="h-24 rounded-2xl bg-slate-100 dark:bg-white/[0.04] animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     // ─── ONLY CHANGE: px-4 → px-1.5 sm:px-4 (tighter gutters on phone) ───
     <div className="w-full max-w-[880px] mx-auto px-1.5 sm:px-4 pt-3 pb-16 space-y-2.5">

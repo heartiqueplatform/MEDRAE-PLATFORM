@@ -24,6 +24,7 @@ import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SettingsSheet } from "@/components/SettingsSheet";
+import { NotificationBell } from "../ui/NotificationBell";
 
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
@@ -337,7 +338,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   // ============================================================
   // ✅ Notifications & Total Users - ALWAYS shows cached data
   // ============================================================
-  const [notificationCount, setNotificationCount] = useState(preloadNotificationCount);
+
   const [totalUsers, setTotalUsers] = useState<number | null>(preloadTotalUsers);
   // ✅ Belt-and-suspenders: whenever totalUsers changes, ensure the
   //    `v2_total_users` mirror stays in sync. `preloadTotalUsers` reads
@@ -403,27 +404,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     }
   }, [authUser?.id, isOnline, streak]);
 
-  const updateNotificationsInBackground = useCallback(async () => {
-    if (!authUser?.id || !isOnline) return;
-
-    // ✅ WhatsApp-style: skip the network if cache is still fresh.
-    if (getCached('notification_count') !== null) return;
-
-    try {
-      const { count, error } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", authUser.id)
-        .eq("is_read", false);
-
-      if (!error && count !== undefined && count !== notificationCount) {
-        setNotificationCount(count);
-        setCached('notification_count', count);
-      }
-    } catch (err) {
-      // Silent fail - keep cached data
-    }
-  }, [authUser?.id, isOnline, notificationCount]);
 
   // ✅ UPDATED: Uses shared profileCache - SILENT background update
   const updateProfileInBackground = useCallback(async () => {
@@ -483,7 +463,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     const initialTimeout = setTimeout(() => {
       if (isMounted.current) {
         updateStreakInBackground();
-        updateNotificationsInBackground();
+
         updateProfileInBackground();
       }
     }, 10000);
@@ -492,7 +472,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       if (isMounted.current && isOnline) {
         updateStreakInBackground();
 
-        updateNotificationsInBackground();
+
         updateProfileInBackground();
       }
     }, BACKGROUND_UPDATE_INTERVAL);
@@ -503,7 +483,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         clearInterval(backgroundIntervalRef.current);
       }
     };
-  }, [isOnline, authUser?.id, updateStreakInBackground, updateNotificationsInBackground, updateProfileInBackground]);
+  }, [isOnline, authUser?.id, updateStreakInBackground, updateProfileInBackground]);
   // ============================================================
   // ✅ LAZY FETCH: When user opens settings (force update)
   // ============================================================
@@ -514,10 +494,10 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     await Promise.all([
       updateStreakInBackground(),
 
-      updateNotificationsInBackground(),
+
       updateProfileInBackground(),
     ]);
-  }, [authUser?.id, isOnline, updateStreakInBackground, updateNotificationsInBackground, updateProfileInBackground]);
+  }, [authUser?.id, isOnline, updateStreakInBackground, updateProfileInBackground]);
   // ============================================================
   // ✅ Online users popover - LAZY fetch
   // ============================================================
@@ -877,22 +857,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
             {/* 2. ✅ CHALLENGE BUTTON - COMPLETELY REMOVED */}
 
 
-            {/* 3. NOTIFICATIONS BUTTON - NEW! Beside Settings */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNotificationsClick}
-              className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none data-[state=open]:ring-0 data-[state=open]:outline-none border-0"
-              aria-label="Notifications"
-            >
-              <Bell className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" />
-              {notificationCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-0"></span>
-                </span>
-              )}
-            </Button>
+
+            <NotificationBell />
             {/* 4. Settings Dropdown - NOW USING settings.png INSTEAD OF CogIcon */}
             {/* 4. Settings Button — opens full-screen native-like sheet */}
             <Button
@@ -903,12 +869,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               aria-label="Settings"
             >
               <Settings className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-transform duration-500 group-hover:rotate-90" />
-              {notificationCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-0"></span>
-                </span>
-              )}
+
               {isMuted && (
                 <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 border-0 animate-pulse">
                   <VolumeOff className="h-2 w-2 text-white" />
@@ -986,7 +947,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         isPremium={isPremium}
         isOnline={isOnline}
         streak={streak}
-        notificationCount={notificationCount}
       />
     </>
   );

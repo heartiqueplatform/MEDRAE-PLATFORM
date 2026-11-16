@@ -1159,40 +1159,33 @@ export const DailyTriviaCard = () => {
     return (
         <div className="relative select-none overflow-x-hidden">
             <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/30 shadow-md mt-0">
-                <CardHeader className="bg-blue-50 dark:bg-muted/30 pb-3">
-                    {started ? (
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                            <span className="font-mono flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                                <Timer className="w-4 h-4 text-blue-600" />
-                                {fmt(timer)}
-                                {autoSubmitCountdown !== null && autoSubmitCountdown > 0 && (
-                                    <span className="text-red-600 dark:text-red-400 font-bold animate-pulse">
-                                        ⚠️ {autoSubmitCountdown}s
-                                    </span>
-                                )}
-                            </span>
-                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                Q{currentIndex + 1} / {questions.length}
-                            </span>
-                        </div>
-                    ) : completed ? (
-                        <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-emerald-600" />
-                            <CardTitle className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                                Today's attempt recorded
-                            </CardTitle>
-                        </div>
-                    ) : (
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 flex-1 min-w-0">
-                                <span className="align-middle">Ready for today's MindRush?</span>
-                            </p>
-                            <Badge variant="secondary" className="flex-shrink-0 h-6">
-                                {questions.length} Questions
-                            </Badge>
-                        </div>
-                    )}
-                </CardHeader>
+                {(started || completed) && (
+                    <CardHeader className="bg-blue-50 dark:bg-muted/30 pb-3">
+                        {started ? (
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                <span className="font-mono flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                                    <Timer className="w-4 h-4 text-blue-600" />
+                                    {fmt(timer)}
+                                    {autoSubmitCountdown !== null && autoSubmitCountdown > 0 && (
+                                        <span className="text-red-600 dark:text-red-400 font-bold animate-pulse">
+                                            ⚠️ {autoSubmitCountdown}s
+                                        </span>
+                                    )}
+                                </span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                    Q{currentIndex + 1} / {questions.length}
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Target className="w-4 h-4 text-emerald-600" />
+                                <CardTitle className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                    Today's attempt recorded
+                                </CardTitle>
+                            </div>
+                        )}
+                    </CardHeader>
+                )}
 
                 <CardContent className="p-1">
                     {loading ? (
@@ -1307,13 +1300,18 @@ export const DailyTriviaCard = () => {
                     </div>
 
                     {!started && !completed && (
-                        <Button
-                            className="mt-4 px-8 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm mx-auto block"
-                            disabled={loading || attemptedToday || !selfUserId}
-                            onClick={startTrivia}
-                        >
-                            {attemptedToday ? "Already Completed Today" : "Start Daily Trivia"}
-                        </Button>
+                        <div className="mt-4 flex items-center justify-center gap-3">
+                            <Badge variant="secondary" className="h-6">
+                                {questions.length} Questions
+                            </Badge>
+                            <Button
+                                className="px-8 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm"
+                                disabled={loading || attemptedToday || !selfUserId}
+                                onClick={startTrivia}
+                            >
+                                {attemptedToday ? "Already Completed Today" : "Start Daily Trivia"}
+                            </Button>
+                        </div>
                     )}
 
                     {started && !completed && (

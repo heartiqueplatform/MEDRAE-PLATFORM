@@ -294,6 +294,7 @@ export default function Feed() {
   };
 
   // ── fetchQuestions ───────────────────────────────────────
+  // ── fetchQuestions ───────────────────────────────────────
   const fetchQuestions = async (pageNum: number, limit: number, uid: string) => {
     const key = `questions_${uid}_p${pageNum}_l${limit}`;
     return fetchWithDedupe(key, async () => {
@@ -308,12 +309,29 @@ export default function Feed() {
       const ids = shuffled.map((q: any) => q.id);
       const quizIds = [...new Set(shuffled.map((q: any) => q.quiz_id))];
 
+      // 1. Fetch likes, comments, and quizzes WITH created_by
       const [{ data: likes }, { data: commentsData }, { data: quizzes }] = await Promise.all([
         supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
         supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
-        supabase.from("quizzes").select("id, title").in("id", quizIds),
+        supabase.from("quizzes").select("id, title, created_by").in("id", quizIds),
       ]);
 
+      // 2. 🆕 Fetch creator profiles (all unique created_by values)
+      const creatorIds = [
+        ...new Set(
+          (quizzes ?? [])
+            .map((q) => q.created_by)
+            .filter((v): v is string => !!v)
+        ),
+      ];
+      const { data: creatorProfiles } = creatorIds.length > 0
+        ? await supabase
+          .from("profiles")
+          .select("user_id, name, avatar_url, role, is_verified_contributor, contributor_tier")
+          .in("user_id", creatorIds)
+        : { data: [] };
+
+      // 3. Build lookup maps
       const likesMap = new Map<string, any[]>();
       likes?.forEach((l) => {
         if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
@@ -323,15 +341,29 @@ export default function Feed() {
       commentsData?.forEach((c) => {
         commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
       });
-      const quizTitleMap = new Map<string, string>();
-      quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
+      const quizMap = new Map<string, any>();
+      quizzes?.forEach((q) => quizMap.set(q.id, q));
+      const creatorMap = new Map<string, any>();
+      (creatorProfiles ?? []).forEach((p) => creatorMap.set(p.user_id, p));
 
-      return shuffled.map((q: any) => ({
-        ...q,
-        qfeed_likes: likesMap.get(q.id) || [],
-        comments_count: commentsCountMap.get(q.id) || 0,
-        quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
-      }));
+      // 4. Merge author info into each question
+      return shuffled.map((q: any) => {
+        const quiz = quizMap.get(q.quiz_id);
+        const creator = quiz?.created_by ? creatorMap.get(quiz.created_by) : null;
+        return {
+          ...q,
+          qfeed_likes: likesMap.get(q.id) || [],
+          comments_count: commentsCountMap.get(q.id) || 0,
+          quiz_title: quiz?.title || "Untitled Quiz",
+          // 🆕 Author info (with verified badge)
+          author_id: quiz?.created_by ?? null,
+          author_name: creator?.name ?? null,
+          author_avatar: creator?.avatar_url ?? null,
+          author_role: creator?.role ?? null,
+          author_verified: creator?.is_verified_contributor === true,
+          author_tier: creator?.contributor_tier ?? null,
+        };
+      });
     }, 120_000);
   };
 

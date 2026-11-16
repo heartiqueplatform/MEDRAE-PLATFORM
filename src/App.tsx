@@ -367,8 +367,6 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/exam",
   "/survival-hub",
   "/quiz-simulation",
-  "/tutor/exams",
-
   "/live-classes",
   "/nursing/quiz",
   "/streak/restore",
@@ -668,11 +666,6 @@ const AppContent = () => {
 
 
 
-                          {/* Tutor Exam Control */}
-                          <Route path="/tutor/exams" element={<TutorExamList />} />
-                          <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
-                          <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
-                          <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
 
 
                           {/* Analytics */}
@@ -833,7 +826,14 @@ const AppContent = () => {
                         <Route path="/exam/access/:paper_id" element={<PrivateRoute><ExamAccessPage /></PrivateRoute>} />
                         <Route path="/exam/:paper_id/results" element={<PrivateRoute><StudentResultsPage /></PrivateRoute>} />
                         <Route path="/exam/results" element={<PrivateRoute><ResultsListPage /></PrivateRoute>} />
-
+                        {/* ═══════════════════════════════════════════════════════════
+    TUTOR EXAM CONTROL — full-screen, no dashboard shell
+    (same treatment as /nursing, /live-classes, /my-classes)
+    ═══════════════════════════════════════════════════════════ */}
+                        <Route path="/tutor/exams" element={<PrivateRoute><TutorExamList /></PrivateRoute>} />
+                        <Route path="/tutor/exams/:paper_id" element={<PrivateRoute><TutorExamDetails /></PrivateRoute>} />
+                        <Route path="/tutor/exams/:paper_id/live" element={<PrivateRoute><TutorLiveMonitor /></PrivateRoute>} />
+                        <Route path="/tutor/exams/:paper_id/results" element={<PrivateRoute><TutorResultsPage /></PrivateRoute>} />
                         <Route path="/my-classes" element={<MyClasses />} />
 
                         <Route path="/live-classes/:id" element={<ClassDetails />} />

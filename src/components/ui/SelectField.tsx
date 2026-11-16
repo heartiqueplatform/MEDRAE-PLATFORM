@@ -87,12 +87,13 @@ export function SelectField({
 
             <SelectContent
                 className={`
-                    rounded-xl
-                    bg-white dark:bg-[#161b22]
-                    border-0 shadow-none
-                    text-slate-900 dark:text-white
-                    ${contentClassName}
-                `}
+    z-[2147483648]
+    rounded-xl
+    bg-white dark:bg-[#161b22]
+    border-0 shadow-none
+    text-slate-900 dark:text-white
+    ${contentClassName}
+  `}
             >
                 {options.map((opt) => {
                     const Icon = opt.icon;
