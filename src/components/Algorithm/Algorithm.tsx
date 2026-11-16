@@ -388,60 +388,11 @@ function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusSt
                 )}
             </div>
 
-            {strongest.length > 0 && (
-                <div className="space-y-1">
-                    <div className="flex items-center gap-1 px-0.5">
-                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                            Champion areas
-                        </span>
-                        <div className="flex-1 h-px bg-slate-200/60 dark:bg-white/[0.06]" />
-                    </div>
-                    <div className="space-y-1">
-                        {strongest.slice(0, 2).map((item, i) => (
-                            <motion.button
-                                key={`s-${i}`}
-                                onClick={() => { tap(); onViewAll(); }}
-                                initial={{ opacity: 0, x: -8 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.06, duration: 0.25 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full flex items-center gap-2.5 p-2 rounded-xl text-left
-                                           bg-emerald-50 dark:bg-emerald-400/10
-                                           active:bg-emerald-100 dark:active:bg-emerald-400/20
-                                           transition-colors"
-                                style={{ touchAction: "manipulation" }}
-                            >
-                                <div className="shrink-0">
-                                    <MiniChampion size={20} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
-                                        {item.value.unit_name}
-                                    </p>
-                                    <p className="text-[9px] font-medium text-emerald-700 dark:text-emerald-400">
-                                        Your best zone
-                                    </p>
-                                </div>
-                                <div className="shrink-0 flex items-center gap-1.5">
-                                    <span className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                                        {item.value.average_score.toFixed(0)}%
-                                    </span>
-                                    <ChevronRight className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                                </div>
-                            </motion.button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             {weakest.length > 0 && (
                 <div className="space-y-1">
-                    <div className="flex items-center gap-1 px-0.5">
-                        <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                            Needs love
-                        </span>
-                        <div className="flex-1 h-px bg-slate-200/60 dark:bg-white/[0.06]" />
-                    </div>
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
+                        Needs love
+                    </span>
                     <div className="space-y-1">
                         {weakest.slice(0, 2).map((item, i) => (
                             <motion.button
@@ -451,35 +402,107 @@ function StrengthsFocusStrip({ strongest, weakest, onViewAll }: StrengthsFocusSt
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="w-full flex items-center gap-2.5 p-2 rounded-xl text-left
-                                           bg-rose-50 dark:bg-rose-400/10
-                                           active:bg-rose-100 dark:active:bg-rose-400/20
-                                           transition-colors"
+                                className="w-full flex items-center gap-3 p-3 rounded-lg text-left
+                               bg-slate-50 dark:bg-white/[0.03]
+                               hover:bg-slate-100 dark:hover:bg-white/[0.06]
+                               active:bg-slate-100 dark:active:bg-white/[0.08]
+                               transition-colors border-l-2 border-rose-500"
                                 style={{ touchAction: "manipulation" }}
                             >
-                                <div className="shrink-0">
-                                    <MiniCoach size={20} />
-                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                                    <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
                                         {item.value.unit_name}
                                     </p>
-                                    <p className="text-[9px] font-medium text-rose-700 dark:text-rose-400">
+                                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                                         Practice to level up
                                     </p>
                                 </div>
-                                <div className="shrink-0 flex items-center gap-1.5">
-                                    <span className="text-sm font-bold tabular-nums text-rose-700 dark:text-rose-400">
-                                        {item.value.average_score.toFixed(0)}%
-                                    </span>
-                                    <ChevronRight className="h-3 w-3 text-rose-600 dark:text-rose-400" />
-                                </div>
+                                <span className="text-[15px] font-bold tabular-nums text-slate-900 dark:text-white shrink-0">
+                                    {item.value.average_score.toFixed(0)}%
+                                </span>
+                                <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
                             </motion.button>
                         ))}
                     </div>
                 </div>
             )}
-        </div>
+
+            {weakest.length > 0 && (
+                <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
+                        Needs love
+                    </span>
+                    {weakest.slice(0, 2).map((item, i) => (
+                        <motion.button
+                            key={`w-${i}`}
+                            onClick={() => { tap(); onViewAll(); }}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg text-left
+                           bg-slate-50 dark:bg-white/[0.03]
+                           hover:bg-slate-100 dark:hover:bg-white/[0.06]
+                           active:bg-slate-100 dark:active:bg-white/[0.08]
+                           transition-colors border-l-2 border-rose-500"
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                                    {item.value.unit_name}
+                                </p>
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                    Practice to level up
+                                </p>
+                            </div>
+                            <span className="text-[15px] font-bold tabular-nums text-slate-900 dark:text-white shrink-0">
+                                {item.value.average_score.toFixed(0)}%
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                        </motion.button>
+                    ))}
+                </div>
+            )}
+
+            {weakest.length > 0 && (
+                <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
+                        Needs love
+                    </span>
+                    <div className="space-y-1">
+                        {weakest.slice(0, 2).map((item, i) => (
+                            <motion.button
+                                key={`w-${i}`}
+                                onClick={() => { tap(); onViewAll(); }}
+                                initial={{ opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="w-full flex items-center gap-2.5 p-2 rounded-lg text-left
+                               bg-slate-50 dark:bg-white/[0.03]
+                               hover:bg-slate-100 dark:hover:bg-white/[0.06]
+                               active:bg-slate-100 dark:active:bg-white/[0.08]
+                               transition-colors border-l-2 border-rose-500"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-semibold text-slate-900 dark:text-white truncate">
+                                        {item.value.unit_name}
+                                    </p>
+                                    <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400">
+                                        Practice to level up
+                                    </p>
+                                </div>
+                                <span className="text-[13px] font-bold tabular-nums text-slate-900 dark:text-white shrink-0">
+                                    {item.value.average_score.toFixed(0)}%
+                                </span>
+                                <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
+                            </motion.button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div >
     );
 }
 
@@ -700,8 +723,8 @@ export default function Algorithm() {
                                         aria-label="Bar chart"
                                         className={`flex items-center gap-1 px-2.5 py-1 rounded-full
                                                     text-[10px] font-bold transition-colors
-                                                    ${chartMode === "bars"
-                                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                                                 ${chartMode === "line"
+                                                ? "bg-slate-900 dark:bg-white/[0.1] text-white dark:text-white"
                                                 : "text-slate-500 dark:text-slate-400"}`}
                                         style={{ touchAction: "manipulation" }}
                                     >
@@ -812,11 +835,11 @@ export default function Algorithm() {
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
                         <button
                             onClick={() => { tap(); navigate("/Medrae-quizzes"); }}
-                            className="h-10 rounded-xl bg-slate-900 dark:bg-white
-                                       text-white dark:text-slate-900
-                                       text-sm font-bold
-                                       flex items-center justify-center gap-1.5
-                                       active:scale-[0.97] transition-transform"
+                            className="h-10 rounded-xl bg-slate-900 dark:bg-white/[0.12]
+           text-white dark:text-white
+           text-sm font-bold
+                            flex items-center justify-center gap-1.5
+                        active:scale-[0.97] transition-transform"
                             style={{ touchAction: "manipulation" }}
                         >
                             <PlayCircle className="h-4 w-4" />
@@ -983,27 +1006,29 @@ export default function Algorithm() {
             />
 
             {/* ── STUDY PLAN ───────────────────────────────────── */}
-            {data.recommendations?.length > 0 && (
-                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <MiniChampion size={18} />
-                        <h3 className="text-[10px] font-bold uppercase tracking-wider
+            {
+                data.recommendations?.length > 0 && (
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                            <MiniChampion size={18} />
+                            <h3 className="text-[10px] font-bold uppercase tracking-wider
                                        text-blue-600 dark:text-blue-400">
-                            Study plan
-                        </h3>
+                                Study plan
+                            </h3>
+                        </div>
+                        <div className="space-y-2">
+                            {data.recommendations.map((rec, i) => (
+                                <div key={i} className="flex gap-2 items-start">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                                        {rec}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        {data.recommendations.map((rec, i) => (
-                            <div key={i} className="flex gap-2 items-start">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                                    {rec}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             {/* ── OVERLAY ──────────────────────────────────────── */}
             <CoachInsightsOverlay
@@ -1013,6 +1038,6 @@ export default function Algorithm() {
                 weakest={data.rankings?.weakest || []}
                 onUnitClick={handleUnitClick}
             />
-        </div>
+        </div >
     );
 }
