@@ -54,7 +54,11 @@ export default function TutorLanding() {
                             <span className="text-violet-600">Digitally. Securely. Fast.</span>
                         </h1>
 
-                        <p className="mt-5 text-[15px] md:text-[16px] text-slate-600 max-w-xl leading-relaxed">
+                        <p className="mt-5 text-[15px] md:text-[16px] text-slate-600 max-w-xl leading-relaxed italic">
+                            We learn with love. We care with heart.
+                        </p>
+
+                        <p className="mt-4 text-[15px] md:text-[16px] text-slate-600 max-w-xl leading-relaxed">
                             Set the assignment. Send it to your cohort. Watch every student's
                             progress in real time. The system marks the papers, ranks the class,
                             and shows you exactly which topics need re-teaching — before the next
@@ -134,6 +138,11 @@ export default function TutorLanding() {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Short brand tagline below the stat block — quiet, italic */}
+                            <p className="pt-4 border-t border-slate-200/70 text-[12px] italic font-medium text-slate-400">
+                                Care begins with love.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -351,7 +360,11 @@ export default function TutorLanding() {
                         Start free trial <ArrowRight className="w-4 h-4" />
                     </button>
 
-                    <p className="mt-6 text-[12px] text-slate-500">
+                    <p className="mt-6 text-[12px] italic text-slate-400">
+                        We learn with love. We care with heart.
+                    </p>
+
+                    <p className="mt-3 text-[12px] text-slate-500">
                         Wrong role?{" "}
                         <button
                             onClick={() => {

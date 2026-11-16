@@ -474,7 +474,7 @@ export default function StudentLanding() {
                             <div className="order-2 relative w-full
                       h-[280px] sm:h-[340px] md:h-[420px] lg:h-[480px]
                       overflow-hidden rounded-2xl
-                      ring-1 ring-slate-900/5">
+                      ring-none ring-slate-900/5">
                                 {['/high6.png', '/indexbackground2.jpg', '/high3.png'].map((img, index) => (
                                     <div
                                         key={index}
@@ -534,7 +534,7 @@ export default function StudentLanding() {
                             <div className="order-2 lg:order-1 relative w-full
                       h-[280px] sm:h-[340px] md:h-[420px] lg:h-[480px]
                       overflow-hidden rounded-2xl
-                      ring-1 ring-slate-900/5">
+                      ring-none ring-slate-900/5">
                                 <img
                                     src="/indexbackground3.jpg"
                                     alt="Nursing student studying with Medrae"
@@ -607,7 +607,7 @@ export default function StudentLanding() {
                             <div className="order-2 relative w-full
                       h-[280px] sm:h-[340px] md:h-[420px] lg:h-[480px]
                       overflow-hidden rounded-2xl
-                      ring-1 ring-slate-900/5">
+                      ring-none ring-slate-900/5">
                                 <img
                                     src="/indexbackground5.jpg"
                                     alt="Nursing cohort studying together"
@@ -624,7 +624,7 @@ export default function StudentLanding() {
                     <div className="relative max-w-6xl mx-auto
                   h-[320px] md:h-[440px] lg:h-[520px]
                   overflow-hidden rounded-none md:rounded-2xl
-                  ring-1 ring-slate-900/5">
+                  ring-none ring-slate-900/5">
                         {/* Slideshow */}
                         {['/high6.png', '/indexbackground2.jpg', '/high3.png'].map((img, index) => (
                             <div
@@ -874,7 +874,7 @@ export default function StudentLanding() {
                                     <div className="relative overflow-hidden bg-slate-900
                     rounded-none md:rounded-2xl
                     shadow-none md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]
-                    md:ring-1 md:ring-slate-900/5">
+                    md:ring-none md:ring-slate-900/5">
                                         <div className="relative aspect-video w-full">
                                             <video
                                                 className="w-full h-full object-cover"
@@ -910,8 +910,8 @@ export default function StudentLanding() {
                                 return (
                                     <AnimatedCard key={index} index={index}>
                                         <Card
-                                            className="bg-white hover:bg-slate-50 border border-slate-100
-                                       rounded-2xl shadow-sm hover:shadow-md
+                                            className="bg-white hover:bg-slate-50 border-0
+                                       rounded-xl shadow-none
                                        hover:-translate-y-1 transition-all duration-300
                                        cursor-pointer p-5 group h-full"
                                             onClick={() => navigate("/register")}
@@ -961,7 +961,7 @@ export default function StudentLanding() {
                                     >
                                         <Card className="bg-gradient-to-br from-blue-50 to-purple-50
                                           hover:from-blue-100 hover:to-purple-100
-                                          border-0 rounded-2xl shadow-sm hover:shadow-md
+                                          border-0 rounded-2xlshadow-none
                                           hover:-translate-y-1 transition-all duration-300
                                           p-5 group h-full
                                           sm:col-span-2 lg:col-span-1">
@@ -1168,9 +1168,9 @@ export default function StudentLanding() {
                         <section className="py-10 md:py-14 px-4 md:px-6 bg-white relative overflow-hidden">
                             {/* Soft accent blobs — subtler than before */}
                             <div className="absolute top-0 right-0 w-[240px] md:w-[380px] h-[240px] md:h-[380px]
-                            bg-blue-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            bg-blue-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                             <div className="absolute bottom-0 left-0 w-[240px] md:w-[380px] h-[240px] md:h-[380px]
-                            bg-violet-100/50 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+            bg-violet-100/50 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
                             <div className="max-w-7xl mx-auto relative z-10">
 
@@ -1178,13 +1178,16 @@ export default function StudentLanding() {
                                 <div className="text-center mb-8 md:mb-12">
 
                                     <h2 className="text-[26px] md:text-4xl lg:text-[44px] font-bold tracking-tighter
-                                   text-slate-900 leading-tight">
+                   text-slate-900 leading-tight">
                                         Why Medrae{" "}
                                         <span className="text-purple-600">exists.</span>
                                     </h2>
                                     <p className="mt-2.5 text-[14px] md:text-[15px] text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                                        A nurse-first platform built to replace chaotic revision with
-                                        structured, measurable practice.
+                                        A nurse-first platform built to replace scattered revision with
+                                        one connected career system  from first lecture to licence renewal.
+                                    </p>
+                                    <p className="mt-3 text-[13px] md:text-[14px] italic font-semibold text-slate-600 leading-[1.7]">
+                                        We learn with love. We care with heart.
                                     </p>
                                 </div>
 
@@ -1195,12 +1198,12 @@ export default function StudentLanding() {
                                     <div className="space-y-4 md:space-y-5">
 
                                         {/* Mission */}
-                                        <div className="rounded-2xl bg-white ring-1 ring-slate-200/70
-                                        shadow-sm hover:shadow-md hover:-translate-y-0.5
-                                        p-5 md:p-6 transition-all duration-300 group">
+                                        <div className="rounded-2xl bg-white ring-none ring-slate-200/70
+                       shadow-none hover:-translate-y-0.5
+                        p-5 md:p-6 transition-all duration-300 group">
                                             <div className="flex items-start gap-3 md:gap-4">
                                                 <div className="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center shrink-0
-                                                group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
+                                group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
                                                     <Target className="w-5 h-5 text-purple-600 group-hover:text-white transition-colors" strokeWidth={2.2} />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
@@ -1209,26 +1212,27 @@ export default function StudentLanding() {
                                                             Our Mission
                                                         </h3>
                                                         <span className="text-[9px] font-bold uppercase tracking-wider
-                                                         text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">
+                                         text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">
                                                             I.P
                                                         </span>
                                                     </div>
                                                     <p className="mt-1.5 text-[12.5px] md:text-[13px] text-slate-500 leading-relaxed">
-                                                        To eliminate random, unstructured revision and replace it with a
-                                                        focused nursing exam system that builds confidence through
-                                                        repeated, intelligent practice.
+                                                        To replace scattered, fragmented nursing education with one
+                                                        connected system  revision, exams, clinical reference, community,
+                                                        and career growth  so every Kenyan nurse can learn with
+                                                        confidence and practise with clarity.
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Vision */}
-                                        <div className="rounded-2xl bg-white ring-1 ring-slate-200/70
-                                        shadow-sm hover:shadow-md hover:-translate-y-0.5
-                                        p-5 md:p-6 transition-all duration-300 group">
+                                        <div className="rounded-2xl bg-white ring-none ring-slate-200/70
+                       shadow-none hover:-translate-y-0.5
+                        p-5 md:p-6 transition-all duration-300 group">
                                             <div className="flex items-start gap-3 md:gap-4">
                                                 <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0
-                                                group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
                                                     <Eye className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" strokeWidth={2.2} />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
@@ -1237,14 +1241,15 @@ export default function StudentLanding() {
                                                             Our Vision
                                                         </h3>
                                                         <span className="text-[9px] font-bold uppercase tracking-wider
-                                                         text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                                         text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
                                                             P.D.P
                                                         </span>
                                                     </div>
                                                     <p className="mt-1.5 text-[12.5px] md:text-[13px] text-slate-500 leading-relaxed">
-                                                        To become Kenya's most trusted nursing exam preparation platform
-                                                        by helping students pass faster through structured, measurable,
-                                                        performance-driven practice.
+                                                        To become the platform every Kenyan nurse turns to at every
+                                                        stage of their career  from first lecture to licence renewal
+                                                        and beyond — and the standard against which nursing education
+                                                        in East Africa is measured.
                                                     </p>
                                                 </div>
                                             </div>
@@ -1252,11 +1257,11 @@ export default function StudentLanding() {
 
                                         {/* Slogan strip */}
                                         <div className="rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-blue-50
-                                        ring-1 ring-purple-100 p-4 md:p-5
-                                        flex items-center gap-3 md:gap-4">
+                        ring-none ring-purple-100 p-4 md:p-5
+                        flex items-center gap-3 md:gap-4">
                                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl
-                                            bg-gradient-to-br from-purple-500 to-indigo-600
-                                            flex items-center justify-center shrink-0 shadow-sm">
+                            bg-gradient-to-br from-purple-500 to-indigo-600
+                            flex items-center justify-center shrink-0 shadow-sm">
                                                 <CheckCircle2 className="w-5 h-5 text-white" strokeWidth={2.4} />
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -1264,9 +1269,9 @@ export default function StudentLanding() {
                                                     Our core slogan
                                                 </p>
                                                 <p className="text-[13px] md:text-[15px] font-bold italic
-                                              bg-gradient-to-r from-purple-700 to-blue-700
-                                              bg-clip-text text-transparent leading-snug mt-0.5">
-                                                    "Advancing nursing education and student success."
+                              bg-gradient-to-r from-purple-700 to-blue-700
+                              bg-clip-text text-transparent leading-snug mt-0.5">
+                                                    "Care begins with love."
                                                 </p>
                                             </div>
                                         </div>
@@ -1274,8 +1279,8 @@ export default function StudentLanding() {
 
                                     {/* RIGHT: Image (no phone frame) */}
                                     <div className="relative rounded-2xl overflow-hidden bg-slate-100
-                                    ring-1 ring-slate-200/70 shadow-sm
-                                    min-h-[280px] lg:min-h-full">
+                    ring-none ring-slate-200/70 shadow-sm
+                    min-h-[280px] lg:min-h-full">
                                         {!heroMediaLoaded[activeHeroStory] && (
                                             <div className="absolute inset-0 z-10"><HeroSkeleton /></div>
                                         )}
@@ -1296,7 +1301,7 @@ export default function StudentLanding() {
                                                 Built for nurses
                                             </p>
                                             <p className="text-[13px] md:text-[14px] font-bold text-white mt-1 leading-tight">
-                                                From study to licensure — every step supported.
+                                                From study to licensure  every step supported.
                                             </p>
                                         </div>
                                     </div>
@@ -1323,7 +1328,7 @@ export default function StudentLanding() {
                                             <div className="absolute -inset-4 bg-white/5 rounded-3xl blur-xl group-hover:bg-blue-400/10 transition-colors" />
                                             <div className="relative bg-slate-900 rounded-2xl
                                             shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]
-                                            ring-1 ring-white/10
+                                            ring-none ring-white/10
                                             overflow-hidden
                                             hover:scale-[1.01] transition-transform duration-500">
                                                 <video

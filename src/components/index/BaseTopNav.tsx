@@ -13,6 +13,14 @@ import {
     type ScrollSection, type GuideLink, type SidebarAccent,
 } from "./navShared";
 
+// Fallback so a missing accent never crashes the page.
+const FALLBACK_ACCENT = {
+    activeBg: "bg-slate-100",
+    activeText: "text-slate-700",
+    ctaBg: "bg-slate-900",
+    ctaHover: "hover:bg-slate-800",
+} as const;
+
 export function BaseTopNav({
     accent,
     roleLabel,
@@ -30,7 +38,7 @@ export function BaseTopNav({
     exploreLabel?: string;
     guidesLabel?: string;
 }) {
-    const A = ACCENT_MAP[accent];
+    const A = ACCENT_MAP[accent] ?? FALLBACK_ACCENT;
     const active = useScrollSpy(sections);
     const activeSection = sections.find((s) => s.id === active);
 
@@ -75,10 +83,10 @@ export function BaseTopNav({
                         </div>
                     </Link>
 
-                    <span className={`hidden xl:inline-flex items-center gap-1.5
-                          px-2.5 py-1 rounded-sm text-[10px] font-bold  tracking-wider
-                          ${A.activeBg} ${A.activeText}`}>
-                        <span className={` ${A.ctaBg}`} />
+                    <span className={`hidden xl:inline-flex items-center
+                  px-2.5 py-1 rounded-full
+                  text-[10px] font-bold uppercase tracking-wider
+                  ${A.activeBg} ${A.activeText}`}>
                         {roleLabel} Portal
                     </span>
                 </div>
@@ -175,8 +183,6 @@ export function BaseTopNav({
                         </div>
                     </NavMenu>
                 </div>
-
-
             </header>
             <SearchCommand
                 open={searchOpen}

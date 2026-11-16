@@ -1,6 +1,7 @@
+// src/components/index/navShared.ts
 import type React from "react";
 
-export type SidebarAccent = "blue" | "emerald" | "violet";
+export type SidebarAccent = "blue" | "emerald" | "violet" | "amber";
 
 export type ScrollSection = {
     id: string;
@@ -21,6 +22,7 @@ export const ACCENT_MAP: Record<
     blue: { activeBg: "bg-blue-50", activeText: "text-blue-700", ctaBg: "bg-blue-600", ctaHover: "hover:bg-blue-700" },
     emerald: { activeBg: "bg-emerald-50", activeText: "text-emerald-700", ctaBg: "bg-emerald-600", ctaHover: "hover:bg-emerald-700" },
     violet: { activeBg: "bg-violet-50", activeText: "text-violet-700", ctaBg: "bg-violet-600", ctaHover: "hover:bg-violet-700" },
+    amber: { activeBg: "bg-amber-50", activeText: "text-amber-700", ctaBg: "bg-amber-600", ctaHover: "hover:bg-amber-700" },
 };
 
 export function doScroll(id: string) {

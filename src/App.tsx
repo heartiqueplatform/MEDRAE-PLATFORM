@@ -191,7 +191,7 @@ import CoinConfigPage from "./staff-cpd/admin/CoinConfigPage";
 import WalletLearnPage from "@/pages/studentcoins/learn";
 import ContributePage from "./pages/contribute";
 import SwitchAccount from "./pages/SwitchAccount";
-
+import MedraeCoinsLanding from "./pages/landing/MedraeCoinsLanding";
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
@@ -636,6 +636,7 @@ const AppContent = () => {
                         <Route path="/for/student" element={<StudentLanding />} />
                         <Route path="/for/staff" element={<StaffLanding />} />
                         <Route path="/for/tutor" element={<TutorLanding />} />
+                        <Route path="/medrae-coins" element={<MedraeCoinsLanding />} />
                         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
                         <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
                         <Route path="/redirect" element={<RedirectToRoleDashboard />} />

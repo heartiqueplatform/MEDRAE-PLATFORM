@@ -1,7 +1,13 @@
+// src/components/index/NavItem.tsx
 import { Menu } from "@headlessui/react";
 import { Link } from "react-router-dom";
 import type { ScrollSection, GuideLink, SidebarAccent } from "./navShared";
 import { ACCENT_MAP } from "./navShared";
+
+const FALLBACK_ACCENT = {
+    activeBg: "bg-slate-100",
+    activeText: "text-slate-900",
+} as const;
 
 export function ScrollNavItem({
     section,
@@ -15,7 +21,7 @@ export function ScrollNavItem({
     onPick: (id: string) => void;
 }) {
     const Icon = section.icon;
-    const A = ACCENT_MAP[accent];
+    const A = ACCENT_MAP[accent] ?? FALLBACK_ACCENT;
     return (
         <Menu.Item>
             {({ active: hovered }) => (

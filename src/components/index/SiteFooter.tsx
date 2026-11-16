@@ -51,10 +51,19 @@ const CPD: FooterLink[] = [
     { label: "Verify a Certificate", to: "/cpd/verify" },
     { label: "My Bookmarks", to: "/cpd/bookmarks" },
     { label: "Apply as Contributor", to: "/cpd/apply" },
-    { label: "MedraeCoins Policy", to: "/cpd/coins-policy" },
-    { label: "Redeem Coins", to: "/cpd/redeem" },
     { label: "My Activities (Contributor)", to: "/cpd/admin/activities" },
     { label: "Completions (Admin)", to: "/cpd/admin/completions" },
+];
+
+const COINS: FooterLink[] = [
+    { label: "MedraeCoins Overview", to: "/medrae-coins" },
+    { label: "Earn as a Student", to: "/medrae-coins#student-details" },
+    { label: "Earn as a Contributor", to: "/medrae-coins#staff-details" },
+    { label: "Coins Policy (CPD)", to: "/cpd/coins-policy" },
+    { label: "Redeem Coins", to: "/cpd/redeem" },
+    { label: "My Wallet", to: "/wallet" },
+    { label: "Learn about Coins", to: "/wallet/learn" },
+    { label: "Redeem History", to: "/cpd/redeem", soon: false },
 ];
 
 const GROUPPAY: FooterLink[] = [
@@ -174,6 +183,12 @@ export default function SiteFooter() {
                                 </p>
                             </div>
                         </div>
+
+                        {/* Short tagline — brand stamp */}
+                        <p className="text-[12px] md:text-[13px] italic font-semibold mb-3" style={{ color: "#e6edf3" }}>
+                            Care begins with love.
+                        </p>
+
                         <p className="text-[12px] md:text-[13px] leading-relaxed max-w-md mb-4"
                             style={{ color: "#8b949e" }}>
                             One platform for every stage of your nursing career — from DCHN, BSN and KRN
@@ -187,6 +202,7 @@ export default function SiteFooter() {
                                 { label: "KRN", color: "#3fb950" },
                                 { label: "NCK", color: "#d29922" },
                                 { label: "CPD", color: "#f85149" },
+                                { label: "COINS", color: "#d29922" },
                             ].map((badge) => (
                                 <span key={badge.label}
                                     className="px-2 py-1 rounded-full"
@@ -228,11 +244,12 @@ export default function SiteFooter() {
                     </div>
                 </div>
 
-                {/* ── MAIN SITEMAP (7 columns) ── */}
+                {/* ── MAIN SITEMAP (8 columns, tighter) ── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 mb-10 md:mb-14">
                     <FooterColumn title="Platform" links={PLATFORM} open={!!openGroups.platform} onToggle={() => toggle("platform")} />
                     <FooterColumn title="Learning" links={LEARNING} open={!!openGroups.learning} onToggle={() => toggle("learning")} />
-                    <FooterColumn title="CPD & Coins" links={CPD} open={!!openGroups.cpd} onToggle={() => toggle("cpd")} />
+                    <FooterColumn title="CPD" links={CPD} open={!!openGroups.cpd} onToggle={() => toggle("cpd")} />
+                    <FooterColumn title="MedraeCoins" links={COINS} open={!!openGroups.coins} onToggle={() => toggle("coins")} />
                     <FooterColumn title="GroupPay" links={GROUPPAY} open={!!openGroups.grouppay} onToggle={() => toggle("grouppay")} />
                     <FooterColumn title="Study Guides" links={GUIDES} open={!!openGroups.guides} onToggle={() => toggle("guides")} />
                     <FooterColumn title="My Account" links={ACCOUNT} open={!!openGroups.account} onToggle={() => toggle("account")} />
@@ -329,10 +346,15 @@ export default function SiteFooter() {
                         </p>
                     </div>
 
-                    {/* Copyright + final line */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 text-[10px] md:text-[11px]"
+                    {/* Copyright + slogans */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-[10px] md:text-[11px]"
                         style={{ color: "#8b949e" }}>
-                        <p>© {currentYear} Medrae Kenya · All rights reserved · Made for nurses, by nurses.</p>
+                        <div>
+                            <p>© {currentYear} Medrae Kenya · All rights reserved · Made for nurses, by nurses.</p>
+                            <p className="italic font-semibold mt-1" style={{ color: "#e6edf3" }}>
+                                We learn with love. We care with heart.
+                            </p>
+                        </div>
                         <p className="font-bold uppercase tracking-[0.2em] text-center md:text-right"
                             style={{ color: "#6e7681" }}>
                             Learn · Practice · Advance

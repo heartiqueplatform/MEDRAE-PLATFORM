@@ -908,7 +908,7 @@ export const DailyTriviaCard = () => {
     const shareOnWhatsApp = useCallback(() => {
         const appUrl = window.location.origin;
         const message = encodeURIComponent(
-            `I just completed today's Medrae Daily MindRush! 🧠🎉\nAdvancing nursing education and student success.\nCheck out Medrae here: ${appUrl}`
+            `I just completed today's Medrae Daily MindRush! 🧠🎉\nCare begins with love.\nCheck out Medrae here: ${appUrl}`
         );
         window.open(`https://wa.me/?text=${message}`, "_blank");
     }, []);
@@ -1456,7 +1456,7 @@ export const DailyTriviaCard = () => {
 
                                 <div className="mt-4 sm:mt-6 mb-4 text-center">
                                     <p className="text-gray-400 dark:text-gray-500 text-[10px] sm:text-xs font-bold tracking-widest">
-                                        MEDRAE: <span className="text-gray-900 dark:text-gray-200">Advancing nursing education and student success.</span>
+                                        MEDRAE: <span className="text-gray-900 dark:text-gray-200">Care begins with love.</span>
                                     </p>
                                 </div>
                             </div>

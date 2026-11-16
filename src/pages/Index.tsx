@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  GraduationCap, Stethoscope, Users, ArrowRight,
+  GraduationCap, Stethoscope, Users, ArrowRight, Coins,
   CheckCircle, Star, Shield,
 } from "lucide-react";
 
@@ -15,7 +15,6 @@ const ROLES = [
     highlights: ["Exam prep", "Instant explanations", "Progress tracking"],
     accent: "text-blue-400",
     accentBg: "bg-blue-500/15",
-    accentBorder: "hover:bg-blue-500/[0.08]",
   },
   {
     id: "staff",
@@ -25,7 +24,6 @@ const ROLES = [
     highlights: ["CPD portfolio", "MedraeCoins", "Verified contributor"],
     accent: "text-emerald-400",
     accentBg: "bg-emerald-500/15",
-    accentBorder: "hover:bg-emerald-500/[0.08]",
   },
   {
     id: "tutor",
@@ -35,7 +33,15 @@ const ROLES = [
     highlights: ["Cohort control", "Auto-grading", "Analytics"],
     accent: "text-violet-400",
     accentBg: "bg-violet-500/15",
-    accentBorder: "hover:bg-violet-500/[0.08]",
+  },
+  {
+    id: "medrae-coins",
+    Icon: Coins,
+    title: "What are MedraeCoins?",
+    desc: "Learn how coins work for students and staff — earning, cash-out, and policy.",
+    highlights: ["Earn by engaging", "Earn by teaching", "Anti-abuse rules"],
+    accent: "text-amber-400",
+    accentBg: "bg-amber-500/15",
   },
 ] as const;
 
@@ -70,14 +76,20 @@ export default function Index() {
   }, []);
 
   const pick = (id: string) => {
+    // MedraeCoins is an info page, not a persona — don't persist it.
+    if (id === "medrae-coins") {
+      nav("/medrae-coins");
+      return;
+    }
     localStorage.setItem("medrae.persona", id);
     sessionStorage.removeItem("medrae.seen_chooser");
     nav(`/for/${id}`);
   };
+
   // Hide page scrollbar while on Index
   useEffect(() => {
-    document.documentElement.style.scrollbarWidth = "none"; // Firefox
-    document.documentElement.style.msOverflowStyle = "none"; // IE/Edge
+    document.documentElement.style.scrollbarWidth = "none";
+    document.documentElement.style.msOverflowStyle = "none";
     const style = document.createElement("style");
     style.id = "hide-scrollbar-index";
     style.textContent = `
@@ -91,6 +103,7 @@ export default function Index() {
       document.getElementById("hide-scrollbar-index")?.remove();
     };
   }, []);
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0d1117] text-white no-scrollbar">
 
@@ -152,7 +165,13 @@ export default function Index() {
             <br />
             <span className="text-blue-400">nurse needs to succeed.</span>
           </h1>
-          <p className="mt-4 md:mt-5 text-[14px] md:text-[16px] text-slate-300 max-w-xl leading-relaxed">
+
+          {/* Long manifesto — italic, between headline and body */}
+          <p className="mt-4 md:mt-5 text-[15px] md:text-[17px] italic font-semibold text-slate-300 leading-[1.7]">
+            We learn with love. We care with heart.
+          </p>
+
+          <p className="mt-3 md:mt-4 text-[14px] md:text-[16px] text-slate-300 max-w-xl leading-relaxed">
             From nursing school to NCK licensure to CPD — one platform, one place.
             Choose your path below and we'll show you exactly what's waiting.
           </p>
@@ -162,7 +181,7 @@ export default function Index() {
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-10 md:mb-14 text-[11px] md:text-[12px] text-slate-300">
           <span className="inline-flex items-center gap-1.5">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-            Trusted by 2,231+ nurses
+            Trusted by 2K+ nurses
           </span>
           <span className="hidden sm:inline text-slate-600">·</span>
           <span className="inline-flex items-center gap-1.5">
@@ -176,29 +195,29 @@ export default function Index() {
           </span>
         </div>
 
-        {/* Role cards — 3 columns on desktop, stacked on mobile */}
+        {/* Role cards — 2 columns on desktop for balanced 2×2 */}
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">
             Choose your path
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 max-w-5xl">
             {ROLES.map(({ id, Icon, title, desc, highlights, accent, accentBg }) => (
               <button
                 key={id}
                 onClick={() => pick(id)}
                 className="group w-full text-left rounded-2xl
-               bg-[#0d1117]/80 backdrop-blur-md
-               hover:bg-[#0d1117]/90
-               p-5 md:p-6
-               transition-all duration-300
-               active:scale-[0.98]"
+                           bg-[#0d1117]/80 backdrop-blur-md
+                           hover:bg-[#0d1117]/90
+                           p-5 md:p-6
+                           transition-all duration-300
+                           active:scale-[0.98]"
                 style={{ touchAction: "manipulation" }}
               >
                 <div className={`shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl
-                     ${accentBg}
-                     flex items-center justify-center
-                     transition-colors duration-300`}>
+                                 ${accentBg}
+                                 flex items-center justify-center
+                                 transition-colors duration-300`}>
                   <Icon className={`w-5 h-5 md:w-6 md:h-6 ${accent}`} strokeWidth={2.2} />
                 </div>
 
@@ -214,8 +233,8 @@ export default function Index() {
                     <span
                       key={chip}
                       className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider
-                     px-2 py-0.5 rounded-full
-                     bg-white/[0.10] text-slate-300"
+                                 px-2 py-0.5 rounded-full
+                                 bg-white/[0.10] text-slate-300"
                     >
                       {chip}
                     </span>
@@ -224,31 +243,34 @@ export default function Index() {
 
                 <div className="mt-5 flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400
-                       group-hover:text-white transition-colors">
+                                   group-hover:text-white transition-colors">
                     Continue
                   </span>
                   <ArrowRight className="w-4 h-4 text-slate-500
-                             group-hover:text-white
-                             group-hover:translate-x-1
-                             transition-all duration-300" />
+                                         group-hover:text-white
+                                         group-hover:translate-x-1
+                                         transition-all duration-300" />
                 </div>
               </button>
             ))}
-
-
           </div>
         </div>
 
-        {/* Sign in link */}
-        <p className="mt-10 md:mt-14 text-[12px] md:text-[13px] text-slate-400">
-          Already have an account?{" "}
-          <button
-            onClick={() => nav("/login")}
-            className="text-blue-400 font-bold hover:underline"
-          >
-            Sign in
-          </button>
-        </p>
+        {/* Sign in link + short tagline */}
+        <div className="mt-10 md:mt-14 space-y-3">
+          <p className="text-[12px] md:text-[13px] italic font-semibold text-slate-400">
+            Care begins with love.
+          </p>
+          <p className="text-[12px] md:text-[13px] text-slate-400">
+            Already have an account?{" "}
+            <button
+              onClick={() => nav("/login")}
+              className="text-blue-400 font-bold hover:underline"
+            >
+              Sign in
+            </button>
+          </p>
+        </div>
       </main>
     </div>
   );

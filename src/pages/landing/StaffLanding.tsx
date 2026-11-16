@@ -61,7 +61,11 @@ export default function StaffLanding() {
                             <span className="text-emerald-600">Get paid for what you know.</span>
                         </h1>
 
-                        <p className="mt-5 text-[15px] md:text-[16px] text-slate-600 max-w-xl leading-relaxed">
+                        <p className="mt-5 text-[15px] md:text-[16px] text-slate-600 max-w-xl leading-relaxed italic">
+                            We learn with love. We care with heart.
+                        </p>
+
+                        <p className="mt-4 text-[15px] md:text-[16px] text-slate-600 max-w-xl leading-relaxed">
                             Your nursing career shouldn't live in a shoebox of paper certificates.
                             Track your NCK licence, complete accredited CPD activities, and earn
                             MedraeCoins every time another nurse learns from your published work —
@@ -137,6 +141,11 @@ export default function StaffLanding() {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Short brand tagline below the stat block — quiet, italic */}
+                            <p className="pt-4 border-t border-slate-200/70 text-[12px] italic font-medium text-slate-400">
+                                Care begins with love.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -350,7 +359,11 @@ export default function StaffLanding() {
                         Create free portfolio <ArrowRight className="w-4 h-4" />
                     </button>
 
-                    <p className="mt-6 text-[12px] text-slate-500">
+                    <p className="mt-6 text-[12px] italic text-slate-400">
+                        We learn with love. We care with heart.
+                    </p>
+
+                    <p className="mt-3 text-[12px] text-slate-500">
                         Wrong role?{" "}
                         <button
                             onClick={handleSwitchRole}

@@ -48,5 +48,20 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+   <url>
+    <loc>https://medrae.vercel.app/for/student</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+   <url>
+    <loc>https://medrae.vercel.app/for/staff</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+   <url>
+    <loc>https://medrae.vercel.app/for/tutor</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
 
 </urlset>
