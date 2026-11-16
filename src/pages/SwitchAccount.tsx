@@ -10,7 +10,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import {
     getLinkedRoles,
-    buildShadowEmail,
+    resolveRoleEmail,
+    baseEmailFromShadow,
     type Role,
 } from "@/lib/multiAccount";
 import {
@@ -20,6 +21,7 @@ import {
     Eye,
     EyeOff,
     ShieldCheck,
+    KeyRound,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
@@ -148,17 +150,33 @@ export default function SwitchAccount() {
                     return;
                 }
 
-                const loginEmail =
-                    target.linked_user_id === primaryUserId
-                        ? prof.email
-                        : buildShadowEmail(prof.email, targetRole);
+                // ─── Resolve the email to sign in with ──────────────
+                // Two paths:
+                //   1. If the target user IS the primary, use the base email
+                //      from the CURRENT profile row (which is the primary's).
+                //   2. Otherwise, ask the DB via resolveRoleEmail — this is
+                //      correct even if the current user is a linked role and
+                //      the base email's role differs from "student".
+                const baseFromCurrent = baseEmailFromShadow(prof.email);
+                let loginEmail: string;
+                if (target.linked_user_id === primaryUserId) {
+                    // The primary owns the base email — trust the current
+                    // profile row's email as-is (it's already the base).
+                    loginEmail = baseFromCurrent;
+                } else {
+                    loginEmail = await resolveRoleEmail(
+                        baseFromCurrent,
+                        targetRole
+                    );
+                }
+
                 LOG("Step 4: resolved emails", {
-                    baseEmail: prof.email,
+                    baseEmail: baseFromCurrent,
                     loginEmail,
                 });
 
                 if (!cancelled) {
-                    setBaseEmail(prof.email);
+                    setBaseEmail(baseFromCurrent);
                     setCurrentRole(prof.role || "");
                     setTargetEmail(loginEmail);
                     setInitDone(true);
@@ -260,7 +278,13 @@ export default function SwitchAccount() {
                     } profile`,
                 description: "Taking you to your dashboard…",
             });
+            // Persist the new role before the reload so every cache/fallback
+            // downstream (Header, last_known_role consumers) agrees with auth.
+            localStorage.setItem("last_known_role", targetRole);
 
+            window.location.replace(
+                `${ROLE_HOME[targetRole]}?switched=${Date.now()}`
+            );
             window.location.replace(
                 `${ROLE_HOME[targetRole]}?switched=${Date.now()}`
             );
@@ -275,6 +299,21 @@ export default function SwitchAccount() {
             setIsLoading(false);
             // Stay on page so user can retry
         }
+    }
+
+    /* ─── Forgot password → jump to role-aware reset flow ────── */
+    function handleForgotPassword() {
+        const target = ROLE_LABEL[targetRole] || targetRole;
+        LOG("handleForgotPassword → navigating to /reset-password", {
+            baseEmail,
+            targetRole,
+        });
+        if (!baseEmail) return;
+        const qs = new URLSearchParams({
+            email: baseEmail,
+            role: targetRole,
+        });
+        navigate(`/reset-password?${qs.toString()}`);
     }
 
     /* ─── Render ──────────────────────────────────────────────── */
@@ -368,12 +407,22 @@ export default function SwitchAccount() {
 
                             {/* ── Password field ── */}
                             <div className="space-y-2">
-                                <Label
-                                    htmlFor="password"
-                                    className="text-[11px] uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1"
-                                >
-                                    {roleLabel} Password
-                                </Label>
+                                <div className="flex items-center justify-between ml-1">
+                                    <Label
+                                        htmlFor="password"
+                                        className="text-[11px] uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400"
+                                    >
+                                        {roleLabel} Password
+                                    </Label>
+                                    <button
+                                        type="button"
+                                        onClick={handleForgotPassword}
+                                        disabled={isLoading}
+                                        className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors disabled:opacity-50"
+                                    >
+                                        Forgot?
+                                    </button>
+                                </div>
                                 <div className="relative">
                                     <Lock className="absolute left-4 top-3.5 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
                                     <Input
@@ -444,6 +493,28 @@ export default function SwitchAccount() {
                                         `Switch to ${roleLabel}`
                                     )}
                                 </Button>
+                            </div>
+
+                            {/* ── Forgot password helper ── */}
+                            <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 flex items-start gap-2">
+                                <KeyRound className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Forgot your{" "}
+                                    <span className="capitalize font-semibold text-slate-700 dark:text-slate-200">
+                                        {roleLabel.toLowerCase()}
+                                    </span>{" "}
+                                    password? Use{" "}
+                                    <button
+                                        type="button"
+                                        onClick={handleForgotPassword}
+                                        disabled={isLoading}
+                                        className="font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                                    >
+                                        Forgot password
+                                    </button>{" "}
+                                    to reset it without affecting your other
+                                    profiles.
+                                </p>
                             </div>
                         </div>
                     )}

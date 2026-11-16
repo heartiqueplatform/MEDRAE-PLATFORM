@@ -119,20 +119,11 @@ export function Login() {
       });
       return;
     }
-    // Base email only — the reset page will let them pick which profile
-    // they want to reset if they have more than one.
     navigate(`/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`);
   }, [email, navigate]);
 
-  // ============================================================
-  // 🔒 ENFORCE DEVICE LIMIT (MAX_DEVICES)
-  // Keeps the N newest devices; evicts the oldest beyond N.
-  // Does NOT call signOut(others) — eviction is DB-driven, and each
-  // device self-logs-out on its next heartbeat (see sessionGuard).
-  // ============================================================
   const enforceDeviceLimit = useCallback(async (userId: string, deviceId: string) => {
     try {
-      // 1. Register / refresh THIS device's row
       await supabase.from("user_sessions").upsert(
         {
           user_id: userId,
@@ -144,7 +135,6 @@ export function Login() {
         { onConflict: "user_id,device_id" }
       );
 
-      // 2. Fetch all sessions for this user, newest first
       const { data: sessions, error } = await supabase
         .from("user_sessions")
         .select("id, device_id, last_seen")
@@ -157,7 +147,6 @@ export function Login() {
       }
       if (!sessions || sessions.length <= MAX_DEVICES) return;
 
-      // 3. Anything past the first MAX_DEVICES rows is stale → delete
       const toEvict = sessions.slice(MAX_DEVICES).map((s) => s.id);
       await supabase.from("user_sessions").delete().in("id", toEvict);
     } catch (err) {
@@ -183,9 +172,6 @@ export function Login() {
 
     try {
       if (navigator.onLine) {
-        // 1. 🔑 Authenticate — this tries the base email first
-        //    (their "parent" account), then each role variant.
-        //    The first password that matches wins.
         let loginResult;
         try {
           loginResult = await loginWithAnyRole(baseEmail, password);
@@ -196,10 +182,8 @@ export function Login() {
         const userId = loginResult.userId;
         const deviceId = getOrCreateDeviceId();
 
-        // 2. 🔒 Enforce device limit (per auth user — each role counts separately)
         await enforceDeviceLimit(userId, deviceId);
 
-        // 3. Heartbeat (non-blocking)
         try {
           await supabase.rpc('handle_user_heartbeat', {
             p_user_id: userId,
@@ -209,7 +193,6 @@ export function Login() {
           console.error("Heartbeat error:", heartbeatErr);
         }
 
-        // 4. Get profile for THIS role's auth user
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
@@ -220,12 +203,10 @@ export function Login() {
           throw new Error("Profile not found. Please contact support.");
         }
 
-        // 5. Save role (the actual role from their profile)
         const userRole = profileData.role || loginResult.role || 'student';
         localStorage.setItem(`userRole_${userId}`, userRole);
         localStorage.setItem("last_known_role", userRole);
 
-        // 6. Save for offline mode
         await saveLoginInfo(baseEmail, passwordHash);
 
         const roleConfig = ROLE_CONFIG[userRole as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.student;
@@ -233,7 +214,6 @@ export function Login() {
         const roleLabel = roleConfig.label;
         const roleColor = roleConfig.color;
 
-        // 7. Success toast
         toast({
           title: `Welcome back, ${profileData.name || 'Nurse'}!`,
           description: (
@@ -260,7 +240,6 @@ export function Login() {
           duration: 6000,
         });
 
-        // 8. Persist session for offline boot
         try {
           const { data: sessionData } = await supabase.auth.getSession();
           const { data: userData } = await supabase.auth.getUser();
@@ -288,9 +267,6 @@ export function Login() {
         return;
 
       } else {
-        // ── OFFLINE MODE ─────────────────────────────────
-        // Offline we only know the base email; use the last role
-        // the user was in on this device.
         const saved = await getLoginInfo();
         if (saved && saved.username === baseEmail && saved.passwordHash === passwordHash) {
           const lastRole = localStorage.getItem("last_known_role");
@@ -372,17 +348,14 @@ export function Login() {
         ))}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
           <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
-            <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-xs font-semibold tracking-wider uppercase">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
+            {/* Static pill — no pulsing dot */}
+            <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-sm border border-white/20 text-xs font-semibold tracking-wider uppercase">
               Secure Access
             </div>
             <h1 className="text-5xl font-bold leading-tight">
               Welcome Back to <br />
               <span>
-                <span className="text-red-500   drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                <span className="text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
                   MedRae
                 </span>
                 <span className="text-white font-bold"> Nursing</span>
@@ -390,6 +363,9 @@ export function Login() {
             </h1>
             <p className="text-gray-300 text-lg max-w-md">
               Access your medical learning platform and continue your journey to excellence.
+            </p>
+            <p className="text-gray-400 text-sm italic pt-2">
+              We learn with love. We care with heart.
             </p>
           </div>
         </div>
@@ -407,7 +383,7 @@ export function Login() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-slate-800 dark:text-white text-2xl md:text-3xl   tracking-tight">
+            <h1 className="text-slate-800 dark:text-white text-2xl md:text-3xl tracking-tight">
               Welcome Back
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
@@ -421,7 +397,7 @@ export function Login() {
           </div>
 
           {/* Card — flat & full-bleed on mobile, rounded card on desktop */}
-          <Card className="w-full bg-white dark:bg-slate-900 border-0 md:border md:border-slate-200 md:dark:border-slate-800 shadow-none rounded-none md:rounded-xl overflow-hidden flex-1 md:flex-none">
+          <Card className="w-full bg-white dark:bg-slate-900 border-0  shadow-none rounded-2xl md:rounded-2xl overflow-hidden flex-1 md:flex-none">
             <CardHeader className="pt-4 md:pt-8 px-5 md:px-6 pb-2 text-center">
               <CardTitle className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">
                 Sign In
@@ -437,6 +413,13 @@ export function Login() {
                   <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">
                     Email Address
                   </Label>
+
+                  {/* 🆕 Primary-account warning — appears right before the input */}
+                  <p className="text-[11px] leading-snug text-slate-600 dark:text-slate-400 ml-1 pb-1">
+                    Use the <b className="text-slate-900 dark:text-white">primary email you registered with</b>
+                    every profile (student / tutor / staff) is under this one account.
+                  </p>
+
                   <div className="relative group">
                     <Mail className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input

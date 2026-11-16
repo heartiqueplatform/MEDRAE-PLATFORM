@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabaseClient";
-import React from 'react';
+import React from "react";
 import {
   ArrowLeft,
   Mail,
@@ -13,9 +12,20 @@ import {
   KeyRound,
   ChevronRight,
   Lock,
-  CheckCircle2
-} from 'lucide-react';
+  CheckCircle2,
+  GraduationCap,
+  Users,
+  ShieldCheck,
+  RefreshCw,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  discoverRolesForEmail,
+  getResetQuestionForRole,
+  verifyResetAnswerForRole,
+  roleFromShadowEmail,
+  type Role,
+} from "@/lib/multiAccount";
 
 const backgroundImages = [
   "high1.png",
@@ -26,20 +36,39 @@ const backgroundImages = [
   "high6.png",
 ];
 
+const ROLE_META: Record<
+  Role,
+  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
+  student: { label: "Student", icon: GraduationCap, color: "text-blue-600 dark:text-blue-400" },
+  tutor: { label: "Tutor", icon: Users, color: "text-emerald-600 dark:text-emerald-400" },
+  staff: { label: "Staff", icon: ShieldCheck, color: "text-purple-600 dark:text-purple-400" },
+};
+
+type Step = "request" | "chooseRole" | "answer" | "newPassword" | "support";
+
 export default function ResetPassword() {
   const [email, setEmail] = useState("");
   const [resetQuestion, setResetQuestion] = useState("");
   const [resetAnswer, setResetAnswer] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"request" | "answer" | "newPassword">("request");
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [step, setStep] = useState<Step>("request");
   const [bgIndex, setBgIndex] = useState(0);
   const [fade, setFade] = useState(true);
+
+  // ─── Role-aware state ──────────────────────────────────────
+  const [availableRoles, setAvailableRoles] = useState<
+    { role: Role; email: string; hasQuestion: boolean }[]
+  >([]);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [resolvedEmail, setResolvedEmail] = useState("");
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Slideshow for background images
+  // ─── Background slideshow ──────────────────────────────────
   useEffect(() => {
     const fadeDuration = 1000;
     const displayDuration = 5000;
@@ -55,72 +84,125 @@ export default function ResetPassword() {
     return () => clearInterval(interval);
   }, []);
 
-  // Pre-fill email if it comes from query string
+  // ─── Pre-fill from query string (?email=...&role=...) ──────
   useEffect(() => {
     const emailFromQuery = searchParams.get("email");
-    if (emailFromQuery) {
-      setEmail(emailFromQuery);
-      setStep("answer");
-      fetchResetQuestion(emailFromQuery);
-    }
+    const roleFromQuery = searchParams.get("role");
+    if (!emailFromQuery) return;
+
+    setEmail(emailFromQuery);
+
+    // If the user typed a shadow email, derive the role from it.
+    const derivedRole =
+      (roleFromQuery as Role | null) ||
+      roleFromShadowEmail(emailFromQuery);
+
+    // Look up which roles exist, and if a role is known, jump straight in.
+    (async () => {
+      setIsLookingUp(true);
+      try {
+        const roles = await discoverRolesForEmail(emailFromQuery);
+        if (roles.length === 0) {
+          showEmailNotFound(emailFromQuery);
+          return;
+        }
+        setAvailableRoles(roles);
+
+        if (derivedRole && roles.some((r) => r.role === derivedRole)) {
+          await selectRole(roles.find((r) => r.role === derivedRole)!);
+        } else if (roles.length === 1) {
+          await selectRole(roles[0]);
+        } else {
+          setStep("chooseRole");
+        }
+      } finally {
+        setIsLookingUp(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Fetch the security question for a given email
-  const fetchResetQuestion = async (email: string) => {
-    const { data: userProfile, error } = await supabase
-      .from("profiles")
-      .select("reset_question")
-      .eq("email", email.trim())
-      .single();
+  // ─── Helpers ───────────────────────────────────────────────
+  const whatsappNumber = "254704473503";
 
-    if (error || !userProfile) {
-      const whatsappNumber = "254704473503";
-      const prefilledMessage = encodeURIComponent(
-        `Hello, I attempted to reset my password for ${email.trim()} but my email is not recognized. Please assist me.`
-      );
-      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
+  const whatsappLink = (message: string) =>
+    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
-      toast({
-        title: "Email not found",
-        description: (
-          <span>
-            To reset your password, you must answer the security question associated with your account.
-            If you are unable to provide an answer or need assistance, you can reach our support team directly.
-            <br />
-            Contact us via{" "}
-            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="underline">
-              WhatsApp
-            </a>
-          </span>
-        ),
-        variant: "destructive",
-      });
+  const showEmailNotFound = (emailValue: string) => {
+    toast({
+      title: "Email not found",
+      description: (
+        <span>
+          No profile is registered for <b>{emailValue}</b>. If you're sure
+          this is your email, please reach out and we'll sort it out.
+          <br />
+          Contact us via{" "}
+          <a
+            href={whatsappLink(
+              `Hello, I attempted to reset my password for ${emailValue} but my email is not recognized. Please assist me.`
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            WhatsApp
+          </a>
+        </span>
+      ),
+      variant: "destructive",
+    });
+  };
+
+  // ─── Select a role, load its question (or jump to support) ─
+  const selectRole = async (r: {
+    role: Role;
+    email: string;
+    hasQuestion: boolean;
+  }) => {
+    setSelectedRole(r.role);
+    setResolvedEmail(r.email);
+    setResetAnswer("");
+    setNewPassword("");
+
+    if (!r.hasQuestion) {
+      setStep("support");
       return;
     }
 
-    setResetQuestion(userProfile.reset_question || "");
+    try {
+      const { question } = await getResetQuestionForRole(email, r.role);
+      setResetQuestion(question || "");
+      setStep("answer");
+    } catch (err: any) {
+      toast({
+        title: "Couldn't load security question",
+        description: err?.message || "Please try again in a moment.",
+        variant: "destructive",
+      });
+      setStep("chooseRole");
+    }
   };
 
-  // Step 1: Request reset
+  // ─── Step 1: Request reset ─────────────────────────────────
   const handleRequestReset = async () => {
     if (!email.trim()) {
-      const whatsappNumber = "254704473503";
-      const prefilledMessage = encodeURIComponent(
-        `Hello, I attempted to reset my password but didn't enter my email. Please assist me.`
-      );
-      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
-
       toast({
         title: "Email required",
         description: (
           <span>
-            To reset your password, you must answer the security question associated with your account.
-            If you are unable to provide an answer or need assistance, you can reach our support team directly.
-            <br />
-            Contact us via{" "}
-            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="underline">
+            Please enter the email you registered with. If you need help,
+            contact us via{" "}
+            <a
+              href={whatsappLink(
+                `Hello, I attempted to reset my password but didn't enter my email. Please assist me.`
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
               WhatsApp
             </a>
+            .
           </span>
         ),
         variant: "destructive",
@@ -128,81 +210,100 @@ export default function ResetPassword() {
       return;
     }
 
-    await fetchResetQuestion(email.trim());
-    setStep("answer");
+    setIsLookingUp(true);
+    try {
+      const roles = await discoverRolesForEmail(email);
+      if (roles.length === 0) {
+        showEmailNotFound(email.trim());
+        return;
+      }
+      setAvailableRoles(roles);
+
+      if (roles.length === 1) {
+        await selectRole(roles[0]);
+      } else {
+        setStep("chooseRole");
+      }
+    } catch (err: any) {
+      toast({
+        title: "Lookup failed",
+        description: err?.message || "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLookingUp(false);
+    }
   };
 
-  // Step 2: Answer security question
+  // ─── Step 2: Verify answer ─────────────────────────────────
   const handleCheckAnswer = async () => {
-    if (!resetAnswer.trim()) {
-      const whatsappNumber = "254704473503";
-      const prefilledMessage = encodeURIComponent(
-        `Hello, I attempted to reset my password but didn't provide an answer to the security question. Please assist me.`
-      );
-      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
-
+    if (!resetAnswer.trim() || !selectedRole) {
       toast({
         title: "Answer required",
         description: (
           <span>
-            To reset your password, you must answer the security question associated with your account.
-            If you are unable to provide an answer or need assistance, you can reach our support team directly.
-            <br />
-            Contact us via{" "}
-            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="underline">
-              WhatsApp
-            </a>.
-          </span>
-        ),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { data: userProfile, error } = await supabase
-      .from("profiles")
-      .select("user_id, reset_answer")
-      .eq("email", email.trim())
-      .single();
-
-    if (!userProfile) {
-      toast({ title: "Email not found", variant: "destructive" });
-      return;
-    }
-
-    if ((userProfile.reset_answer || "").trim() !== resetAnswer.trim()) {
-      const whatsappNumber = "254704473503";
-      const prefilledMessage = encodeURIComponent(
-        `Hello, I attempted to reset my password for ${email.trim()} but answered the security question incorrectly. Please assist me.`
-      );
-      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
-
-      toast({
-        title: "Incorrect answer",
-        description: (
-          <span className="text-white">
-            The answer you provided is incorrect. Please{" "}
+            Please type your answer. If you're stuck, contact us via{" "}
             <a
-              href={whatsappLink}
+              href={whatsappLink(
+                `Hello, I attempted to reset my ${selectedRole ?? ""} password for ${resolvedEmail} but couldn't provide an answer. Please assist me.`
+              )}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline text-yellow-200"
+              className="underline"
             >
-              contact us on WhatsApp
-            </a>{" "}
-            for assistance.
+              WhatsApp
+            </a>
+            .
           </span>
         ),
         variant: "destructive",
       });
-
       return;
     }
 
-    setStep("newPassword");
+    try {
+      const { ok, email: resolved } = await verifyResetAnswerForRole(
+        email,
+        selectedRole,
+        resetAnswer
+      );
+
+      if (!ok) {
+        toast({
+          title: "Incorrect answer",
+          description: (
+            <span className="text-white">
+              The answer you provided is incorrect. Please{" "}
+              <a
+                href={whatsappLink(
+                  `Hello, I attempted to reset my ${selectedRole} password for ${resolved} but answered the security question incorrectly. Please assist me.`
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-yellow-200"
+              >
+                contact us on WhatsApp
+              </a>{" "}
+              for assistance.
+            </span>
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setResolvedEmail(resolved);
+      setStep("newPassword");
+    } catch (err: any) {
+      toast({
+        title: "Verification failed",
+        description: err?.message || "Please try again in a moment.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Step 3: Update password via Supabase Edge Function
+  // ─── Step 3: Reset the password via edge function ──────────
   const handleResetPassword = async () => {
     if (!newPassword.trim()) {
       toast({ title: "Password required", variant: "destructive" });
@@ -226,7 +327,8 @@ export default function ResetPassword() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: email.trim(),
+            email: resolvedEmail,        // ← resolved shadow/base email
+            role: selectedRole,          // ← so the server can double-check
             resetAnswer: resetAnswer.trim(),
             newPassword: newPassword,
           }),
@@ -236,12 +338,18 @@ export default function ResetPassword() {
       const data = await response.json();
 
       if (!response.ok) {
+        // If the server explicitly says "no security question",
+        // send the user to the support step rather than showing a raw error.
+        if (data?.error === "NO_SECURITY_QUESTION") {
+          setStep("support");
+          return;
+        }
         throw new Error(data.error || "Failed to reset password");
       }
 
       toast({
         title: "Password updated",
-        description: "You can now log in with your new password.",
+        description: `Your ${ROLE_META[selectedRole ?? "student"].label} password has been reset. You can now log in.`,
       });
 
       navigate("/login");
@@ -256,6 +364,9 @@ export default function ResetPassword() {
     }
   };
 
+  // ─── Step bullets (hidden for auxiliary steps) ─────────────
+  const showBullets = !["chooseRole", "support"].includes(step);
+
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100">
       {/* LEFT SIDE - Background Images (Desktop Only) */}
@@ -267,7 +378,7 @@ export default function ResetPassword() {
               }`}
             style={{
               backgroundImage: `url(/${img})`,
-              transition: 'opacity 1s ease-in-out, transform 10s linear'
+              transition: "opacity 1s ease-in-out, transform 10s linear",
             }}
           />
         ))}
@@ -295,73 +406,178 @@ export default function ResetPassword() {
       <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8 lg:p-12 bg-muted/100 dark:bg-muted/100">
         <div className="w-full max-w-md">
           {/* Step Indicator Bullets */}
-          <div className="flex justify-center gap-2 mb-6">
-            {['request', 'answer', 'newPassword'].map((s) => (
-              <div
-                key={s}
-                className={`h-1.5 rounded-full transition-all duration-500 ${step === s ? "w-8 bg-blue-500" : "w-2 bg-slate-300 dark:bg-slate-600"
-                  }`}
-              />
-            ))}
-          </div>
+          {showBullets && (
+            <div className="flex justify-center gap-2 mb-6">
+              {(["request", "answer", "newPassword"] as const).map((s) => (
+                <div
+                  key={s}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${step === s ? "w-8 bg-blue-500" : "w-2 bg-slate-300 dark:bg-slate-600"
+                    }`}
+                />
+              ))}
+            </div>
+          )}
 
           <Card className="bg-white dark:bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-0 rounded-xl overflow-hidden">
             <CardContent className="p-8 md:p-10">
-
-              {/* STEP 1: REQUEST EMAIL */}
+              {/* ═══════════════════════════════════════════════
+                  STEP 1: REQUEST EMAIL
+                  ═══════════════════════════════════════════════ */}
               {step === "request" && (
                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                   <div className="text-center space-y-2">
                     <div className="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4">
                       <Mail className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h1 className="text-2xl   text-slate-800 dark:text-white">Reset Password</h1>
+                    <h1 className="text-2xl text-slate-800 dark:text-white">
+                      Reset Password
+                    </h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
                       Enter your email address and we'll help you recover your account.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">Email Address</Label>
+                    <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">
+                      Email Address
+                    </Label>
                     <div className="relative group">
                       <Mail className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                       <Input
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
+                        disabled={isLookingUp}
                         className="pl-12 h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 ml-1 pt-1 leading-snug">
+                      Use the <b className="text-slate-800 dark:text-white">primary email</b>{" "}
+                      you registered with. We'll show you every profile on this email.
+                    </p>
                   </div>
 
                   <Button
                     onClick={handleRequestReset}
+                    disabled={isLookingUp}
                     className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 dark:shadow-blue-900/30 transition-all active:scale-[0.98]"
                   >
-                    Continue <ChevronRight className="ml-2 w-5 h-5" />
+                    {isLookingUp ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Looking up profiles…
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        Continue <ChevronRight className="ml-2 w-5 h-5" />
+                      </span>
+                    )}
                   </Button>
                 </div>
               )}
 
-              {/* STEP 2: SECURITY QUESTION */}
+              {/* ═══════════════════════════════════════════════
+                  STEP 1b: CHOOSE WHICH ROLE
+                  ═══════════════════════════════════════════════ */}
+              {step === "chooseRole" && (
+                <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                  <div className="text-center space-y-2">
+                    <div className="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4">
+                      <KeyRound className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h1 className="text-2xl text-slate-800 dark:text-white">
+                      Which profile?
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                      This email has more than one profile. Pick the one you want
+                      to reset.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {availableRoles.map((r) => {
+                      const meta = ROLE_META[r.role];
+                      const Icon = meta.icon;
+                      return (
+                        <button
+                          key={r.role}
+                          type="button"
+                          onClick={() => selectRole(r)}
+                          className="w-full flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.99] transition-all text-left"
+                        >
+                          <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center shrink-0">
+                            <Icon className={`w-5 h-5 ${meta.color}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold capitalize text-slate-800 dark:text-white">
+                              {meta.label}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                              {r.email}
+                            </p>
+                            {!r.hasQuestion && (
+                              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                                No security question set
+                              </p>
+                            )}
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("request");
+                      setAvailableRoles([]);
+                      setSelectedRole(null);
+                      setResolvedEmail("");
+                    }}
+                    className="w-full text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors pt-1"
+                  >
+                    Use a different email
+                  </button>
+                </div>
+              )}
+
+              {/* ═══════════════════════════════════════════════
+                  STEP 2: SECURITY QUESTION
+                  ═══════════════════════════════════════════════ */}
               {step === "answer" && (
                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                   <div className="text-center space-y-2">
                     <div className="mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
                       <ShieldQuestion className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                     </div>
-                    <h1 className="text-2xl   text-slate-800 dark:text-white">Security Check</h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Please answer the question you set during registration.</p>
+                    <h1 className="text-2xl text-slate-800 dark:text-white">
+                      Security Check
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                      Resetting the{" "}
+                      <b className="capitalize text-slate-800 dark:text-white">
+                        {selectedRole ? ROLE_META[selectedRole].label : ""}
+                      </b>{" "}
+                      profile for{" "}
+                      <span className="font-mono text-xs">{resolvedEmail}</span>
+                    </p>
                   </div>
 
                   <div className="space-y-4 pt-2">
                     <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                      <Label className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-1">Your Question</Label>
-                      <p className="text-slate-700 dark:text-slate-300 font-semibold">{resetQuestion || "Loading question..."}</p>
+                      <Label className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-1">
+                        Your Question
+                      </Label>
+                      <p className="text-slate-700 dark:text-slate-300 font-semibold">
+                        {resetQuestion || "Loading question..."}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">Your Answer</Label>
+                      <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">
+                        Your Answer
+                      </Label>
                       <Input
                         value={resetAnswer}
                         onChange={(e) => setResetAnswer(e.target.value)}
@@ -377,22 +593,47 @@ export default function ResetPassword() {
                   >
                     Verify Identity <ChevronRight className="ml-2 w-5 h-5" />
                   </Button>
+
+                  {availableRoles.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep("chooseRole");
+                        setResetAnswer("");
+                      }}
+                      className="w-full text-xs font-bold text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      ← Pick a different profile
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* STEP 3: NEW PASSWORD */}
+              {/* ═══════════════════════════════════════════════
+                  STEP 3: NEW PASSWORD
+                  ═══════════════════════════════════════════════ */}
               {step === "newPassword" && (
                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                   <div className="text-center space-y-2">
                     <div className="mx-auto w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-4">
                       <KeyRound className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h1 className="text-2xl   text-slate-800 dark:text-white">New Password</h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Ensure your new password is at least 8 characters long.</p>
+                    <h1 className="text-2xl text-slate-800 dark:text-white">
+                      New Password
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                      Choose a new password for your{" "}
+                      <b className="capitalize text-slate-800 dark:text-white">
+                        {selectedRole ? ROLE_META[selectedRole].label : ""}
+                      </b>{" "}
+                      profile. Minimum 8 characters.
+                    </p>
                   </div>
 
                   <div className="space-y-2 pt-2">
-                    <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">New Password</Label>
+                    <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">
+                      New Password
+                    </Label>
                     <div className="relative group">
                       <Lock className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                       <Input
@@ -424,6 +665,70 @@ export default function ResetPassword() {
                 </div>
               )}
 
+              {/* ═══════════════════════════════════════════════
+                  STEP 4: SUPPORT (no security question on file)
+                  ═══════════════════════════════════════════════ */}
+              {step === "support" && (
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-500 text-center">
+                  <div className="mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-2">
+                    <ShieldQuestion className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <h1 className="text-2xl text-slate-800 dark:text-white">
+                      We need to verify you manually
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                      Your{" "}
+                      <b className="capitalize text-slate-800 dark:text-white">
+                        {selectedRole ? ROLE_META[selectedRole].label : ""}
+                      </b>{" "}
+                      profile doesn't have a security question on file, so we
+                      can't reset it automatically. Contact support and we'll
+                      reset it for you quickly.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-4 text-left space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+                      Profile to reset
+                    </p>
+                    <p className="text-sm font-bold capitalize text-slate-800 dark:text-white">
+                      {selectedRole ? ROLE_META[selectedRole].label : ""}
+                    </p>
+                    <p className="text-xs font-mono text-slate-500 dark:text-slate-400 break-all">
+                      {resolvedEmail}
+                    </p>
+                  </div>
+
+                  <a
+                    href={whatsappLink(
+                      `Hello, I need to reset my ${selectedRole ?? ""} password for ${resolvedEmail}. No security question is on file. Please assist me.`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-colors active:scale-[0.98]"
+                  >
+                    Contact support on WhatsApp
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep(availableRoles.length > 1 ? "chooseRole" : "request");
+                      setResetAnswer("");
+                      setNewPassword("");
+                    }}
+                    className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    {availableRoles.length > 1
+                      ? "Pick a different profile"
+                      : "Use a different email"}
+                  </button>
+                </div>
+              )}
+
               {/* Back to Login Footer */}
               <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
                 <button
@@ -434,7 +739,6 @@ export default function ResetPassword() {
                   Return to Sign In
                 </button>
               </div>
-
             </CardContent>
           </Card>
 

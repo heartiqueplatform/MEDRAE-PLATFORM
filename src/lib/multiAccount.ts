@@ -153,10 +153,6 @@ export async function getLinkedRoles(
     LOG("getLinkedRoles → currentRole", currentRole);
 
     // ─── Step 2: Find the TRUE primary ─────────────────────────
-    // Two sub-steps:
-    //   a) Look for a link where I'm the primary (I AM the primary)
-    //   b) If none, look for a link where I'm the linked user (I'm a sibling)
-    //      → use that link's primary_user_id
     let primaryUserId: string = currentUserId;
 
     const { data: asPrimary, error: aErr } = await supabase
@@ -167,11 +163,9 @@ export async function getLinkedRoles(
     if (aErr) ERR("getLinkedRoles → asPrimary fetch error", aErr);
 
     if (asPrimary && asPrimary.length > 0) {
-        // I am the primary
         primaryUserId = currentUserId;
         LOG("getLinkedRoles → current user IS primary");
     } else {
-        // I'm a linked role — look up my primary
         const { data: asLinked, error: bErr } = await supabase
             .from("linked_accounts")
             .select("primary_user_id")
@@ -183,15 +177,12 @@ export async function getLinkedRoles(
             primaryUserId = asLinked[0].primary_user_id;
             LOG("getLinkedRoles → current user is LINKED, primary is", primaryUserId);
         } else {
-            // No links at all — this user is a standalone account
             primaryUserId = currentUserId;
             LOG("getLinkedRoles → no links found, user is standalone");
         }
     }
 
     // ─── Step 3: Fetch ALL links belonging to this primary ─────
-    // This is the critical fix: query by primary, NOT by currentUserId.
-    // That returns every sibling role, not just the link involving me.
     const { data: allLinks, error: lErr } = await supabase
         .from("linked_accounts")
         .select("primary_user_id, linked_user_id, role")
@@ -202,7 +193,6 @@ export async function getLinkedRoles(
     // ─── Step 4: Build the role map ────────────────────────────
     const roleMap = new Map<Role, string>();
 
-    // 4a. Add the primary's role
     if (primaryUserId === currentUserId && currentRole) {
         roleMap.set(currentRole, currentUserId);
     } else {
@@ -217,7 +207,6 @@ export async function getLinkedRoles(
         }
     }
 
-    // 4b. Add every linked sibling (from the fresh allLinks query)
     for (const row of allLinks ?? []) {
         if (row.linked_user_id !== primaryUserId) {
             roleMap.set(row.role as Role, row.linked_user_id);
@@ -231,9 +220,8 @@ export async function getLinkedRoles(
         })
     );
 
-    // ─── Diagnostic: warn if not all links are accounted for ────
     const expectedLinkedCount = (allLinks?.length ?? 0);
-    const actualLinkedCount = roles.length - 1; // minus the primary
+    const actualLinkedCount = roles.length - 1;
     if (actualLinkedCount !== expectedLinkedCount) {
         WARN("getLinkedRoles → MISMATCH", {
             expectedLinkedCount,
@@ -358,9 +346,6 @@ export async function createLinkedRole(
     }
     LOG("createLinkedRole → create_linked_profile RPC OK");
     // 7. Insert the link — use the TRUE primary user id, not the current user.
-    //    Chain-linking bug: if the current user is a linked role (e.g. Tutor),
-    //    using user.id would create a link with Tutor as primary, orphaning
-    //    the new role from the actual primary (Student).
     LOG("createLinkedRole → resolving true primary user id");
     const { roles: existingRoles, primaryUserId: truePrimaryId } =
         await getLinkedRoles(user.id);
@@ -389,16 +374,11 @@ export async function createLinkedRole(
 
     if (linkError) {
         ERR("createLinkedRole → create_linked_account RPC failed", linkError);
-        // Clean up profile + orphan auth user
         await supabase.from("profiles").delete().eq("user_id", newAuthUserId);
         throw new Error(`Couldn't link accounts: ${linkError.message}`);
     }
     LOG("createLinkedRole → create_linked_account RPC OK");
 
-    // Extra safety: if the current user is NOT the primary, the auth user is
-    // still logged in as the linked account. That's fine — the caller
-    // (RoleSwitch) will navigate to /switch-account and the switch will work.
-    // But we should also verify that the new auth user has a profile row now.
     LOG("createLinkedRole → COMPLETE", {
         linkedUserId: newAuthUserId,
         primaryUserId: user.id,
@@ -407,19 +387,12 @@ export async function createLinkedRole(
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   🆕 Navigate to the dedicated Switch Account page
-   ─────────────────────────────────────────────────────────────
-   Instead of doing signOut+signIn on the current page (which
-   caused auth lock hangs), we navigate to /switch-account.
-   That page loads fresh, does its own signOut+signIn safely,
-   and redirects to the new dashboard. This is the industry
-   standard pattern (Google, Slack, GitHub all do this).
+   Navigate to the dedicated Switch Account page
    ═══════════════════════════════════════════════════════════════ */
 
 export function navigateToSwitchAccount(targetRole: Role): void {
     LOG("navigateToSwitchAccount → navigating", { targetRole });
     const url = `/switch-account?role=${encodeURIComponent(targetRole)}`;
-    // Full reload (not SPA nav) so the auth client is 100% fresh
     window.location.href = url;
 }
 
@@ -494,10 +467,7 @@ export async function sendPasswordReset(
 ): Promise<void> {
     LOG("sendPasswordReset → start", { baseEmail, role });
     const clean = baseEmail.trim().toLowerCase();
-    const target =
-        role === "student" || role === "tutor" || role === "staff"
-            ? buildShadowEmail(clean, role)
-            : clean;
+    const target = await resolveRoleEmail(clean, role);
     LOG("sendPasswordReset → target email", target);
 
     const { error } = await supabase.auth.resetPasswordForEmail(target, {
@@ -510,4 +480,161 @@ export async function sendPasswordReset(
         throw new Error(error.message);
     }
     LOG("sendPasswordReset → sent OK");
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🆕 Password-reset helpers for linked / shadow roles
+   ─────────────────────────────────────────────────────────────
+   These power the role-aware ResetPassword flow. They work
+   regardless of which role owns the base email, by querying
+   the DB instead of assuming "student = base".
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Resolve the email to use when signing in / resetting a given role.
+ *
+ * DB-driven: asks the profiles table which role owns the base email.
+ * If the base email's profile IS this role, returns the base email.
+ * Otherwise returns the shadow email (local+role@domain).
+ *
+ * This is safe whether the user registered as Student, Tutor, or Staff
+ * first — no hardcoded assumption.
+ */
+export async function resolveRoleEmail(
+    baseEmail: string,
+    role: Role
+): Promise<string> {
+    const clean = baseEmail.trim().toLowerCase();
+
+    const { data: baseProf, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("email", clean)
+        .maybeSingle();
+
+    if (error) {
+        WARN("resolveRoleEmail → base profile query error", error.message);
+    }
+
+    // If the base email's profile is this role, use the base email.
+    if (baseProf?.role === role) {
+        LOG("resolveRoleEmail → base email owns this role", { clean, role });
+        return clean;
+    }
+
+    // Otherwise, use the shadow email.
+    const shadow = buildShadowEmail(clean, role);
+    LOG("resolveRoleEmail → using shadow email", { clean, role, shadow });
+    return shadow;
+}
+
+/**
+ * Discover which roles actually exist for a given base email.
+ * Probes the base email + all three shadow variants in the profiles
+ * table. Returns only rows that exist, with a flag telling the UI
+ * whether a security question is on file (so it can skip the
+ * dead-end "Loading question..." state).
+ */
+export async function discoverRolesForEmail(
+    baseEmail: string
+): Promise<{ role: Role; email: string; hasQuestion: boolean }[]> {
+    const clean = baseEmail.trim().toLowerCase();
+
+    // First, find out which role owns the base email (if any).
+    const { data: baseProf, error: baseErr } = await supabase
+        .from("profiles")
+        .select("role, reset_question")
+        .eq("email", clean)
+        .maybeSingle();
+
+    if (baseErr) {
+        WARN("discoverRolesForEmail → base query error", baseErr.message);
+    }
+
+    const baseRole = (baseProf?.role as Role | undefined) ?? null;
+    const found: { role: Role; email: string; hasQuestion: boolean }[] = [];
+
+    // Add the base-email profile if it exists.
+    if (baseRole) {
+        found.push({
+            role: baseRole,
+            email: clean,
+            hasQuestion: !!baseProf?.reset_question?.trim(),
+        });
+    }
+
+    // Probe the three shadow variants (skip the one that owns the base).
+    for (const role of ROLES) {
+        if (role === baseRole) continue;
+        const shadow = buildShadowEmail(clean, role);
+        const { data, error } = await supabase
+            .from("profiles")
+            .select("reset_question")
+            .eq("email", shadow)
+            .maybeSingle();
+        if (error) {
+            WARN("discoverRolesForEmail → shadow query error", shadow, error.message);
+            continue;
+        }
+        if (data) {
+            found.push({
+                role,
+                email: shadow,
+                hasQuestion: !!data.reset_question?.trim(),
+            });
+        }
+    }
+
+    LOG("discoverRolesForEmail → found", found);
+    return found;
+}
+
+/**
+ * Get the security question for a specific role's profile row.
+ * Returns question = null if the row has no question set.
+ */
+export async function getResetQuestionForRole(
+    baseEmail: string,
+    role: Role
+): Promise<{ email: string; question: string | null }> {
+    const email = await resolveRoleEmail(baseEmail, role);
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("reset_question")
+        .eq("email", email)
+        .maybeSingle();
+    if (error) throw new Error(error.message);
+    LOG("getResetQuestionForRole → resolved", {
+        baseEmail,
+        role,
+        email,
+        hasQuestion: !!data?.reset_question?.trim(),
+    });
+    return { email, question: data?.reset_question?.trim() || null };
+}
+
+/**
+ * Verify a security answer against the correct role's profile row.
+ * Returns { ok, email } — email is the resolved sign-in email for
+ * that role, which the caller should pass to the reset edge function.
+ */
+export async function verifyResetAnswerForRole(
+    baseEmail: string,
+    role: Role,
+    answer: string
+): Promise<{ ok: boolean; email: string }> {
+    const email = await resolveRoleEmail(baseEmail, role);
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("reset_answer")
+        .eq("email", email)
+        .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) {
+        WARN("verifyResetAnswerForRole → no profile row", email);
+        return { ok: false, email };
+    }
+    const ok = (data.reset_answer || "").trim() === answer.trim();
+    LOG("verifyResetAnswerForRole → result", { email, ok });
+    return { ok, email };
 }

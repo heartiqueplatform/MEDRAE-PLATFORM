@@ -25,7 +25,19 @@ import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { NotificationBell } from "../ui/NotificationBell";
-
+// Derive the CURRENT role from the signed-in auth user.
+// auth.users.raw_user_meta_data.role is set at signup (createLinkedRole
+// passes `role` in options.data), so it is always correct for the
+// active session — no stale cache, no extra query.
+function roleFromAuthUser(authUser: any): string | null {
+  const raw = authUser?.user_metadata?.role;
+  if (typeof raw !== "string") return null;
+  const cleaned = raw.trim().toLowerCase();
+  if (cleaned === "student" || cleaned === "tutor" || cleaned === "staff") {
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return null;
+}
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
 const CACHE_DURATION = 30 * 60 * 1000;
@@ -111,9 +123,21 @@ const preloadUserData = () => {
       }
     }
   } catch (e) { /* silent */ }
-  return { name: "Student", role: "Student", avatar: "/avatars/default.jpg" };
-};
 
+  // Fallback: use the role persisted by Login/SwitchAccount, not a
+  // hardcoded "Student". Avoids a "Student" flash on Tutor/Staff dashboards.
+  const lastRole = (() => {
+    try {
+      const r = localStorage.getItem("last_known_role");
+      if (r === "student" || r === "tutor" || r === "staff") {
+        return r.charAt(0).toUpperCase() + r.slice(1);
+      }
+    } catch { /* ignore */ }
+    return "Student";
+  })();
+
+  return { name: "Student", role: lastRole, avatar: "/avatars/default.jpg" };
+};
 const preloadStreak = () => {
   try {
     // Paint from disk, any age — the TTL only governs refetch.
@@ -196,6 +220,9 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   const { toast } = useToast();
   const navigate = useNavigate();
   const authUser = useUser();
+  const authRole = roleFromAuthUser(authUser);
+
+
   const { toggleSidebar } = useSidebar();
   const width = useWindowWidth();
   const isOnline = useOnlineStatus();
@@ -262,7 +289,14 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     // 2. ALWAYS use pre-loaded data from cache (never shows fallback)
     return preloadUserData();
   });
-
+  // Override whatever came in via props/cache with the truth from auth.
+  // authUser.user_metadata.role is the signed-in session's role — the
+  // single source of truth for "which role am I right now".
+  const effectiveUser = useMemo(() => {
+    if (!authRole) return user;                 // no metadata → keep what we have
+    if (user?.role === authRole) return user;   // already correct
+    return { ...user, role: authRole };         // fix just the role
+  }, [user, authRole]);
   // ✅ SYNC: When propUser changes, update shared cache
   useEffect(() => {
     if (propUser && propUser.name && propUser.name !== "Unknown User") {
@@ -883,8 +917,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
             <div className="hidden sm:block text-right">
               <div className="text-sm font-medium flex items-center gap-2 truncate max-w-[140px] sm:max-w-[190px]">
                 <span className="truncate">
-                  {user?.name && user.name !== "Unknown" && user.name !== "Unknown User"
-                    ? user.name.split(" ")[0]
+                  {effectiveUser?.name && effectiveUser.name !== "Unknown" && effectiveUser.name !== "Unknown User"
+                    ? effectiveUser.name.split(" ")[0]
                     : (isOnline ? "Student" : "Offline")}
                 </span>
 
@@ -901,7 +935,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {user?.role && user.role !== "Unknown" ? user.role : (isOnline ? "Student" : "Offline")}
+                {effectiveUser?.role && effectiveUser.role !== "Unknown" ? effectiveUser.role : (isOnline ? "Student" : "Offline")}
               </p>
             </div>
             <div className="relative">
