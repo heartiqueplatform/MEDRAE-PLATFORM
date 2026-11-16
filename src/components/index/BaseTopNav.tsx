@@ -62,7 +62,7 @@ export function BaseTopNav({
                 className="hidden lg:grid fixed top-0 inset-x-0 z-40 h-16
                  grid-cols-[1fr_auto_1fr] items-center gap-6 px-6
                  bg-white/85 backdrop-blur-md
-                 border-b border-slate-200/70"
+                 border-0"
             >
                 {/* ═══ LEFT: brand + role chip ═══ */}
                 <div className="flex items-center gap-3 min-w-0">
