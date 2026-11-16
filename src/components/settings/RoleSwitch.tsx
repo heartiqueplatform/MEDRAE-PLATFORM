@@ -31,32 +31,6 @@ import {
 } from "@/lib/settingsCache";
 
 /* ------------------------------------------------------------------ */
-/*  Logging                                                           */
-/* ------------------------------------------------------------------ */
-
-const LOG = (label: string, ...args: any[]) => {
-    console.log(
-        `%c[RoleSwitch] ${label}`,
-        "color:#4CAF50;font-weight:bold",
-        ...args
-    );
-};
-const WARN = (label: string, ...args: any[]) => {
-    console.warn(
-        `%c[RoleSwitch] ${label}`,
-        "color:#FF9800;font-weight:bold",
-        ...args
-    );
-};
-const ERR = (label: string, ...args: any[]) => {
-    console.error(
-        `%c[RoleSwitch] ${label}`,
-        "color:#F44336;font-weight:bold",
-        ...args
-    );
-};
-
-/* ------------------------------------------------------------------ */
 /*  Tap helper                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -117,13 +91,17 @@ interface RoleSwitchProps {
     onRoleChange?: () => void;
 }
 
-export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProps) {
+export function RoleSwitch({ currentRole, userId }: RoleSwitchProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [roles, setRoles] = useState<{ role: Role; userId: string }[]>([]);
     const [email, setEmail] = useState<string>("");
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Create modal state (the only modal we still need)
+    // True once we have a definitive answer (from cache or network).
+    // While false, we don't know which roles exist — render skeletons, not "Add".
+    const [rolesLoaded, setRolesLoaded] = useState(false);
+
+    // Create modal state
     const [showCreate, setShowCreate] = useState(false);
     const [targetRole, setTargetRole] = useState<Role | null>(null);
     const [newPassword, setNewPassword] = useState("");
@@ -131,42 +109,36 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
     const [showPw, setShowPw] = useState(false);
 
     useEffect(() => {
-        LOG("useEffect → loadRoles triggered", { userId, currentRole });
         loadRoles();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
     async function loadRoles() {
-        LOG("loadRoles → start (cache-first)");
-
         /* ─── Step 1: Paint from cache IMMEDIATELY ────────────── */
-        const cUser = cachedUser.get();
         const cProfile = cachedProfile.get();
         const cRoles = cachedRoles.get();
 
         if (cProfile?.email) {
             setEmail(cProfile.email);
-            LOG("loadRoles → painted email from cache", cProfile.email);
         }
         if (cRoles && cRoles.length > 0) {
             setRoles(cRoles as { role: Role; userId: string }[]);
-            LOG("loadRoles → painted", cRoles.length, "roles from cache");
+            // Non-empty cache is authoritative enough to render Switch/Add.
+            setRolesLoaded(true);
         }
 
-        /* ─── Step 2: Background refresh (invisible to user) ─── */
+        /* ─── Step 2: Background refresh ──────────────────────── */
         setIsRefreshing(true);
         try {
-            LOG("loadRoles → background refresh starting");
             const {
                 data: { user },
             } = await supabase.auth.getUser();
 
             if (!user) {
-                WARN("loadRoles → no auth user, keeping cache as-is");
                 setIsRefreshing(false);
+                setRolesLoaded(true);
                 return;
             }
-            LOG("loadRoles → auth user", { id: user.id, email: user.email });
             cachedUser.set({ id: user.id, email: user.email || "" });
 
             const { data: prof, error: profErr } = await supabase
@@ -175,32 +147,24 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                 .eq("user_id", user.id)
                 .maybeSingle();
 
-            if (profErr) ERR("loadRoles → profile fetch error", profErr);
-
-            if (prof?.email) {
+            if (!profErr && prof?.email) {
                 setEmail(prof.email);
                 cachedProfile.set({
                     email: prof.email,
                     role: prof.role || "",
                 });
-                LOG("loadRoles → refreshed email", prof.email);
             }
 
             const { roles: linked } = await getLinkedRoles(user.id);
-            LOG("loadRoles → linked roles from getLinkedRoles", linked);
-
             const mapped = linked.map((r) => ({
                 role: r.role,
                 userId: r.linked_user_id,
             }));
-            LOG("loadRoles → mapped roles", mapped);
 
             setRoles(mapped);
             cachedRoles.set(mapped);
-            LOG("loadRoles → refreshed", mapped.length, "roles");
+            setRolesLoaded(true);
         } catch (err: any) {
-            ERR("loadRoles → background refresh failed", err?.message, err);
-            // Don't crash — cache was already painted. Only warn if no cache.
             if (!cProfile && (!cRoles || cRoles.length === 0)) {
                 toast({
                     title: "Couldn't refresh profiles",
@@ -211,37 +175,33 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
             }
         } finally {
             setIsRefreshing(false);
+            // Whatever happened, stop showing skeletons — either we have
+            // cache, or the network failed and we show last known state.
+            setRolesLoaded(true);
         }
     }
 
-    function hasRole(roleId: Role): boolean {
-        const result = roles.some((r) => r.role === roleId);
-        LOG(`hasRole(${roleId}) → ${result}`, { allRoles: roles });
-        return result;
+    /**
+     * Tri-state:
+     *   null  → roles still loading → render skeleton
+     *   true  → role exists → show "Switch"
+     *   false → role doesn't exist → show "Add"
+     */
+    function hasRole(roleId: Role): boolean | null {
+        if (!rolesLoaded) return null;
+        return roles.some((r) => r.role === roleId);
     }
 
     function handleCardClick(roleId: Role) {
-        LOG("handleCardClick → clicked", {
-            roleId,
-            currentRole,
-            exists: roles.some((r) => r.role === roleId),
-        });
-
-        if (roleId === currentRole) {
-            LOG("handleCardClick → already active, ignoring");
-            return;
-        }
+        if (roleId === currentRole) return;
         tap();
 
-        if (hasRole(roleId)) {
-            // User already has this role → navigate to switch page
-            LOG(
-                "handleCardClick → role exists → navigating to /switch-account"
-            );
+        const exists = hasRole(roleId);
+        if (exists === null) return; // still loading — ignore
+
+        if (exists) {
             navigateToSwitchAccount(roleId);
         } else {
-            // User doesn't have it yet → open create modal
-            LOG("handleCardClick → role missing → opening CREATE modal");
             setTargetRole(roleId);
             setNewPassword("");
             setConfirmPassword("");
@@ -251,20 +211,9 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
     }
 
     async function handleCreate() {
-        LOG("handleCreate → start", {
-            targetRole,
-            passwordLength: newPassword.length,
-            confirmLength: confirmPassword.length,
-            email,
-        });
-
-        if (!targetRole) {
-            WARN("handleCreate → no targetRole, aborting");
-            return;
-        }
+        if (!targetRole) return;
 
         if (newPassword.length < 6) {
-            WARN("handleCreate → password too short");
             tap("warning");
             toast({
                 title: "Password too short",
@@ -274,7 +223,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
             return;
         }
         if (newPassword !== confirmPassword) {
-            WARN("handleCreate → passwords don't match");
             tap("warning");
             toast({
                 title: "Passwords don't match",
@@ -286,21 +234,12 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
 
         setIsLoading(true);
         try {
-            LOG("handleCreate → calling createLinkedRole", {
-                email,
-                newRole: targetRole,
-            });
-            const created = await createLinkedRole(
-                email,
-                newPassword,
-                targetRole
-            );
-            LOG("handleCreate → createLinkedRole succeeded", created);
+            await createLinkedRole(email, newPassword, targetRole);
 
-            // 🆕 Invalidate cache so the next Settings visit fetches fresh data
+            // Invalidate cache so the next Settings visit fetches fresh data.
             cachedRoles.clear();
             cachedProfile.clear();
-            LOG("handleCreate → invalidated cache");
+            setRolesLoaded(false);
 
             toast({
                 title: `${capitalize(targetRole)} profile created`,
@@ -308,13 +247,8 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
             });
 
             setShowCreate(false);
-            // Navigate to the switch page — fresh load, no auth lock
-            LOG(
-                "handleCreate → navigating to /switch-account to complete signin"
-            );
             navigateToSwitchAccount(targetRole);
         } catch (err: any) {
-            ERR("handleCreate → exception", err?.message, err);
             tap("warning");
             toast({
                 title: "Couldn't add profile",
@@ -327,23 +261,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
             setShowCreate(false);
         }
     }
-
-    // Debug logging
-    useEffect(() => {
-        LOG("roles state changed", roles);
-    }, [roles]);
-
-    useEffect(() => {
-        LOG("email state changed", email);
-    }, [email]);
-
-    useEffect(() => {
-        LOG("currentRole prop", currentRole);
-    }, [currentRole]);
-
-    useEffect(() => {
-        LOG("isLoading changed", isLoading);
-    }, [isLoading]);
 
     return (
         <>
@@ -412,10 +329,10 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                                 key={role.id}
                                 type="button"
                                 onClick={() => handleCardClick(role.id)}
-                                disabled={isActive || isLoading}
+                                disabled={isActive || isLoading || exists === null}
                                 className={`text-left rounded-xl p-3 flex flex-col items-center gap-2 transition-colors ${isActive
-                                        ? "bg-blue-600 text-white cursor-default"
-                                        : "bg-slate-50 dark:bg-[#0d1117] active:bg-slate-100 dark:active:bg-white/[0.1]"
+                                    ? "bg-blue-600 text-white cursor-default"
+                                    : "bg-slate-50 dark:bg-[#0d1117] active:bg-slate-100 dark:active:bg-white/[0.1]"
                                     }`}
                                 style={{ touchAction: "manipulation" }}
                             >
@@ -430,33 +347,41 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                                 </div>
                                 <span
                                     className={`text-[12px] font-bold ${isActive
-                                            ? "text-white"
-                                            : "text-slate-900 dark:text-white"
+                                        ? "text-white"
+                                        : "text-slate-900 dark:text-white"
                                         }`}
                                 >
                                     {role.label}
                                 </span>
                                 <span
                                     className={`text-[10px] text-center leading-tight ${isActive
-                                            ? "text-white/80"
-                                            : "text-slate-500 dark:text-slate-400"
+                                        ? "text-white/80"
+                                        : "text-slate-500 dark:text-slate-400"
                                         }`}
                                 >
                                     {role.description}
                                 </span>
 
-                                {isActive && (
+                                {/* ── Tri-state badge ── */}
+                                {isActive ? (
                                     <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-white flex items-center gap-1">
                                         <CheckCircle2 className="h-2.5 w-2.5" />
                                         Active
                                     </span>
-                                )}
-                                {!isActive && exists && (
+                                ) : exists === null ? (
+                                    // Unknown yet — skeleton pill, same height
+                                    // as the real badges, so the card doesn't jump.
+                                    <span
+                                        className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center min-w-[52px]"
+                                        aria-hidden="true"
+                                    >
+                                        <span className="inline-block h-2 w-8 rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse" />
+                                    </span>
+                                ) : exists ? (
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400">
                                         Switch
                                     </span>
-                                )}
-                                {!isActive && !exists && (
+                                ) : (
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center gap-1">
                                         <Plus className="h-2.5 w-2.5" />
                                         Add
@@ -502,7 +427,6 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
             <CenteredModal
                 open={showCreate}
                 onClose={() => {
-                    LOG("create modal → onClose");
                     if (!isLoading) setShowCreate(false);
                 }}
                 title={`Add ${capitalize(targetRole ?? "")} profile`}
@@ -514,10 +438,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                     <div className="flex items-center gap-2 px-4 py-3">
                         <button
                             type="button"
-                            onClick={() => {
-                                LOG("create modal → cancel clicked");
-                                setShowCreate(false);
-                            }}
+                            onClick={() => setShowCreate(false)}
                             disabled={isLoading}
                             className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-sm font-bold active:scale-[0.97] transition-transform disabled:opacity-50"
                             style={{ touchAction: "manipulation" }}

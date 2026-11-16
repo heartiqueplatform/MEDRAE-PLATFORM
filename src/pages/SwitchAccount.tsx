@@ -199,7 +199,17 @@ export default function SwitchAccount() {
             LOG("useEffect → cleanup");
         };
     }, [targetRole]);
-
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem("medrae_dark_mode");
+            if (stored === null) return; // no app preference saved yet — leave as-is
+            const isDark = stored === "true";
+            const html = document.documentElement;
+            html.classList.toggle("dark", isDark);
+            html.classList.toggle("light", !isDark);
+            html.style.setProperty("--bg-color", isDark ? "#0d1117" : "#ffffff");
+        } catch { /* ignore */ }
+    }, []);
     /* ─── Submit: sign in directly (replaces current session) ─── */
     async function handleSubmit() {
         LOG("handleSubmit → start", {
@@ -338,7 +348,7 @@ export default function SwitchAccount() {
             <div className="flex-1 flex items-center justify-center px-4 py-16">
                 <div className="w-full max-w-md">
                     {!initDone ? (
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center justify-center min-h-[320px]">
+                        <div className="bg-white dark:bg-[#161b22] rounded-2xl border-0 shadow-none p-8 flex flex-col items-center justify-center min-h-[320px]">
                             <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400 mb-3" />
                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                 Loading your profiles…
@@ -368,7 +378,7 @@ export default function SwitchAccount() {
                             </button>
                         </div>
                     ) : (
-                        <div className="bg-white dark:bg-[#161b22] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 md:p-8 space-y-6">
+                        <div className="bg-white dark:bg-[#161b22] rounded-2xl border-0 shadow-none p-6 md:p-8 space-y-6">
                             {/* ── Card header ── */}
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3">
