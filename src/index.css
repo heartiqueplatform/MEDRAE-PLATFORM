@@ -152,9 +152,35 @@
     @apply border-border;
   }
 
-  body {
+  html {
     font-family: "Kunst Grotesk", "Poppins", sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
     @apply bg-background text-foreground;
+    font-family: inherit;
+    font-weight: 400;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: inherit;
+    font-weight: 600;
   }
 }
 

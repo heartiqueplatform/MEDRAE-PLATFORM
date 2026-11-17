@@ -280,7 +280,12 @@ export function RoleSwitch({ currentRole, userId }: RoleSwitchProps) {
                             </h2>
                         </div>
                         {isRefreshing && (
-                            <RefreshCw className="h-3 w-3 text-slate-400 animate-spin shrink-0" />
+                            <div className="flex items-center gap-1.5 shrink-0">
+
+                                <span className="text-[10px] font-semibold text-red-500 dark:text-red-400 leading-none">
+                                    Refreshing…
+                                </span>
+                            </div>
                         )}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">

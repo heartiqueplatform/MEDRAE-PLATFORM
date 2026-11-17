@@ -93,13 +93,13 @@ export default function StudentSimulationPapers({ papers, progress, onOpenPaper 
                                     </span>
                                 </div>
                             </CardHeader>
-
                             <CardContent className="p-5 pt-2 flex-1">
-                                {/* ✅ Description restored */}
+                                {/* Description */}
                                 <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-4">
                                     {paper.description || "Comprehensive NCK-style simulation paper for self-assessment."}
                                 </p>
 
+                                {/* Stats row */}
                                 <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-100 dark:border-white/5">
                                     <div className="flex items-center gap-2">
                                         <Clock className="w-4 h-4 text-slate-400" />
@@ -118,17 +118,14 @@ export default function StudentSimulationPapers({ papers, progress, onOpenPaper 
                                     </div>
                                 </div>
 
-                                <div className="mt-4">
-                                    <div className="flex justify-between items-center mb-1.5">
-                                        <span className="text-[10px] font-bold tracking-wider text-slate-400">Completion</span>
-                                        <span className="text-[10px] font-bold text-blue-600">{progress[paper.id] || 0}%</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-blue-500 transition-all duration-1000"
-                                            style={{ width: `${progress[paper.id] || 0}%` }}
-                                        />
-                                    </div>
+                                {/* ✅ Compact completion row — replaces the bar */}
+                                <div className="mt-4 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                        Completion
+                                    </span>
+                                    <span className="inline-flex items-center justify-center min-w-[44px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-[11px] font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                                        {progress[paper.id] || 0}%
+                                    </span>
                                 </div>
 
                                 <div className="mt-4 flex items-center justify-between">

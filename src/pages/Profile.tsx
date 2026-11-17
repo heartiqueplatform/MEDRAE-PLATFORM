@@ -21,7 +21,7 @@ import {
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useSession, useSupabaseClient, useSessionContext } from "@supabase/auth-helpers-react";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -30,11 +30,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LogoutDialog } from "@/components/LogoutDialog";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
-
+import { RoleSwitch } from "@/components/settings/RoleSwitch";
 // Cache helpers
 const profileCache = new Map();
 const subscriptionCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000;
+const CACHE_DURATION = 3 * 1000;
 
 // ─────────────────────────────────────────────────────────────
 // Safe localStorage helpers (Safari private mode can throw)
@@ -72,7 +72,21 @@ const isProfileReady = (p: any): boolean =>
   typeof p === "object" &&
   (!!p.user_id || !!p.id) &&
   (!!p.name || !!p.username);
-
+// A cached profile is "poisoned" if its joined_date disagrees with
+// its own created_at by more than 1 day, is in the future, or is
+// unparseable. Such an object came from before a DB backfill and
+// must never be served to the UI.
+const isCachePoisoned = (p: any): boolean => {
+  if (!p?.joined_date) return false;
+  const j = new Date(
+    typeof p.joined_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(p.joined_date)
+      ? `${p.joined_date}T00:00:00Z`
+      : p.joined_date
+  ).getTime();
+  if (isNaN(j)) return true;
+  if (j > Date.now()) return true;
+  return false;
+};
 // ---------------------------------------------------------
 // Small reusable helper for empty values
 // ---------------------------------------------------------
@@ -374,25 +388,31 @@ export function Profile() {
     const cacheKey = `profile_${user.id}`;
 
     // ── In-memory cache hit ──────────────────────────────────
+    // ── In-memory cache hit ──────────────────────────────────
     if (profileCache.has(cacheKey)) {
       const cached = profileCache.get(cacheKey);
-      if (now - cached.timestamp < CACHE_DURATION && isMounted.current) {
-        if (isProfileReady(cached.data)) {
-          setProfileState(cached.data);
-          setIsLoading(false);
-          setHasLoadedOnce(true);
-          return;
-        }
-        // partial → fall through and refetch
+      if (
+        now - cached.timestamp < CACHE_DURATION &&
+        isMounted.current &&
+        isProfileReady(cached.data) &&
+        !isCachePoisoned(cached.data)
+      ) {
+        setProfileState(cached.data);
+        setIsLoading(false);
+        setHasLoadedOnce(true);
+        return;
       }
+      // partial or poisoned → delete and fall through to refetch
+      profileCache.delete(cacheKey);
     }
-
     // ── localStorage cache hit ───────────────────────────────
     const cachedProfile = safeGetCachedProfile();
-    if (
+    const cachedIsGood =
       isProfileReady(cachedProfile) &&
-      now - (cachedProfile._timestamp || 0) < CACHE_DURATION
-    ) {
+      !isCachePoisoned(cachedProfile) &&
+      now - (cachedProfile._timestamp || 0) < CACHE_DURATION;
+
+    if (cachedIsGood) {
       if (isMounted.current) {
         setProfileState(cachedProfile);
         setIsLoading(false);
@@ -404,6 +424,12 @@ export function Profile() {
       }
       profileCache.set(cacheKey, { data: cachedProfile, timestamp: now });
       return;
+    }
+
+    // Poisoned cache → wipe it so nothing re-serves it.
+    if (isCachePoisoned(cachedProfile)) {
+      try { localStorage.removeItem("userProfile"); } catch { /* ignore */ }
+      profileCache.delete(cacheKey);
     }
 
     // ── Network fetch ────────────────────────────────────────
@@ -595,6 +621,11 @@ export function Profile() {
           console.warn("[Profile] Ignored partial profileUpdated event:", event.detail);
           return;
         }
+        // 🛡️ Reject poisoned events — stale joined_date would break stats.
+        if (isCachePoisoned(event.detail)) {
+          console.warn("[Profile] Ignored poisoned profileUpdated event:", event.detail);
+          return;
+        }
         setProfileState(event.detail);
         setIsLoading(false);
         setHasLoadedOnce(true);
@@ -608,18 +639,129 @@ export function Profile() {
     return () => window.removeEventListener("profileUpdated", handleProfileUpdated as EventListener);
   }, [user?.id]);
 
+  // ─────────────────────────────────────────────────────────────
+  // Platform age — total calendar days since the account was
+  // created. Falls back joined_date → created_at → auth user's
+  // created_at so it never says "No join date available" when
+  // we actually have a truthful source.
+  // ─────────────────────────────────────────────────────────────
+  const getOrdinalSuffix = (i: number) => {
+    const j = i % 10, k = i % 100;
+    if (j === 1 && k !== 11) return "st";
+    if (j === 2 && k !== 12) return "nd";
+    if (j === 3 && k !== 13) return "rd";
+    return "th";
+  };
+
+  const accountAge = useMemo(() => {
+    const parse = (v?: string | null) => {
+      if (!v) return null;
+      const s = String(v).slice(0, 10);
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(s)
+        ? new Date(`${s}T00:00:00Z`)
+        : new Date(v);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
+    // Priority: joined_date → profile.created_at → auth.created_at
+    const source =
+      parse(profileState?.joined_date) ??
+      parse(profileState?.created_at) ??
+      (user?.created_at ? new Date(user.created_at) : null);
+
+    if (!source) return null;
+
+    const now = new Date();
+    let diffMs = now.getTime() - source.getTime();
+    if (diffMs < 0) diffMs = 0;
+
+    const MS_MIN = 60_000;
+    const MS_HOUR = 60 * MS_MIN;
+    const MS_DAY = 24 * MS_HOUR;
+    const MS_YEAR = 365 * MS_DAY;
+
+    const years = Math.floor(diffMs / MS_YEAR);
+    diffMs -= years * MS_YEAR;
+
+    const days = Math.floor(diffMs / MS_DAY);
+    diffMs -= days * MS_DAY;
+
+    const hours = Math.floor(diffMs / MS_HOUR);
+    diffMs -= hours * MS_HOUR;
+
+    const minutes = Math.floor(diffMs / MS_MIN);
+
+    const totalDays = Math.floor(
+      (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+        Date.UTC(source.getUTCFullYear(), source.getUTCMonth(), source.getUTCDate())) /
+      MS_DAY
+    );
+
+    return { years, days, hours, minutes, totalDays };
+  }, [
+    profileState?.joined_date,
+    profileState?.created_at,
+    user?.created_at,
+  ]);
   const getDaysMessage = useCallback(() => {
-    if (!profileState?.joined_date) return "No join date available.";
-    const joinDate = new Date(profileState.joined_date); const now = new Date();
-    const diffTime = Math.abs(now.getTime() - joinDate.getTime()); const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(days / 365);
-    if (years === 0) return `You are ${days} day${days !== 1 ? "s" : ""} old on the platform. Keep going strong!`;
-    const nextAnniversary = years + 1;
-    return `You are ${years} year${years > 1 ? "s" : ""} old on the platform. Waiting to celebrate your ${nextAnniversary}${getOrdinalSuffix(nextAnniversary)} anniversary!`;
-  }, [profileState?.joined_date]);
+    if (!accountAge) return "No join date available yet.";
 
-  const getOrdinalSuffix = (i: number) => { const j = i % 10, k = i % 100; if (j === 1 && k !== 11) return "st"; if (j === 2 && k !== 12) return "nd"; if (j === 3 && k !== 13) return "rd"; return "th"; };
+    const { years, days, hours, minutes, totalDays } = accountAge;
 
+    // ── Just joined ──
+    if (totalDays === 0 && hours === 0 && minutes === 0) {
+      return "Welcome aboard! Your journey starts right now — make every day count.";
+    }
+
+    if (totalDays === 0 && hours > 0) {
+      return `You joined just ${hours} hour${hours !== 1 ? "s" : ""} ago. The first day is always the most exciting — settle in and enjoy the ride.`;
+    }
+
+    // ── Build the human-readable breakdown ──
+    const parts: string[] = [];
+    if (years > 0) parts.push(`${years} year${years !== 1 ? "s" : ""}`);
+    if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
+    if (minutes > 0 || parts.length === 0) {
+      parts.push(`${minutes} minute${minutes !== 1 ? "s" : ""}`);
+    }
+
+    const formatted =
+      parts.length === 1
+        ? parts[0]
+        : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+
+    // ── Tiered encouragement based on tenure ──
+    let encouragement: string;
+
+    if (totalDays < 7) {
+      encouragement =
+        "You're still in your first week  every great journey begins with a single step, and you've already taken yours.";
+    } else if (totalDays < 30) {
+      encouragement =
+        "You're building momentum. Keep showing up  consistency is where real progress lives.";
+    } else if (totalDays < 90) {
+      encouragement =
+        "A whole season of growth behind you. You're no longer a newcomer — you're becoming a regular.";
+    } else if (totalDays < 180) {
+      encouragement =
+        "Months of dedication  the kind of commitment that quietly compounds into something remarkable.";
+    } else if (totalDays < 365) {
+      encouragement =
+        "Nearly a year in the making. You've built something worth being proud of.";
+    } else if (years === 1) {
+      encouragement =
+        "A full year on the platform  that's not just time spent, it's a milestone earned. Here's to many more.";
+    } else if (years < 3) {
+      encouragement =
+        `You've been part of this community for ${years} years now. That's loyalty, and it doesn't go unnoticed.`;
+    } else {
+      encouragement =
+        `${years} years strong  you're part of the fabric of this place. Thank you for growing with us.`;
+    }
+
+    return `You've been on the platform for ${formatted}. ${encouragement}`;
+  }, [accountAge]);
   const { isLoading: sessionLoading } = useSessionContext();
   const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
   const hasCachedProfile = safeHasCachedProfile();
@@ -948,8 +1090,8 @@ export function Profile() {
                         <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
                         {profileState?.joined_date ? (
                           <span className="text-xs md:text-sm">
-                            Joined {new Date(profileState.joined_date).toLocaleDateString(undefined, {
-                              year: "numeric", month: "short", day: "numeric",
+                            Joined {new Date(`${profileState.joined_date}T00:00:00Z`).toLocaleDateString(undefined, {
+                              year: "numeric", month: "short", day: "numeric", timeZone: "UTC",
                             })}
                           </span>
                         ) : (
@@ -979,6 +1121,15 @@ export function Profile() {
                   </div>
                 </CardContent>
               </Card>
+              <RoleSwitch
+                key={profileState?.role}
+                currentRole={profileState?.role}
+                userId={profileState?.user_id || user?.id}
+                onRoleChange={() => {
+                  // matches Settings behaviour — force a re-fetch after switch
+                  fetchProfileRef.current();
+                }}
+              />
               {/* Academic Card */}
               <Card className="border-0 shadow-none rounded-xl">
                 <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
