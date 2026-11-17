@@ -14,12 +14,14 @@ type AuthContextType = {
     user: any | null;
     session: any | null;
     loading: boolean;
+    initialized: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     session: null,
     loading: true,
+    initialized: false,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -27,15 +29,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authManager.getState()
     );
 
-    // 🔧 Track the last user id we committed so we can skip identical
-    // re-renders. authManager.setState always creates a new object,
-    // which would otherwise re-render the whole tree on every
-    // internal state change even when nothing meaningful changed.
     const lastUserIdRef = useRef<string | null>(
         authManager.getState()?.user?.id ?? null
     );
     const lastLoadingRef = useRef<boolean>(
         authManager.getState()?.loading ?? true
+    );
+    const lastInitializedRef = useRef<boolean>(
+        authManager.getState()?.initialized ?? false
     );
 
     useEffect(() => {
@@ -44,17 +45,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const unsubscribe = authManager.subscribe((state) => {
             const nextUserId = state?.user?.id ?? null;
             const nextLoading = state?.loading ?? true;
+            const nextInitialized = state?.initialized ?? false;
 
-            // Skip the update if user identity and loading are unchanged.
             if (
                 nextUserId === lastUserIdRef.current &&
-                nextLoading === lastLoadingRef.current
+                nextLoading === lastLoadingRef.current &&
+                nextInitialized === lastInitializedRef.current
             ) {
                 return;
             }
 
             lastUserIdRef.current = nextUserId;
             lastLoadingRef.current = nextLoading;
+            lastInitializedRef.current = nextInitialized;
             setAuthState(state);
         });
 

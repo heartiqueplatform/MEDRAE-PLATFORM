@@ -208,10 +208,6 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    // ✅ Trust the <html> class set by index.html bootstrap
-    if (document.documentElement.classList.contains("dark")) return true;
-    if (document.documentElement.classList.contains("light")) return false;
-    // Fallback: canonical key
     return localStorage.getItem("medrae_dark_mode") === "true";
   });
 

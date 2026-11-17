@@ -3,15 +3,17 @@ import { useAuth } from "@/context/AuthProvider";
 import { authManager } from "@/lib/authManager";
 
 export default function PublicOnlyRoute({ children }: { children: JSX.Element }) {
-    const { user, loading } = useAuth();
+    const { user, initialized } = useAuth();
     const cachedUser = authManager.getUser();
     const effectiveUser = user ?? cachedUser;
 
-    // Don't paint a spinner — AuthGate's overlay already covers the screen.
-    // If a cached user exists we can decide immediately.
-    if (loading && !cachedUser) return null;
-
+    // 1. Logged-in (live or cached) → dashboard immediately.
     if (effectiveUser) return <Navigate to="/dashboard" replace />;
 
+    // 2. No user, auth not yet resolved → render nothing.
+    //    Splash stays up. We don't paint Index until we KNOW.
+    if (!initialized) return null;
+
+    // 3. Auth resolved, truly anonymous → show public page.
     return children;
 }

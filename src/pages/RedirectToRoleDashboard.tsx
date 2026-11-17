@@ -1,39 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-// RedirectToRoleDashboard.tsx
+
 export function RedirectToRoleDashboard() {
-  const navigate = useNavigate();
+  // ─── Synchronous decision on first render ───
+  const storedUser = (() => {
+    try {
+      const raw = localStorage.getItem("supabaseUser");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
 
+  const cachedRole = storedUser
+    ? localStorage.getItem(`userRole_${storedUser.id}`)
+    : null;
+  const lastKnown = localStorage.getItem("last_known_role");
+
+  // Background role correction — runs regardless of which branch we take.
   useEffect(() => {
-    const doRedirect = async () => {
-      const storedUser = localStorage.getItem("supabaseUser");
-      if (!storedUser) {
-        navigate("/login", { replace: true });
-        return;
-      }
-      const user = JSON.parse(storedUser);
+    if (!storedUser?.id) return;
+    if (!navigator.onLine) return;
+    // Only fetch if we don't have a cached role OR we want to verify.
+    // For speed, only fetch when we have no cached role.
+    if (cachedRole) return;
 
-      const cachedRole = localStorage.getItem(`userRole_${user.id}`);
-      if (cachedRole) {
-        navigate(`/dashboard/${cachedRole}`, { replace: true });
-        return;
-      }
-      // If online, try to fetch fresh role
-      if (navigator.onLine) {
-        const { data } = await supabase.from("profiles").select("role").eq("user_id", user.id).single();
-        if (data?.role) {
-          localStorage.setItem(`userRole_${user.id}`, data.role);
-          navigate(`/dashboard/${data.role}`, { replace: true });
-          return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", storedUser.id)
+          .single();
+        if (!cancelled && data?.role) {
+          localStorage.setItem(`userRole_${storedUser.id}`, data.role);
+          localStorage.setItem("last_known_role", data.role);
         }
-      }
-      // Fallback
-      navigate("/login", { replace: true });
-    };
-    doRedirect();
-  }, [navigate]);
-  return null;
+      } catch { }
+    })();
+    return () => { cancelled = true; };
+  }, [storedUser?.id, cachedRole]);
+
+  if (!storedUser) return <Navigate to="/login" replace />;
+  if (cachedRole) return <Navigate to={`/dashboard/${cachedRole}`} replace />;
+  if (lastKnown === "student" || lastKnown === "tutor" || lastKnown === "staff") {
+    return <Navigate to={`/dashboard/${lastKnown}`} replace />;
+  }
+
+  // Last resort — no cache at all. Default to student, background fetch corrects.
+  return <Navigate to="/dashboard/student" replace />;
 }

@@ -177,16 +177,6 @@ body,
   /* Smooth theme switch */
 }
 
-/* Dark mode media query for instant load */
-@media (prefers-color-scheme: dark) {
-
-  html,
-  body,
-  #root {
-    background-color: hsl(215, 28%, 8%);
-  }
-}
-
 /* Allow ONLY the dashboard content to scroll */
 [data-scroll-container] {
   height: 100%;

@@ -5,18 +5,15 @@ interface AuthState {
   user: any | null;
   session: any | null;
   loading: boolean;
+  initialized: boolean;   // ← NEW: true once auth resolution has completed at least once
 }
 
 const USER_KEY = "supabaseUser";
 const TOKENS_KEY = "supabaseUserTokens";
 
-/**
- * True only if we can actually reach the internet.
- * navigator.onLine lies on captive portals — this doesn't.
- */
 async function isReallyOnline(timeoutMs = 3000): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    return false; // fast path: definitely offline
+    return false;
   }
   try {
     const controller = new AbortController();
@@ -40,27 +37,12 @@ class AuthManager {
   private listeners: Set<(state: AuthState) => void> = new Set();
   private subscriptionInitialized = false;
 
-  // 🔧 NEW: Tracks whether the current SIGNED_OUT was triggered by
-  // the user clicking "Logout" (vs. being kicked by another device).
-  // When true, clearPersistedState will NOT set the "kicked_out" flag.
   private manualLogoutInProgress = false;
-
-  // 🔧 NEW: Set true while we're deliberately suppressing a
-  // SIGNED_OUT that we believe was caused by a failed token refresh
-  // (offline, captive portal, transient network). Prevents the
-  // cascade: token refresh fails → SIGNED_OUT → clear cache →
-  // "kicked_out" toast → user bounced to Index as a stranger.
   private suppressingSignOut = false;
-
-  // 🔧 NEW: Tracks the last time we saw a *successful* online
-  // session validation. Used to decide whether a SIGNED_OUT event
-  // is suspicious (happened while we couldn't reach the server).
   private lastValidatedAt = 0;
 
   private constructor() {
-    // HYDRATION: read cached user synchronously, offline or online.
-    // If we have a cached user, loading starts FALSE so PrivateRoute
-    // renders immediately without ever bouncing to "/".
+    // HYDRATION: read cached user synchronously from localStorage.
     let initialUser: any = null;
     if (typeof window !== "undefined") {
       try {
@@ -74,7 +56,10 @@ class AuthManager {
     this.state = {
       user: initialUser,
       session: null,
-      loading: !initialUser,
+      loading: false,
+      // If we have a cached user, we can consider auth "initialized" immediately
+      // for routing purposes. The background refresh will confirm.
+      initialized: !!initialUser,
     };
   }
 
@@ -85,10 +70,6 @@ class AuthManager {
     return AuthManager.instance;
   }
 
-  // 🔧 Call this immediately before a user-initiated signOut()
-  // (e.g. from Profile.tsx "Logout" button) so that the resulting
-  // SIGNED_OUT event is treated as "manual" and does NOT trigger
-  // the security "kicked out" toast.
   public markManualLogout(): void {
     this.manualLogoutInProgress = true;
   }
@@ -97,64 +78,46 @@ class AuthManager {
     if (this.subscriptionInitialized) return;
     this.subscriptionInitialized = true;
 
-    // 🔧 SIGNED_OUT handling — now guarded against offline / transient
-    // refresh failures. Only a SIGNED_OUT we can *trust* clears the cache.
     supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (event === "SIGNED_OUT") {
-        // ── Guard 1: user clicked logout → expected, clear quietly.
         if (this.manualLogoutInProgress) {
           this.clearPersistedState();
           return;
         }
-
-        // ── Guard 2: we are being suppressed (already handling one).
         if (this.suppressingSignOut) return;
 
-        // ── Guard 3: are we actually able to reach the server?
-        // If not, this SIGNED_OUT is almost certainly a failed
-        // token refresh, not a real sign-out. Ignore it and keep
-        // the cached user so the app stays usable offline.
         const hadCachedUser = !!this.getUser();
         const online = await isReallyOnline(1500);
 
         if (!online) {
-          console.warn(
-            "[AuthManager] SIGNED_OUT received while offline — preserving cached session."
-          );
-          // Ensure our state still reflects the cached user.
           this.setState({
             user: this.state.user,
             session: null,
             loading: false,
+            initialized: true,
           });
           return;
         }
 
-        // ── Guard 4: we're online but the sign-out happened
-        // suspiciously fast after our last successful validation
-        // (e.g. Supabase refresh raced a flaky network). Give the
-        // server one more chance before nuking the cache.
         if (hadCachedUser && Date.now() - this.lastValidatedAt < 5000) {
           try {
             const { data } = await supabase.auth.getSession();
             if (data?.session?.user) {
-              // Still valid — treat this SIGNED_OUT as spurious.
               this.persistSession(data.session);
               this.lastValidatedAt = Date.now();
               return;
             }
           } catch {
-            // Couldn't verify — be conservative, keep the cache.
             this.setState({
               user: this.state.user,
               session: null,
               loading: false,
+              initialized: true,
             });
             return;
           }
         }
 
-        // ── All guards passed: this is a real sign-out.
         this.clearPersistedState();
         return;
       }
@@ -163,48 +126,27 @@ class AuthManager {
         this.persistSession(newSession);
         this.lastValidatedAt = Date.now();
       }
-      // INITIAL_SESSION with null, TOKEN_REFRESH_FAILED, offline errors → IGNORE.
     });
 
-    // ── 1. Reachability check ────────────────────────────────────
-    // If we can't actually reach the internet (offline OR captive
-    // portal), trust the cache completely and bail early.
+    // Background validation — never blocks UI.
     const reachable = await isReallyOnline();
-
     if (!reachable) {
-      this.setState({
-        user: this.state.user, // may be cached user or null
-        session: null,
-        loading: false,
-      });
+      // Offline: trust cache. Mark initialized so routing can proceed.
+      this.setState({ initialized: true });
       return;
     }
 
-    // ── 2. Real internet → ask Supabase ─────────────────────────
     try {
       const { data } = await supabase.auth.getSession();
-
       if (data?.session?.user) {
-        // Supabase has a real session — persist and let the app through.
         this.persistSession(data.session);
         this.lastValidatedAt = Date.now();
       } else {
-        // Genuinely online AND Supabase says no session.
-        // 🔧 But only clear if we don't already have a cached user
-        // AND we actually reached the server. `getSession()` returning
-        // null with no error, while online, is the legit "logged out"
-        // case. If we had a cached user, this is Supabase telling us
-        // the refresh token is dead → that IS a real logout.
         this.clearPersistedState();
       }
     } catch {
-      // Network hiccup mid-check. Preserve cached user so a transient
-      // blip never logs the user out.
-      this.setState({
-        user: this.state.user,
-        session: null,
-        loading: false,
-      });
+      // Network hiccup — keep cache, mark initialized.
+      this.setState({ initialized: true });
     }
   }
 
@@ -221,36 +163,25 @@ class AuthManager {
             expires_at: session?.expires_at,
           })
         );
-      } catch {
-        /* ignore quota errors */
-      }
+      } catch { }
     }
-    this.setState({ session, user, loading: false });
+    this.setState({ session, user, loading: false, initialized: true });
   }
 
   private clearPersistedState() {
     try {
-      // 🔧 Check if a user WAS cached before we clear.
-      // Only someone who was previously logged in can be "kicked out".
       const hadCachedUser = !!localStorage.getItem(USER_KEY);
-
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(TOKENS_KEY);
-
-      // 🔔 Only flag "kicked out" when:
-      //   1. There WAS a cached user (not a fresh visitor), AND
-      //   2. This was NOT a user-initiated logout.
       if (hadCachedUser && !this.manualLogoutInProgress) {
         localStorage.setItem("kicked_out", "true");
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { }
 
     this.manualLogoutInProgress = false;
     this.lastValidatedAt = 0;
 
-    this.setState({ session: null, user: null, loading: false });
+    this.setState({ session: null, user: null, loading: false, initialized: true });
   }
 
   getState(): AuthState {
@@ -267,7 +198,6 @@ class AuthManager {
 
   subscribe(listener: (state: AuthState) => void): () => void {
     this.listeners.add(listener);
-    // Fire immediately with current state so subscribers don't miss hydration
     listener(this.state);
     return () => {
       this.listeners.delete(listener);
