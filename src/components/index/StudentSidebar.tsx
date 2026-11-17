@@ -23,7 +23,13 @@ const SECTIONS = [
 ] as const;
 
 const GUIDES = [
-    // ... unchanged
+    { to: "/nursing-revision-kenya", label: "Nursing Revision in Kenya", icon: GraduationCap },
+    { to: "/nck-exam-revision", label: "NCK Exam Revision", icon: FileText },
+    { to: "/nck-exam-questions", label: "NCK Exam Questions", icon: HelpCircle },
+    { to: "/nck-past-papers", label: "NCK Past Papers", icon: ClipboardList },
+    { to: "/nck-exam-preparation", label: "NCK Exam Preparation", icon: Award },
+    { to: "/krchn-revision", label: "KRCHN Revision", icon: BookOpen },
+    { to: "/medrae-nursing-merit-cup", label: "Medrae Merit Cup", icon: Trophy },
 ] as const;
 
 const baseProps = {
