@@ -1,16 +1,10 @@
 "use client";
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    ChevronDown, ChevronLeft, SkipBack, Play, SkipForward,
-    Repeat, Volume2, VolumeX, FilePlus, ListMusic,
-    Plus, Loader2, CheckCircle2, AlertCircle, ThumbsUp, Trash2, Headphones, EyeOff,
-    X, Download, Disc3,
-} from "lucide-react";
+import { ChevronDown, ChevronLeft, Plus, Trash2 } from "lucide-react";
 import { useMusicPlayer, type HistoryEntry } from "./MusicPlayerProvider";
 import { useReportPlay } from "@/hooks/useReportPlay";
 import { useEpisodeInteractions } from "@/hooks/useEpisodeInteractions";
-import { Heart, Bookmark } from "lucide-react";
 import { usePodcastShows } from "@/hooks/usePodcastShows";
 import { useShowFollows } from "@/hooks/useShowFollows";
 import { useDownloads } from "@/hooks/useDownloads";
@@ -19,6 +13,14 @@ import { useLocation } from "react-router-dom";
 import { EpisodeSearchBar } from "@/components/EpisodeSearchBar";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { searchEpisodesLocal } from "@/lib/studifyDb";
+
+// Extracted components
+import { PlayerContent } from "./musicplayer/PlayerContent";
+import { EpisodesContent } from "./musicplayer/EpisodesContent";
+import { DownloadsContent } from "./musicplayer/DownloadsContent";
+import { AdminContent } from "./musicplayer/AdminContent";
+import { fmtBytes } from "./musicplayer/utils";
+
 interface Track {
     id?: string;
     name: string;
@@ -38,34 +40,6 @@ declare global {
 
 type Screen = "player" | "episodes" | "admin" | "downloads";
 
-// ─── helpers ───
-function fmtTime(seconds?: number) {
-    if (!seconds || !isFinite(seconds)) return "--:--";
-    const s = Math.floor(seconds);
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-}
-
-function fmtDate(iso?: string) {
-    if (!iso) return "";
-    try {
-        return new Date(iso).toLocaleDateString(undefined, {
-            year: "numeric", month: "short", day: "numeric",
-        });
-    } catch { return ""; }
-}
-
-function fmtBytes(n: number) {
-    if (!n) return "—";
-    if (n >= 1e9) return `${(n / 1e9).toFixed(1)} GB`;
-    if (n >= 1e6) return `${(n / 1e6).toFixed(1)} MB`;
-    if (n >= 1e3) return `${(n / 1e3).toFixed(0)} KB`;
-    return `${n} B`;
-}
-
 const ADMIN_ID = "25f37970-c9b9-4c15-b8a2-514a912e3261";
 
 function extractAppleId(input: string): string | null {
@@ -80,16 +54,9 @@ function extractAppleId(input: string): string | null {
 // ════════════════════════════════════════════════════════════
 export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {}) => {
     const [isOpen, setIsOpen] = useState(forceOpen);
-    // When rendered inline (/listen route), open on EPISODES so the user
-    // immediately sees the list — exactly what __studifyOpen("episodes") did.
     const [screen, setScreen] = useState<Screen>(forceOpen ? "episodes" : "player");
     useEffect(() => {
-        // ⚠️ Only ONE MusicPlayer instance may own __studifyOpen.
-        //    The overlay instance (forceOpen=false, rendered in DashboardLayout)
-        //    wins. The route instance (forceOpen=true, rendered in /listen)
-        //    does NOT register, to avoid a race where unmount clears it.
         if (forceOpen) return;
-
         window.__studifyOpen = (target: Screen = "player") => {
             setScreen(target);
             setIsOpen(true);
@@ -122,6 +89,9 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
         audioRef, setTracks, setCurrentIndex, togglePlay,
         setVolume, setMuted, setRepeatMode, setProgress,
         refreshEpisodes,
+        loadMoreEpisodes,
+        hasMoreEpisodes,
+        isLoadingMoreEpisodes,
         fetchShowEpisodes,
         searchEpisodesRemote,
         history,
@@ -135,6 +105,7 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
         toggle: toggleReaction,
         hydrate: hydrateInteractions,
         get: getInteraction,
+        version: interactionVersion,
     } = useEpisodeInteractions();
     const {
         toggle: toggleFollow,
@@ -290,8 +261,6 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
     }, [tracks, selectedShowId, showTracks]);
 
     useEffect(() => {
-        // 🚀 Defer hydration to after first paint, so it doesn't fire
-        //    during scroll. Only runs ONCE per unique ID set.
         const ids = visibleTracks
             .map((t) => t.id)
             .filter((id): id is string => !!id);
@@ -623,6 +592,7 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
             onSelectTrack={handleSelectTrack}
             onToggleReaction={toggleReaction}
             getInteraction={getInteraction}
+
             getDownloadState={downloads.getState}
             getDownloadProgress={downloads.getProgress}
             onDownload={(t: any) => downloads.download(t)}
@@ -635,7 +605,7 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
         handleProgressClick, handleTogglePlay, handlePrev, handleNext,
         handleCycleRepeat, handleToggleMute, handleVolume, handleUpload,
         handleBrowse, handleDownloads,
-        getInteraction,
+        getInteraction, interactionVersion,
         visibleTracks, currentTrackSrc, handleSelectTrack, toggleReaction,
         downloads,
     ]);
@@ -668,19 +638,22 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
             getDownloadProgress={downloads.getProgress}
             onDownload={(t: any) => downloads.download(t)}
             onCancelDownload={(id: string) => downloads.cancel(id)}
+            loadMoreEpisodes={loadMoreEpisodes}
+            hasMoreEpisodes={hasMoreEpisodes}
+            isLoadingMoreEpisodes={isLoadingMoreEpisodes}
         />
     ), [
-        visibleTracks, currentTrackSrc, isPlaying,                // ← progress REMOVED
+        visibleTracks, currentTrackSrc, isPlaying,
         loading, showTracksLoading, tracks.length,
         selectedShowId, shows, isAdmin, toggleEndorse,
         handleSelectShow, handleSelectTrack, handleOpenAdmin, handleHideEpisodeRequest,
         history, handleResumeFromHistory, removeFromHistory, clearHistory,
         getFollow, toggleFollow,
-        getInteraction, toggleReaction,
+        getInteraction, interactionVersion, toggleReaction,
         downloads,
+        loadMoreEpisodes, hasMoreEpisodes, isLoadingMoreEpisodes,
     ]);
 
-    // Build a Track[] out of downloadedItems (so the Offline screen can render rows)
     const downloadedTracks = useMemo<Track[]>(() => {
         const byId = new Map<string, Track>();
         tracks.forEach((t) => { if (t.id) byId.set(t.id, t); });
@@ -705,12 +678,9 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
     ), [
         downloads.downloadedItems, downloadedTracks, currentTrackSrc,
         isPlaying, progress, handleSelectTrack, downloads,
-        getInteraction, toggleReaction, handleBrowse,
+        getInteraction, interactionVersion, toggleReaction, handleBrowse,
     ]);
 
-    // 🚫 On /listen, the route renders its own MusicPlayer.
-    //    The overlay instance must render nothing — otherwise both
-    //    trees run all their hooks/effects and the phone stutters.
     if (!forceOpen && location.pathname === "/listen") {
         return null;
     }
@@ -758,7 +728,10 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                             </svg>
                             <div className={`h-11 w-11 rounded-full overflow-hidden relative bg-slate-900 dark:bg-slate-800 flex items-center justify-center ${isPlaying ? "animate-[spin_4s_linear_infinite]" : ""}`}>
                                 <div className="absolute inset-0 bg-[radial-gradient(circle,_transparent_45%,_rgba(0,0,0,0.45)_100%)] z-10 pointer-events-none" />
-                                <Headphones className="h-6 w-6 text-white/90 relative z-20" strokeWidth={1.75} />
+                                <svg viewBox="0 0 24 24" className="h-6 w-6 text-white/90 relative z-20" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                                    <path d="M3 14v-3a9 9 0 0 1 18 0v3" />
+                                    <path d="M21 19a2 2 0 0 1-2 2h-1v-6h3v4zM3 19a2 2 0 0 0 2 2h1v-6H3v4z" />
+                                </svg>
                             </div>
                             {isPlaying && (
                                 <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-emerald-500 flex items-center justify-center gap-[1px] px-[3px]">
@@ -818,7 +791,6 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                 ? "relative w-full h-full bg-background dark:bg-[#0d1117] overflow-hidden"
                                 : "fixed inset-0 z-[2147483647] bg-background dark:bg-[#0d1117] overflow-hidden"
                         }
-
                         data-music-player-root={forceOpen ? "inline" : "overlay"}
                     >
                         <div className="h-full w-full flex flex-col">
@@ -837,12 +809,10 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                     <button
                                         onClick={() => {
                                             if (forceOpen) {
-                                                // 🎯 /listen route: go back to the previous tab (Feed, Home, etc.)
                                                 window.history.length > 1
                                                     ? window.history.back()
                                                     : (window.location.href = "/dashboard/student");
                                             } else {
-                                                // 🎯 Overlay: close it normally
                                                 setIsOpen(false);
                                             }
                                         }}
@@ -873,7 +843,6 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                 ) : <div className="w-9" />}
                             </div>
 
-                            {/* DESKTOP top bar */}
                             {/* DESKTOP top bar */}
                             <div className="hidden md:flex items-center justify-between px-5 pt-4 pb-3 shrink-0 border-b border-gh-l-border dark:border-gh-border bg-white dark:bg-[#0d1117]">
                                 <button
@@ -1009,7 +978,7 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                         </div>
                                     )}
                                 </div>
-                                <div className="min-h-0 min-w-0 overflow-hidden">
+                                <div className="min-h-0 min-w-0 overflow-hidden flex flex-col">
                                     {listEl}
                                 </div>
                             </div>
@@ -1025,7 +994,6 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.12, ease: "easeOut" }}
                                             className="absolute inset-0 overflow-y-auto custom-scrollbar p-4 bg-gh-l-canvas dark:bg-gh-canvas"
-
                                         >
                                             <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-3 sm:p-4">
                                                 {playerEl}
@@ -1064,7 +1032,6 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.12, ease: "easeOut" }}
                                             className="absolute inset-0 overflow-y-auto custom-scrollbar px-3 py-4 sm:p-4 bg-gh-l-canvas dark:bg-gh-canvas"
-
                                         >
                                             <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card p-4">
                                                 <div className="flex items-center justify-between mb-4">
@@ -1101,7 +1068,6 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.12, ease: "easeOut" }}
                                             className="absolute inset-0 overflow-y-auto custom-scrollbar px-3 py-4 sm:p-4 bg-gh-l-canvas dark:bg-gh-canvas"
-
                                         >
                                             {downloadsEl}
                                         </motion.div>
@@ -1175,1353 +1141,3 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
         </>
     );
 };
-
-// ════════════════════════════════════════════════════════════
-// PLAYER CONTENT
-// ════════════════════════════════════════════════════════════
-const PlayerContent = React.memo(function PlayerContent(props: any) {
-    const {
-        artworkSrc, isPlaying, currentTrack, progress, currentTime, totalDuration,
-        volume, muted, repeatActive, loading,
-        onProgressClick, onTogglePlay, onPrev, onNext,
-        onCycleRepeat, onToggleMute, onVolume, onUpload, onBrowse, onDownloads, episodeCount,
-        totalEpisodesLabel, currentInteraction,
-        visibleTracks, currentTrackSrc, onSelectTrack, onToggleReaction, getInteraction,
-        getDownloadState, getDownloadProgress, onDownload, onCancelDownload,
-        downloadCount,
-    } = props;
-    const showSkeleton = !currentTrack && (loading || (props?.visibleTracks?.length ?? 0) === 0);
-    const [volOpen, setVolOpen] = useState(false);
-    const volWrapRef = useRef<HTMLDivElement>(null);
-    const hideTimerRef = useRef<number | null>(null);
-
-    const openVol = useCallback(() => {
-        if (hideTimerRef.current) {
-            window.clearTimeout(hideTimerRef.current);
-            hideTimerRef.current = null;
-        }
-        setVolOpen(true);
-    }, []);
-
-    const closeNow = useCallback(() => {
-        if (hideTimerRef.current) {
-            window.clearTimeout(hideTimerRef.current);
-            hideTimerRef.current = null;
-        }
-        setVolOpen(false);
-    }, []);
-
-    useEffect(() => {
-        if (!volOpen) return;
-        const onDocClick = (e: MouseEvent | TouchEvent) => {
-            if (!volWrapRef.current) return;
-            if (!volWrapRef.current.contains(e.target as Node)) closeNow();
-        };
-        document.addEventListener("mousedown", onDocClick);
-        document.addEventListener("touchstart", onDocClick);
-        return () => {
-            document.removeEventListener("mousedown", onDocClick);
-            document.removeEventListener("touchstart", onDocClick);
-        };
-    }, [volOpen, closeNow]);
-
-    useEffect(() => () => {
-        if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
-    }, []);
-
-    const effectiveVolume = muted ? 0 : volume;
-    const volPct = Math.round(effectiveVolume * 100);
-
-    if (showSkeleton) {
-        return (
-            <div className="w-full flex flex-col items-center animate-pulse">
-                <div className="w-full max-w-[320px] md:max-w-[340px] aspect-square rounded-[2rem] bg-slate-200 dark:bg-gh-hover" />
-                <div className="w-full mt-6 space-y-3">
-                    <div className="h-4 rounded-full bg-slate-200 dark:bg-gh-hover mx-auto" style={{ width: "70%" }} />
-                    <div className="h-3 rounded-full bg-slate-200 dark:bg-gh-hover mx-auto" style={{ width: "40%" }} />
-                </div>
-                <div className="w-full mt-6 h-1.5 rounded-full bg-slate-200 dark:bg-gh-hover" />
-                <div className="w-full mt-8 flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-gh-hover" />
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-gh-hover" />
-                        <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-gh-hover" />
-                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-gh-hover" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-gh-hover" />
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="w-full flex flex-col">
-            <div className="flex justify-center">
-                <div className="relative w-[72vw] max-w-[320px] md:max-w-[340px] aspect-square rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-gh-card">
-                    {artworkSrc ? (
-                        <img
-                            src={artworkSrc}
-                            alt={currentTrack?.showTitle ?? "Artwork"}
-                            loading="lazy"
-                            decoding="async"
-                            className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[6000ms] ease-out ${isPlaying ? "scale-105" : "scale-100"}`}
-                        />
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <Headphones size={64} className="text-slate-400 dark:text-gh-muted" />
-                        </div>
-                    )}
-                    {isPlaying && (
-                        <div className="absolute bottom-4 left-4 flex items-end gap-1 h-6">
-                            {[...Array(5)].map((_, i) => (
-                                <motion.span
-                                    key={i}
-                                    animate={{ height: [6, 22, 10, 18, 6], opacity: [0.6, 1, 0.7, 1, 0.6] }}
-                                    transition={{ repeat: Infinity, duration: 0.9, delay: i * 0.08, ease: "easeInOut" }}
-                                    className="w-1 rounded-full bg-white shadow"
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="w-full mt-6">
-                <div className="text-center">
-                    <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-gh-text leading-snug line-clamp-2 px-2">
-                        {currentTrack?.name || "Pick an episode"}
-                    </h2>
-                    <p className="mt-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                        {currentTrack?.showTitle ?? "Medrae"}
-                    </p>
-                    {currentTrack?.publishedAt && (
-                        <p className="mt-1 text-[10px] text-slate-500 dark:text-gh-muted">
-                            {fmtDate(currentTrack.publishedAt)}
-                        </p>
-                    )}
-                    {currentInteraction && currentInteraction.playCount > 0 && (
-                        <p className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[10px] uppercase tracking-wider">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
-                            </svg>
-                            {currentInteraction.playCount >= 1000
-                                ? `${(currentInteraction.playCount / 1000).toFixed(1)}K`
-                                : currentInteraction.playCount}{" "}
-                            play{currentInteraction.playCount === 1 ? "" : "s"}
-                        </p>
-                    )}
-                </div>
-
-                <div className="w-full mt-5 flex items-center justify-between gap-2 min-w-0">
-                    <button
-                        onClick={onCycleRepeat}
-                        className={`p-2.5 rounded-full transition-colors ${repeatActive
-                            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
-                            : "text-slate-500 dark:text-gh-muted hover:bg-slate-100 dark:hover:bg-gh-hover"}`}
-                    >
-                        <Repeat size={18} />
-                    </button>
-
-                    <div className="flex items-center gap-2 sm:gap-4 md:gap-5 shrink-0">
-                        <button
-                            onClick={onPrev}
-                            className="p-2 sm:p-3 rounded-full text-slate-700 dark:text-gh-text hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors"
-                        >
-                            <SkipBack fill="currentColor" size={22} className="sm:w-[26px] sm:h-[26px]" />
-                        </button>
-                        <button
-                            onClick={onTogglePlay}
-                            aria-label={isPlaying ? "Pause" : "Play"}
-                            className="relative active:scale-95 transition-transform w-[88px] h-[88px] sm:w-[112px] sm:h-[112px] md:w-[128px] md:h-[128px]"
-                        >
-                            {(() => {
-                                const safeProgress = Math.max(0, Math.min(1, Number(progress) || 0));
-                                return (
-                                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none -rotate-90" aria-hidden="true">
-                                        <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="5" className="text-slate-200 dark:text-[#21262d]" />
-                                        <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" pathLength={100} strokeDasharray="100" strokeDashoffset={100 - safeProgress * 100} className="text-blue-600 dark:text-blue-500 transition-[stroke-dashoffset] duration-150" />
-                                    </svg>
-                                );
-                            })()}
-                            <span className="absolute inset-[11%] rounded-full bg-gradient-to-br from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center shadow-lg shadow-black/10 dark:shadow-black/40">
-                                {isPlaying ? (
-                                    <svg width="30" height="30" viewBox="0 0 24 24" className="text-slate-900 dark:text-white ml-1" fill="currentColor">
-                                        <rect x="7" y="5" width="3.5" height="14" rx="1.5" />
-                                        <rect x="13.5" y="5" width="3.5" height="14" rx="1.5" />
-                                    </svg>
-                                ) : (
-                                    <svg width="30" height="30" viewBox="0 0 24 24" className="text-slate-900 dark:text-white ml-1" fill="currentColor">
-                                        <path d="M8 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8 5.5Z" />
-                                    </svg>
-                                )}
-                            </span>
-                        </button>
-                        <button
-                            onClick={onNext}
-                            className="p-2 sm:p-3 rounded-full text-slate-700 dark:text-gh-text hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors"
-                        >
-                            <SkipForward fill="currentColor" size={22} className="sm:w-[26px] sm:h-[26px]" />
-                        </button>
-                    </div>
-
-                    <div ref={volWrapRef} className="relative">
-                        <button
-                            onClick={() => (volOpen ? closeNow() : openVol())}
-                            className="p-2.5 rounded-full text-slate-500 dark:text-gh-muted hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors touch-manipulation"
-                            aria-label={volOpen ? "Close volume" : "Adjust volume"}
-                            aria-expanded={volOpen}
-                        >
-                            {muted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                        </button>
-
-                        <AnimatePresence>
-                            {volOpen && (
-                                <>
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.12 }}
-                                        className="fixed inset-0 z-40 md:hidden"
-                                        onClick={closeNow}
-                                        aria-hidden="true"
-                                    />
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                        transition={{ duration: 0.15, ease: "easeOut" }}
-                                        className="absolute bottom-full mb-3 z-50 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 max-w-[calc(100vw-1.5rem)] flex flex-col items-center gap-2 rounded-xl bg-white dark:bg-gh-card ring-1 ring-slate-200 dark:ring-white/10 p-3 touch-manipulation"
-                                    >
-                                        <span className="text-[10px] tabular-nums text-slate-500 dark:text-gh-muted">
-                                            {volPct}%
-                                        </span>
-                                        <VlcVolumeSlider
-                                            value={effectiveVolume}
-                                            onChange={(v) => {
-                                                if (v > 0 && muted) onToggleMute();
-                                                onVolume(v);
-                                            }}
-                                            onInteract={openVol}
-                                        />
-                                        <button
-                                            onClick={onToggleMute}
-                                            className="mt-1 p-1.5 rounded-full text-slate-500 dark:text-gh-muted hover:bg-slate-100 dark:hover:bg-gh-hover transition-colors touch-manipulation"
-                                            aria-label={muted ? "Unmute" : "Mute"}
-                                        >
-                                            {muted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                                        </button>
-                                    </motion.div>
-                                </>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-
-                <div className="w-full mt-3 flex justify-between text-[10px] md:text-xs font-semibold text-slate-500 dark:text-gh-muted">
-                    <span>{fmtTime(currentTime)}</span>
-                    <span>{fmtTime(totalDuration || currentTrack?.duration)}</span>
-                </div>
-
-                <div className="w-full mt-4 flex items-center justify-end gap-2">
-                    {onDownloads && (
-                        <button
-                            onClick={onDownloads}
-                            className="flex items-center gap-1.5 text-slate-500 dark:text-gh-muted hover:text-blue-600 transition-colors text-[10px] font-bold uppercase tracking-widest"
-                        >
-                            <Download size={14} />
-                            <span>{downloadCount > 0 ? `Offline (${downloadCount})` : "Offline"}</span>
-                        </button>
-                    )}
-                    <label className="flex items-center gap-1.5 text-slate-500 dark:text-gh-muted hover:text-blue-600 cursor-pointer transition-colors text-[10px] font-bold uppercase tracking-widest">
-                        <FilePlus size={14} />
-                        <span className="hidden sm:inline">Add</span>
-                        <input type="file" accept="audio/*" multiple onChange={onUpload} className="hidden" />
-                    </label>
-                </div>
-
-                {onBrowse && (
-                    <div className="mt-5">
-                        <button
-                            onClick={onBrowse}
-                            className="md:hidden w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-gh-hover hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-between text-slate-800 dark:text-gh-text"
-                        >
-                            <span className="flex items-center gap-2 text-sm font-bold">
-                                <ListMusic size={16} className="text-blue-600" />
-                                Browse all episodes
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-gh-muted bg-white dark:bg-gh-canvas px-2 py-0.5 rounded-full">
-                                {totalEpisodesLabel}
-                            </span>
-                        </button>
-
-                        {Array.isArray(visibleTracks) && visibleTracks.length > 0 && (
-                            <div className="md:hidden mt-4">
-                                <div className="flex items-center justify-between mb-2 px-1">
-                                    <h3 className="text-[11px] uppercase tracking-widest font-bold text-slate-500 dark:text-gh-muted">
-                                        Up Next
-                                    </h3>
-                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-gh-muted">
-                                        {visibleTracks.length} episode{visibleTracks.length === 1 ? "" : "s"}
-                                    </span>
-                                </div>
-                                <div className="space-y-1.5 max-h-[45vh] overflow-y-auto custom-scrollbar pr-1">
-                                    {visibleTracks.slice(0, 5).map((t: any, i: number) => {
-                                        const isThisActive = currentTrackSrc === t.src;
-                                        return (
-                                            <EpisodeRow
-                                                key={t.id || i}
-                                                track={t}
-                                                index={i}
-                                                isActive={isThisActive}
-                                                isPlaying={isPlaying && isThisActive}
-                                                progress={isThisActive ? progress : 0}
-                                                downloaded={!!t.downloaded}
-                                                onSelect={() => onSelectTrack?.(t)}
-                                                isAdmin={false}
-                                                onHide={() => { }}
-                                                interaction={t.id ? getInteraction?.("episode", t.id) : undefined}
-                                                onToggleReaction={
-                                                    t.id && onToggleReaction
-                                                        ? (kind: "like" | "love" | "save") =>
-                                                            onToggleReaction("episode", t.id, kind)
-                                                        : undefined
-                                                }
-                                                downloadState={t.id ? getDownloadState?.(t.id) : undefined}
-                                                downloadProgress={t.id ? getDownloadProgress?.(t.id) ?? 0 : 0}
-                                                onDownload={t.id && onDownload ? () => onDownload(t) : undefined}
-                                                onCancelDownload={t.id && onCancelDownload ? () => onCancelDownload(t.id) : undefined}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// VLC VOLUME SLIDER
-// ════════════════════════════════════════════════════════════
-const VlcVolumeSlider = React.memo(function VlcVolumeSlider({
-    value,
-    onChange,
-    onInteract,
-}: {
-    value: number;
-    onChange: (v: number) => void;
-    onInteract?: () => void;
-}) {
-    const trackRef = useRef<HTMLDivElement>(null);
-    const [dragging, setDragging] = useState(false);
-
-    const clamp = (n: number) => Math.max(0, Math.min(1, n));
-
-    const setFromClientY = (clientY: number) => {
-        const el = trackRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const ratio = 1 - (clientY - rect.top) / rect.height;
-        onChange(clamp(ratio));
-    };
-
-    const onPointerDown = (e: React.PointerEvent) => {
-        e.preventDefault();
-        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-        setDragging(true);
-        onInteract?.();
-        setFromClientY(e.clientY);
-    };
-
-    const onPointerMove = (e: React.PointerEvent) => {
-        if (!dragging) return;
-        setFromClientY(e.clientY);
-    };
-
-    const onPointerUp = (e: React.PointerEvent) => {
-        setDragging(false);
-        (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    };
-
-    const onKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "ArrowUp" || e.key === "ArrowRight") {
-            e.preventDefault();
-            onChange(clamp(value + 0.05));
-            onInteract?.();
-        } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
-            e.preventDefault();
-            onChange(clamp(value - 0.05));
-            onInteract?.();
-        }
-    };
-
-    const pct = Math.round(value * 100);
-
-    return (
-        <div
-            ref={trackRef}
-            role="slider"
-            aria-label="Volume"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={pct}
-            tabIndex={0}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            onKeyDown={onKeyDown}
-            className="relative w-2.5 h-32 rounded-full cursor-pointer select-none bg-gradient-to-b from-slate-300 to-slate-200 dark:from-gh-border dark:to-gh-hover touch-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-            <div className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400" style={{ height: `${value * 100}%` }} />
-            {[25, 50, 75].map((t) => (
-                <span key={t} className="absolute left-1/2 -translate-x-1/2 h-px w-1.5 bg-black/20 dark:bg-white/20" style={{ bottom: `${t}%` }} />
-            ))}
-            <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white ring-2 ring-blue-600 transition-transform" style={{ bottom: `calc(${value * 100}% - 0px)`, transform: "translate(-50%, 50%)" }} />
-        </div>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// DOWNLOADS CONTENT — full page offline list
-// ════════════════════════════════════════════════════════════
-const DownloadsContent = React.memo(function DownloadsContent(props: any) {
-    const {
-        items, tracks, currentTrackSrc, isPlaying, progress,
-        onSelectTrack, onRemove, getInteraction, onToggleReaction, onBrowse,
-    } = props;
-
-    return (
-        <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card p-4">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-gh-l-text dark:text-gh-text">
-                    Offline Downloads
-                </h2>
-                <span className="text-[10px] font-bold text-gh-l-muted dark:text-gh-muted">
-                    {items.length} episode{items.length === 1 ? "" : "s"}
-                </span>
-            </div>
-
-            {items.length === 0 && (
-                <div className="py-10 text-center">
-                    <Download size={36} className="mx-auto text-gh-l-muted dark:text-gh-muted mb-3 opacity-50" />
-                    <p className="text-sm text-gh-l-text dark:text-gh-text font-bold mb-1">
-                        No downloads yet
-                    </p>
-                    <p className="text-xs text-gh-l-muted dark:text-gh-muted mb-4">
-                        Save episodes to listen without internet.
-                    </p>
-                    <button
-                        onClick={onBrowse}
-                        className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold"
-                    >
-                        Browse episodes
-                    </button>
-                </div>
-            )}
-
-            <div className="space-y-2">
-                {tracks.map((t: Track) => {
-                    const isThisActive = currentTrackSrc === t.src;
-                    const item = items.find((x: any) => x.episodeId === t.id);
-                    return (
-                        <EpisodeRow
-                            key={t.id}
-                            track={t}
-                            index={0}
-                            isActive={isThisActive}
-                            isPlaying={isPlaying && isThisActive}
-                            progress={isThisActive ? progress : 0}
-                            downloaded={true}
-                            onSelect={() => onSelectTrack(t)}
-                            isAdmin={false}
-                            onHide={() => { }}
-                            interaction={t.id ? getInteraction?.("episode", t.id) : undefined}
-                            onToggleReaction={
-                                t.id && onToggleReaction
-                                    ? (kind: "like" | "love" | "save") =>
-                                        onToggleReaction("episode", t.id, kind)
-                                    : undefined
-                            }
-                            downloadState="downloaded"
-                            downloadProgress={1}
-                            onDownload={undefined}
-                            onRemoveDownload={t.id ? () => onRemove(t.id!) : undefined}
-                            downloadSize={item?.size}
-                        />
-                    );
-                })}
-            </div>
-        </div>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// EPISODES LIST
-// ════════════════════════════════════════════════════════════
-const EpisodesContent = React.memo(function EpisodesContent(props: any) {
-    const {
-        visibleTracks, currentTrackSrc, isPlaying, selectedShowId, loading,
-        parentLoading,
-        onSelectShow, onSelectTrack, shows, onToggleEndorse, isAdmin, onManage,
-        onHideEpisode,
-        progress = 0,
-        history = [],
-        onResumeFromHistory,
-        onRemoveFromHistory,
-        onClearHistory,
-        getInteraction,
-        onToggleReaction,
-        getFollow,
-        onToggleFollow,
-        getDownloadState,
-        getDownloadProgress,
-        onDownload,
-        onCancelDownload,
-    } = props;
-
-    const showSkeleton =
-        (loading && visibleTracks.length === 0) ||
-        (visibleTracks.length === 0 && parentLoading === true);
-
-    const continueBlock = useMemo(() => {
-        if (showSkeleton) return null;
-        if (!history || history.length === 0) return null;
-        const recent = history.slice(0, 5);
-        return (
-            <div className="px-3 md:px-4 pt-3 pb-1 shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                        <Headphones size={14} className="text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-[11px] uppercase tracking-widest text-gh-l-muted dark:text-gh-muted">
-                            Continue listening
-                        </h3>
-                    </div>
-                    <button
-                        onClick={onClearHistory}
-                        className="text-[10px] font-bold text-gh-l-muted dark:text-gh-muted hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    >
-                        Clear all
-                    </button>
-                </div>
-                {recent.map((entry: HistoryEntry) => (
-                    <ContinueListeningRow
-                        key={entry.id}
-                        entry={entry}
-                        onResume={() => onResumeFromHistory(entry)}
-                        onRemove={() => onRemoveFromHistory(entry.id)}
-                    />
-                ))}
-            </div>
-        );
-    }, [history, showSkeleton, onResumeFromHistory, onRemoveFromHistory, onClearHistory]);
-
-    const [chipsTimedOut, setChipsTimedOut] = useState(false);
-    useEffect(() => {
-        const t = setTimeout(() => setChipsTimedOut(true), 3000);
-        return () => clearTimeout(t);
-    }, []);
-
-    const chipsSkeletonBlock = useMemo(() => {
-        if (showSkeleton) return null;
-        if (shows.length > 0) return null;
-        if (chipsTimedOut) return null;
-        return (
-            <div className="px-3 md:px-4 pt-3 pb-3 shrink-0">
-                <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
-                    {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className="shrink-0 flex flex-col items-center gap-1.5">
-                            <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl bg-gh-l-hover dark:bg-gh-hover animate-pulse" />
-                            <div className="h-2.5 w-16 rounded-full bg-gh-l-hover dark:bg-gh-hover animate-pulse" />
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }, [shows.length, showSkeleton, chipsTimedOut]);
-
-    const chipsBlock = useMemo(() => {
-        if (showSkeleton || shows.length === 0) return null;
-        return (
-            <div className="px-3 md:px-4 pt-3 pb-3 shrink-0">
-                <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
-                    <button
-                        onClick={() => onSelectShow(null)}
-                        className="shrink-0 flex flex-col items-center gap-1.5 group"
-                        aria-label="All shows"
-                    >
-                        <div className={`relative w-28 h-28 md:w-32 md:h-32 rounded-xl p-[2px] transition-all ${selectedShowId === null
-                            ? "bg-gradient-to-tr from-blue-500 via-blue-400 to-blue-600"
-                            : "bg-gh-l-hover dark:bg-gh-hover group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30"}`}>
-                            <div className="w-full h-full rounded-[22px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#B150F2] to-[#8927EB]">
-                                <AppleLogo className={`w-14 h-14 md:w-16 md:h-16 text-white transition-transform ${selectedShowId === null ? "scale-100" : "scale-95 group-hover:scale-100"}`} />
-                            </div>
-                        </div>
-                        <span className={`text-[10px] font-bold truncate max-w-[72px] ${selectedShowId === null ? "text-blue-600 dark:text-blue-400" : "text-gh-l-text dark:text-gh-text"}`}>
-                            All
-                        </span>
-                    </button>
-                    {shows.map((s: any) => {
-                        const active = selectedShowId === s.id;
-                        const initial = (s.title || "?").trim().charAt(0).toUpperCase();
-                        const follow = getFollow?.(s.id) ?? { following: false, followerCount: 0 };
-                        return (
-                            <div key={s.id} className="shrink-0 flex flex-col items-center gap-1.5 group relative">
-                                <button onClick={() => onSelectShow(s.id)} className="flex flex-col items-center gap-1.5 w-full" aria-label={s.title}>
-                                    <div className={`relative w-28 h-28 md:w-32 md:h-32 rounded-xl p-[2px] transition-all ${active ? "bg-gradient-to-tr from-blue-500 via-blue-400 to-blue-600" : "bg-transparent"}`}>
-                                        <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
-                                            {s.artwork_url ? (
-                                                <img src={s.artwork_url} alt="" loading="lazy" decoding="async" className={`w-full h-full object-cover transition-transform ${active ? "scale-105" : "group-hover:scale-105"}`} />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-lg text-gh-l-muted dark:text-gh-muted">
-                                                    {initial}
-                                                </div>
-                                            )}
-                                            {!active && <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />}
-                                            {onToggleFollow && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onToggleFollow(s.id); }}
-                                                    className={`absolute top-1.5 right-1.5 h-8 w-8 md:h-6 md:w-6 rounded-full flex items-center justify-center transition-all ${follow.following ? "bg-blue-600 text-white" : "bg-white/90 dark:bg-slate-900/90 text-gh-l-text dark:text-gh-text"}`}
-                                                    aria-label={follow.following ? "Unfollow" : "Follow"}
-                                                >
-                                                    {follow.following ? (
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                            <polyline points="20 6 9 17 4 12" />
-                                                        </svg>
-                                                    ) : (
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                                        </svg>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
-                                        {(s.endorsement_count > 0 || follow.followerCount > 0) && (
-                                            <span className={`absolute -bottom-1 -right-1 min-w-[20px] h-[20px] px-1.5 rounded-full text-[9px] flex items-center justify-center ${active ? "bg-blue-600 text-white" : "bg-gh-l-card dark:bg-gh-card text-gh-l-text dark:text-gh-text"}`}>
-                                                {follow.followerCount > 0 ? follow.followerCount : s.endorsement_count}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className={`text-[10px] font-bold truncate max-w-[72px] text-center leading-tight ${active ? "text-blue-600 dark:text-blue-400" : "text-gh-l-text dark:text-gh-text"}`}>
-                                        {s.title}
-                                    </span>
-                                </button>
-                            </div>
-                        );
-                    })}
-                    {isAdmin && (
-                        <button onClick={onManage} className="shrink-0 flex flex-col items-center gap-1.5 group" aria-label="Manage podcasts">
-                            <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl border-2 border-dashed border-gh-l-border dark:border-gh-border flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
-                                <Plus size={22} />
-                            </div>
-                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 truncate max-w-[72px] text-center">
-                                Add
-                            </span>
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    }, [shows, selectedShowId, isAdmin, showSkeleton, onSelectShow, onManage, getFollow, onToggleFollow]);
-
-    const showCardsBlock = useMemo(() => {
-        if (showSkeleton || selectedShowId !== null || shows.length === 0) return null;
-        return (
-            <div className="px-4 md:px-5 pb-3 shrink-0">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-                    {shows.map((s: any) => {
-                        const follow = getFollow?.(s.id) ?? { following: false, followerCount: 0 };
-                        const initial = (s.title || "?").trim().charAt(0).toUpperCase();
-                        return (
-                            <div
-                                key={s.id}
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onSelectShow(s.id)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelectShow(s.id); }
-                                }}
-                                className="group flex gap-3 p-3 rounded-2xl bg-gh-l-card dark:bg-gh-card cursor-pointer transition-colors hover:bg-gh-l-hover dark:hover:bg-gh-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                            >
-                                <div className="relative shrink-0 w-20 h-20 md:w-[88px] md:h-[88px] rounded-xl overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
-                                    {s.artwork_url ? (
-                                        <img src={s.artwork_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-2xl text-gh-l-muted dark:text-gh-muted">
-                                            {initial}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="min-w-0 flex-1 flex flex-col justify-between">
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold leading-snug text-gh-l-text dark:text-gh-text group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                                            {s.title}
-                                        </p>
-                                        <p className="text-[11px] text-gh-l-muted dark:text-gh-muted mt-0.5">
-                                            {s.episode_count} episodes
-                                            {follow.followerCount > 0 && ` · ${follow.followerCount} followers`}
-                                            {s.endorsement_count > 0 && ` · ${s.endorsement_count} endorsements`}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center justify-end gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-                                        {onToggleFollow && (
-                                            <FollowButton following={follow.following} followerCount={follow.followerCount} onClick={() => onToggleFollow(s.id)} compact />
-                                        )}
-                                        <EndorseButton endorsed={s.user_endorsed} count={s.endorsement_count} onClick={() => onToggleEndorse(s.id)} compact />
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    }, [shows, selectedShowId, showSkeleton, onToggleEndorse, onSelectShow, getFollow, onToggleFollow]);
-
-    const [visibleCount, setVisibleCount] = useState(12);
-    const sentinelRef = useRef<HTMLDivElement | null>(null);
-
-    // Reset the window when the underlying track list changes
-    useEffect(() => {
-        setVisibleCount(12);
-    }, [visibleTracks]);
-
-    // Grow the window as the sentinel scrolls into view
-    useEffect(() => {
-        const el = sentinelRef.current;
-        if (!el) return;
-        const io = new IntersectionObserver(
-            (entries) => {
-                if (entries[0]?.isIntersecting) {
-                    setVisibleCount((prev) => Math.min(prev + 12, visibleTracks.length));
-                }
-            },
-            { rootMargin: "200px" }
-        );
-        io.observe(el);
-        return () => io.disconnect();
-    }, [visibleTracks.length]);
-
-    const windowedTracks = visibleTracks.slice(0, visibleCount);
-    const hasMore = visibleCount < visibleTracks.length;
-
-    const episodeRows = useMemo(() => (
-        <>
-            {showSkeleton && <SkeletonList count={8} />}
-            {!showSkeleton && visibleTracks.length === 0 && (
-                <div className="py-16 text-center text-gh-l-muted dark:text-gh-muted text-sm">
-                    No episodes yet.
-                </div>
-            )}
-            {!showSkeleton && windowedTracks.map((t: any, i: number) => {
-                const isThisActive = currentTrackSrc === t.src;
-                return (
-                    <EpisodeRow
-                        key={t.id || i}
-                        track={t}
-                        index={i}
-                        isActive={isThisActive}
-                        isPlaying={isPlaying && isThisActive}
-                        progress={isThisActive ? progress : 0}
-                        downloaded={!!t.downloaded}
-                        onSelect={() => onSelectTrack(t)}
-                        isAdmin={isAdmin}
-                        onHide={() => t.id && onHideEpisode(t.id)}
-                        interaction={t.id ? getInteraction?.("episode", t.id) : undefined}
-                        onToggleReaction={
-                            t.id && onToggleReaction
-                                ? (kind: "like" | "love" | "save") =>
-                                    onToggleReaction("episode", t.id, kind)
-                                : undefined
-                        }
-                        downloadState={t.id ? getDownloadState?.(t.id) : undefined}
-                        downloadProgress={t.id ? getDownloadProgress?.(t.id) ?? 0 : 0}
-                        onDownload={t.id && onDownload ? () => onDownload(t) : undefined}
-                        onCancelDownload={t.id && onCancelDownload ? () => onCancelDownload(t.id) : undefined}
-                    />
-                );
-            })}
-            {!showSkeleton && hasMore && (
-                <div ref={sentinelRef} className="py-6 text-center">
-                    <span className="text-[11px] text-gh-l-muted dark:text-gh-muted">
-                        Loading more…
-                    </span>
-                </div>
-            )}
-        </>
-    ), [
-        windowedTracks, currentTrackSrc, isPlaying, showSkeleton, isAdmin,
-        onSelectTrack, onHideEpisode, getInteraction, onToggleReaction,
-        getDownloadState, getDownloadProgress, onDownload, onCancelDownload,
-        hasMore, visibleTracks.length,
-    ]);
-    return (
-        <div className="h-full flex flex-col min-h-0">
-            <div className="md:hidden h-full overflow-y-auto custom-scrollbar">
-                {continueBlock}
-                {chipsBlock}
-                {chipsSkeletonBlock}
-                {showCardsBlock}
-                <div className="pb-6">{episodeRows}</div>
-            </div>
-            <div className="hidden md:block md:h-full md:min-h-0 md:overflow-y-auto custom-scrollbar">
-                {continueBlock}
-                {chipsBlock}
-                {chipsSkeletonBlock}
-                {showCardsBlock}
-                <div className="px-4 pb-6">{episodeRows}</div>
-            </div>
-        </div>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// SKELETON
-// ════════════════════════════════════════════════════════════
-function SkeletonList({ count = 8 }: { count?: number }) {
-    return (
-        <div className="animate-pulse">
-            {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="w-full rounded-2xl px-3 py-3 mb-1 flex items-center gap-3">
-                    <div className="shrink-0 w-12 h-12 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
-                    <div className="min-w-0 flex-1 space-y-2">
-                        <div className="h-3 rounded-full bg-gh-l-hover dark:bg-gh-hover" style={{ width: `${60 + (i % 4) * 8}%` }} />
-                        <div className="h-2.5 rounded-full bg-gh-l-hover dark:bg-gh-hover" style={{ width: `${30 + (i % 3) * 10}%` }} />
-                    </div>
-                    <div className="shrink-0 w-4 h-4 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
-                </div>
-            ))}
-        </div>
-    );
-}
-
-// ════════════════════════════════════════════════════════════
-// ADMIN
-// ════════════════════════════════════════════════════════════
-function AdminContent(props: any) {
-    const {
-        shows, importInput, setImportInput, onImport, importing, importMsg,
-        onDelete, confirmDelete, setConfirmDelete,
-    } = props;
-
-    return (
-        <div className="space-y-5">
-            <div className="rounded-xl bg-gh-l-card dark:bg-gh-card p-5">
-                <h3 className="text-sm tracking-tight text-gh-l-text dark:text-gh-text mb-1">
-                    Add a nursing podcast
-                </h3>
-                <p className="text-[11px] text-gh-l-muted dark:text-gh-muted mb-4">
-                    Paste any Apple Podcasts show link. All episodes will be imported and playable inside Studify.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                        value={importInput}
-                        onChange={(e) => setImportInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && !importing && onImport()}
-                        placeholder="https://podcasts.apple.com/.../id1546623428"
-                        className="flex-1 px-3 py-2.5 rounded-xl bg-gh-l-canvas dark:bg-gh-canvas text-sm outline-none focus:ring-2 focus:ring-blue-500 text-gh-l-text dark:text-gh-text"
-                    />
-                    <button
-                        onClick={onImport}
-                        disabled={importing || !importInput.trim()}
-                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                        {importing ? <><Loader2 size={16} className="animate-spin" /> Importing…</> : <>Import</>}
-                    </button>
-                </div>
-                {importMsg && (
-                    <div className={`mt-3 flex items-start gap-2 text-xs rounded-lg p-2.5 ${importMsg.kind === "ok"
-                        ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                        : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-                        }`}>
-                        {importMsg.kind === "ok"
-                            ? <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
-                            : <AlertCircle size={14} className="shrink-0 mt-0.5" />}
-                        <span className="break-words">{importMsg.text}</span>
-                    </div>
-                )}
-            </div>
-
-            <div>
-                <h3 className="text-sm tracking-tight text-gh-l-text dark:text-gh-text mb-3">
-                    Your shows
-                </h3>
-                {shows.length === 0 && (
-                    <p className="text-xs text-gh-l-muted dark:text-gh-muted py-6 text-center">
-                        No shows imported yet.
-                    </p>
-                )}
-                <div className="space-y-2">
-                    {shows.map((s: any) => (
-                        <div key={s.id} className="flex items-center gap-3 p-3 rounded-2xl bg-gh-l-card dark:bg-gh-card">
-                            {s.artwork_url && (
-                                <img src={s.artwork_url} alt="" loading="lazy" decoding="async" className="w-14 h-14 rounded-xl object-cover" />
-                            )}
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold truncate text-gh-l-text dark:text-gh-text">
-                                    {s.title}
-                                </p>
-                                <p className="text-[10px] text-gh-l-muted dark:text-gh-muted">
-                                    {s.episode_count} episodes · {s.endorsement_count} endorsements
-                                </p>
-                            </div>
-                            {confirmDelete === s.id ? (
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => onDelete(s.id)}
-                                        className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-500"
-                                    >
-                                        Delete
-                                    </button>
-                                    <button
-                                        onClick={() => setConfirmDelete(null)}
-                                        className="px-3 py-1.5 rounded-lg bg-gh-l-hover dark:bg-gh-hover text-xs font-bold text-gh-l-text dark:text-gh-text"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setConfirmDelete(s.id)}
-                                    className="p-2 rounded-lg text-gh-l-muted dark:text-gh-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                                    title="Delete show"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ── Apple logo ──
-function AppleLogo({ className = '' }: { className?: string }) {
-    return (
-        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-            <path d="M17.05 12.54c-.03-2.8 2.29-4.14 2.4-4.2-1.31-1.91-3.35-2.17-4.07-2.2-1.73-.18-3.38 1.02-4.25 1.02-.88 0-2.23-.99-3.66-.97-1.88.03-3.62 1.09-4.59 2.78-1.96 3.4-.5 8.42 1.41 11.18.93 1.35 2.05 2.86 3.51 2.8 1.41-.05 1.94-.91 3.65-.91 1.7 0 2.18.91 3.66.88 1.5-.02 2.48-1.37 3.4-2.72 1.07-1.55 1.5-3.04 1.53-3.12-.03-.02-2.94-1.13-2.97-4.5zM14.29 4.51c.77-.93 1.29-2.23 1.15-3.51-1.11.04-2.44.74-3.23 1.66-.71.82-1.32 2.14-1.15 3.39 1.23.1 2.49-.62 3.23-1.54z" />
-        </svg>
-    );
-}
-
-// ════════════════════════════════════════════════════════════
-// ENDORSE
-// ════════════════════════════════════════════════════════════
-const EndorseButton = React.memo(function EndorseButton({
-    endorsed, count, onClick, compact = false,
-}: {
-    endorsed: boolean;
-    count: number;
-    onClick: () => void;
-    compact?: boolean;
-}) {
-    const countLabel =
-        count >= 1000
-            ? `${(count / 1000).toFixed(1)}K`
-            : count > 0
-                ? String(count)
-                : "";
-
-    return (
-        <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            className={`
-                shrink-0 flex items-center font-bold rounded-full transition-all touch-manipulation select-none
-                ${compact ? "gap-1 px-2.5 py-1.5 text-[10px] min-h-[32px]" : "gap-1.5 px-3 py-2 text-xs min-h-[36px]"}
-                md:min-h-0
-                ${endorsed
-                    ? "bg-blue-600 text-white"
-                    : "bg-gh-l-hover dark:bg-gh-hover text-gh-l-text dark:text-gh-text hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"}
-            `}
-            title={endorsed ? "Endorsed — click to remove" : "Endorse this show"}
-            aria-pressed={endorsed}
-        >
-            <ThumbsUp size={compact ? 12 : 13} fill={endorsed ? "currentColor" : "none"} />
-            <span>{endorsed ? "Endorsed" : "Endorse"}</span>
-            {countLabel && (
-                <span className={`text-[10px] ${endorsed ? "text-white/80" : "text-gh-l-muted dark:text-gh-muted"}`}>
-                    {countLabel}
-                </span>
-            )}
-        </button>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// FOLLOW BUTTON
-// ════════════════════════════════════════════════════════════
-const FollowButton = React.memo(function FollowButton({
-    following,
-    followerCount,
-    onClick,
-    compact = false,
-}: {
-    following: boolean;
-    followerCount: number;
-    onClick: () => void;
-    compact?: boolean;
-}) {
-    const countLabel =
-        followerCount >= 1000
-            ? `${(followerCount / 1000).toFixed(1)}K`
-            : followerCount > 0
-                ? String(followerCount)
-                : "";
-
-    return (
-        <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            className={`
-                shrink-0 flex items-center font-bold rounded-full transition-all touch-manipulation select-none relative
-                ${compact ? "gap-1 px-2.5 py-1.5 text-[10px] min-h-[32px]" : "gap-1.5 px-3 py-2 text-xs min-h-[36px]"}
-                md:min-h-0
-                ${following
-                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
-                    : "bg-gh-l-hover dark:bg-gh-hover text-gh-l-text dark:text-gh-text hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"}
-                before:absolute before:inset-[-4px] before:content-[''] md:before:inset-0
-            `}
-            title={following ? "Unfollow" : "Follow this show"}
-        >
-            <Headphones size={compact ? 12 : 13} />
-            <span>{following ? "Following" : "Follow"}</span>
-            {countLabel && (
-                <span className={`text-[10px] ${following ? "text-white/70 dark:text-slate-900/70" : "text-gh-l-muted dark:text-gh-muted"}`}>
-                    {countLabel}
-                </span>
-            )}
-        </button>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// CONTINUE LISTENING ROW
-// ════════════════════════════════════════════════════════════
-const ContinueListeningRow = React.memo(function ContinueListeningRow({
-    entry,
-    onResume,
-    onRemove,
-}: {
-    entry: HistoryEntry;
-    onResume: () => void;
-    onRemove: () => void;
-}) {
-    const pct = entry.duration
-        ? Math.min(100, Math.round((entry.position / entry.duration) * 100))
-        : 0;
-    const remaining = entry.duration
-        ? Math.max(0, entry.duration - entry.position)
-        : 0;
-
-    const relTime = (() => {
-        const diff = Date.now() - entry.lastPlayedAt;
-        const m = Math.floor(diff / 60000);
-        if (m < 1) return "just now";
-        if (m < 60) return `${m}m ago`;
-        const h = Math.floor(m / 60);
-        if (h < 24) return `${h}h ago`;
-        const d = Math.floor(h / 24);
-        if (d === 1) return "yesterday";
-        if (d < 7) return `${d}d ago`;
-        return new Date(entry.lastPlayedAt).toLocaleDateString();
-    })();
-
-    return (
-        <div className="group relative w-full rounded-2xl bg-gh-l-card dark:bg-gh-card overflow-hidden mb-2">
-            <button onClick={onResume} className="w-full flex items-center gap-3 p-3 text-left hover:bg-gh-l-hover dark:hover:bg-gh-hover transition-colors">
-                <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
-                    {entry.artwork ? (
-                        <img src={entry.artwork} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px]">▶</div>
-                    )}
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Play size={18} fill="white" className="text-white ml-0.5" />
-                    </div>
-                    {pct > 0 && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
-                            <div className="h-full bg-blue-500" style={{ width: `${pct}%` }} />
-                        </div>
-                    )}
-                </div>
-                <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-bold truncate text-gh-l-text dark:text-gh-text">
-                        {entry.name}
-                    </p>
-                    <p className="text-[10px] truncate text-gh-l-muted dark:text-gh-muted mt-0.5">
-                        {entry.showTitle ? `${entry.showTitle} · ` : ""}
-                        {remaining > 0 ? `${fmtTime(remaining)} left` : "Finished"}
-                        {" · "}
-                        {relTime}
-                    </p>
-                </div>
-                <span className="shrink-0 text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                    {entry.position > 5 ? "Resume" : "Play"}
-                </span>
-            </button>
-            <button
-                onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className="absolute top-2 right-2 p-1 rounded-lg opacity-0 group-hover:opacity-100 text-gh-l-muted dark:text-gh-muted hover:text-red-600 transition-all"
-                aria-label="Remove from history"
-            >
-                <X size={14} />
-            </button>
-        </div>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// EPISODE ROW
-// ════════════════════════════════════════════════════════════
-const EpisodeRow = React.memo(function EpisodeRow({
-    track, index, isActive, isPlaying, onSelect, isAdmin, onHide,
-    progress = 0, downloaded = false,
-    interaction, onToggleReaction,
-    downloadState, downloadProgress = 0, onDownload, onCancelDownload, onRemoveDownload, downloadSize,
-}: {
-    track: Track;
-    index: number;
-    isActive: boolean;
-    isPlaying: boolean;
-    onSelect: () => void;
-    isAdmin?: boolean;
-    onHide?: () => void;
-    progress?: number;
-    downloaded?: boolean;
-    interaction?: {
-        liked: boolean; loved: boolean; saved: boolean;
-        counts: { like: number; love: number; save: number };
-    };
-    onToggleReaction?: (kind: "like" | "love" | "save") => void;
-    downloadState?: "idle" | "downloading" | "downloaded" | "error";
-    downloadProgress?: number;
-    onDownload?: () => void;
-    onCancelDownload?: () => void;
-    onRemoveDownload?: () => void;
-    downloadSize?: number;
-}) {
-    const R = 22;
-    const C = 2 * Math.PI * R;
-    const clampedProgress = Math.max(0, Math.min(1, progress));
-    const dashOffset = C * (1 - clampedProgress);
-
-    return (
-        <div
-            className={`group w-full mb-0 overflow-hidden transition-colors duration-150 border-b border-slate-100 dark:border-[#21262d] ${isActive
-                ? "bg-blue-50/70 dark:bg-blue-950/30"
-                : "bg-transparent"
-                }`}
-        >
-            <button onClick={onSelect} className="w-full flex items-start gap-3 px-3 py-3.5 md:py-3 text-left">
-                <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
-                    {track.artwork ? (
-                        <img src={track.artwork} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gh-l-muted dark:text-gh-muted text-[10px]">
-                            {index + 1}
-                        </div>
-                    )}
-                    {isActive && (
-                        <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
-                            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 48 48">
-                                <circle cx="24" cy="24" r={R} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
-                                <circle cx="24" cy="24" r={R} fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={dashOffset} style={{ transition: "stroke-dashoffset 0.25s linear" }} />
-                            </svg>
-                            {isPlaying ? (
-                                <div className="flex items-end gap-[2px] h-3 z-10">
-                                    {[0, 1, 2].map((i) => (
-                                        <span
-                                            key={i}
-                                            className="w-[2px] rounded-full bg-white animate-eq-bar"
-                                            style={{
-                                                animationDelay: `${i * 0.12}s`,
-                                                height: 3,
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <Play size={14} fill="white" className="text-white z-10 ml-0.5" />
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                    <p className={`text-[13px] font-bold leading-snug line-clamp-2 ${isActive ? "text-blue-700 dark:text-blue-300" : "text-gh-l-text dark:text-gh-text"}`}>
-                        {track.name}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        {track.showTitle && (
-                            <span className="text-[10px] font-semibold text-gh-l-muted dark:text-gh-muted">
-                                {track.showTitle}
-                            </span>
-                        )}
-                        {track.duration && (
-                            <>
-                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">·</span>
-                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">
-                                    {fmtTime(track.duration)}
-                                </span>
-                            </>
-                        )}
-                        {track.publishedAt && (
-                            <>
-                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">·</span>
-                                <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">
-                                    {fmtDate(track.publishedAt)}
-                                </span>
-                            </>
-                        )}
-                        {downloaded && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[8px] uppercase tracking-wider">
-                                <CheckCircle2 size={8} />
-                                Downloaded{downloadSize ? ` · ${fmtBytes(downloadSize)}` : ""}
-                            </span>
-                        )}
-                        {interaction && interaction.playCount > 0 && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-[8px] uppercase tracking-wider">
-                                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                    <path d="M8.5 5.5v13a1 1 0 0 0 1.55.83l9.5-6.5a1 1 0 0 0 0-1.66l-9.5-6.5A1 1 0 0 0 8.5 5.5Z" />
-                                </svg>
-                                {interaction.playCount >= 1000
-                                    ? `${(interaction.playCount / 1000).toFixed(1)}K`
-                                    : interaction.playCount}{" "}
-                                play{interaction.playCount === 1 ? "" : "s"}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </button>
-
-            <div className="flex items-center gap-1 px-1 pb-2 pt-0.5">
-                <ReactionIcon kind="like" active={interaction?.liked ?? false} count={interaction?.counts.like ?? 0} onClick={() => onToggleReaction?.("like")} />
-                <ReactionIcon kind="love" active={interaction?.loved ?? false} count={interaction?.counts.love ?? 0} onClick={() => onToggleReaction?.("love")} />
-                <ReactionIcon kind="save" active={interaction?.saved ?? false} count={interaction?.counts.save ?? 0} onClick={() => onToggleReaction?.("save")} />
-
-                {/* Download / cancel / remove */}
-                {downloadState === "downloading" && onCancelDownload && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onCancelDownload(); }}
-                        className="flex items-center justify-center gap-1 h-11 px-2 rounded-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors touch-manipulation"
-                        aria-label="Cancel download"
-                    >
-                        <X size={16} />
-                        <span className="text-[10px] font-bold tabular-nums">
-                            {Math.round(downloadProgress * 100)}%
-                        </span>
-                    </button>
-                )}
-                {downloadState === "downloaded" && onRemoveDownload && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onRemoveDownload(); }}
-                        className="flex items-center justify-center h-11 w-11 rounded-full text-emerald-600 hover:text-red-600 transition-colors touch-manipulation"
-                        aria-label="Remove download"
-                        title="Remove download"
-                    >
-                        <CheckCircle2 size={18} fill="currentColor" strokeWidth={0} />
-                    </button>
-                )}
-                {downloadState === "idle" && onDownload && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDownload(); }}
-                        className="flex items-center justify-center gap-1 h-11 px-1.5 rounded-full text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text transition-colors touch-manipulation"
-                        aria-label={
-                            track.duration
-                                ? `Download for offline (~${Math.round((track.duration * 128000) / 8000000)} MB)`
-                                : "Download for offline"
-                        }
-                        title={
-                            track.duration
-                                ? `~${Math.round((track.duration * 128000) / 8000000)} MB`
-                                : "Download for offline"
-                        }
-                    >
-                        <Download size={18} />
-                    </button>
-                )}
-                {downloadState === "error" && onDownload && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDownload(); }}
-                        className="flex items-center justify-center h-11 w-11 rounded-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors touch-manipulation"
-                        aria-label="Retry download"
-                        title="Retry download"
-                    >
-                        <AlertCircle size={18} />
-                    </button>
-                )}
-
-                {isAdmin && onHide && (
-                    <button
-                        onClick={onHide}
-                        className="ml-auto flex items-center justify-center h-11 w-11 rounded-full text-gh-l-muted dark:text-gh-muted hover:text-red-600 active:scale-95 transition-all"
-                        title="Hide this episode"
-                        aria-label="Hide this episode"
-                    >
-                        <EyeOff size={18} />
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-});
-
-// ════════════════════════════════════════════════════════════
-// REACTION
-// ════════════════════════════════════════════════════════════
-const ReactionIcon = React.memo(function ReactionIcon({
-    kind, active, count, onClick,
-}: {
-    kind: "like" | "love" | "save";
-    active: boolean;
-    count: number;
-    onClick: () => void;
-}) {
-    const Icon = kind === "like" ? ThumbsUp : kind === "love" ? Heart : Bookmark;
-
-    const activeColor =
-        kind === "love"
-            ? "text-rose-500"
-            : kind === "save"
-                ? "text-emerald-600"
-                : "text-blue-600";
-
-    const display =
-        count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count > 0 ? String(count) : "";
-
-    const bumpKey = `${kind}-${count}-${active ? 1 : 0}`;
-
-    return (
-        <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            className={`
-                flex items-center justify-center gap-1 h-11 px-1.5 rounded-full
-                text-[11px] font-semibold tabular-nums transition-colors touch-manipulation select-none
-                ${active
-                    ? activeColor
-                    : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"}
-            `}
-            aria-label={`${kind}${count > 0 ? ` (${count})` : ""}`}
-            aria-pressed={active}
-        >
-            <motion.span
-                key={bumpKey}
-                initial={{ scale: 0.85 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 600, damping: 18 }}
-                className="flex items-center justify-center"
-            >
-                <Icon size={18} fill={active ? "currentColor" : "none"} strokeWidth={active ? 0 : 2} />
-            </motion.span>
-            {display && (
-                <span className="text-[10px] font-medium tabular-nums opacity-80">{display}</span>
-            )}
-        </button>
-    );
-});

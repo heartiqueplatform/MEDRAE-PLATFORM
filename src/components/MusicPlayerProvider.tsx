@@ -56,6 +56,9 @@ interface MusicPlayerContextProps {
     setProgress: (progress: number) => void;
     audioRef: React.RefObject<HTMLAudioElement | null>;
     refreshEpisodes: (opts?: { silent?: boolean }) => Promise<void>;
+    loadMoreEpisodes: () => Promise<void>;
+    hasMoreEpisodes: boolean;
+    isLoadingMoreEpisodes: boolean;
     fetchShowEpisodes: (showId: string) => Promise<Track[]>;
     searchEpisodesRemote: (query: string) => Promise<Track[]>;
     prefetchAudio: (src: string, priority?: number) => void;
@@ -68,7 +71,7 @@ const MusicPlayerContext = createContext<MusicPlayerContextProps | undefined>(
     undefined
 );
 
-const MAIN_FETCH_LIMIT = 200;
+const MAIN_FETCH_LIMIT = 50;
 const CACHE_TTL_MS = 1000 * 60 * 15;
 
 const SNAPSHOT_KEY = "medrae_podcast_snapshot_v1";
@@ -236,6 +239,13 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastRefreshRef = useRef<number>(0);
     const currentSrcRef = useRef<string | undefined>(undefined);
+
+    // ── Server-side episode pagination ──
+    const nextEpisodeOffsetRef = useRef<number>(MAIN_FETCH_LIMIT);
+    const loadingMoreEpisodesRef = useRef(false);
+    const [hasMoreEpisodes, setHasMoreEpisodes] = useState(true);
+    const [isLoadingMoreEpisodes, setIsLoadingMoreEpisodes] = useState(false);
+    const hasMoreEpisodesRef = useRef(true);
     const prefetchedSrcsRef = useRef<Set<string>>(new Set());
     const prefetchQueueRef = useRef<{ src: string; priority: number }[]>([]);
     const prefetchRunningRef = useRef(false);
@@ -288,6 +298,83 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+
+    const loadMoreEpisodes = useCallback(async (): Promise<void> => {
+        if (loadingMoreEpisodesRef.current || !hasMoreEpisodesRef.current) {
+            return;
+        }
+
+        loadingMoreEpisodesRef.current = true;
+        setIsLoadingMoreEpisodes(true);
+
+        try {
+            const online = await isReallyOnline().catch(() => false);
+
+            if (
+                !online ||
+                (typeof navigator !== "undefined" && navigator.onLine === false)
+            ) {
+                return;
+            }
+
+            const from = nextEpisodeOffsetRef.current;
+            const to = from + MAIN_FETCH_LIMIT - 1;
+
+            const { data, error } = await supabase
+                .from("podcast_episodes")
+                .select(`
+                id, title, audio_url, duration, published_at, show_id, is_hidden,
+                podcast_shows ( title, artwork_url )
+            `)
+                .eq("is_hidden", false)
+                .order("published_at", { ascending: false, nullsFirst: false })
+                .order("id", { ascending: true })
+                .range(from, to);
+
+            if (error) {
+                console.error("Failed to load more episodes:", error);
+                return;
+            }
+
+            const rows = data ?? [];
+
+            if (rows.length === 0) {
+                hasMoreEpisodesRef.current = false;
+                setHasMoreEpisodes(false);
+                return;
+            }
+
+            const dbEpisodes = rows.map(rowToDbEpisode);
+            const newTracks = dbEpisodes.map(dbToTrack);
+
+            await putEpisodes(dbEpisodes);
+
+            setTracks((previous) => {
+                const existingIds = new Set(
+                    previous.map((track) => track.id ?? track.src)
+                );
+
+                const uniqueNewTracks = newTracks.filter(
+                    (track) => !existingIds.has(track.id ?? track.src)
+                );
+
+                return sortTracks([...previous, ...uniqueNewTracks]);
+            });
+
+            nextEpisodeOffsetRef.current += rows.length;
+
+            if (rows.length < MAIN_FETCH_LIMIT) {
+                hasMoreEpisodesRef.current = false;
+                setHasMoreEpisodes(false);
+            }
+        } catch (error) {
+            console.error("loadMoreEpisodes failed:", error);
+        } finally {
+            loadingMoreEpisodesRef.current = false;
+            setIsLoadingMoreEpisodes(false);
+        }
+    }, []);
+
     // ── 2. Fetch from Supabase ──
     const refreshEpisodes = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent ?? false;
@@ -317,7 +404,11 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
             //    iOS Safari (adblock, low-power mode, flaky probes). If the
             //    fetch fails, we fall through to the catch and keep cache.
             const online = await isReallyOnline().catch(() => true);
-            if (!online && navigator.onLine === false) {
+            if (
+                !online &&
+                typeof navigator !== "undefined" &&
+                navigator.onLine === false
+            ) {
                 // Only skip when the browser itself says offline.
                 if (tracks.length > 0) setLoading(false);
                 if (showedSkeleton) setLoading(false);
@@ -348,6 +439,12 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 (epRows ?? []).map(rowToDbEpisode).map(dbToTrack)
             );
             setTracks(episodeTracks);
+
+            // The next request must start after the first batch.
+            nextEpisodeOffsetRef.current = (epRows ?? []).length;
+            hasMoreEpisodesRef.current = (epRows ?? []).length === MAIN_FETCH_LIMIT;
+            setHasMoreEpisodes((epRows ?? []).length === MAIN_FETCH_LIMIT);
+            setIsLoadingMoreEpisodes(false);
             setCurrentIndex((prev) => (prev < episodeTracks.length ? prev : 0));
             lastRefreshRef.current = Date.now();
         } catch (err) {
@@ -373,6 +470,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
 
     // ── Prefetch ──
     const prefetchAudio = useCallback((src: string, priority = 0) => {
+        if (import.meta.env.DEV) return;
         if (!src) return;
         if (prefetchedSrcsRef.current.has(src)) return;
         if (currentSrcRef.current === src) return;
@@ -394,7 +492,6 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 try {
                     const res = await fetch(src, {
                         method: "GET",
-                        headers: { Range: "bytes=0-262143" },
                         cache: "force-cache",
                         signal: controller.signal,
                     });
@@ -723,6 +820,9 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 setProgress,
                 audioRef,
                 refreshEpisodes,
+                loadMoreEpisodes,
+                hasMoreEpisodes,
+                isLoadingMoreEpisodes,
                 fetchShowEpisodes,
                 history,
                 clearHistory,
@@ -731,7 +831,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
                 prefetchAudio,
             }}
         >
-            <audio ref={audioRef} crossOrigin="anonymous" preload="metadata" />
+            <audio ref={audioRef} preload="metadata" />
             {children}
         </MusicPlayerContext.Provider>
     );

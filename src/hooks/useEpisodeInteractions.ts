@@ -83,6 +83,16 @@ export function useEpisodeInteractions() {
     // ✅ L1: seed from cache — the FIRST paint already has the correct state
     const [state, setState] = useState<Map<string, InteractionState>>(loadCache);
 
+    // ✅ NEW: monotonically increasing version — bumped once per commit.
+    //    Consumers include this in their memo deps so they re-render when
+    //    the internal map changes. This is what was missing before: `get`
+    //    is stable (useCallback []) and reads from a ref, so nothing else
+    //    would notify React that the map had changed.
+    const [version, setVersion] = useState(0);
+    useEffect(() => {
+        setVersion((v) => v + 1);
+    }, [state]);
+
     // Debounce timers per key
     const pendingRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -96,6 +106,8 @@ export function useEpisodeInteractions() {
 
     // ─────────────────────────────────────────────────────────
     // Persist to localStorage on every state change.
+    // Persist is cheap (Map → object → localStorage). Runs sync so a
+    // crash or hard reload never loses the last confirmed state.
     // ─────────────────────────────────────────────────────────
     useEffect(() => {
         persist(state);
@@ -133,6 +145,9 @@ export function useEpisodeInteractions() {
 
             // ─────────────────────────────────────────────
             // 1. OPTIMISTIC FLIP — synchronous, feels instant
+            //    The UI updates on the next render, before any network.
+            //    This is what makes 1M users feel "instant" — nothing
+            //    waits for Supabase.
             // ─────────────────────────────────────────────
             setState((prev) => {
                 const next = new Map(prev);
@@ -153,66 +168,105 @@ export function useEpisodeInteractions() {
             inFlightRef.current.add(key);
 
             // ─────────────────────────────────────────────
-            // 2. DEBOUNCED SERVER SYNC (one RPC per burst)
+            // 2. DEBOUNCED SERVER SYNC — fire-and-forget
+            //    • Only ONE RPC fires per burst of taps on the same key.
+            //    • The RPC is NOT awaited by the caller (toggle returns
+            //      synchronously). The UI is already ahead.
+            //    • Different keys have independent timers → 1M users
+            //      tapping different episodes never queue behind each other.
+            //    • On error, we roll back optimistically to the last
+            //      server-confirmed value. LocalStorage is the L1 truth,
+            //      so even a crash before the rollback keeps the app
+            //      consistent on next mount.
             // ─────────────────────────────────────────────
             const existing = pendingRef.current.get(key);
             if (existing) clearTimeout(existing);
 
             pendingRef.current.set(
                 key,
-                setTimeout(async () => {
+                setTimeout(() => {
                     pendingRef.current.delete(key);
 
-                    const { data, error } = await supabase.rpc("toggle_reaction", {
-                        p_target_type: targetType,
-                        p_target_id: targetId,
-                        p_kind: kind,
-                    });
+                    // 🔥 Fire-and-forget: do NOT await, do NOT block toggle.
+                    //    The promise runs in the background; `.then/.catch`
+                    //    handle reconciliation when the network responds.
+                    supabase
+                        .rpc("toggle_reaction", {
+                            p_target_type: targetType,
+                            p_target_id: targetId,
+                            p_kind: kind,
+                        })
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error("toggle_reaction failed:", error);
+                                // Roll back the optimistic flip.
+                                setState((prev) => {
+                                    const next = new Map(prev);
+                                    const cur = next.get(key);
+                                    if (!cur) return next;
+                                    const wasActive = cur[flag];
+                                    next.set(key, {
+                                        ...cur,
+                                        [flag]: !wasActive,
+                                        counts: {
+                                            ...cur.counts,
+                                            [kind]: Math.max(
+                                                0,
+                                                cur.counts[kind] + (wasActive ? 1 : -1)
+                                            ),
+                                        },
+                                    });
+                                    return next;
+                                });
+                                inFlightRef.current.delete(key);
+                                return;
+                            }
 
-                    if (error) {
-                        console.error("toggle_reaction failed:", error);
-                        setState((prev) => {
-                            const next = new Map(prev);
-                            const cur = next.get(key);
-                            if (!cur) return next;
-                            const wasActive = cur[flag];
-                            next.set(key, {
-                                ...cur,
-                                [flag]: !wasActive,
-                                counts: {
-                                    ...cur.counts,
-                                    [kind]: Math.max(
-                                        0,
-                                        cur.counts[kind] + (wasActive ? 1 : -1)
-                                    ),
-                                },
+                            // Server confirmed — reconcile with authoritative counts.
+                            const row = Array.isArray(data) ? data[0] : data;
+                            if (row) {
+                                setState((prev) => {
+                                    const next = new Map(prev);
+                                    const cur = next.get(key) ?? EMPTY;
+                                    const merged: InteractionState = {
+                                        ...cur,
+                                        [flag]: row.active,
+                                        counts: {
+                                            ...cur.counts,
+                                            [kind]: Number(row.count),
+                                        },
+                                    };
+                                    if (eq(cur, merged)) return prev;
+                                    next.set(key, merged);
+                                    return next;
+                                });
+                            }
+                            inFlightRef.current.delete(key);
+                        })
+                        .catch((err) => {
+                            // Network-level failure (offline, CORS, timeout).
+                            // Roll back so the user sees truth, not a lie.
+                            console.error("toggle_reaction threw:", err);
+                            setState((prev) => {
+                                const next = new Map(prev);
+                                const cur = next.get(key);
+                                if (!cur) return next;
+                                const wasActive = cur[flag];
+                                next.set(key, {
+                                    ...cur,
+                                    [flag]: !wasActive,
+                                    counts: {
+                                        ...cur.counts,
+                                        [kind]: Math.max(
+                                            0,
+                                            cur.counts[kind] + (wasActive ? 1 : -1)
+                                        ),
+                                    },
+                                });
+                                return next;
                             });
-                            return next;
+                            inFlightRef.current.delete(key);
                         });
-                        inFlightRef.current.delete(key);
-                        return;
-                    }
-
-                    const row = Array.isArray(data) ? data[0] : data;
-                    if (row) {
-                        setState((prev) => {
-                            const next = new Map(prev);
-                            const cur = next.get(key) ?? EMPTY;
-                            const merged: InteractionState = {
-                                ...cur,
-                                [flag]: row.active,
-                                counts: {
-                                    ...cur.counts,
-                                    [kind]: Number(row.count),
-                                },
-                            };
-                            if (eq(cur, merged)) return prev;
-                            next.set(key, merged);
-                            return next;
-                        });
-                    }
-
-                    inFlightRef.current.delete(key);
                 }, 150)
             );
         },
@@ -344,8 +398,11 @@ export function useEpisodeInteractions() {
         []
     );
 
+    // ✅ `version` in the dep array makes the returned object identity change
+    //    whenever `state` changes. Every consumer (MusicPlayer, EpisodesContent,
+    //    EpisodeRow via props.interaction) re-reads get() and repaints.
     return useMemo(
-        () => ({ toggle, hydrate, get }),
-        [toggle, hydrate, get]
+        () => ({ toggle, hydrate, get, version }),
+        [toggle, hydrate, get, version]
     );
 }
