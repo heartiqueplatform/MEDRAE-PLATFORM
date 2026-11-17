@@ -23,8 +23,13 @@ import "@fontsource/poppins/800.css";
 
 /**
  * App Version Control - Smart Cache Management
+ *
+ * ⚠️ BUMP THIS ON EVERY DEPLOY (or replace with a build-time define
+ *    e.g. `__APP_VERSION__` injected via vite `define` in vite.config.ts).
+ *    If it never changes, cleanupOldCaches() never fires and old bundles
+ *    pile up forever → "takes days to update" symptom.
  */
-const APP_VERSION = "2.0.322";
+const APP_VERSION = "2.0.323"; // ← bump on each release
 
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
@@ -50,7 +55,9 @@ const setupPWA = async () => {
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
 
+        // ── FIX C: always clean stale medrae-* caches on SW controller change
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+            cleanupOldCaches();
             console.log('Service Worker updated');
             if (!document.hidden) {
                 setTimeout(() => window.location.reload(), 1500);
@@ -65,6 +72,16 @@ const setupPWA = async () => {
                         console.log('New version available');
                     }
                 });
+            }
+        });
+
+        // ── FIX D: re-check for updates whenever the tab becomes visible again.
+        //    Long-lived tabs otherwise keep the old SW indefinitely.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.getRegistration()
+                    .then((r) => r?.update())
+                    .catch(() => { /* never throw */ });
             }
         });
 
@@ -116,7 +133,11 @@ const precacheAssets = async () => {
 };
 
 /**
- * Smart Fetch Interceptor with Cache-First Strategy
+ * Smart Fetch Interceptor — network-first for code, cache-first for media
+ *
+ * ── FIX A: remove css|js from the cache-first list.
+ *    Bundles and CSS must go through the service worker / network so a
+ *    new deploy is picked up on the next visit instead of "days later".
  */
 const originalFetch = window.fetch;
 
@@ -135,9 +156,11 @@ window.fetch = async function (...args) {
         return originalFetch.apply(this, args);
     }
 
+    // Only images / fonts / (non-JS) static files use the offline cache.
     const isStaticAsset =
         url.includes('/static/') ||
-        /\.(css|js|jpg|png|svg|webp|woff2?|ttf)(\?|$)/i.test(url);
+        /\.(jpg|jpeg|png|svg|webp|gif|woff2?|ttf|ico)(\?|$)/i.test(url);
+
     const isSupabase = url.includes('supabase.co');
 
     if (isStaticAsset && !isSupabase) {
@@ -145,6 +168,7 @@ window.fetch = async function (...args) {
             const cache = await caches.open(CACHE_NAMES.assets);
             const cachedResponse = await cache.match(url);
             if (cachedResponse) {
+                // stale-while-revalidate for media only
                 originalFetch(url)
                     .then((res) => {
                         if (res.ok) cache.put(url, res.clone()).catch(() => { });
@@ -227,13 +251,19 @@ const initPWA = () => {
 
 /**
  * Register Service Worker
+ *
+ * ── FIX B: drop the 30s auto-reload. Instead dispatch a
+ *    `pwa-update-available` event that the UI can show as a banner.
+ *    The user decides when to refresh → no more surprise reloads
+ *    mid-task, and no more "it reloads but stays on the old version".
  */
 updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
         console.log('New version available');
 
-        const isInExam = window.location.pathname.includes('/exam') ||
+        const isInExam =
+            window.location.pathname.includes('/exam') ||
             window.location.pathname.includes('/simulation');
 
         if (isInExam) {
@@ -242,17 +272,15 @@ updateSW = registerSW({
             return;
         }
 
-        console.log('New version found, updating...');
+        localStorage.setItem('pwaUpdatePending', 'true');
 
-        const autoUpdateTimeout = setTimeout(() => {
-            const pendingUpdate = localStorage.getItem('pwaUpdatePending');
-            if (pendingUpdate !== 'false' && updateSW) {
-                console.log('Auto-updating after timeout');
-                updateSW(true);
-            }
-        }, 30000);
-
-        localStorage.setItem('pwaAutoUpdateTimeout', String(autoUpdateTimeout));
+        // Tell the app shell to show an "Update now" prompt.
+        window.dispatchEvent(new CustomEvent('pwa-update-available', {
+            detail: {
+                message: 'A new version is available. Update now?',
+                update: () => updateSW(true),
+            },
+        }));
     },
     onOfflineReady() {
         console.log('Medrae is ready to work offline');
@@ -264,6 +292,14 @@ updateSW = registerSW({
     },
     onRegisteredSW(swUrl, registration) {
         console.log('Service Worker registered:', swUrl);
+
+        // Periodic SW check (every 60 min) so long sessions still notice
+        // a deploy without needing a hard reload.
+        if (registration) {
+            setInterval(() => {
+                registration.update().catch(() => { });
+            }, 60 * 60 * 1000);
+        }
 
         const pendingUpdate = localStorage.getItem('pwaUpdatePending');
         if (pendingUpdate === 'true') {
@@ -349,31 +385,22 @@ const initApp = async () => {
 
     // ─────────────────────────────────────────────────────────────
     // Hide the loader ONLY after #root has real painted content.
-    // This eliminates the flash that happens when the loader
-    // disappears before AuthGate resolves and the landing mounts.
     // ─────────────────────────────────────────────────────────────
     const tryHideLoader = (attempts = 0) => {
         const rootEl = document.getElementById("root");
 
-        // A root with children AND meaningful height means something
-        // real has been painted into it. AuthGate's fallback (white
-        // overlay) also satisfies this, which is correct — we want
-        // to hide once the white overlay is showing, not before.
         const hasContent =
             rootEl &&
             rootEl.children.length > 0 &&
             rootEl.getBoundingClientRect().height > 50;
 
         if (hasContent || attempts >= 25) {
-            // Content is painted (or we've waited ~5s) — hide loader.
-            // Extra 80ms guarantees the browser has composited the frame.
             setTimeout(() => {
                 (window as any).hideMedraeLoader?.();
             }, 80);
             return;
         }
 
-        // Poll again in 200ms
         setTimeout(() => tryHideLoader(attempts + 1), 200);
     };
 

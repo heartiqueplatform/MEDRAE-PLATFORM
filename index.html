@@ -55,30 +55,31 @@
   <link rel="dns-prefetch" href="https://ypgkpecnfziptpmwsdud.supabase.co" />
   <link rel="preconnect" href="https://images.pexels.com" />
   <link rel="dns-prefetch" href="https://images.pexels.com" />
-
   <script>
-    // ✅ Preload the correct hero image based on local hour — starts downloading
-    //    before React even parses.
     (function () {
       try {
-        var h = new Date().getHours();
-        var url;
-        if (h >= 5 && h < 12) {
-          url = "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=1200";
-        } else if (h >= 12 && h < 17) {
-          url = "https://images.pexels.com/photos/4270088/pexels-photo-4270088.jpeg?auto=compress&cs=tinysrgb&w=1200";
-        } else if (h >= 17 && h < 21) {
-          url = "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=1200";
-        } else {
-          url = "https://images.pexels.com/photos/305568/pexels-photo-305568.jpeg?auto=compress&cs=tinysrgb&w=1200";
-        }
-        var link = document.createElement("link");
-        link.rel = "preload";
-        link.as = "image";
-        link.href = url;
-        link.fetchPriority = "high";
-        document.head.appendChild(link);
-      } catch (e) { }
+        // ✅ Single source of truth: `medrae_dark_mode` ("true" / "false")
+        //    If nothing stored → default to LIGHT (white). Never follows device.
+        var stored = localStorage.getItem('medrae_dark_mode');
+        var isDark = stored === 'true';   // anything else (null, "false") → light
+
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(isDark ? 'dark' : 'light');
+
+        var bg = isDark ? '#0d1117' : '#ffffff';
+        document.documentElement.style.setProperty('--bg-color', bg);
+        if (document.body) document.body.style.backgroundColor = bg;
+
+        window.__MEDRAE_INITIAL_THEME__ = isDark ? 'dark' : 'light';
+
+        // ❌ REMOVED: the prefers-color-scheme listener.
+        //    The app will ONLY change theme when the user explicitly sets it
+        //    (which writes `medrae_dark_mode` and re-runs the class toggle).
+      } catch (e) { /* never block paint */ }
+
+      if (typeof window.performance !== 'undefined') {
+        window.medraeLoadStart = performance.now();
+      }
     })();
   </script>
   <!-- Enable back-forward cache for instant navigation -->
@@ -1055,51 +1056,6 @@
   <!-- THEME BOOTSTRAP + SPLASH CONTROL             -->
   <!-- ============================================ -->
   <script>
-    (function () {
-      try {
-        // ✅ Single source of truth: `medrae_dark_mode` ("true" / "false")
-        var stored = localStorage.getItem('medrae_dark_mode');
-        var isDark;
-
-        if (stored === 'true') isDark = true;
-        else if (stored === 'false') isDark = false;
-        else isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(isDark ? 'dark' : 'light');
-
-        var bg = isDark ? '#0d1117' : '#ffffff';
-        document.documentElement.style.setProperty('--bg-color', bg);
-        if (document.body) document.body.style.backgroundColor = bg;
-
-        window.__MEDRAE_INITIAL_THEME__ = isDark ? 'dark' : 'light';
-
-        // ✅ Follow the device theme live — only while the user has NOT
-        //    explicitly picked a theme (no key in localStorage).
-        if (window.matchMedia) {
-          var mq = window.matchMedia('(prefers-color-scheme: dark)');
-          var onChange = function (e) {
-            try {
-              if (localStorage.getItem('medrae_dark_mode') !== null) return;
-              var nowDark = e.matches;
-              document.documentElement.classList.remove('light', 'dark');
-              document.documentElement.classList.add(nowDark ? 'dark' : 'light');
-              document.documentElement.style.setProperty('--bg-color', nowDark ? '#0d1117' : '#ffffff');
-              if (document.body) document.body.style.backgroundColor = nowDark ? '#0d1117' : '#ffffff';
-              window.dispatchEvent(new CustomEvent('theme-changed', {
-                detail: { isDarkMode: nowDark },
-              }));
-            } catch (err) { /* never block paint */ }
-          };
-          if (mq.addEventListener) mq.addEventListener('change', onChange);
-          else if (mq.addListener) mq.addListener(onChange);   // Safari <14
-        }
-      } catch (e) { /* never block paint */ }
-
-      if (typeof window.performance !== 'undefined') {
-        window.medraeLoadStart = performance.now();
-      }
-    })();
     // ---------- Graceful hide (fades, then removes) ----------
     var __medraeHideTimeout;
     window.hideMedraeLoader = function () {
