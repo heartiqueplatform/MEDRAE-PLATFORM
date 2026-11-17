@@ -1,11 +1,4 @@
-// src/navigation/tabs.ts
-import type { ComponentType, JSX } from "react";
-import StudentDashboard from "@/pages/dashboard/student";
-import Feed from "@/pages/Feed";
-import MyMistakes from "@/pages/MyMistakes";
-import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
-import ListenPage from "@/pages/ListenPage";
-// ⬅️ MenuPage import REMOVED — it's a modal, not a tab
+import { lazy, type ComponentType, type JSX } from "react";
 
 export type TabDef = {
     path: string;
@@ -14,13 +7,19 @@ export type TabDef = {
     element: ComponentType;
 };
 
-// ⚠️ ORDER MATTERS. Footer reads this order left → right.
+const StudentDashboard = lazy(() => import("@/pages/dashboard/student"));
+const Feed = lazy(() => import("@/pages/Feed"));
+const MyMistakes = lazy(() => import("@/pages/MyMistakes"));
+const MedraeQuizzes = lazy(() =>
+    import("@/pages/MedraeQuizzes").then((m) => ({ default: m.MedraeQuizzes }))
+);
+const ListenPage = lazy(() => import("@/pages/ListenPage"));
+
 export const STUDENT_TABS: TabDef[] = [
     { path: "/dashboard/student", label: "Home", icon: null as any, element: StudentDashboard },
     { path: "/feed", label: "Feed", icon: null as any, element: Feed },
     { path: "/Medrae-quizzes", label: "Quizzes", icon: null as any, element: MedraeQuizzes },
     { path: "/listen", label: "Listen", icon: null as any, element: ListenPage },
-    // ⬅️ /menu REMOVED — drawer mounts fresh on each open via the route
     { path: "/my-mistakes", label: "Mistakes", icon: null as any, element: MyMistakes },
 ];
 
