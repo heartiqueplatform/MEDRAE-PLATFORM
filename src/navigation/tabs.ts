@@ -1,4 +1,10 @@
-import { lazy, type ComponentType, type JSX } from "react";
+// src/navigation/tabs.ts
+import type { ComponentType, JSX } from "react";
+import StudentDashboard from "@/pages/dashboard/student";
+import Feed from "@/pages/Feed";
+import MyMistakes from "@/pages/MyMistakes";
+import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
+import ListenPage from "@/pages/ListenPage";
 
 export type TabDef = {
     path: string;
@@ -6,14 +12,6 @@ export type TabDef = {
     icon: (props: { active: boolean }) => JSX.Element;
     element: ComponentType;
 };
-
-const StudentDashboard = lazy(() => import("@/pages/dashboard/student"));
-const Feed = lazy(() => import("@/pages/Feed"));
-const MyMistakes = lazy(() => import("@/pages/MyMistakes"));
-const MedraeQuizzes = lazy(() =>
-    import("@/pages/MedraeQuizzes").then((m) => ({ default: m.MedraeQuizzes }))
-);
-const ListenPage = lazy(() => import("@/pages/ListenPage"));
 
 export const STUDENT_TABS: TabDef[] = [
     { path: "/dashboard/student", label: "Home", icon: null as any, element: StudentDashboard },

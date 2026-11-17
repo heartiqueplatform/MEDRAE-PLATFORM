@@ -96,7 +96,6 @@ import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
 import SimulationPage from "@/pages/quiz-simulation/SimulationPage";
 import AIChatWidget from "@/components/AIChatWidget";
-import FirstTimeGuide from "@/components/FirstTimeGuide";
 import ResetPassword from "./pages/ResetPassword";
 // Add these imports at the top with other imports
 import GroupPayHome from './pages/grouppay/index';
@@ -628,7 +627,7 @@ const AppContent = () => {
                     <GlobalDuelManager />
 
                     <AIWrapper>
-                      <FirstTimeGuide />
+
                       <RouteScrollManager />
                       {/* ✅ Warm every route chunk in the background */}
                       <RoutePrefetcher />
