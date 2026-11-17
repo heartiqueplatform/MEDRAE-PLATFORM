@@ -24,7 +24,7 @@ import "@fontsource/poppins/800.css";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "2.0.3434";
+const APP_VERSION = "2.0.34565634";
 
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
