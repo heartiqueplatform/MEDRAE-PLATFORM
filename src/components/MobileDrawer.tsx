@@ -114,55 +114,54 @@ const readNumberCache = (key: string): number => {
     return 0;
 };
 
-const preloadUserProfile = () => {
+const preloadUserProfile = (userId?: string | null) => {
     try {
-        const sharedCache = getProfileCache();
+        // ✅ Scoped shared cache — never read another account's profile
+        const sharedCache = getProfileCache(userId);
         if (sharedCache && sharedCache.name && sharedCache.name !== "Unknown User") {
             return {
                 name: sharedCache.name,
                 email: "",
                 role: sharedCache.role || "Student",
                 avatar_url: sharedCache.avatar_url || "",
-                streak: Number(localStorage.getItem('userStreak')) || 0
+                // Legacy unscoped streak key — only trust when we have no id
+                streak: userId
+                    ? Number(localStorage.getItem(`userStreak_${userId}`) || 0)
+                    : Number(localStorage.getItem('userStreak')) || 0
             };
         }
-        const cached = localStorage.getItem('userProfile');
-        if (cached) {
+
+        // ✅ Scoped header mirror (v2_user_profile_<id>) — same key Header writes
+        if (userId) {
             try {
-                const parsed = JSON.parse(cached);
-                if (parsed.name && parsed.name !== "Unknown User") {
-                    return {
-                        name: parsed.name,
-                        email: "",
-                        role: parsed.role || "Student",
-                        avatar_url: parsed.avatar_url || "",
-                        streak: Number(localStorage.getItem('userStreak')) || 0
-                    };
+                const raw = localStorage.getItem(`v2_user_profile_${userId}`);
+                if (raw) {
+                    const parsed = JSON.parse(raw)?.data;
+                    if (parsed?.name && parsed.name !== "Unknown User") {
+                        return {
+                            name: parsed.name,
+                            email: "",
+                            role: parsed.role || "Student",
+                            avatar_url: parsed.avatar || "",
+                            streak: Number(localStorage.getItem(`userStreak_${userId}`) || 0),
+                        };
+                    }
                 }
             } catch { }
         }
+
         return { name: "", email: "", role: "", avatar_url: "", streak: 0 };
     } catch {
         return { name: "", email: "", role: "", avatar_url: "", streak: 0 };
     }
 };
-
-const preloadUserRole = (): "student" | "tutor" | "staff" | null => {
+const preloadUserRole = (userId?: string | null): "student" | "tutor" | "staff" | null => {
     try {
-        const sharedCache = getProfileCache();
-        if (sharedCache?.role === "tutor") return "tutor";
-        if (sharedCache?.role === "student") return "student";
-        if (sharedCache?.role === "staff") return "staff";
-        const cached = localStorage.getItem('userProfile');
-        if (cached) {
-            try {
-                const { role } = JSON.parse(cached);
-                if (role === "tutor") return "tutor";
-                if (role === "student") return "student";
-                if (role === "staff") return "staff";
-                return null;
-            } catch { return null; }
-        }
+        const sharedCache = getProfileCache(userId);
+        const raw = (sharedCache?.role || "").toString().toLowerCase();
+        if (raw === "tutor") return "tutor";
+        if (raw === "student") return "student";
+        if (raw === "staff") return "staff";
         return null;
     } catch { return null; }
 };
@@ -255,6 +254,7 @@ const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
 
 export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInternalNavigate }: MobileDrawerProps) {
     const { setIsOpen: setDrawerContext } = useDrawer();
+    useEffect(() => { setDrawerContext?.(isOpen); }, [isOpen, setDrawerContext]);
     const navigate = useNavigate();
     const drawerRef = useRef<HTMLDivElement>(null);
     const isOnline = useOnlineStatus();
@@ -264,20 +264,25 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     const isMounted = useRef(true);
     const profile = useProfileData();
     const { role: contextRole } = useUserRole();
+    const session = useSession();
+    const user = session?.user || null;
+    const authUserId = user?.id ?? null;
 
-    const userRole = (propUserRole || contextRole || preloadUserRole() || 'student') as 'student' | 'tutor' | 'staff';
+    const userRole = (
+        propUserRole ||
+        preloadUserRole(authUserId) ||   // ← scoped cache wins
+        contextRole ||
+        'student'
+    ) as 'student' | 'tutor' | 'staff';
     const isStudent = userRole === 'student';
     const isTutor = userRole === 'tutor';
     const isStaff = userRole === 'staff';
-
-    // 🆕 "Learner" = student OR tutor
     const isLearner = isStudent || isTutor;
-
-    const [userProfile, setUserProfile] = useState(preloadUserProfile);
-    const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(preloadUserRole);
-
-    const session = useSession();
-    const user = session?.user || null;
+    // ✅ Seed from the *current* user's scoped cache only.
+    const [userProfile, setUserProfile] = useState(() => preloadUserProfile(authUserId));
+    const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(
+        () => preloadUserRole(authUserId)
+    );
 
     const [activePlan, setActivePlan] = useState<string | null>(() => {
         if (getCachedPremium(user?.id)) return "premium";
@@ -310,7 +315,30 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             return { current: 0, best: 0 };
         }
     );
+    // ✅ THE FIX: when the session hydrates (or the account changes on this
+    //    device), re-seed drawer state from the *current* user's scoped
+    //    cache. Also wipe this file's unscoped legacy keys.
+    useEffect(() => {
+        if (!authUserId) {
+            // No session → clear stale profile state so we don't paint a ghost.
+            setUserProfile({ name: "", email: "", role: "", avatar_url: "", streak: 0 });
+            return;
+        }
 
+        // Drop the old unscoped key this file used to write.
+        try { localStorage.removeItem("userProfile"); } catch { }
+
+        setUserProfile((prev) => {
+            const seeded = preloadUserProfile(authUserId);
+            // Keep whatever we already have if it's already the right user
+            // and the cache hasn't produced anything new.
+            if (!seeded.name && prev.name) return prev;
+            return seeded;
+        });
+
+        const seededRole = preloadUserRole(authUserId);
+        if (seededRole) setUserRoleState(seededRole);
+    }, [authUserId]);
     /* ---- Fetch/refresh badges when drawer opens ---- */
     useEffect(() => {
         if (!isOpen || !user?.id) return;
@@ -495,13 +523,14 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     useEffect(() => {
         if (!isOpen || !user?.id) return;
 
-        const cached = preloadUserProfile();
+        const cached = preloadUserProfile(user.id);
         if (cached.name) setUserProfile(cached);
 
         const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
-        const cacheTs = Number(localStorage.getItem("userProfile_ts") || 0);
+        // ✅ Per-user timestamp, so switching accounts forces a refetch
+        const tsKey = `userProfile_ts_${user.id}`;
+        const cacheTs = Number(localStorage.getItem(tsKey) || 0);
         if (isOffline || Date.now() - cacheTs < CACHE_EXPIRY) return;
-
         let cancelled = false;
         (async () => {
             try {
@@ -526,12 +555,12 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                         : profileData.role === "student" ? "student"
                             : null
                 );
-                setProfileCache({
+                setProfileCache(user.id, {
                     name: next.name,
                     role: next.role,
                     avatar_url: next.avatar_url,
                 });
-                localStorage.setItem("userProfile_ts", String(Date.now()));
+                localStorage.setItem(`userProfile_ts_${user.id}`, String(Date.now()));
             } catch { /* silent */ }
         })();
 
@@ -540,11 +569,13 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
 
     const getAvatarUrl = useCallback((url: string | null | undefined): string | undefined => {
         if (!url) {
-            const cached = getProfileCache();
+            // ✅ Scoped lookup — never the previous account's blob
+            const cached = getProfileCache(user?.id);
             if (cached?.avatar_url) return cached.avatar_url;
             return undefined;
         }
-        const cacheKey = `avatar_cache_${user?.id}`;
+        if (!user?.id) return url;                  // no id → don't cache globally
+        const cacheKey = `avatar_cache_${user.id}`;
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
             try {
@@ -593,10 +624,21 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
     const handleLogout = useCallback(async () => {
         setIsLoggingOut(true);
         tapFeedback();
-        clearProfileCache();
-        localStorage.removeItem(`avatar_cache_${user?.id}`);
-        localStorage.removeItem("readAnnouncements");
+
+        // ✅ Clear only THIS account's scoped caches
+        const uid = user?.id ?? null;
+        if (uid) {
+            clearProfileCache(uid);
+            localStorage.removeItem(`avatar_cache_${uid}`);
+            localStorage.removeItem(`userProfile_ts_${uid}`);
+            localStorage.removeItem(`v2_user_profile_${uid}`);
+            localStorage.removeItem(`v2_user_streak_${uid}`);
+            localStorage.removeItem(`userStreak_${uid}`);
+        }
+        // Legacy unscoped keys — always drop
         localStorage.removeItem("userProfile");
+        localStorage.removeItem("userStreak");
+        localStorage.removeItem("readAnnouncements");
 
         try {
             localStorage.removeItem("medrae_dark_mode");
@@ -996,7 +1038,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                     >
                                         <div className="relative flex-shrink-0">
                                             <Avatar className="h-12 w-12">
-                                                <AvatarImage src={profile?.avatar_url || avatarUrl || ""} className="object-cover" />
+                                                <AvatarImage src={avatarUrl || ""} className="object-cover" />
                                                 <AvatarFallback className="bg-slate-200 dark:bg-[#21262d] text-blue-600 dark:text-[#58a6ff] font-bold">
                                                     {initials || "U"}
                                                 </AvatarFallback>

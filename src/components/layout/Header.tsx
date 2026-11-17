@@ -18,17 +18,21 @@ import { useUser } from "@supabase/auth-helpers-react";
 import OnlineStatusToast from "@/components/OnlineStatusToast";
 import { useToast } from "@/components/ui/use-toast";
 import { UserProfileModal } from "@/components/UserProfileModal";
-// ✅ Import shared profile cache
-import { getProfileCache, setProfileCache, clearProfileCache, PROFILE_CACHE_KEY } from "@/lib/profileCache";
+// ✅ Import shared profile cache (scoped by user id)
+import {
+  getProfileCache,
+  setProfileCache,
+  clearProfileCache,
+  PROFILE_CACHE_KEY,
+  purgeForeignProfileCaches,
+} from "@/lib/profileCache";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { NotificationBell } from "../ui/NotificationBell";
+
 // Derive the CURRENT role from the signed-in auth user.
-// auth.users.raw_user_meta_data.role is set at signup (createLinkedRole
-// passes `role` in options.data), so it is always correct for the
-// active session — no stale cache, no extra query.
 function roleFromAuthUser(authUser: any): string | null {
   const raw = authUser?.user_metadata?.role;
   if (typeof raw !== "string") return null;
@@ -38,15 +42,21 @@ function roleFromAuthUser(authUser: any): string | null {
   }
   return null;
 }
+
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
 const CACHE_DURATION = 30 * 60 * 1000;
 const BACKGROUND_UPDATE_INTERVAL = 5 * 60 * 1000;
 
-// ✅ Cache helpers with versioning
-const getCached = (key: string) => {
+// ✅ Scope every cache key by user id so account switching on a shared
+//    phone can never serve the previous account's avatar/streak/etc.
+const scopedKey = (key: string, userId?: string | null) =>
+  userId ? `${key}_${userId}` : key;
+
+// ✅ Cache helpers with versioning + per-user scoping
+const getCached = (key: string, userId?: string | null) => {
   try {
-    const cached = localStorage.getItem(`${CACHE_VERSION}_${key}`);
+    const cached = localStorage.getItem(`${CACHE_VERSION}_${scopedKey(key, userId)}`);
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
       if (Date.now() - timestamp < CACHE_DURATION) return data;
@@ -55,24 +65,29 @@ const getCached = (key: string) => {
   return null;
 };
 
-const setCached = (key: string, data: any) => {
+const setCached = (key: string, data: any, userId?: string | null) => {
   try {
-    localStorage.setItem(`${CACHE_VERSION}_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
+    localStorage.setItem(
+      `${CACHE_VERSION}_${scopedKey(key, userId)}`,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
   } catch (e) { /* silent */ }
 };
+
 /**
  * Read a cache entry ignoring TTL — used for instant paint.
  * Age only decides *whether to refetch*, never *whether to render*.
  */
-const getCachedAny = <T,>(key: string): T | null => {
+const getCachedAny = <T,>(key: string, userId?: string | null): T | null => {
   try {
-    const raw = localStorage.getItem(`${CACHE_VERSION}_${key}`);
+    const raw = localStorage.getItem(`${CACHE_VERSION}_${scopedKey(key, userId)}`);
     if (!raw) return null;
     return JSON.parse(raw).data as T;
   } catch {
     return null;
   }
 };
+
 // ✅ Clear old cache
 const clearOldCache = () => {
   try {
@@ -87,45 +102,45 @@ const clearOldCache = () => {
 clearOldCache();
 
 // ✅ PRE-LOAD FUNCTIONS - Runs synchronously before component mount
-const preloadUserData = () => {
+const preloadUserData = (userId?: string | null) => {
   try {
-    // Check shared profile cache FIRST (most reliable)
-    const cached = getProfileCache();
+    // Shared profile cache FIRST (now scoped by user id)
+    const cached = getProfileCache(userId);
     if (cached && cached.name && cached.name !== "Unknown User") {
       return {
         name: cached.name,
         role: cached.role || "Student",
-        // Preserve the real avatar URL from cache so it renders offline too.
-        avatar: cached.avatar_url || "/avatars/default.jpg",
+        // Never invent a fake path — let AvatarFallback handle "no avatar".
+        avatar: cached.avatar_url || undefined,
       };
     }
 
-    // Fallback: try the Header's own versioned cache (v2_user_profile)
-    const ownCache = getCachedAny<any>('user_profile');
+    // Fallback: Header's own versioned cache (now scoped by user id)
+    const ownCache = getCachedAny<any>('user_profile', userId);
     if (ownCache?.name && ownCache.name !== "Unknown User") {
       return {
         name: ownCache.name,
         role: ownCache.role || "Student",
-        avatar: ownCache.avatar || "/avatars/default.jpg",
+        avatar: ownCache.avatar || undefined,
       };
     }
 
-    // Check legacy cache as fallback
-    const cachedUser = localStorage.getItem('supabaseUser');
-    if (cachedUser) {
-      const parsed = JSON.parse(cachedUser);
-      if (parsed.email) {
-        return {
-          name: parsed.email.split('@')[0] || "Nurse",
-          role: "Student",
-          avatar: "/avatars/default.jpg",
-        };
+    // Legacy cache — only trust it when we have no userId context yet
+    if (!userId) {
+      const cachedUser = localStorage.getItem('supabaseUser');
+      if (cachedUser) {
+        const parsed = JSON.parse(cachedUser);
+        if (parsed.email) {
+          return {
+            name: parsed.email.split('@')[0] || "Nurse",
+            role: "Student",
+            avatar: undefined,
+          };
+        }
       }
     }
   } catch (e) { /* silent */ }
 
-  // Fallback: use the role persisted by Login/SwitchAccount, not a
-  // hardcoded "Student". Avoids a "Student" flash on Tutor/Staff dashboards.
   const lastRole = (() => {
     try {
       const r = localStorage.getItem("last_known_role");
@@ -136,30 +151,32 @@ const preloadUserData = () => {
     return "Student";
   })();
 
-  return { name: "Student", role: lastRole, avatar: "/avatars/default.jpg" };
+  return { name: "Student", role: lastRole, avatar: undefined };
 };
-const preloadStreak = () => {
+
+const preloadStreak = (userId?: string | null) => {
   try {
     // Paint from disk, any age — the TTL only governs refetch.
-    const cached = getCachedAny<number>('user_streak');
+    const cached = getCachedAny<number>('user_streak', userId);
     if (typeof cached === 'number' && cached > 0) return cached;
-    const legacy = localStorage.getItem('userStreak');
-    if (legacy) {
-      const val = parseInt(legacy, 10);
-      if (val > 0) return val;
+    // Legacy key — only trust when we have no user id yet
+    if (!userId) {
+      const legacy = localStorage.getItem('userStreak');
+      if (legacy) {
+        const val = parseInt(legacy, 10);
+        if (val > 0) return val;
+      }
     }
   } catch (e) { /* silent */ }
   return 0;
 };
 
-const preloadNotificationCount = () => {
-  return getCachedAny<number>('notification_count') || 0;
+const preloadNotificationCount = (userId?: string | null) => {
+  return getCachedAny<number>('notification_count', userId) || 0;
 };
 
 const preloadTotalUsers = () => {
   // ✅ Read the SAME cache AllUsersPopover writes (all_users_cache_v4).
-  //    The `v2_total_users` key was never written by anyone, so it
-  //    always returned null → the badge flashed on every mount.
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem("all_users_cache_v4");
@@ -171,19 +188,13 @@ const preloadTotalUsers = () => {
   return null;
 };
 
-// ✅ PRE-LOAD THEME - Runs synchronously before component mount
 // ✅ PRE-LOAD THEME - Trusts the <html> class set by index.html bootstrap
 const preloadTheme = () => {
   try {
-    // 1. Trust the <html> class
     if (document.documentElement.classList.contains('dark')) return true;
     if (document.documentElement.classList.contains('light')) return false;
-
-    // 2. Fallback: canonical key
     const darkMode = localStorage.getItem('medrae_dark_mode');
     if (darkMode !== null) return darkMode === 'true';
-
-    // 3. Fallback: OS
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   } catch (e) {
     return false;
@@ -222,43 +233,37 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   const authUser = useUser();
   const authRole = roleFromAuthUser(authUser);
 
-
   const { toggleSidebar } = useSidebar();
   const width = useWindowWidth();
   const isOnline = useOnlineStatus();
 
   const { onlineUsers, onlineCount, loading: onlineLoading, refresh } = useOnlineUsers();
   // ✅ WhatsApp-style: paint the badge from last-known count instantly.
-  // TTL is irrelevant for rendering — it only gates background refresh.
   const ONLINE_COUNT_KEY = 'online_count';
   const cachedOnlineCount = useMemo(
-    () => getCachedAny<number>(ONLINE_COUNT_KEY),
-    []
+    () => getCachedAny<number>(ONLINE_COUNT_KEY, authUser?.id),
+    [authUser?.id]
   );
   // Badge should never show a skeleton if we've ever seen a count before.
   const showBadgeSkeleton = onlineLoading && cachedOnlineCount === null;
 
   // Persist the latest count so the next mount paints instantly.
   useEffect(() => {
-    if (!onlineLoading && typeof onlineCount === 'number') {
-      setCached(ONLINE_COUNT_KEY, onlineCount);
+    if (!onlineLoading && typeof onlineCount === 'number' && authUser?.id) {
+      setCached(ONLINE_COUNT_KEY, onlineCount, authUser.id);
     }
-  }, [onlineCount, onlineLoading]);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  }, [onlineCount, onlineLoading, authUser?.id]);
 
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const [isMuted, setIsMuted] = useState(isSoundMuted);
-
-  // ✅ NEW: State for settings dropdown open
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // ✅ PRE-LOADED THEME - No flicker
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Use prop if provided, otherwise use preloaded theme
     return propIsDarkMode !== undefined ? propIsDarkMode : preloadTheme();
   });
 
-  // ✅ Sync with prop changes
   useEffect(() => {
     if (propIsDarkMode !== undefined && propIsDarkMode !== isDarkMode) {
       setIsDarkMode(propIsDarkMode);
@@ -286,55 +291,78 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     if (propUser && propUser.name && propUser.name !== "Unknown User") {
       return propUser;
     }
-    // 2. ALWAYS use pre-loaded data from cache (never shows fallback)
-    return preloadUserData();
+    // 2. Read the *scoped* cache for the signed-in user
+    return preloadUserData(authUser?.id);
   });
-  // Override whatever came in via props/cache with the truth from auth.
-  // authUser.user_metadata.role is the signed-in session's role — the
-  // single source of truth for "which role am I right now".
+
+  // Override role with the truth from auth metadata (single source).
   const effectiveUser = useMemo(() => {
-    if (!authRole) return user;                 // no metadata → keep what we have
-    if (user?.role === authRole) return user;   // already correct
-    return { ...user, role: authRole };         // fix just the role
+    if (!authRole) return user;
+    if (user?.role === authRole) return user;
+    return { ...user, role: authRole };
   }, [user, authRole]);
-  // ✅ SYNC: When propUser changes, update shared cache
+
+  // ============================================================
+  // ✅ Streak - ALWAYS shows cached data immediately
+  // (declared BEFORE the re-seed effect below so setStreak is in scope)
+  // ============================================================
+  const [streak, setStreak] = useState(() => {
+    if (propStreak > 0) return propStreak;
+    return preloadStreak(authUser?.id);
+  });
+
+  // ✅ THE FIX: when authUser hydrates (or the account changes on this
+  //    device), purge caches belonging to other accounts and re-seed
+  //    state from the correctly-scoped cache.
   useEffect(() => {
+    if (!authUser?.id) return;
+
+    purgeForeignProfileCaches(authUser.id);
+
+    setUser((prev) => {
+      if (propUser?.name && propUser.name !== "Unknown User") return propUser;
+      return preloadUserData(authUser.id);
+    });
+
+    setStreak((prev) => {
+      if (propStreak > 0) return propStreak;
+      return preloadStreak(authUser.id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.id]);
+
+  // ✅ SYNC: When propUser changes, update shared cache (scoped by id)
+  useEffect(() => {
+    if (!authUser?.id) return;
     if (propUser && propUser.name && propUser.name !== "Unknown User") {
       const currentName = user?.name;
       const propName = propUser.name;
 
       if (propName !== currentName || propUser.role !== user?.role || propUser.avatar !== user?.avatar) {
         setUser(propUser);
-        // ✅ Update shared cache (same as Profile page uses)
-        setProfileCache({
+        setProfileCache(authUser.id, {
           name: propUser.name,
           role: propUser.role,
           avatar_url: propUser.avatar,
         });
-        setCached('user_profile', propUser);
+        setCached('user_profile', propUser, authUser.id);
       }
     }
-  }, [propUser]);
-
-  // ============================================================
-  // ✅ Streak - ALWAYS shows cached data immediately
-  // ============================================================
-  const [streak, setStreak] = useState(() => {
-    if (propStreak > 0) return propStreak;
-    return preloadStreak();
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propUser, authUser?.id]);
 
   // ✅ SYNC: Update streak when props change
   useEffect(() => {
+    if (!authUser?.id) return;
     if (propStreak > 0 && propStreak !== streak) {
       setStreak(propStreak);
-      setCached('user_streak', propStreak);
+      setCached('user_streak', propStreak, authUser.id);
       localStorage.setItem('userStreak', String(propStreak));
     }
-  }, [propStreak]);
-  // ✅ Premium status — light, cached, read-only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propStreak, authUser?.id]);
+
   // ✅ Premium status — single source of truth via lib/subscription.ts
-  // Synchronously seeded so it works offline (no flash of "Get Verified").
   const [isPremium, setIsPremium] = useState<boolean>(
     () => getCachedPremium(authUser?.id) ?? false
   );
@@ -369,18 +397,18 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, [authUser?.id]);
+
   // ============================================================
   // ✅ Notifications & Total Users - ALWAYS shows cached data
   // ============================================================
-
   const [totalUsers, setTotalUsers] = useState<number | null>(preloadTotalUsers);
-  // ✅ Belt-and-suspenders: whenever totalUsers changes, ensure the
-  //    `v2_total_users` mirror stays in sync. `preloadTotalUsers` reads
-  //    `all_users_cache_v4` first, but this keeps a fallback aligned.
+
+  // ✅ Belt-and-suspenders: keep `v2_total_users_<id>` mirror aligned.
   useEffect(() => {
-    if (typeof totalUsers !== 'number' || totalUsers < 0) return;
-    setCached('total_users', totalUsers);
-  }, [totalUsers]);
+    if (typeof totalUsers !== 'number' || totalUsers < 0 || !authUser?.id) return;
+    setCached('total_users', totalUsers, authUser.id);
+  }, [totalUsers, authUser?.id]);
+
   // ✅ REFS
   const isMounted = useRef(true);
   const backgroundIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -388,7 +416,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   // ============================================================
   // ✅ BACKGROUND UPDATES - Silently update in background
   // ============================================================
-
   const updateStreakInBackground = useCallback(async () => {
     if (!authUser?.id || !isOnline) return;
 
@@ -409,10 +436,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
           .insert([{ user_id: authUser.id, login_date: today }]);
       }
 
-      // ✅ Only re-read the streak if our cache is stale.
-      // This is the WhatsApp-style "silent refresh" gate — no read
-      // when the cache is still fresh, but the login row is written.
-      if (getCached('user_streak') !== null) return;
+      // ✅ Only re-read the streak if THIS user's cache is stale.
+      if (getCached('user_streak', authUser.id) !== null) return;
 
       const { data, error } = await supabase
         .from("login_activity")
@@ -426,25 +451,32 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         const newStreak = data.streak || 0;
         if (newStreak !== streak) {
           setStreak(newStreak);
-          setCached('user_streak', newStreak);
+          setCached('user_streak', newStreak, authUser.id);
           localStorage.setItem('userStreak', String(newStreak));
           window.dispatchEvent(new CustomEvent('streak-updated', {
-            detail: { streak: newStreak },
+            detail: { streak: newStreak, user_id: authUser.id },
           }));
         }
       }
     } catch (err) {
       // Silent fail — keep cached data.
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.id, isOnline, streak]);
 
-
-  // ✅ UPDATED: Uses shared profileCache - SILENT background update
-  const updateProfileInBackground = useCallback(async () => {
+  // ✅ Uses shared profileCache — SILENT background update, scoped by user id
+  const updateProfileInBackground = useCallback(async (opts: { force?: boolean } = {}) => {
     if (!authUser?.id || !isOnline) return;
 
-    // ✅ Skip network if shared profile cache is fresh.
-    if (getCached('user_profile') !== null) return;
+    // Only skip the network if THIS user already has a *real* avatar cached.
+    // A cached entry with null/empty avatar (or the old fake default path)
+    // is treated as stale so the real URL gets fetched.
+    const scoped = getCached<any>('user_profile', authUser.id);
+    const cachedAvatar = scoped?.avatar;
+    const cacheHasGoodAvatar =
+      cachedAvatar && cachedAvatar !== "/avatars/default.jpg";
+
+    if (!opts.force && cacheHasGoodAvatar) return;
 
     try {
       const { data, error } = await supabase
@@ -454,50 +486,39 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         .single();
 
       if (!error && data && isMounted.current) {
-        const currentName = user?.name;
-        const currentRole = user?.role;
-        const currentAvatar = user?.avatar;
+        const updatedUser = {
+          name: data.name || user?.name || "Student",
+          role: data.role || user?.role || "Student",
+          avatar: data.avatar_url || cachedAvatar || undefined,
+        };
 
-        const nameChanged = data.name && data.name !== currentName;
-        const roleChanged = data.role && data.role !== currentRole;
-        const avatarChanged = data.avatar_url && data.avatar_url !== currentAvatar;
+        setUser(updatedUser);
 
-        if (nameChanged || roleChanged || avatarChanged) {
-          const updatedUser = {
-            name: data.name || currentName || "Student",
-            role: data.role || currentRole || "Student",
-            avatar: data.avatar_url || currentAvatar || "/avatars/default.jpg",
-          };
+        setProfileCache(authUser.id, {
+          name: data.name,
+          role: data.role,
+          avatar_url: data.avatar_url || getProfileCache(authUser.id)?.avatar_url,
+        });
+        setCached('user_profile', updatedUser, authUser.id);
 
-          setUser(updatedUser);
-          // ✅ Update shared cache (same as Profile page)
-          setProfileCache({
-            name: data.name,
-            role: data.role,
-            avatar_url: data.avatar_url,
-          });
-          setCached('user_profile', updatedUser);
-
-          // ✅ Dispatch event for other components to sync
-          window.dispatchEvent(new CustomEvent('profile-updated', {
-            detail: { profile: data }
-          }));
-        }
+        window.dispatchEvent(new CustomEvent('profile-updated', {
+          detail: { profile: { ...data, user_id: authUser.id } },
+        }));
       }
     } catch (err) {
       // Silent fail - keep cached data
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.id, isOnline, user?.name, user?.role, user?.avatar]);
 
   // ✅ Start background updates - SILENT, no UI disruption
   useEffect(() => {
     if (!isOnline || !authUser?.id) return;
 
-    // Initial background update after 3 seconds
+    // Initial background update after 10 seconds
     const initialTimeout = setTimeout(() => {
       if (isMounted.current) {
         updateStreakInBackground();
-
         updateProfileInBackground();
       }
     }, 10000);
@@ -505,8 +526,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     backgroundIntervalRef.current = setInterval(() => {
       if (isMounted.current && isOnline) {
         updateStreakInBackground();
-
-
         updateProfileInBackground();
       }
     }, BACKGROUND_UPDATE_INTERVAL);
@@ -518,6 +537,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       }
     };
   }, [isOnline, authUser?.id, updateStreakInBackground, updateProfileInBackground]);
+
   // ============================================================
   // ✅ LAZY FETCH: When user opens settings (force update)
   // ============================================================
@@ -527,14 +547,10 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
     await Promise.all([
       updateStreakInBackground(),
-
-
-      updateProfileInBackground(),
+      updateProfileInBackground({ force: true }),
     ]);
   }, [authUser?.id, isOnline, updateStreakInBackground, updateProfileInBackground]);
-  // ============================================================
-  // ✅ Online users popover - LAZY fetch
-  // ============================================================
+
   // ============================================================
   // ✅ Online users popover — manual open always fetches fresh
   // ============================================================
@@ -542,17 +558,15 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     (open: boolean) => {
       setShowOnlineUsers(open);
       if (open && isOnline) {
-        // ✅ Manual open → always fetch fresh (bypasses hook throttle)
         refresh?.();
       }
     },
     [isOnline, refresh]
   );
 
-  // ✅ UPDATED: Handle settings open/close with blur effect
   const handleSettingsOpen = useCallback((open: boolean) => {
     setIsSettingsOpen(open);
-    if (open) lazyFetchData();   // sheet handles body scroll-lock itself
+    if (open) lazyFetchData();
   }, [lazyFetchData]);
 
   // ✅ Visibility change - refresh in background
@@ -567,8 +581,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       visibilityTimeout = setTimeout(() => {
         if (document.hasFocus() && isOnline) {
           updateStreakInBackground();
-          updateProfileInBackground();
-          // ✅ Silent online-count refresh — badge updates with no skeleton.
+          updateProfileInBackground({ force: true });
           refresh?.();
         }
       }, 2000);
@@ -579,36 +592,41 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (visibilityTimeout) clearTimeout(visibilityTimeout);
     };
-  }, [authUser?.id, isOnline, updateStreakInBackground, updateProfileInBackground]);
+  }, [authUser?.id, isOnline, updateStreakInBackground, updateProfileInBackground, refresh]);
+
   // ============================================================
   // ✅ Event listeners (passive)
   // ============================================================
   useEffect(() => {
     const handleStreakUpdate = (event: CustomEvent) => {
+      if (!authUser?.id) return;
       const newStreak = event.detail?.streak;
       if (newStreak !== undefined && newStreak !== streak) {
         setStreak(newStreak);
-        setCached('user_streak', newStreak);
+        setCached('user_streak', newStreak, authUser.id);
         localStorage.setItem('userStreak', String(newStreak));
       }
     };
 
     const handleProfileUpdate = (event: CustomEvent) => {
       const profile = event.detail?.profile;
-      if (profile) {
-        const updatedUser = {
-          name: profile.name || user?.name || "Student",
-          role: profile.role || user?.role || "Student",
-          avatar: profile.avatar_url || user?.avatar || "/avatars/default.jpg",
-        };
-        setUser(updatedUser);
-        // ✅ Update shared cache
-        setProfileCache({
-          name: profile.name,
-          role: profile.role,
-          avatar_url: profile.avatar_url,
-        });
-      }
+      if (!profile) return;
+      if (!authUser?.id) return;
+      // ✅ Ignore events that belong to a different account
+      if (profile.user_id && profile.user_id !== authUser.id) return;
+
+      const updatedUser = {
+        name: profile.name || user?.name || "Student",
+        role: profile.role || user?.role || "Student",
+        avatar: profile.avatar_url ?? user?.avatar ?? undefined,
+      };
+      setUser(updatedUser);
+
+      setProfileCache(authUser.id, {
+        name: profile.name,
+        role: profile.role,
+        avatar_url: profile.avatar_url ?? getProfileCache(authUser.id)?.avatar_url,
+      });
     };
 
     window.addEventListener('streak-updated', handleStreakUpdate as EventListener);
@@ -618,7 +636,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       window.removeEventListener('streak-updated', handleStreakUpdate as EventListener);
       window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
     };
-  }, [streak, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streak, user, authUser?.id]);
 
   // ✅ Sound mute sync
   useEffect(() => {
@@ -664,20 +683,16 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     });
   }, [toast]);
 
-  // ✅ Handle theme toggle - updates both local state and prop callback
   // ✅ Handle theme toggle — single canonical key + class-based sync
   const handleToggleDarkMode = useCallback(() => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
 
-    // ✅ Single canonical key
     localStorage.setItem('medrae_dark_mode', String(newDarkMode));
 
-    // ✅ Apply class to <html> — MutationObserver in Footer picks this up
     document.documentElement.classList.toggle('dark', newDarkMode);
     document.documentElement.classList.toggle('light', !newDarkMode);
 
-    // ✅ Update CSS variable so splash/loader match if it ever re-runs
     document.documentElement.style.setProperty(
       '--bg-color',
       newDarkMode ? '#0d1117' : '#ffffff'
@@ -685,20 +700,17 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
     if (onToggleDarkMode) onToggleDarkMode();
 
-    // ✅ Notify any other listeners
     window.dispatchEvent(new CustomEvent('theme-changed', {
       detail: { isDarkMode: newDarkMode }
     }));
   }, [isDarkMode, onToggleDarkMode]);
 
-  // ✅ The useOnlineUsers hook already excludes the current user.
-  //    Just use the length directly. No subtraction.
   // ✅ Badge shows total online users, including the current user.
-  //    `onlineCount` from the hook already includes everyone.
   const onlineBadgeText = useMemo(
     () => Math.max(0, onlineCount ?? 0),
     [onlineCount]
   );
+
   const getUserInitials = useCallback((name: string) => {
     if (!name || name === "Unknown" || name === "Unknown User") {
       return <User className="h-3 w-3 sm:h-4 sm:w-4" />;
@@ -714,19 +726,24 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     return "May Series Ahead • Success Awaits💙 ";
   }, []);
 
+  // ✅ Normalize the avatar src once. Never let the old fake
+  //    "/avatars/default.jpg" short-circuit the real cached URL, and
+  //    never read an unscoped cache.
+  const avatarSrc = useMemo(() => {
+    const u = user?.avatar;
+    const fromUser = u && u !== "/avatars/default.jpg" ? u : null;
+    return fromUser || getProfileCache(authUser?.id)?.avatar_url || undefined;
+  }, [user?.avatar, authUser?.id]);
+
   // ============================================================
   //  RENDER - ALWAYS shows cached data immediately
-  // No loading state needed - cache is always available
   // ============================================================
-
-  // Determine theme classes based on isDarkMode state
   const themeClasses = isDarkMode
     ? 'bg-slate-900/95 dark:bg-slate-900/95 border-0 shadow-none'
     : 'bg-white/95 border-0 shadow-none';
+
   return (
     <>
-
-
       <header className={`
   sticky top-0 z-50 w-full h-16 sm:h-20
   bg-white/95 dark:bg-muted/30 backdrop-blur-xl
@@ -739,18 +756,12 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   transition-all duration-300 ease-in-out
 `}>
         {/* Mobile Logo */}
-        {/* Mobile Logo + live countdown (mobile only) */}
-        {/* Mobile Logo */}
         <div className="flex md:hidden items-center shrink-0">
           <div className="text-[18px] font-extrabold tracking-tight leading-none">
             <span className="text-red-500">Medrae</span>{' '}
             <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>
         </div>
-
-
-
-        {/* Desktop — countdown intentionally hidden. NCK message lives below. */}
 
         <OnlineStatusToast />
 
@@ -774,19 +785,15 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
           {/* ACTION GROUP */}
           <div className="flex items-center ml-auto gap-2 sm:gap-4">
-
-            {/* 1. Online Users Section */}
             {/* 1. Online Users Section */}
             <div className="hidden sm:flex items-center gap-1 sm:gap-2">
-              {/* ✅ AllUsersPopover — admin-only.
-                  Everyone else sees nothing; the component isn't
-                  even mounted for them, so no network calls fire. */}
+              {/* ✅ AllUsersPopover — admin-only. */}
               {authUser?.id === "25f37970-c9b9-4c15-b8a2-514a912e3261" && (
                 <AllUsersPopover
                   totalUsers={totalUsers}
                   onTotalUsersChange={(n) => {
                     setTotalUsers(n);
-                    setCached('total_users', n); // optional — future-proof
+                    if (authUser?.id) setCached('total_users', n, authUser.id);
                   }}
                 />
               )}
@@ -794,9 +801,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               <Popover open={showOnlineUsers} onOpenChange={handleOnlinePopoverOpen}>
                 <PopoverTrigger asChild>
                   <div className="flex items-center shrink-0 cursor-pointer select-none">
-                    {/* ✅ Only render the badge once we've actually loaded the list.
-                        While loading, show a quiet skeleton pill — same dimensions,
-                        muted color — so the header doesn't jump when data arrives. */}
                     {showBadgeSkeleton ? (
                       <Badge
                         className="h-5 sm:h-6 px-2 sm:px-2.5 text-[9px] sm:text-[10px] bg-muted text-muted-foreground border-0 flex items-center transition-all rounded-full shadow-none shrink-0"
@@ -807,7 +811,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     ) : (
                       <Badge className="h-5 sm:h-6 px-2 sm:px-2.5 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center transition-all rounded-full shadow-none shrink-0">
                         <span className="leading-none flex items-center tabular-nums">
-                          {/* Prefer live count; fall back to last-known cache while loading. */}
                           {onlineLoading
                             ? (cachedOnlineCount ?? 0)
                             : onlineBadgeText}
@@ -832,8 +835,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     ) : onlineUsers.length > 0 ? (
                       <ul className="space-y-2 text-sm">
                         {onlineUsers.map((u) => {
-                          // ✅ `authUser?.id` is the current user's id.
-                          //    If we're rendering ourselves, mark the row.
                           const isMe = u.user_id === authUser?.id;
 
                           return (
@@ -844,7 +845,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                                 : "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                                 }`}
                               onClick={() => {
-                                // ✅ Don't open a profile modal for yourself
                                 if (isMe) return;
                                 setSelectedUserId(u.user_id);
                                 setShowOnlineUsers(false);
@@ -888,13 +888,9 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               </Popover>
             </div>
 
-            {/* 2. ✅ CHALLENGE BUTTON - COMPLETELY REMOVED */}
-
-
-
             <NotificationBell />
-            {/* 4. Settings Dropdown - NOW USING settings.png INSTEAD OF CogIcon */}
-            {/* 4. Settings Button — opens full-screen native-like sheet */}
+
+            {/* Settings Button — opens full-screen native-like sheet */}
             <Button
               variant="ghost"
               size="icon"
@@ -941,13 +937,10 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
             <div className="relative">
               <Avatar className="h-14 w-14 sm:h-14 sm:w-14 rounded-full border-0 shadow-none">
                 <AvatarImage
-                  src={
-                    user?.avatar ||
-                    getProfileCache()?.avatar_url ||
-                    undefined
-                  }
+                  src={avatarSrc}
                   className="object-cover"
                   loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = ""; }}
                 />
                 <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-[10px] sm:text-xs">
                   {isOnline ? (
