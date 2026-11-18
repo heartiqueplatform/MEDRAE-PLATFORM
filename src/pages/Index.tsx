@@ -55,19 +55,6 @@ const SLIDESHOW = [
 export default function Index() {
   const nav = useNavigate();
   const [slideIdx, setSlideIdx] = useState(0);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("medrae.persona");
-    const isFirstLoadThisSession = !sessionStorage.getItem("medrae.seen_chooser");
-    sessionStorage.setItem("medrae.seen_chooser", "1");
-
-    if (saved && isFirstLoadThisSession) {
-      if (saved === "student" || saved === "staff" || saved === "tutor") {
-        nav(`/for/${saved}`, { replace: true });
-      }
-    }
-  }, [nav]);
-
   useEffect(() => {
     const interval = setInterval(() => {
       setSlideIdx((prev) => (prev + 1) % SLIDESHOW.length);

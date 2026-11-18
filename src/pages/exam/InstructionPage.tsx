@@ -478,7 +478,7 @@ export default function ExamInstructions() {
                     className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain"
                     style={{ WebkitOverflowScrolling: "touch" }}
                 >
-                    <div className="w-full max-w-[880px] mx-auto px-4 py-3 pb-24 safe-bottom space-y-3">
+                    <div className="w-full max-w-[880px] mx-auto px-2 py-3 pb-24 safe-bottom space-y-3">
 
                         {/* Access error banner */}
                         {accessError && (

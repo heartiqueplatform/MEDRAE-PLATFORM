@@ -1016,7 +1016,7 @@ export default function DailyStatus() {
                                 animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
                                 className="overflow-hidden"
                             >
-                                <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-white/10 space-y-4">
+                                <div className="mt-4 p-2 rounded-2xl bg-slate-50 dark:bg-muted/30 border-0 space-y-4">
                                     <textarea
                                         className="w-full min-h-[100px] p-0 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none text-sm resize-none"
                                         placeholder="Educate, inspire, or grow together..."
@@ -1024,9 +1024,9 @@ export default function DailyStatus() {
                                         onChange={(e) => setDailyContent(e.target.value)}
                                     />
 
-                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-0">
                                         <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10">
+                                            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border-0">
                                                 <Clock className="w-3.5 h-3.5 text-blue-500" />
                                                 <Select
                                                     value={dailyDuration}
@@ -1058,7 +1058,7 @@ export default function DailyStatus() {
                                             />
                                             <label
                                                 htmlFor="dailyImageUpload"
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-xl border-0 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                             >
                                                 <Camera className="w-3.5 h-3.5 text-emerald-500" />
                                                 <span className="text-xs font-bold dark:text-white">Photo</span>
@@ -1084,7 +1084,7 @@ export default function DailyStatus() {
                                         <div className="relative mt-2 w-24 h-24 group">
                                             <img
                                                 src={URL.createObjectURL(dailyImage)}
-                                                className="w-full h-full object-cover rounded-xl border border-white/20 shadow-md"
+                                                className="w-full h-full object-cover rounded-xl border-0 shadow-md"
                                                 alt="Preview"
                                             />
                                             <button
@@ -1141,7 +1141,7 @@ export default function DailyStatus() {
                                             data-post-id={post.id}
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
-                                            className="group relative bg-white dark:bg-muted/30 sm:bg-transparent sm:dark:bg-transparent border-b border-slate-100 dark:border-white/5 sm:border-0 last:border-0 overflow-hidden sm:overflow-visible"
+                                            className="group relative bg-white dark:bg-muted/30 sm:bg-transparent sm:dark:bg-transparent border-0 sm:border-0 last:border-0 overflow-hidden sm:overflow-visible"
                                         >
                                             <div className="flex flex-col">
                                                 {/* Header */}
@@ -1156,7 +1156,7 @@ export default function DailyStatus() {
                                                                             : post.id
                                                                     )
                                                                 }
-                                                                className="block h-10 w-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm"
+                                                                className="block h-10 w-10 rounded-full overflow-hidden border-0 shadow-none"
                                                             >
                                                                 {post.profiles?.avatar_url ? (
                                                                     <img
@@ -1179,7 +1179,7 @@ export default function DailyStatus() {
                                                                         initial={{ opacity: 0, y: 10 }}
                                                                         animate={{ opacity: 1, y: 0 }}
                                                                         exit={{ opacity: 0, y: 10 }}
-                                                                        className="absolute left-0 top-full mt-2 z-50 w-56 p-4 rounded-2xl bg-white/95 dark:bg-muted/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-2xl"
+                                                                        className="absolute left-0 top-full mt-2 z-50 w-56 p-4 rounded-2xl bg-white/95 dark:bg-muted/70 backdrop-blur-xl border-0 shadow-2xl"
                                                                     >
                                                                         <div className="space-y-2">
                                                                             <p className="text-sm dark:text-white truncate">
@@ -1240,19 +1240,28 @@ export default function DailyStatus() {
                                                 )}
 
                                                 {/* Image */}
+                                                {/* Image */}
                                                 {post.image_url && (
-                                                    <div className="relative overflow-hidden bg-transparent flex items-center justify-center py-2 sm:py-3">
-                                                        <img
-                                                            src={post.image_url}
-                                                            className="w-full h-auto max-h-[70vh] object-contain cursor-zoom-in rounded-2xl sm:max-h-[60vh] sm:max-w-[600px] sm:rounded-lg"
-                                                            alt="status"
-                                                            onClick={() =>
-                                                                setFullscreenImage(post.image_url)
-                                                            }
-                                                        />
+                                                    <div className="relative flex items-center justify-center overflow-hidden py-2 sm:py-3">
+                                                        <div className="relative flex min-h-[240px] w-full items-center justify-center overflow-hidden rounded-2xl bg-muted/40 sm:min-h-[280px] sm:rounded-lg">
+                                                            <img
+                                                                src={post.image_url}
+                                                                alt="status"
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                                onClick={() => setFullscreenImage(post.image_url)}
+                                                                className="h-auto w-full max-h-[70vh] object-contain cursor-zoom-in rounded-2xl opacity-0 transition-opacity duration-500 sm:max-h-[60vh] sm:max-w-[600px] sm:rounded-lg"
+                                                                onLoad={(e) => {
+                                                                    e.currentTarget.classList.remove("opacity-0");
+                                                                    e.currentTarget.classList.add("opacity-100");
+                                                                }}
+                                                                onError={(e) => {
+                                                                    e.currentTarget.classList.remove("opacity-0");
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
-
                                                 {/* Action bar */}
                                                 <div className="px-4 py-2 flex items-center gap-1">
                                                     <button
@@ -1342,9 +1351,9 @@ export default function DailyStatus() {
                                                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                                                             exit={{ opacity: 0, y: -6, scale: 0.96 }}
                                                                             transition={{ duration: 0.15 }}
-                                                                            className="absolute right-0 bottom-full mb-1.5 z-50 w-44 rounded-xl bg-white dark:bg-[#1f2630] shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden"
+                                                                            className="absolute right-0 bottom-full mb-1.5 z-50 w-44 rounded-xl bg-white dark:bg-[#1f2630] shadow-none ring-0 overflow-hidden"
                                                                         >
-                                                                            <div className="px-3 py-2 border-b border-slate-100 dark:border-white/10">
+                                                                            <div className="px-3 py-2 border-0">
                                                                                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                                                     Change duration
                                                                                 </p>

@@ -387,15 +387,23 @@ export function useEpisodeInteractions() {
         []
     );
 
-    const stateRef = useRef(state);
-    useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
+
 
     const get = useCallback(
-        (targetType: TargetType, targetId: string) =>
-            stateRef.current.get(keyOf(targetType, targetId)) ?? EMPTY,
-        []
+        (targetType: TargetType, targetId: string) => {
+            const s = state.get(keyOf(targetType, targetId)) ?? EMPTY;
+            return {
+                like: s.liked,
+                love: s.loved,
+                save: s.saved,
+                liked: s.liked,
+                loved: s.loved,
+                saved: s.saved,
+                counts: s.counts,
+                playCount: s.playCount,
+            };
+        },
+        [state]        // ← was []
     );
 
     // ✅ `version` in the dep array makes the returned object identity change

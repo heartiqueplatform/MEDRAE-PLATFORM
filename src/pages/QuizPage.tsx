@@ -26,6 +26,7 @@ import { ReflectionSheet } from "@/components/QuizPage/ReflectionSheet";
 import { getMyReferralCode, getMyReferralStats, type ReferralStats } from "@/lib/referrals";
 import { CenteredModal } from "@/components/ui/CenteredModal";
 import { UserProfileModal } from "@/components/UserProfileModal";
+import HeroLottie from "@/components/HeroLottie";
 interface Question {
   id: string;
   quiz_id: string;
@@ -960,22 +961,69 @@ Please provide a detailed discussion and guidance.`;
   if (!hydrated) {
     return <GlobalLoader />;
   }
-  if (questions.length === 0) return <p className="p-4 text-gray-700 dark:text-gray-300">
-    No questions found for: <strong>{unit}</strong>. <br /><br />
-    This could be due to several reasons: <br />
-    1. The platform hasn’t updated questions for this unit yet. <br />
-    2. You’re visiting this page offline for the first time; to use it offline, please visit the page at least once while online. <br />
-    3. There may be a network issue  try reloading the app or checking your internet connection. <br /><br />
-    Want to suggest a new unit, request more questions, or suggest a feature?{" "}
-    <a
-      href="https://wa.me/254704473503"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline"
-    >
-      Click here to message us on WhatsApp
-    </a>.
-  </p>
+  if (questions.length === 0) {
+    return (
+      <div className="fixed inset-0 flex flex-col bg-background">
+        <header className="shrink-0 w-full border-b border-border bg-background/95 backdrop-blur-sm z-30">
+          <div className="w-full px-3 md:px-5 py-2.5 md:py-3 flex items-center gap-2">
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="Back"
+              className="p-2 -ml-1 rounded-full hover:bg-muted transition-colors shrink-0"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <h1 className="break-words font-bold text-lg md:text-xl truncate">
+              {unit}
+            </h1>
+          </div>
+        </header>
+
+        <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+          <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
+            <div className="w-full max-w-sm mx-auto text-center">
+              <div className="w-full max-w-[180px] mx-auto">
+                <HeroLottie />
+              </div>
+
+              <h2 className="mt-2 text-base font-bold text-slate-900 dark:text-white">
+                No questions here yet
+              </h2>
+              <p className="mt-1 text-[12px] text-muted-foreground leading-snug">
+                <strong>{unit}</strong> hasn't been filled in yet. If you're offline, open this page once while online so it can cache.
+              </p>
+
+              <div className="mt-5 space-y-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-[13px] font-bold
+                             active:scale-[0.98] transition-transform"
+                >
+                  Try again
+                </button>
+                <a
+                  href="https://wa.me/254704473503"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-10 rounded-xl bg-muted text-foreground text-[13px] font-semibold
+                             flex items-center justify-center active:scale-[0.98] transition-transform"
+                >
+                  Request questions on WhatsApp
+                </a>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="w-full h-9 rounded-xl text-[12px] font-semibold text-muted-foreground
+                             hover:text-foreground transition-colors"
+                >
+                  Back to dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background">

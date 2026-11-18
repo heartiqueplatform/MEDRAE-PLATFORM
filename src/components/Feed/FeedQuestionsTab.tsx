@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Volume2, VolumeX, Heart, MessageCircle } from "lucide-react";
 import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
 import FeedMediaPanel from "@/components/Feed/FeedMediaPanel";
 import { playSound } from "@/lib/soundManager";
 import { UserProfileModal } from "@/components/UserProfileModal";
-
+import { motion, AnimatePresence } from "framer-motion";
 interface Props {
     questions: any[];
     loading: boolean;
@@ -81,7 +80,6 @@ function SkeletonCard() {
 /* ------------------------------------------------------------------ */
 /*  Question card                                                     */
 /* ------------------------------------------------------------------ */
-
 function QuestionCard({
     q,
     index,
@@ -109,13 +107,145 @@ function QuestionCard({
     onOpenComments: (questionId: string) => void;
     onOpenAuthor: (userId: string) => void;
 }) {
+    // ── Peek / hint state ──────────────────────────────────────
+    const [hintOpen, setHintOpen] = useState(false); // "Reveal hint" pill visible
+    const [revealed, setRevealed] = useState(false); // explanation visible (hint mode)
+    const [teaser, setTeaser] = useState(false);     // tiny clue toast
+
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const longPressFired = useRef(false);
+    const hintAutoClose = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const revealAutoClose = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const teaserTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearLongPress = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    // Tiny teaser toast — appears once, fades on its own
+    useEffect(() => {
+        teaserTimer.current = setTimeout(() => setTeaser(true), 1200);
+        const hide = setTimeout(() => setTeaser(false), 3600);
+        return () => {
+            if (teaserTimer.current) clearTimeout(teaserTimer.current);
+            clearTimeout(hide);
+        };
+    }, []);
+
+    const openHint = () => {
+        longPressFired.current = true;
+        setHintOpen(true);
+        setTeaser(false);
+        vibrate(20);
+        playSound("ui-tap");
+        if (hintAutoClose.current) clearTimeout(hintAutoClose.current);
+        hintAutoClose.current = setTimeout(() => setHintOpen(false), 5000);
+    };
+
+    const closeHint = () => {
+        setHintOpen(false);
+        if (hintAutoClose.current) {
+            clearTimeout(hintAutoClose.current);
+            hintAutoClose.current = null;
+        }
+    };
+
+    const revealHint = () => {
+        tap();
+        setRevealed(true);
+        closeHint();
+        // ── Auto-dismiss the hint after 4 s ──
+        if (revealAutoClose.current) clearTimeout(revealAutoClose.current);
+        revealAutoClose.current = setTimeout(() => setRevealed(false), 4000);
+    };
+
+    const dismissReveal = () => {
+        setRevealed(false);
+        if (revealAutoClose.current) {
+            clearTimeout(revealAutoClose.current);
+            revealAutoClose.current = null;
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            clearLongPress();
+            if (hintAutoClose.current) clearTimeout(hintAutoClose.current);
+            if (revealAutoClose.current) clearTimeout(revealAutoClose.current);
+            if (teaserTimer.current) clearTimeout(teaserTimer.current);
+        };
+    }, []);
+
+    // ── Desktop right-click → show "Reveal hint" pill ─────────
+    const handleContextMenu = (e: React.MouseEvent) => {
+        if (selected || revealed) return;
+        e.preventDefault();
+        openHint();
+    };
+
+    // ── Mobile long-press → show "Reveal hint" pill ───────────
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (selected || revealed) return;
+        if (e.pointerType === "mouse") return;
+        longPressFired.current = false;
+        clearLongPress();
+        longPressTimer.current = setTimeout(() => openHint(), 450);
+    };
+
+    const handlePointerUp = () => {
+        clearLongPress();
+        if (longPressFired.current) {
+            setTimeout(() => {
+                longPressFired.current = false;
+            }, 0);
+        }
+    };
+
+    const handlePointerCancel = () => {
+        clearLongPress();
+        longPressFired.current = false;
+    };
+
+    // Show explanation if: user answered, OR hint is currently revealed
+    const showExplanation = !!selected || revealed;
+
     return (
         <motion.div
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="rounded-2xl bg-white dark:bg-[#161b22] mb-2 overflow-hidden"
+            className="rounded-2xl bg-white dark:bg-[#161b22] mb-2 overflow-hidden relative"
+            onContextMenu={handleContextMenu}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerCancel}
+            onPointerCancel={handlePointerCancel}
+            style={{ touchAction: "manipulation", WebkitTouchCallout: "none" }}
         >
+            {/* ── Tiny teaser toast ─────────────────────────── */}
+            <AnimatePresence>
+                {teaser && !selected && !hintOpen && !revealed && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.25 }}
+                        className="absolute top-2 right-2 z-30 pointer-events-none"
+                    >
+                        <div className="px-2 py-1 rounded-full
+                            bg-slate-100 dark:bg-white/[0.06]
+                            text-slate-500 dark:text-slate-400
+                            text-[9px] font-semibold tracking-wide
+                            shadow-sm">
+                            Right-click or hold to reveal
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="p-3 space-y-2.5">
-                {/* Header row */}
+                {/* Header row (unchanged) */}
                 <div className="flex items-start justify-between gap-2">
                     <p className="text-[10px] font-bold uppercase tracking-wider
                                   text-blue-600 dark:text-blue-400
@@ -135,15 +265,11 @@ function QuestionCard({
                         style={{ touchAction: "manipulation" }}
                         aria-label={isMuted ? "Unmute" : "Mute"}
                     >
-                        {isMuted ? (
-                            <VolumeX className="h-4 w-4" />
-                        ) : (
-                            <Volume2 className="h-4 w-4" />
-                        )}
+                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                     </button>
                 </div>
 
-                {/* 🆕 Author row — tappable */}
+                {/* Author row (unchanged) */}
                 {q.author_id && q.author_name && (
                     <button
                         type="button"
@@ -154,7 +280,6 @@ function QuestionCard({
                         className="flex items-center gap-2.5 -mt-1 mb-1 active:scale-[0.98] transition-transform group w-full text-left"
                         aria-label={`View ${q.author_name}'s profile`}
                     >
-                        {/* Bigger avatar with verified ring */}
                         <div className="relative shrink-0">
                             {q.author_avatar ? (
                                 <img
@@ -175,40 +300,22 @@ function QuestionCard({
                                     {q.author_name[0]?.toUpperCase() ?? "U"}
                                 </div>
                             )}
-
-                            {/* Verified checkmark badge on the avatar */}
                             {q.author_verified && (
                                 <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-amber-500 flex items-center justify-center ring-2 ring-white dark:ring-[#161b22]">
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        className="h-2.5 w-2.5 text-white"
-                                        strokeWidth={3.5}
-                                        stroke="currentColor"
-                                    >
+                                    <svg viewBox="0 0 24 24" fill="none" className="h-2.5 w-2.5 text-white" strokeWidth={3.5} stroke="currentColor">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </span>
                             )}
                         </div>
-
-                        {/* Author name + tier + role */}
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[12.5px] font-bold text-slate-900 dark:text-white truncate group-hover:underline underline-offset-2">
                                     {q.author_name}
                                 </span>
-
-                                {/* Verified badge pill next to name */}
                                 {q.author_verified && (
                                     <span className="shrink-0 inline-flex items-center gap-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            className="h-2 w-2"
-                                            strokeWidth={4}
-                                            stroke="currentColor"
-                                        >
+                                        <svg viewBox="0 0 24 24" fill="none" className="h-2 w-2" strokeWidth={4} stroke="currentColor">
                                             <polyline points="20 6 9 17 4 12" />
                                         </svg>
                                         {q.author_tier
@@ -217,7 +324,6 @@ function QuestionCard({
                                     </span>
                                 )}
                             </div>
-
                             {q.author_role && (
                                 <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-0.5">
                                     {q.author_role}
@@ -239,34 +345,24 @@ function QuestionCard({
                         if (!text) return null;
                         const chosen = selected === opt;
                         const correct = q.correct_answer === opt;
-                        const stats = voteStats[q.id] || {
-                            A: 0,
-                            B: 0,
-                            C: 0,
-                            D: 0,
-                        };
-                        const totalVotes =
-                            stats.A + stats.B + stats.C + stats.D;
+                        const stats = voteStats[q.id] || { A: 0, B: 0, C: 0, D: 0 };
+                        const totalVotes = stats.A + stats.B + stats.C + stats.D;
                         const percent =
-                            totalVotes > 0
-                                ? Math.round((stats[opt] / totalVotes) * 100)
-                                : 0;
+                            totalVotes > 0 ? Math.round((stats[opt] / totalVotes) * 100) : 0;
 
-                        let dotColor =
-                            "bg-slate-300 dark:bg-white/[0.15]";
+                        let dotColor = "bg-slate-300 dark:bg-white/[0.15]";
                         if (selected) {
-                            if (correct && chosen)
-                                dotColor = "bg-emerald-500";
-                            else if (!correct && chosen)
-                                dotColor = "bg-rose-500";
-                            else if (correct)
-                                dotColor = "bg-emerald-500/60";
+                            if (correct && chosen) dotColor = "bg-emerald-500";
+                            else if (!correct && chosen) dotColor = "bg-rose-500";
+                            else if (correct) dotColor = "bg-emerald-500/60";
                         }
 
                         return (
                             <button
                                 key={opt}
                                 onClick={() => {
+                                    if (longPressFired.current) return;
+                                    if (hintOpen) { closeHint(); return; }
                                     tap();
                                     onAnswer(q, opt);
                                 }}
@@ -293,11 +389,7 @@ function QuestionCard({
                                         style={{ width: `${percent}%` }}
                                     />
                                 )}
-
-                                <span
-                                    className={`relative z-10 h-3.5 w-3.5 rounded-full mt-1 shrink-0 ${dotColor}`}
-                                />
-
+                                <span className={`relative z-10 h-3.5 w-3.5 rounded-full mt-1 shrink-0 ${dotColor}`} />
                                 <div className="relative z-10 flex items-center justify-between gap-2 w-full min-w-0">
                                     <div className="flex items-baseline gap-1.5 min-w-0">
                                         <span className="text-[12px] font-bold text-slate-900 dark:text-white shrink-0">
@@ -308,8 +400,7 @@ function QuestionCard({
                                         </span>
                                     </div>
                                     {selected && totalVotes > 0 && (
-                                        <span className="text-[10px] font-bold tabular-nums
-                                                         text-slate-500 dark:text-slate-400 shrink-0">
+                                        <span className="text-[10px] font-bold tabular-nums text-slate-500 dark:text-slate-400 shrink-0">
                                             {percent}%
                                         </span>
                                     )}
@@ -319,23 +410,88 @@ function QuestionCard({
                     })}
                 </div>
 
-                {/* Explanation */}
-                {selected && (
-                    <div className="mt-2 rounded-xl overflow-hidden
-                                    bg-slate-50 dark:bg-[#0d1117]">
-                        <div className="px-3 py-2 flex items-center gap-1.5
-                                        border-b border-slate-100 dark:border-white/[0.04]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                            <p className="text-[11px] font-bold uppercase tracking-wider
-                                          text-emerald-700 dark:text-emerald-400">
-                                Correct answer: {q.correct_answer}
-                            </p>
-                        </div>
-                        <div className="px-3 py-2.5">
+                {/* ── "Reveal hint" pill ─────────────────────── */}
+                <AnimatePresence>
+                    {hintOpen && !revealed && !selected && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            <button
+                                type="button"
+                                onClick={revealHint}
+                                className="w-full flex items-center justify-center gap-1.5
+                                           px-3 py-2 rounded-xl
+                                           bg-emerald-50 dark:bg-emerald-400/10
+                                           text-emerald-700 dark:text-emerald-400
+                                           text-[11.5px] font-bold
+                                           active:scale-[0.98] transition-transform"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" strokeWidth={2.5} stroke="currentColor">
+                                    <path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z" />
+                                    <line x1="9" y1="21" x2="15" y2="21" />
+                                </svg>
+                                Reveal hint
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* ── Explanation ────────────────────────────────
+                    Answered state → decorated header (unchanged)
+                    Hint state     → plain theme-matched panel, auto-dismiss 4 s
+                ──────────────────────────────────────────────── */}
+                {showExplanation && (
+                    <div className="mt-2 rounded-xl overflow-hidden bg-slate-50 dark:bg-[#0d1117] relative">
+                        {revealed && !selected && (
+                            <button
+                                type="button"
+                                onClick={dismissReveal}
+                                className="absolute top-1.5 right-1.5 z-20 h-6 w-6 rounded-full
+                                           flex items-center justify-center
+                                           text-slate-400 hover:text-slate-600
+                                           dark:text-slate-500 dark:hover:text-slate-300
+                                           bg-white dark:bg-[#161b22] shadow-sm"
+                                aria-label="Hide hint"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" strokeWidth={2.5} stroke="currentColor">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        )}
+
+                        {/* Answered state: keep the original decorated header */}
+                        {selected && (
+                            <div className="px-3 py-2 flex items-center gap-1.5
+                                            border-b border-slate-100 dark:border-white/[0.04]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                <p className="text-[11px] font-bold uppercase tracking-wider
+                                              text-emerald-700 dark:text-emerald-400">
+                                    Correct answer: {q.correct_answer}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Hint state: no dot, no label, just plain theme-matched text */}
+                        <div className={`px-3 ${selected ? "py-2.5" : "py-3"}`}>
                             <p className="text-[12.5px] text-slate-700 dark:text-slate-300 leading-relaxed">
                                 {q.explanation}
                             </p>
                         </div>
+
+                        {/* Optional: tiny 4 s progress bar for hint mode */}
+                        {revealed && !selected && (
+                            <motion.div
+                                initial={{ width: "100%" }}
+                                animate={{ width: "0%" }}
+                                transition={{ duration: 4, ease: "linear" }}
+                                className="absolute bottom-0 left-0 h-[2px] bg-emerald-500/60 dark:bg-emerald-400/50"
+                            />
+                        )}
                     </div>
                 )}
 
@@ -344,13 +500,7 @@ function QuestionCard({
                     <ActionButton
                         active={liked}
                         activeColor="rose"
-                        icon={
-                            <Heart
-                                size={15}
-                                fill={liked ? "currentColor" : "none"}
-                                strokeWidth={2.25}
-                            />
-                        }
+                        icon={<Heart size={15} fill={liked ? "currentColor" : "none"} strokeWidth={2.25} />}
                         count={q.qfeed_likes?.length || 0}
                         onClick={() => {
                             tap();

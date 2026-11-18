@@ -25,11 +25,11 @@ export const STUDENT_FILTERS: StudentFilter[] = [
 ];
 
 const ACCENT_MAP: Record<string, string> = {
-    blue: "bg-blue-600 text-white shadow-blue-500/30",
-    amber: "bg-amber-500 text-white shadow-amber-500/30",
-    emerald: "bg-emerald-500 text-white shadow-emerald-500/30",
-    violet: "bg-violet-500 text-white shadow-violet-500/30",
-    rose: "bg-rose-500 text-white shadow-rose-500/30",
+    blue: "bg-blue-600 text-white shadow-none",
+    amber: "bg-amber-500 text-white shadow-none",
+    emerald: "bg-emerald-500 text-white shadow-none",
+    violet: "bg-violet-500 text-white shadow-none",
+    rose: "bg-rose-500 text-white shadow-none",
 };
 
 type Props = {
@@ -75,8 +75,8 @@ export default function StudentFilters({ activeId, onChange }: Props) {
                         "shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] font-bold",
                         "transition-all duration-200 active:scale-95 shadow-sm",
                         activeId === "all" || !activeId
-                            ? "bg-indigo-600 text-white shadow-indigo-500/30 shadow-lg"
-                            : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200/70 " +
+                            ? "bg-indigo-600 text-white shadow-indigo-500/30 shadow-none"
+                            : "bg-slate-100 text-slate-700 ring-none hover:bg-slate-200/70 " +
                             "dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
                     )}
                 >
@@ -96,9 +96,9 @@ export default function StudentFilters({ activeId, onChange }: Props) {
                             onClick={() => handleClick(f)}
                             className={cn(
                                 "shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] font-bold",
-                                "transition-all duration-200 active:scale-95 shadow-sm",
+                                "transition-all duration-200 active:scale-95 shadow-none",
                                 isActive
-                                    ? `${ACCENT_MAP[f.accent ?? "blue"]} shadow-lg`
+                                    ? `${ACCENT_MAP[f.accent ?? "blue"]} shadow-none`
                                     : "bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                             )}
                         >

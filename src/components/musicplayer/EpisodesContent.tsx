@@ -1,20 +1,28 @@
 "use client";
-import React, {
-
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
-import { Headphones, Plus } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Headphones, Plus, ThumbsUp, Heart, Bookmark } from "lucide-react";
 import { EpisodeRow } from "./EpisodeRow";
 import { ContinueListeningRow } from "./ContinueListeningRow";
 import { SkeletonList } from "./SkeletonList";
 import { AppleLogo } from "./AppleLogo";
 import { EndorseButton } from "./EndorseButton";
 import { FollowButton } from "./FollowButton";
+import HeroLottie from "@/components/HeroLottie";
 
+type ViewMode = "episodes" | "shows" | "saved";
+type SavedFilter = "liked" | "loved" | "bookmarked";
 
+const TAB_LABEL: Record<ViewMode, string> = {
+    episodes: "Episodes",
+    shows: "Shows",
+    saved: "My Favourites",
+};
+
+const SAVED_FILTERS: { key: SavedFilter; label: string; Icon: any }[] = [
+    { key: "liked", label: "Liked", Icon: ThumbsUp },
+    { key: "loved", label: "Loved", Icon: Heart },
+    { key: "bookmarked", label: "Bookmarked", Icon: Bookmark },
+];
 
 export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
     const {
@@ -40,14 +48,52 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         isLoadingMoreEpisodes,
     } = props;
 
+    const [viewMode, setViewMode] = useState<ViewMode>("episodes");
+    const [savedFilter, setSavedFilter] = useState<SavedFilter>("liked");
+
     const showSkeleton =
         (loading && visibleTracks.length === 0) ||
         (visibleTracks.length === 0 && parentLoading === true);
 
+    /* ── Reaction accessor ───────────────────────────────── */
+    const getReaction = (id: string) => getInteraction?.("episode", id);
+
+    /* ── Split tracks once per change ─────────────────────── */
+    const { reactedTracks, unreactedTracks } = useMemo(() => {
+        const reacted: any[] = [];
+        const unreacted: any[] = [];
+        for (const t of visibleTracks) {
+            const it = t.id ? getReaction(t.id) : null;
+            if (it && (it.like || it.love || it.save)) reacted.push(t);
+            else unreacted.push(t);
+        }
+        return { reactedTracks: reacted, unreactedTracks: unreacted };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visibleTracks, getInteraction]);
+
+    /* ── Saved sub-filter list ────────────────────────────── */
+    const savedFilteredTracks = useMemo(() => {
+        if (viewMode !== "saved") return [];
+        return reactedTracks.filter((t: any) => {
+            const it = getReaction(t.id);
+            if (!it) return false;
+            if (savedFilter === "liked") return !!it.like;
+            if (savedFilter === "loved") return !!it.love;
+            return !!it.save;
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reactedTracks, savedFilter, viewMode, getInteraction]);
+
+    const windowedTracks =
+        viewMode === "saved"
+            ? savedFilteredTracks
+            : viewMode === "episodes"
+                ? unreactedTracks
+                : [];
+
+    /* ── Continue listening ───────────────────────────────── */
     const continueBlock = useMemo(() => {
-        if (showSkeleton) return null;
-        if (!history || history.length === 0) return null;
-        const recent = history.slice(0, 5);
+        if (showSkeleton || !history || history.length === 0) return null;
         return (
             <div className="px-3 md:px-4 pt-3 pb-1 shrink-0">
                 <div className="flex items-center justify-between mb-2">
@@ -64,7 +110,7 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                         Clear all
                     </button>
                 </div>
-                {recent.map((entry: any) => (
+                {history.slice(0, 5).map((entry: any) => (
                     <ContinueListeningRow
                         key={entry.id}
                         entry={entry}
@@ -76,6 +122,7 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         );
     }, [history, showSkeleton, onResumeFromHistory, onRemoveFromHistory, onClearHistory]);
 
+    /* ── Chips skeleton ───────────────────────────────────── */
     const [chipsTimedOut, setChipsTimedOut] = useState(false);
     useEffect(() => {
         const t = setTimeout(() => setChipsTimedOut(true), 3000);
@@ -83,9 +130,7 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
     }, []);
 
     const chipsSkeletonBlock = useMemo(() => {
-        if (showSkeleton) return null;
-        if (shows.length > 0) return null;
-        if (chipsTimedOut) return null;
+        if (showSkeleton || shows.length > 0 || chipsTimedOut) return null;
         return (
             <div className="px-3 md:px-4 pt-3 pb-3 shrink-0">
                 <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
@@ -100,13 +145,19 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         );
     }, [shows.length, showSkeleton, chipsTimedOut]);
 
+    /* ── Show chip rail ───────────────────────────────────── */
+    const handleSelectShow = (showId: string | null) => {
+        onSelectShow(showId);
+        if (viewMode !== "saved") setViewMode("episodes");
+    };
+
     const chipsBlock = useMemo(() => {
         if (showSkeleton || shows.length === 0) return null;
         return (
             <div className="px-3 md:px-4 pt-3 pb-3 shrink-0">
                 <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
                     <button
-                        onClick={() => onSelectShow(null)}
+                        onClick={() => handleSelectShow(null)}
                         className="shrink-0 flex flex-col items-center gap-1.5 group"
                         aria-label="All shows"
                     >
@@ -121,13 +172,14 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                             All
                         </span>
                     </button>
+
                     {shows.map((s: any) => {
                         const active = selectedShowId === s.id;
                         const initial = (s.title || "?").trim().charAt(0).toUpperCase();
                         const follow = getFollow?.(s.id) ?? { following: false, followerCount: 0 };
                         return (
                             <div key={s.id} className="shrink-0 flex flex-col items-center gap-1.5 group relative">
-                                <button onClick={() => onSelectShow(s.id)} className="flex flex-col items-center gap-1.5 w-full" aria-label={s.title}>
+                                <button onClick={() => handleSelectShow(s.id)} className="flex flex-col items-center gap-1.5 w-full" aria-label={s.title}>
                                     <div className={`relative w-28 h-28 md:w-32 md:h-32 rounded-xl p-[2px] transition-all ${active ? "bg-gradient-to-tr from-blue-500 via-blue-400 to-blue-600" : "bg-transparent"}`}>
                                         <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
                                             {s.artwork_url ? (
@@ -170,6 +222,7 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                             </div>
                         );
                     })}
+
                     {isAdmin && (
                         <button onClick={onManage} className="shrink-0 flex flex-col items-center gap-1.5 group" aria-label="Manage podcasts">
                             <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl border-2 border-dashed border-gh-l-border dark:border-gh-border flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
@@ -185,8 +238,59 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         );
     }, [shows, selectedShowId, isAdmin, showSkeleton, onSelectShow, onManage, getFollow, onToggleFollow]);
 
+    /* ── Tab bar (3 tabs) ─────────────────────────────────── */
+    const tabBar = useMemo(() => {
+        if (showSkeleton) return null;
+        return (
+            <div className="px-3 md:px-4 pt-1 pb-2 shrink-0">
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gh-l-hover dark:bg-gh-hover">
+                    {(["episodes", "shows", "saved"] as ViewMode[]).map((mode) => (
+                        <button
+                            key={mode}
+                            onClick={() => setViewMode(mode)}
+                            className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${viewMode === mode
+                                ? "bg-white dark:bg-gh-card text-gh-l-text dark:text-gh-text shadow-sm"
+                                : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"
+                                }`}
+                        >
+                            {TAB_LABEL[mode]}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    }, [viewMode, showSkeleton]);
+
+    /* ── Saved sub-filter bar (Liked / Loved / Bookmarked) ── */
+    const savedFilterBar = useMemo(() => {
+        if (viewMode !== "saved") return null;
+        return (
+            <div className="px-3 md:px-4 pt-1 pb-2 shrink-0">
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gh-l-hover dark:bg-gh-hover">
+                    {SAVED_FILTERS.map(({ key, label, Icon }) => {
+                        const active = savedFilter === key;
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => setSavedFilter(key)}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors ${active
+                                    ? "bg-white dark:bg-gh-card text-gh-l-text dark:text-gh-text shadow-sm"
+                                    : "text-gh-l-muted dark:text-gh-muted hover:text-gh-l-text dark:hover:text-gh-text"
+                                    }`}
+                            >
+                                <Icon size={12} fill={active ? "currentColor" : "none"} strokeWidth={active ? 0 : 2} />
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }, [viewMode, savedFilter]);
+
+    /* ── Show cards grid (Shows tab only) ─────────────────── */
     const showCardsBlock = useMemo(() => {
-        if (showSkeleton || selectedShowId !== null || shows.length === 0) return null;
+        if (showSkeleton || viewMode !== "shows" || shows.length === 0) return null;
         return (
             <div className="px-4 md:px-5 pb-3 shrink-0">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
@@ -198,9 +302,9 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                                 key={s.id}
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => onSelectShow(s.id)}
+                                onClick={() => handleSelectShow(s.id)}
                                 onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelectShow(s.id); }
+                                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelectShow(s.id); }
                                 }}
                                 className="group flex gap-3 p-3 rounded-2xl bg-gh-l-card dark:bg-gh-card cursor-pointer transition-colors hover:bg-gh-l-hover dark:hover:bg-gh-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                             >
@@ -237,147 +341,136 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
                 </div>
             </div>
         );
-    }, [shows, selectedShowId, showSkeleton, onToggleEndorse, onSelectShow, getFollow, onToggleFollow]);
+    }, [shows, viewMode, showSkeleton, onToggleEndorse, getFollow, onToggleFollow]);
 
-    // ─────────────────────────────────────────────────────────
-    // SERVER-SIDE INFINITE SCROLL — Load 50 more episodes at a time
-    // ─────────────────────────────────────────────────────────
-
-
-
-    // All episodes already fetched from the server are displayed.
-    // The next batch is fetched automatically when the user scrolls.
-    const windowedTracks = visibleTracks;
-
+    /* ── Infinite scroll (Episodes tab only) ──────────────── */
     const canLoadMoreFromServer =
-        selectedShowId === null && hasMoreEpisodes;
-
+        selectedShowId === null && hasMoreEpisodes && viewMode === "episodes";
     const hasMore = canLoadMoreFromServer;
 
     useEffect(() => {
-        if (
-            !canLoadMoreFromServer ||
-            showSkeleton ||
-            isLoadingMoreEpisodes ||
-            !loadMoreEpisodes
-        ) {
-            return;
-        }
+        if (!canLoadMoreFromServer || showSkeleton || isLoadingMoreEpisodes || !loadMoreEpisodes) return;
 
         const targets = document.querySelectorAll<HTMLElement>(
             ".episodes-scroll-container .episodes-infinite-sentinel"
         );
-
         const observers: IntersectionObserver[] = [];
 
         targets.forEach((target) => {
-            // Ignore the hidden mobile or desktop version.
             if (!target.getClientRects().length) return;
-
-            const root = target.closest<HTMLElement>(
-                ".episodes-scroll-container"
-            );
-
+            const root = target.closest<HTMLElement>(".episodes-scroll-container");
             const observer = new IntersectionObserver(
                 (entries) => {
-                    if (entries.some((entry) => entry.isIntersecting)) {
-                        void loadMoreEpisodes();
-                    }
+                    if (entries.some((e) => e.isIntersecting)) void loadMoreEpisodes();
                 },
-                {
-                    root,
-                    rootMargin: "600px 0px",
-                    threshold: 0,
-                }
+                { root, rootMargin: "600px 0px", threshold: 0 }
             );
-
             observer.observe(target);
             observers.push(observer);
         });
 
-        return () => {
-            observers.forEach((observer) => observer.disconnect());
-        };
-    }, [
-        canLoadMoreFromServer,
-        showSkeleton,
-        isLoadingMoreEpisodes,
-        loadMoreEpisodes,
-        visibleTracks.length,
-    ]);
+        return () => observers.forEach((o) => o.disconnect());
+    }, [canLoadMoreFromServer, showSkeleton, isLoadingMoreEpisodes, loadMoreEpisodes, visibleTracks.length]);
 
-    const episodeRows = useMemo(() => (
-        <>
-            {showSkeleton && <SkeletonList count={8} />}
+    /* ── Episode list (Episodes + Saved) ──────────────────── */
+    const episodeRows = useMemo(() => {
+        if (viewMode === "shows") return null;
 
-            {!showSkeleton && visibleTracks.length === 0 && (
-                <div className="py-16 text-center text-gh-l-muted dark:text-gh-muted text-sm">
-                    No episodes yet.
-                </div>
-            )}
+        const isSavedTab = viewMode === "saved";
+        const isEmpty = windowedTracks.length === 0;
+        const emptyMessage = isSavedTab
+            ? savedFilter === "liked"
+                ? "Nothing liked yet tap the thumbs-up on an episode."
+                : savedFilter === "loved"
+                    ? "Nothing loved yet tap the heart on an episode."
+                    : "Nothing bookmarked yet tap the bookmark on an episode."
+            : "You're all caught up. Check My Favourites for your reactions.";
+        return (
+            <>
+                {showSkeleton && <SkeletonList count={8} />}
 
-            {!showSkeleton && windowedTracks.map((t: any, i: number) => {
-                const isThisActive = currentTrackSrc === t.src;
-
-                return (
-                    <EpisodeRow
-                        key={t.id || t.src || i}
-                        track={t}
-                        index={i}
-                        isActive={isThisActive}
-                        isPlaying={isPlaying && isThisActive}
-                        progress={isThisActive ? progress : 0}
-                        downloaded={!!t.downloaded}
-                        onSelect={() => onSelectTrack(t)}
-                        isAdmin={isAdmin}
-                        onHide={() => t.id && onHideEpisode(t.id)}
-                        interaction={t.id ? getInteraction?.("episode", t.id) : undefined}
-                        onToggleReaction={
-                            t.id && onToggleReaction
-                                ? (kind: "like" | "love" | "save") =>
-                                    onToggleReaction("episode", t.id, kind)
-                                : undefined
-                        }
-                        downloadState={t.id ? getDownloadState?.(t.id) : undefined}
-                        downloadProgress={t.id ? getDownloadProgress?.(t.id) ?? 0 : 0}
-                        onDownload={t.id && onDownload ? () => onDownload(t) : undefined}
-                        onCancelDownload={
-                            t.id && onCancelDownload
-                                ? () => onCancelDownload(t.id)
-                                : undefined
-                        }
-
-                    />
-                );
-            })}
-
-            {!showSkeleton && hasMore && (
-                <div
-
-                    className="episodes-infinite-sentinel h-16 flex items-center justify-center"
-                    aria-label="Loading more episodes"
-                >
-                    {isLoadingMoreEpisodes ? (
-                        <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse [animation-delay:150ms]" />
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse [animation-delay:300ms]" />
+                {!showSkeleton && isEmpty && (
+                    isSavedTab ? (
+                        <div className="w-full flex flex-col items-center text-center px-6 pt-6 pb-8">
+                            <div className="w-full max-w-[140px] mx-auto">
+                                <HeroLottie />
+                            </div>
+                            <p className="mt-1 text-[12px] font-semibold text-gh-l-text dark:text-gh-text">
+                                Nothing here yet
+                            </p>
+                            <p className="text-[11px] text-gh-l-muted dark:text-gh-muted mt-0.5 max-w-[240px]">
+                                {emptyMessage}
+                            </p>
                         </div>
                     ) : (
-                        <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">
-                            Scroll for more episodes
-                        </span>
-                    )}
-                </div>
-            )}
+                        <div className="py-16 text-center text-gh-l-muted dark:text-gh-muted text-sm px-6">
+                            {emptyMessage}
+                        </div>
+                    )
+                )}
 
-            {!showSkeleton && !hasMore && visibleTracks.length > 0 && (
-                <div className="py-6 text-center text-[11px] text-gh-l-muted dark:text-gh-muted">
-                    You've reached the end
-                </div>
-            )}
-        </>
-    ), [
+                {!showSkeleton && windowedTracks.map((t: any, i: number) => {
+                    const isThisActive = currentTrackSrc === t.src;
+                    return (
+                        <EpisodeRow
+                            key={t.id || t.src || i}
+                            track={t}
+                            index={i}
+                            isActive={isThisActive}
+                            isPlaying={isPlaying && isThisActive}
+                            progress={isThisActive ? progress : 0}
+                            downloaded={!!t.downloaded}
+                            onSelect={() => onSelectTrack(t)}
+                            isAdmin={isAdmin}
+                            onHide={() => t.id && onHideEpisode(t.id)}
+                            interaction={t.id ? getReaction(t.id) : undefined}
+                            onToggleReaction={
+                                t.id && onToggleReaction
+                                    ? (kind: "like" | "love" | "save") =>
+                                        onToggleReaction("episode", t.id, kind)
+                                    : undefined
+                            }
+                            downloadState={t.id ? getDownloadState?.(t.id) : undefined}
+                            downloadProgress={t.id ? getDownloadProgress?.(t.id) ?? 0 : 0}
+                            onDownload={t.id && onDownload ? () => onDownload(t) : undefined}
+                            onCancelDownload={
+                                t.id && onCancelDownload
+                                    ? () => onCancelDownload(t.id)
+                                    : undefined
+                            }
+                        />
+                    );
+                })}
+
+                {!showSkeleton && !isSavedTab && hasMore && (
+                    <div
+                        className="episodes-infinite-sentinel h-16 flex items-center justify-center"
+                        aria-label="Loading more episodes"
+                    >
+                        {isLoadingMoreEpisodes ? (
+                            <div className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse [animation-delay:150ms]" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse [animation-delay:300ms]" />
+                            </div>
+                        ) : (
+                            <span className="text-[10px] text-gh-l-muted dark:text-gh-muted">
+                                Scroll for more episodes
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {!showSkeleton && !isSavedTab && !hasMore && windowedTracks.length > 0 && (
+                    <div className="py-6 text-center text-[11px] text-gh-l-muted dark:text-gh-muted">
+                        You've reached the end
+                    </div>
+                )}
+            </>
+        );
+    }, [
+        viewMode,
+        savedFilter,
         windowedTracks,
         currentTrackSrc,
         isPlaying,
@@ -394,24 +487,30 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
         onCancelDownload,
         hasMore,
         isLoadingMoreEpisodes,
-        visibleTracks.length,
     ]);
 
     return (
         <div className="h-full flex flex-col min-h-0">
+            {/* Mobile */}
             <div className="md:hidden h-full overflow-y-auto custom-scrollbar episodes-scroll-container">
                 {continueBlock}
                 {chipsBlock}
                 {chipsSkeletonBlock}
+                {tabBar}
+                {savedFilterBar}
                 {showCardsBlock}
-                <div className="pb-6">{episodeRows}</div>
+                {episodeRows && <div className="pb-6">{episodeRows}</div>}
             </div>
+
+            {/* Desktop */}
             <div className="hidden md:block md:h-full md:min-h-0 md:overflow-y-auto custom-scrollbar episodes-scroll-container">
                 {continueBlock}
                 {chipsBlock}
                 {chipsSkeletonBlock}
+                {tabBar}
+                {savedFilterBar}
                 {showCardsBlock}
-                <div className="px-4 pb-6">{episodeRows}</div>
+                {episodeRows && <div className="px-4 pb-6">{episodeRows}</div>}
             </div>
         </div>
     );

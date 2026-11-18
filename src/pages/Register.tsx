@@ -11,6 +11,8 @@ import {
   GraduationCap, UserCheck, Stethoscope, Eye, EyeOff, User, Mail, Phone, Lock,
   ShieldQuestion, School, MapPin, FileText, ChevronRight, Target, BookOpen,
   Layers, CheckCircle2, Info, ArrowRight, LogOut, Search, AlertCircle, X,
+  Globe,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
@@ -64,7 +66,7 @@ async function enforceDeviceLimit(userId: string, deviceId: string) {
   }
 }
 
-const backgroundImages = ["high1.png", "high2.png", "high3.png", "high4.png", "high5.png", "high6.png"];
+const backgroundImages = ["high1.png", "high2.png", "high3.png", "high4.png", "indexbackground3.jpg", "high6.png"];
 
 // ==========================================
 // 🎯 SEARCHABLE INSTITUTION SELECT
@@ -106,7 +108,7 @@ function SearchableInstitutionSelect({
   return (
     <Select value={value || ""} onValueChange={onChange}>
       <SelectTrigger
-        className={`text-sm h-10 ${hasError ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+        className={`text-sm h-10 ${hasError ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
       >
         <SelectValue placeholder="Search or choose institution">
           {selected?.label ?? ""}
@@ -380,57 +382,173 @@ export function Register() {
     <div className="min-h-screen w-full flex flex-col md:flex-row transition-all duration-1000 bg-white text-gray-900">
       <button
         onClick={handleExitApp}
-        className="hidden md:flex fixed top-6 left-6 z-[9999] bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 text-white/80 hover:text-white py-2 px-4 rounded-xl transition-all duration-300 active:scale-95 items-center gap-2.5 group"
+        className="hidden md:flex fixed top-6 left-6 z-[9999] bg-white/10 backdrop-blur-md hover:bg-white/20 border-0 text-white/80 hover:text-white py-2 px-4 rounded-xl transition-all duration-300 active:scale-95 items-center gap-2.5 group"
       >
         <LogOut className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:text-red-400 transition-all" />
         <span className="text-[11px] font-medium tracking-widest uppercase">Exit System</span>
       </button>
-      <ExitOverlay isOpen={showExitOverlay} onExit={finalExitAction} />
 
-      {/* LEFT IMAGE SIDE */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
-        {backgroundImages.map((img, index) => (
+      {/* Landing page link — desktop only, professional style */}
+      {/* Learn more — points to the marketing/landing site */}
+      <a
+        href="https://medrae.vercel.app/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hidden md:flex fixed top-6 left-44 z-[9999]
+             bg-white/10 backdrop-blur-md
+             hover:bg-white/20 border-0
+             text-white/80 hover:text-white
+             py-2 px-4 rounded-xl
+             transition-all duration-300 active:scale-95
+             items-center gap-2.5 group"
+        aria-label="Learn more about MedRae Nursing"
+      >
+        <Globe className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:text-emerald-400 transition-all" />
+        <span className="text-[11px] font-medium tracking-widest uppercase">
+          Learn more about MedRae
+        </span>
+        <ArrowUpRight className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+      </a>
+
+      <ExitOverlay isOpen={showExitOverlay} onExit={finalExitAction} />
+      {/* MOBILE ONLY: fanned-card hero banner above the form */}
+      <div className="md:hidden relative w-full overflow-hidden bg-white px-4 pt-4 pb-2 no-scrollbar">
+        {/* soft glows — same as the desktop hero */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-16 -left-16 h-40 w-40 rounded-full bg-slate-200/60 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-36 w-36 rounded-full bg-blue-100/70 blur-3xl" />
+        </div>
+
+        {/* fanned cards — matches the desktop hero scale, capped by height too */}
+        <div
+          className="relative mx-auto aspect-[3/4]"
+          style={{ width: "min(220px, 30vh)" }}
+        >
+          {backgroundImages.map((img, index) => {
+            const total = backgroundImages.length;
+            const mid = (total - 1) / 2;
+            const offset = index - mid;        // -2.5 … +2.5
+            const angle = offset * 9;
+            const tx = offset * 22;            // tighter spread for phone
+            const ty = Math.abs(offset) * 8;
+            const isActive = index === bgIndex;
+            const z = isActive ? 50 : 10 + index;
+
+            return (
+              <div
+                key={index}
+                className="absolute inset-0 rounded-xl overflow-hidden
+                     ring-1 ring-slate-300/70
+                     shadow-[0_15px_35px_-10px_rgba(15,23,42,0.35)]
+                     transition-all duration-700 ease-out
+                     will-change-transform"
+                style={{
+                  backgroundImage: `url(/${img})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg)
+                        scale(${isActive ? 1 : 0.94})`,
+                  zIndex: z,
+                  opacity: isActive ? 1 : 0.92,
+                  filter: isActive ? "none" : "brightness(0.72) saturate(0.9)",
+                }}
+              />
+            );
+          })}
+
+          {/* glass sheen on active card */}
           <div
-            key={index}
-            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
-              }`}
-            style={{
-              backgroundImage: `url(${img})`,
-              transition: "opacity 1s ease-in-out, transform 10s linear",
-            }}
+            className="pointer-events-none absolute inset-0 rounded-xl
+                 ring-1 ring-inset ring-slate-900/10
+                 bg-gradient-to-br from-white/20 via-transparent to-slate-900/10"
+            style={{ zIndex: 60 }}
           />
-        ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
-          <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
-            <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-xs font-semibold tracking-wider uppercase">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
-              Join our growing community
-            </div>
-            <h1 className="text-5xl font-bold leading-tight">
-              Empowering the next <br />
-              <span className="text-blue-400">generation of experts.</span>
-            </h1>
-            <p className="text-gray-300 text-lg max-w-md">
-              Access premium learning resources and connect with professional tutors from across the country.
-            </p>
+        </div>
+      </div>
+      {/* LEFT: hero (desktop only) — fanned poker-card image stack on white */}
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0 bg-white">
+        {/* Fanned cards */}
+        <div className="absolute inset-0 flex items-center justify-center -translate-y-8">
+          <div className="relative w-[min(58%,420px)] aspect-[3/4]">
+            {backgroundImages.map((img, index) => {
+              const total = backgroundImages.length;
+              const mid = (total - 1) / 2;
+              const offset = index - mid;          // -2.5 … +2.5
+              const angle = offset * 9;            // degrees per card
+              const tx = offset * 44;              // horizontal spread (px)
+              const ty = Math.abs(offset) * 14;    // arc dip toward center
+              const isActive = index === bgIndex;
+              const z = isActive ? 50 : 10 + index;
+
+              return (
+                <div
+                  key={index}
+                  className="absolute inset-0 rounded-2xl overflow-hidden
+                             ring-1 ring-slate-300/70
+                             shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)]
+                             transition-all duration-700 ease-out
+                             will-change-transform"
+                  style={{
+                    backgroundImage: `url(/${img})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg)
+                                scale(${isActive ? 1 : 0.94})`,
+                    zIndex: z,
+                    opacity: isActive ? 1 : 0.92,
+                    filter: isActive ? "none" : "brightness(0.72) saturate(0.9)",
+                  }}
+                />
+              );
+            })}
+
+            {/* Glass sheen + inner border on the active card */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-2xl
+                         ring-1 ring-inset ring-slate-900/10
+                         bg-gradient-to-br from-white/20 via-transparent to-slate-900/10"
+              style={{ zIndex: 60 }}
+            />
           </div>
+        </div>
+
+        {/* Bottom gradient + copy (same style as Login hero) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/50 pointer-events-none" />
+        <div className="absolute bottom-16 left-12 right-12 text-white space-y-4 z-[70]">
+          <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-sm border border-white/20 text-xs font-semibold tracking-wider uppercase">
+            Join our growing community
+          </div>
+          <h1 className="text-5xl font-bold leading-tight">
+            Empowering the next <br />
+            <span>
+              <span className="text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                MedRae
+              </span>
+              <span className="text-white font-bold"> Nursing</span>
+            </span>
+          </h1>
+          <p className="text-gray-300 text-lg max-w-md">
+            Access premium learning resources and connect with professional tutors from across the country.
+          </p>
+          <p className="text-gray-400 text-sm italic pt-2">
+            We learn with love. We care with heart.
+          </p>
         </div>
       </div>
 
       {/* RIGHT FORM SIDE */}
-      <div className="w-full md:w-1/2 flex justify-center items-start p-0 md:p-8 lg:p-12 overflow-y-auto">
+      <div className="w-full md:w-1/2 flex justify-center items-start px-2 py-0 md:p-8 pt-3 lg:p-12 overflow-y-auto no-scrollbar">
         <div className="w-full md:max-w-2xl md:animate-in md:fade-in md:slide-in-from-right-4 md:duration-700">
-          <Card className="w-full bg-white text-gray-900 md:border md:shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:rounded-[2rem] border-none shadow-none rounded-none overflow-hidden flex flex-col">
+          <Card className="w-full bg-white text-gray-900 border border-slate-100 shadow-sm rounded-xl md:border md:shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:rounded-xl overflow-hidden flex flex-col">
             <CardHeader className="space-y-4 md:space-y-6 pt-6 md:pt-10 px-4 md:px-8 pb-3 md:pb-4">
               <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2 md:space-x-3">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600 p-1.5 md:p-2 shadow-lg shadow-blue-200">
-                    <img src="/pwa-192x192.jpeg" alt="Logo" className="w-full h-full object-contain invert" />
-                  </div>
-                  <CardTitle className="text-lg md:text-2xl   tracking-tight text-slate-800">
+                <div className="flex items-center space-x-2.5 md:space-x-3 min-w-0">
+                  <img
+                    src="/pwa-192x192.jpeg"
+                    alt="MedRae Nursing logo"
+                    className="w-9 h-9 md:w-11 md:h-11 rounded-lg md:rounded-xl object-contain shrink-0"
+                  />
+                  <CardTitle className="text-base md:text-2xl tracking-tight text-slate-800 leading-snug">
                     Hello! Love seeing you get started
                   </CardTitle>
                 </div>
@@ -505,6 +623,25 @@ export function Register() {
 
               <div className="mt-8 md:mt-10 pt-6 md:pt-8 border-t border-slate-100">
                 <div className="flex flex-col items-center justify-center space-y-3 md:space-y-4">
+                  {/* Mobile-only: engaging learn-more line */}
+                  <div className="md:hidden px-2 text-center">
+                    <a
+                      href="https://medrae.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[12px] leading-snug text-slate-500 hover:text-slate-700 transition-colors group"
+                    >
+                      <Globe className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span>
+                        New to nursing?{" "}
+                        <span className="font-semibold text-blue-600 group-hover:text-blue-700 transition-colors">
+                          See how MedRae Nursing
+                        </span>{" "}
+                        supports your whole journey  studies, career, and life
+                      </span>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-blue-600 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+                    </a>
+                  </div>
                   <p className="text-xs md:text-sm text-slate-500 font-medium">
                     Already have an account?{" "}
                     <Link to="/login" className="text-blue-600 hover:text-blue-700 font-bold inline-flex items-center gap-1 group">
@@ -659,7 +796,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
             <Field id="field-fullName" label="Full Name" required error={errors.fullName}>
               <Input
                 placeholder="SN Jacqueline Nk"
-                className={`bg-gray-50/50 transition-all text-sm ${errors.fullName ? "border-red-400 bg-red-50/50" : "border-gray-200"}`}
+                className={`bg-gray-50/50 transition-all text-sm ${errors.fullName ? "border-red-400 bg-red-50/50" : "border-0"}`}
                 value={formData.fullName}
                 onChange={(e) => {
                   const fullName = e.target.value;
@@ -679,7 +816,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               <div className="relative">
                 <Input
                   placeholder="snJacquelineNk"
-                  className={`pl-8 text-sm ${errors.username ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                  className={`pl-8 text-sm ${errors.username ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
                   value={formData.username}
                   onChange={(e) => {
                     setUsernameEdited(true);
@@ -696,7 +833,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               <Input
                 type="email"
                 placeholder="example@gmail.com"
-                className={`text-sm ${errors.email ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                className={`text-sm ${errors.email ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
                 value={formData.email}
                 onChange={(e) => setField("email", e.target.value)}
               />
@@ -704,7 +841,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
 
             <Field id="field-phone" label="Phone Number" icon={<Phone className="w-3 h-3" />} required error={errors.phone}>
               <Input
-                className={`font-mono text-sm ${errors.phone ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                className={`font-mono text-sm ${errors.phone ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
                 value={formData.phone}
                 onChange={(e) => {
                   let value = e.target.value;
@@ -749,7 +886,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               error={errors.resetQuestion}
             >
               <Select value={formData.resetQuestion} onValueChange={(v) => setField("resetQuestion", v)}>
-                <SelectTrigger className={`text-sm ${errors.resetQuestion ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
+                <SelectTrigger className={`text-sm ${errors.resetQuestion ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}>
                   <SelectValue placeholder="Select a question" />
                 </SelectTrigger>
                 <SelectContent>
@@ -764,7 +901,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
             <Field id="field-resetAnswer" label="Your Answer" required error={errors.resetAnswer}>
               <Input
                 placeholder="Enter answer"
-                className={`text-sm ${errors.resetAnswer ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                className={`text-sm ${errors.resetAnswer ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
                 value={formData.resetAnswer}
                 onChange={(e) => setField("resetAnswer", e.target.value)}
               />
@@ -787,7 +924,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
                 type="number"
                 min={1}
                 max={100}
-                className={`pr-8 font-bold text-emerald-700 text-sm ${errors.targetScore ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+                className={`pr-8 font-bold text-emerald-700 text-sm ${errors.targetScore ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
                 value={formData.targetScore}
                 onChange={(e) => setField("targetScore", Number(e.target.value))}
               />
@@ -817,7 +954,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               error={errors.county}
             >
               <Select value={formData.county} onValueChange={(v) => setField("county", v)}>
-                <SelectTrigger className={`text-sm ${errors.county ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
+                <SelectTrigger className={`text-sm ${errors.county ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}>
                   <SelectValue placeholder="Choose county" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -839,7 +976,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               error={errors.course || errors.otherCourse}
             >
               <Select value={formData.course} onValueChange={(v) => setField("course", v)}>
-                <SelectTrigger className={`text-sm ${errors.course ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
+                <SelectTrigger className={`text-sm ${errors.course ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}>
                   <SelectValue placeholder="Select course" />
                 </SelectTrigger>
                 <SelectContent>
@@ -866,7 +1003,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               error={errors.block}
             >
               <Select value={formData.block} onValueChange={(v) => setField("block", v)}>
-                <SelectTrigger className={`text-sm ${errors.block ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}>
+                <SelectTrigger className={`text-sm ${errors.block ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}>
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -899,7 +1036,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
           >
             <Textarea
               placeholder="Tell us a bit about your academic goals..."
-              className={`min-h-[100px] resize-none text-sm ${errors.bio ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-gray-200"}`}
+              className={`min-h-[100px] resize-none text-sm ${errors.bio ? "border-red-400 bg-red-50/50" : "bg-gray-50/50 border-0"}`}
               value={formData.bio}
               onChange={(e) => setField("bio", e.target.value)}
             />
@@ -1262,7 +1399,9 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
             </p>
           </div>
         </CardContent>
+
       </Card>
+
     </div>
   );
 }

@@ -18,7 +18,7 @@ import FeedMoreTab from "@/components/Feed/FeedMoreTab";
 import WardCaseFeed from "@/components/MicroCase/WardCaseFeed";
 import FeedFeedbackOverlay from "@/components/Feed/FeedFeedbackOverlay";
 import CommentsModal from "@/components/Feed/CommentsModal";
-import { TermsButton } from "@/components/ui/TermsButton";
+
 import { clearMediaPanelCaches } from "@/components/Feed/FeedMediaPanel";
 
 // ── Request caches ────────────────────────────────────────
@@ -134,7 +134,7 @@ export default function Feed() {
   // Feedback overlay auto-dismiss
   useEffect(() => {
     if (!feedbackMessage) return;
-    const t = setTimeout(() => setFeedbackMessage(null), 3500);
+    const t = setTimeout(() => setFeedbackMessage(null), 4000);
     return () => clearTimeout(t);
   }, [feedbackMessage]);
 
@@ -673,16 +673,14 @@ export default function Feed() {
   return (
     <>
       {/* Sticky header — TABS ONLY (no FeedControls) */}
-      <div className="sticky top-0 z-40 w-full bg-white dark:bg-[#0d1117]">
-        <div className="w-full max-w-4xl mx-auto flex items-center">
-
-          <div className="flex-1 min-w-0">
-            <FeedTabs
-              active={activeTab}
-              onChange={setActiveTab}
-              counts={{ questions: questionCount, images: feedImages.length }}
-            />
-          </div>
+      {/* Sticky header — transparent so pills float */}
+      <div className="sticky top-0 z-40 w-full bg-transparent">
+        <div className="w-full max-w-4xl mx-auto">
+          <FeedTabs
+            active={activeTab}
+            onChange={setActiveTab}
+            counts={{ questions: questionCount, images: feedImages.length }}
+          />
         </div>
       </div>
 
@@ -792,16 +790,19 @@ export default function Feed() {
           )}
 
           <div className="py-6 flex justify-center">
-            <TermsButton />
+
           </div>
         </div>
       </PullToRefresh>
 
-      {/* Feedback overlay — z-max, above footer */}
-      <FeedFeedbackOverlay
-        message={feedbackMessage}
-        onClose={() => setFeedbackMessage(null)}
-      />
+      {/* Feedback overlay — portaled, above everything including sticky header */}
+      {createPortal(
+        <FeedFeedbackOverlay
+          message={feedbackMessage}
+          onClose={() => setFeedbackMessage(null)}
+        />,
+        document.body
+      )}
 
       {/* Image fullscreen viewer */}
       {createPortal(

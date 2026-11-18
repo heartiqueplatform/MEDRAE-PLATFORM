@@ -21,14 +21,14 @@ type Q = {
     correct_answer: string;
     explanation: string | null;
 };
-
 type Props = {
     open: boolean;
     paperId: string | null;
     onClose: () => void;
+    answeredIds?: string[];
 };
 
-export default function MistakeReviewModal({ open, paperId, onClose }: Props) {
+export default function MistakeReviewModal({ open, paperId, onClose, answeredIds }: Props) {
     const [questions, setQuestions] = useState<Q[]>([]);
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
@@ -79,7 +79,12 @@ export default function MistakeReviewModal({ open, paperId, onClose }: Props) {
             }
 
             // 3. Keep only wrong ones (missing answers count as wrong)
+            // 3. Keep only wrong ones. When answeredIds is provided, only
+            //    consider questions answered in the current attempt — this
+            //    prevents leaking correct answers for unseen questions.
+            const answeredSet = answeredIds ? new Set(answeredIds) : null;
             const wrong = ((qs ?? []) as Q[]).filter((q) => {
+                if (answeredSet && !answeredSet.has(q.id)) return false;
                 const picked = answersJson[q.id];
                 const correct = String(q.correct_answer ?? "").toUpperCase();
                 if (!picked) return true;
@@ -89,9 +94,8 @@ export default function MistakeReviewModal({ open, paperId, onClose }: Props) {
             setQuestions(wrong);
             setLoading(false);
         })();
-
         return () => { live = false; };
-    }, [open, paperId]);
+    }, [open, paperId, answeredIds]);
 
     const wrongCount = questions.length;
 
@@ -104,7 +108,9 @@ export default function MistakeReviewModal({ open, paperId, onClose }: Props) {
                 loading
                     ? "Loading…"
                     : wrongCount === 0
-                        ? "Nothing to review"
+                        ? answeredIds
+                            ? "No mistakes in answered questions"
+                            : "Nothing to review"
                         : `${wrongCount} question${wrongCount === 1 ? "" : "s"} you missed`
             }
             maxWidthClass="max-w-2xl"
@@ -132,9 +138,15 @@ export default function MistakeReviewModal({ open, paperId, onClose }: Props) {
                 ) : wrongCount === 0 ? (
                     <div className="py-12 text-center">
                         <Sparkles className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                        <p className="text-sm font-semibold">You didn't miss any questions!</p>
+                        <p className="text-sm font-semibold">
+                            {answeredIds
+                                ? "No mistakes in the questions you've answered so far."
+                                : "You didn't miss any questions!"}
+                        </p>
                         <p className="text-[12px] text-muted-foreground mt-1">
-                            Great job on this paper.
+                            {answeredIds
+                                ? "Keep going — you can review this again later."
+                                : "Great job on this paper."}
                         </p>
                     </div>
                 ) : (

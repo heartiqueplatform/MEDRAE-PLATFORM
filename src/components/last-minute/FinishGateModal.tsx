@@ -45,13 +45,13 @@ export default function FinishGateModal({
                     </p>
                 </div>
 
-                {missingIdxs.length > 0 && (
+                {missingIdxs.some((i) => i >= 0) && (
                     <div className="mb-4">
                         <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
                             Jump to missing
                         </p>
-                        <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto custom-scrollbar">
-                            {missingIdxs.map((i) => (
+                        <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto no-scrollbar">
+                            {missingIdxs.filter((i) => i >= 0).map((i) => (
                                 <button
                                     key={i}
                                     onClick={() => {

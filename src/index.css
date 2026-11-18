@@ -154,7 +154,8 @@
 
   html {
     font-family: "Kunst Grotesk", "Poppins", sans-serif;
-    font-synthesis: none;
+    font-synthesis: weight;
+    /* allow faux-bold when a heavy face is missing */
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -820,4 +821,20 @@ pre {
   /* Chrome, Safari, Android WebView, iOS */
   width: 0;
   height: 0;
+}
+
+@font-face {
+  font-family: 'Kunst Grotesk';
+  src: url('/fonts/Kunst-Grotesk-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kunst Grotesk';
+  src: url('/fonts/Kunst-Grotesk-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
 }

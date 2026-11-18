@@ -191,6 +191,7 @@ import WalletLearnPage from "@/pages/studentcoins/learn";
 import ContributePage from "./pages/contribute";
 import SwitchAccount from "./pages/SwitchAccount";
 import MedraeCoinsLanding from "./pages/landing/MedraeCoinsLanding";
+import LandingGate from "./components/LandingGate";
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
@@ -637,7 +638,7 @@ const AppContent = () => {
                         <Route path="/go/:code" element={<RedirectHandler />} />
 
                         {/* Public Routes */}
-                        <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                        <Route path="/" element={<LandingGate />} />
                         <Route path="/for/student" element={<StudentLanding />} />
                         <Route path="/for/staff" element={<StaffLanding />} />
                         <Route path="/for/tutor" element={<TutorLanding />} />

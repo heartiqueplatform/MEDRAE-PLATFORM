@@ -83,7 +83,7 @@ interface Scenario {
     correct_option: number;
 }
 
-const backgroundImages = ["high1.png", "high2.png", "high3.png", "high4.png", "high5.png", "high6.png"];
+const backgroundImages = ["high1.png", "high2.png", "high3.png", "high4.png", "indexbackground3.jpg", "high6.png"];
 
 const WHATSAPP_TOKENS = 5;
 const TELEGRAM_TOKENS = 10;

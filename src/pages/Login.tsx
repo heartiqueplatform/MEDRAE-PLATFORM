@@ -21,7 +21,9 @@ import {
   User,
   ShieldCheck,
   GraduationCap,
-  Users
+  Users,
+  ArrowUpRight,
+  Globe
 } from 'lucide-react';
 
 // ==========================================
@@ -72,7 +74,7 @@ export function Login() {
   const [password, setPassword] = useState("");
   const backgroundImages = useMemo(() => [
     "high1.png", "high2.png", "high3.png",
-    "high4.png", "high5.png", "high6.png",
+    "high4.png", "indexbackground3.jpg", "high6.png",
   ], []);
 
   const [bgIndex, setBgIndex] = useState(0);
@@ -319,7 +321,7 @@ export function Login() {
         onClick={handleExitApp}
         className="hidden md:flex fixed top-6 left-6 z-[9999]
              bg-white/10 backdrop-blur-md
-             hover:bg-white/20 border border-white/20
+             hover:bg-white/20 border-0
              text-white/80 hover:text-white
              py-2 px-4 rounded-xl
              transition-all duration-300 active:scale-95
@@ -330,52 +332,164 @@ export function Login() {
           Exit System
         </span>
       </button>
+      {/* Landing page link — desktop only, professional style */}
+      <a
+        href="https://medrae.vercel.app/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hidden md:flex fixed top-6 left-44 z-[9999]
+             bg-white/10 backdrop-blur-md
+             hover:bg-white/20 border-0
+             text-white/80 hover:text-white
+             py-2 px-4 rounded-xl
+             transition-all duration-300 active:scale-95
+             items-center gap-2.5 group"
+        aria-label="Learn more about MedRae Nursing"
+      >
+        <Globe className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:text-emerald-400 transition-all" />
+        <span className="text-[11px] font-medium tracking-widest uppercase">
+          Learn more about MedRae
+        </span>
+        <ArrowUpRight className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+      </a>
 
       <ExitOverlay isOpen={showExitOverlay} onExit={finalExitAction} />
 
-      {/* LEFT: hero (desktop only) */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
-        {backgroundImages.map((img, index) => (
+      {/* MOBILE ONLY: fanned-card hero banner above the form */}
+      <div className="md:hidden relative w-full overflow-hidden bg-transparent px-4 pt-4 pb-2">
+        {/* soft glows — same as the desktop hero behind the logo */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-16 -left-16 h-40 w-40 rounded-full bg-slate-200/60 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-36 w-36 rounded-full bg-blue-100/70 blur-3xl" />
+        </div>
+
+        {/* fanned cards — matches the desktop hero scale */}
+        <div
+          className="relative mx-auto aspect-[3/4]"
+          style={{ width: "min(220px, 30vh)" }}
+        >
+          {backgroundImages.map((img, index) => {
+            const total = backgroundImages.length;
+            const mid = (total - 1) / 2;
+            const offset = index - mid;        // -2.5 … +2.5
+            const angle = offset * 9;
+            const tx = offset * 22;            // tighter spread for phone
+            const ty = Math.abs(offset) * 8;
+            const isActive = index === bgIndex;
+            const z = isActive ? 50 : 10 + index;
+
+            return (
+              <div
+                key={index}
+                className="absolute inset-0 rounded-xl overflow-hidden
+                     ring-1 ring-slate-300/70
+                     shadow-[0_15px_35px_-10px_rgba(15,23,42,0.35)]
+                     transition-all duration-700 ease-out
+                     will-change-transform"
+                style={{
+                  backgroundImage: `url(/${img})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg)
+                        scale(${isActive ? 1 : 0.94})`,
+                  zIndex: z,
+                  opacity: isActive ? 1 : 0.92,
+                  filter: isActive ? "none" : "brightness(0.72) saturate(0.9)",
+                }}
+              />
+            );
+          })}
+
+          {/* glass sheen on active card */}
           <div
-            key={index}
-            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
-              }`}
-            style={{
-              backgroundImage: `url(/${img})`,
-              transition: "opacity 1s ease-in-out, transform 10s linear",
-            }}
+            className="pointer-events-none absolute inset-0 rounded-xl
+                 ring-1 ring-inset ring-slate-900/10
+                 bg-gradient-to-br from-white/20 via-transparent to-slate-900/10"
+            style={{ zIndex: 60 }}
           />
-        ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
-          <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
-            {/* Static pill — no pulsing dot */}
-            <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-sm border border-white/20 text-xs font-semibold tracking-wider uppercase">
-              Secure Access
-            </div>
-            <h1 className="text-5xl font-bold leading-tight">
-              Welcome Back to <br />
-              <span>
-                <span className="text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-                  MedRae
-                </span>
-                <span className="text-white font-bold"> Nursing</span>
-              </span>
-            </h1>
-            <p className="text-gray-300 text-lg max-w-md">
-              Access your medical learning platform and continue your journey to excellence.
-            </p>
-            <p className="text-gray-400 text-sm italic pt-2">
-              We learn with love. We care with heart.
-            </p>
-          </div>
         </div>
       </div>
+      {/* LEFT: hero (desktop only) — fanned poker-card image stack on white */}
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0 bg-white">
+        {/* Soft neutral glows so the white panel isn't flat */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -left-32 h-[420px] w-[420px] rounded-full bg-slate-200/60 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 h-[380px] w-[380px] rounded-full bg-blue-100/70 blur-[120px]" />
+        </div>
 
+        {/* Fanned cards */}
+        <div className="absolute inset-0 flex items-center justify-center -translate-y-8">
+          <div className="relative w-[min(58%,420px)] aspect-[3/4]">
+            {backgroundImages.map((img, index) => {
+              const total = backgroundImages.length;
+              const mid = (total - 1) / 2;
+              const offset = index - mid;          // -2.5 … +2.5
+              const angle = offset * 9;            // degrees per card
+              const tx = offset * 44;              // horizontal spread (px)
+              const ty = Math.abs(offset) * 14;    // arc dip toward center
+              const isActive = index === bgIndex;
+              const z = isActive ? 50 : 10 + index;
+
+              return (
+                <div
+                  key={index}
+                  className="absolute inset-0 rounded-2xl overflow-hidden
+                             ring-1 ring-slate-300/70
+                             shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)]
+                             transition-all duration-700 ease-out
+                             will-change-transform"
+                  style={{
+                    backgroundImage: `url(/${img})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg)
+                                scale(${isActive ? 1 : 0.94})`,
+                    zIndex: z,
+                    opacity: isActive ? 1 : 0.92,
+                    filter: isActive ? "none" : "brightness(0.72) saturate(0.9)",
+                  }}
+                />
+              );
+            })}
+
+            {/* Glass card-face sheen + inner border on the active card */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-2xl
+                         ring-1 ring-inset ring-slate-900/10
+                         bg-gradient-to-br from-white/20 via-transparent to-slate-900/10"
+              style={{ zIndex: 60 }}
+            />
+          </div>
+        </div>
+
+        {/* Bottom gradient + copy */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/2o to-black/25 pointer-events-none" />
+        <div className="absolute bottom-16 left-12 right-12 text-white space-y-4 z-[70]">
+          <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-sm border border-white/20 text-xs font-semibold tracking-wider uppercase">
+            Secure Access
+          </div>
+          <h1 className="text-5xl font-bold leading-tight">
+            Welcome Back to <br />
+            <span>
+              <span className="text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                MedRae
+              </span>
+              <span className="text-white font-bold"> Nursing</span>
+            </span>
+          </h1>
+          <p className="text-gray-300 text-lg max-w-md">
+            Access your medical learning platform and continue your journey to excellence.
+          </p>
+          <p className="text-gray-400 text-sm italic pt-2">
+            We learn with love. We care with heart.
+          </p>
+        </div>
+      </div>
       {/* RIGHT: form — edge-to-edge on mobile, centered on desktop */}
-      <div className="w-full md:w-1/2 flex flex-1 md:flex-none items-stretch md:items-center justify-center bg-muted/100 dark:bg-muted/100">
+      <div className="w-full md:w-1/2 flex flex-1 md:flex-none items-stretch md:items-center justify-center bg-muted/100 dark:bg-muted/100 px-3 md:px-8 lg:px-12 md:py-10">
         <div className="w-full md:max-w-md flex flex-col">
           {/* Mobile header */}
-          <div className="flex flex-col items-center pt-8 pb-4 md:pt-0 md:pb-0 px-5 md:px-0">
+          <div className="flex flex-col items-center px-2 pt-2 md:pt-0">
             <div className="w-14 h-14 md:w-16 md:h-16 bg-white dark:bg-slate-800 rounded-xl p-3 mb-3 md:mb-4">
               <img
                 src="/pwa-192x192.jpeg"
@@ -397,7 +511,7 @@ export function Login() {
           </div>
 
           {/* Card — flat & full-bleed on mobile, rounded card on desktop */}
-          <Card className="w-full bg-white dark:bg-slate-900 border-0  shadow-none rounded-2xl md:rounded-2xl overflow-hidden flex-1 md:flex-none">
+          <Card className="w-full bg-white dark:bg-slate-900 border-0 shadow-none rounded-2xl md:rounded-2xl overflow-hidden md:flex-none shadow-[0_4px_16px_rgb(0,0,0,0.04)] md:shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
             <CardHeader className="pt-4 md:pt-8 px-5 md:px-6 pb-2 text-center">
               <CardTitle className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">
                 Sign In
@@ -423,7 +537,7 @@ export function Login() {
                   <div className="relative group">
                     <Mail className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
-                      className="pl-12 h-12 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="pl-12 h-12 w-full bg-slate-50 dark:bg-slate-800 border-0 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
@@ -449,7 +563,7 @@ export function Login() {
                     <Lock className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
                       type="password"
-                      className="pl-12 h-12 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="pl-12 h-12 w-full bg-slate-50 dark:bg-slate-800 border-0 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -495,6 +609,25 @@ export function Login() {
             </CardContent>
           </Card>
 
+          {/* Mobile-only: engaging learn-more line */}
+          <div className="md:hidden px-2 pt-3 text-center">
+            <a
+              href="https://medrae.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[12px] leading-snug text-slate-500 hover:text-slate-700 transition-colors group"
+            >
+              <Globe className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>
+                New to nursing?{" "}
+                <span className="font-semibold text-blue-600 group-hover:text-blue-700 transition-colors">
+                  See how MedRae Nursing
+                </span>{" "}
+                supports your whole journey  studies, career, and life
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-blue-600 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </a>
+          </div>
           {/* Footer links */}
           <div className="mt-6 md:mt-6 pb-8 md:pb-0 flex justify-center gap-3 px-5">
             <span

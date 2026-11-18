@@ -90,7 +90,16 @@ export default function StudentSections({
                 </div>
             )}
 
-            {/* ✅ Proctorium papers — filter-aware */}
+            {/* Short paper 1 */}
+            {isVisible(activeFilter, "papers") && (
+                <div id="sec-paper1" className="scroll-mt-16">
+                    <DeferredMount fallback={<SK h={240} />}>
+                        <ShortPaper1 limit={5} />
+                    </DeferredMount>
+                </div>
+            )}
+
+            {/* ✅ Proctorium — now in the MIDDLE */}
             {isVisible(activeFilter, "papers") && (
                 <div id="sec-proctorium" className="scroll-mt-16">
                     <StudentSimulationPapers
@@ -101,22 +110,14 @@ export default function StudentSections({
                 </div>
             )}
 
-            {/* Short papers (still separate pill-free sections under "All") */}
+            {/* Short paper 2 */}
             {isVisible(activeFilter, "papers") && (
-                <>
-                    <div id="sec-paper1" className="scroll-mt-16">
-                        <DeferredMount fallback={<SK h={240} />}>
-                            <ShortPaper1 limit={5} />
-                        </DeferredMount>
-                    </div>
-                    <div id="sec-paper2" className="scroll-mt-16">
-                        <DeferredMount fallback={<SK h={240} />}>
-                            <ShortPaper2 limit={5} />
-                        </DeferredMount>
-                    </div>
-                </>
+                <div id="sec-paper2" className="scroll-mt-16">
+                    <DeferredMount fallback={<SK h={240} />}>
+                        <ShortPaper2 limit={5} />
+                    </DeferredMount>
+                </div>
             )}
-
             {isVisible(activeFilter, "countdown") && (
                 <div id="sec-countdown" className="scroll-mt-16">
                     <DeferredMount fallback={<SK h={200} />}>
@@ -145,7 +146,13 @@ export default function StudentSections({
                     </DeferredMount>
                 </div>
             )}
-
+            {isVisible(activeFilter, "dailystatus") && (
+                <div id="sec-dailystatus" className="scroll-mt-16">
+                    <DeferredMount fallback={<SK h={140} />}>
+                        <DailyStatus />
+                    </DeferredMount>
+                </div>
+            )}
             {isVisible(activeFilter, "feed") && (
                 <div id="sec-feed" className="scroll-mt-16">
                     <DeferredMount fallback={<SK h={200} />}>
@@ -154,13 +161,7 @@ export default function StudentSections({
                 </div>
             )}
 
-            {isVisible(activeFilter, "dailystatus") && (
-                <div id="sec-dailystatus" className="scroll-mt-16">
-                    <DeferredMount fallback={<SK h={140} />}>
-                        <DailyStatus />
-                    </DeferredMount>
-                </div>
-            )}
+
         </>
     );
 }

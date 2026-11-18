@@ -114,7 +114,7 @@ function barColorFor(score: number) {
 
 function SnapCarousel({
     children,
-    itemWidthClass = "w-[48vw] sm:w-[200px]",
+    itemWidthClass = "w-[164px]",
 }: {
     children: React.ReactNode;
     itemWidthClass?: string;
@@ -147,7 +147,7 @@ function SnapCarousel({
         if (!el) return;
         tap();
         const card = el.querySelector<HTMLElement>("[data-card]");
-        const amount = (card?.offsetWidth ?? 240) + 12;
+        const amount = (card?.offsetWidth ?? 240) + 6;
         el.scrollBy({ left: dir * amount, behavior: "smooth" });
     };
 
@@ -186,7 +186,7 @@ function SnapCarousel({
 
             <div
                 ref={scrollerRef}
-                className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth
+                className="flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth
                            px-1 pb-2 -mx-1
                            [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
@@ -565,28 +565,112 @@ export default function Algorithm() {
         <div className="w-full space-y-3 px-1">
             {/* ── HERO CARD ── */}
             <div className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden">
-                <div className="p-4 md:p-6">
-                    <div className="flex flex-col items-center text-center">
-                        <div className="flex items-center justify-center gap-2 mb-3">
-                            <Brain className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+
+                <div className="
+        relative isolate overflow-hidden
+        rounded-[28px]
+        p-5 md:p-7
+
+        shadow-[0_8px_30px_rgba(90,70,150,0.07)]
+        dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)]
+    ">
+                    {/* Background image — fills the whole card */}
+                    <div
+                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                        style={{ backgroundImage: "url('/background05.jpg')" }}
+                        aria-hidden
+                    />
+
+                    {/* Horizontal gradient: opaque left → transparent right */}
+                    <div className="
+            absolute inset-0
+            bg-gradient-to-r
+            from-white via-white/80 to-white/0
+            dark:from-[#171827] dark:via-[#202033]/85 dark:to-[#251B2D]/0
+        " aria-hidden />
+
+                    {/* Soft brand tint */}
+                    <div className="
+            absolute inset-0
+            bg-gradient-to-tr
+            from-purple-200/20 via-transparent to-pink-200/10
+            dark:from-purple-500/10 dark:via-transparent dark:to-pink-500/10
+        " aria-hidden />
+
+                    {/* Ambient glows */}
+                    <div className="
+            pointer-events-none absolute
+            -top-20 -right-16
+            w-64 h-64 rounded-full
+            bg-purple-300/20 dark:bg-purple-500/15
+            blur-[65px]
+        " />
+                    <div className="
+            pointer-events-none absolute
+            -bottom-24 -left-16
+            w-64 h-64 rounded-full
+            bg-pink-300/20 dark:bg-pink-500/10
+            blur-[70px]
+        " />
+
+                    {/* Content — always left aligned */}
+                    <div className="relative z-10 flex flex-col items-start text-left">
+
+                        <div className="flex items-center gap-2 mb-4">
+
+                            <span className="
+                    text-[10px] font-bold uppercase
+                    tracking-[0.16em]
+                    text-zinc-700 dark:text-zinc-200
+                ">
                                 Exam prediction readiness
                             </span>
+                            <Brain className="h-4 w-4 text-purple-600 dark:text-purple-300" />
                         </div>
-                        <div className="flex items-baseline gap-0.5">
-                            <span className="text-5xl font-bold tabular-nums leading-none tracking-tight text-zinc-900 dark:text-white">
+
+                        <div className="flex items-baseline gap-1">
+                            <span className="
+                    text-[64px] md:text-[80px]
+                    font-extrabold tabular-nums
+                    leading-none tracking-[-0.065em]
+                    text-zinc-900 dark:text-white
+                    drop-shadow-[0_2px_8px_rgba(0,0,0,0.10)]
+                ">
                                 {score.toFixed(1)}
                             </span>
-                            <span className="text-2xl font-normal text-zinc-500 dark:text-zinc-400">%</span>
+                            <span className="
+                    text-2xl font-medium
+                    text-purple-600 dark:text-purple-300
+                ">
+                                %
+                            </span>
                         </div>
-                        <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 ${accent.bg} ${accent.text} text-[11px] font-bold`}>
+
+                        <div className={`
+                mt-4 inline-flex items-center gap-2
+                rounded-full px-4 py-2
+                backdrop-blur-xl
+                shadow-sm
+                ${accent.bg} ${accent.text}
+                text-[11px] font-bold
+            `}>
                             {readiness} readiness
                         </div>
-                        <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
-                            {isHighScore ? "Strong performance — keep it up" : isMediumScore ? "On track — a few more sessions to peak" : "Focus on weak units to raise this score"}
+
+                        <p className="
+                mt-3 text-[11px]
+                text-zinc-700 dark:text-zinc-200
+                max-w-xs leading-relaxed
+            ">
+                            {isHighScore
+                                ? "Strong performance — keep it up"
+                                : isMediumScore
+                                    ? "On track — a few more sessions to peak"
+                                    : "Focus on weak units to raise this score"}
                         </p>
                     </div>
                 </div>
+
 
                 {/* Chart panel */}
                 {(scoreSeries.length >= 2 || barData.length >= 1) && (
@@ -716,15 +800,32 @@ export default function Algorithm() {
             </div>
 
             {/* ── UNIT MASTERY ── */}
-            <div className="space-y-2">
+
+            <div className="space-y-3">
+                {/* Section heading */}
                 <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-1.5">
-                        <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            Unit mastery
-                        </h3>
+                    <div className="flex items-center gap-2">
+                        <div className="
+                flex items-center justify-center
+                w-8 h-8 rounded-xl
+                bg-blue-100 dark:bg-blue-400/10
+            ">
+                            <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+
+                        <div>
+                            <h3 className="text-[12px] font-bold text-zinc-900 dark:text-white">
+                                Unit mastery
+                            </h3>
+                            <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
+                                Your performance by subject
+                            </p>
+                        </div>
                     </div>
-                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Swipe to explore →</span>
+
+                    <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500">
+                        Swipe to explore →
+                    </span>
                 </div>
 
                 {visibleUnitsData.length > 0 ? (
@@ -732,64 +833,198 @@ export default function Algorithm() {
                         {visibleUnitsData.map((unit, idx) => {
                             const isWeak = unit.average_score < 60;
                             const unitTier = scoreTier(unit.average_score);
+
                             const tierText =
-                                unitTier === "high" ? "text-emerald-600 dark:text-emerald-400"
-                                    : unitTier === "medium" ? "text-amber-600 dark:text-amber-400"
+                                unitTier === "high"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : unitTier === "medium"
+                                        ? "text-amber-600 dark:text-amber-400"
                                         : "text-rose-600 dark:text-rose-400";
-                            const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : null;
+
+                            const progressColor =
+                                unitTier === "high"
+                                    ? "from-emerald-400 to-teal-400"
+                                    : unitTier === "medium"
+                                        ? "from-amber-400 to-yellow-400"
+                                        : "from-rose-400 to-pink-500";
+
+                            const medal =
+                                idx === 0 ? "🥇" :
+                                    idx === 1 ? "🥈" :
+                                        idx === 2 ? "🥉" : null;
+
+                            const trend =
+                                unit.trend === "Improving" ? "▲" :
+                                    unit.trend === "Declining" ? "▼" : "—";
 
                             return (
                                 <div
                                     key={unit.quiz_id}
                                     onClick={() => handleUnitClick(unit.quiz_id)}
-                                    className="relative h-full p-2.5 rounded-2xl cursor-pointer
-                                               bg-white dark:bg-[#161b22]
-                                               active:scale-[0.98] transition-transform"
+                                    className="
+                            group relative isolate overflow-hidden
+                            h-full w-[164px] min-h-[164px]
+                            p-3.5 rounded-[22px]
+                            cursor-pointer flex flex-col
+                            justify-between
+
+                            bg-gradient-to-br
+                            from-white via-[#FAFAFD] to-[#F0F2F8]
+
+                            dark:bg-gradient-to-br
+                            dark:from-[#242633]
+                            dark:via-[#1D202B]
+                            dark:to-[#171923]
+
+                            shadow-[0_5px_18px_rgba(30,40,80,0.06)]
+                            dark:shadow-[0_8px_24px_rgba(0,0,0,0.25)]
+
+                            active:scale-[0.97]
+                            transition-all duration-200
+                        "
                                     style={{ touchAction: "manipulation" }}
                                 >
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <div className="flex items-center gap-1.5">
-                                            {medal ? (
-                                                <span className="text-base leading-none">{medal}</span>
-                                            ) : (
-                                                <span className="text-[10px] font-bold tabular-nums text-zinc-400 dark:text-zinc-500">
-                                                    #{idx + 1}
-                                                </span>
-                                            )}
-                                            {isWeak && (
-                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full
-                                                                 bg-rose-50 dark:bg-rose-400/10
-                                                                 text-rose-700 dark:text-rose-400">
-                                                    Focus
-                                                </span>
-                                            )}
+                                    {/* Ambient accent */}
+                                    <div className={`
+                            pointer-events-none absolute
+                            -top-12 -right-12
+                            w-32 h-32 rounded-full
+                            blur-[45px]
+                            ${unitTier === "high"
+                                            ? "bg-emerald-300/20 dark:bg-emerald-400/10"
+                                            : unitTier === "medium"
+                                                ? "bg-amber-300/20 dark:bg-amber-400/10"
+                                                : "bg-rose-300/20 dark:bg-rose-400/10"
+                                        }
+                        `} />
+
+                                    <div className="relative">
+                                        {/* Rank and trend */}
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-1.5">
+                                                {medal ? (
+                                                    <span className="text-base leading-none">
+                                                        {medal}
+                                                    </span>
+                                                ) : (
+                                                    <span className="
+                                            text-[10px] font-bold
+                                            text-zinc-400 dark:text-zinc-500
+                                        ">
+                                                        #{idx + 1}
+                                                    </span>
+                                                )}
+
+                                                {isWeak && (
+                                                    <span className="
+                                            text-[8px] font-bold
+                                            uppercase tracking-wide
+                                            px-1.5 py-1 rounded-md
+                                            bg-rose-100 dark:bg-rose-400/10
+                                            text-rose-600 dark:text-rose-400
+                                        ">
+                                                        Focus
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <span className={`
+                                    text-[10px] font-bold
+                                    ${tierText}
+                                `}>
+                                                {trend}
+                                            </span>
                                         </div>
-                                        <span className={`text-[10px] font-bold ${tierText}`}>
-                                            {unit.trend === "Improving" ? "▲" : unit.trend === "Declining" ? "▼" : "—"}
-                                        </span>
-                                    </div>
-                                    <h4 className="text-[12px] font-bold text-zinc-900 dark:text-white line-clamp-2 leading-tight mb-1.5 min-h-[2em]">
-                                        {unit.unit_name}
-                                    </h4>
-                                    <div className="flex items-end justify-between mb-1.5">
-                                        <span className={`text-xl font-bold tabular-nums leading-none ${tierText}`}>
-                                            {unit.average_score.toFixed(0)}%
-                                        </span>
-                                        <div className={tierText}>
-                                            <MasteryDots score={unit.average_score} />
+
+                                        {/* Unit name */}
+                                        <h4 className="
+                                text-[12px] font-bold
+                                text-zinc-800 dark:text-zinc-100
+                                line-clamp-2 leading-[1.4]
+                                min-h-[34px]
+                                tracking-tight
+                            ">
+                                            {unit.unit_name}
+                                        </h4>
+
+                                        {/* Main score */}
+                                        <div className="flex items-end justify-between mt-2">
+                                            <div className="flex items-baseline gap-0.5">
+                                                <span className={`
+                                        text-[25px] font-extrabold
+                                        tracking-[-0.055em]
+                                        leading-none tabular-nums
+                                        ${tierText}
+                                    `}>
+                                                    {unit.average_score.toFixed(0)}
+                                                </span>
+
+                                                <span className="
+                                        text-[10px] font-semibold
+                                        text-zinc-400 dark:text-zinc-500
+                                    ">
+                                                    %
+                                                </span>
+                                            </div>
+
+                                            <div className="pb-0.5">
+                                                <MasteryDots score={unit.average_score} />
+                                            </div>
+                                        </div>
+
+                                        {/* Progress track */}
+                                        <div className="
+                                h-[4px] mt-3
+                                rounded-full overflow-hidden
+                                bg-zinc-200/80 dark:bg-white/[0.09]
+                            ">
+                                            <div
+                                                className={`
+                                        h-full rounded-full
+                                        bg-gradient-to-r ${progressColor}
+                                    `}
+                                                style={{
+                                                    width: `${Math.max(0, Math.min(100, unit.average_score))}%`
+                                                }}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-0.5 text-[8px] font-semibold">
-                                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400">
+
+                                    {/* Statistics footer */}
+                                    <div className="
+                            relative flex items-center
+                            justify-between gap-1 mt-3
+                        ">
+                                        <span className="
+                                text-[9px] font-semibold
+                                text-emerald-700 dark:text-emerald-400
+                                tabular-nums
+                            ">
                                             B{unit.best_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-400/10 text-blue-700 dark:text-blue-400">
+
+                                        <span className="
+                                text-[9px] font-semibold
+                                text-blue-700 dark:text-blue-400
+                                tabular-nums
+                            ">
                                             L{unit.latest_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400">
+
+                                        <span className="
+                                text-[9px] font-semibold
+                                text-rose-700 dark:text-rose-400
+                                tabular-nums
+                            ">
                                             W{unit.worst_score.toFixed(0)}
                                         </span>
-                                        <span className="px-1.5 py-0.5 rounded ml-auto bg-zinc-100 dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300">
+
+                                        <span className="
+                                text-[9px] font-bold
+                                text-zinc-500 dark:text-zinc-300
+                                bg-zinc-200/70 dark:bg-white/[0.08]
+                                rounded-md px-1.5 py-1
+                            ">
                                             {unit.attempts}×
                                         </span>
                                     </div>
@@ -798,13 +1033,23 @@ export default function Algorithm() {
                         })}
                     </SnapCarousel>
                 ) : (
-                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-center">
+                    <div className="
+            rounded-[22px] p-5 text-center
+            bg-gradient-to-br from-zinc-50 to-zinc-100
+            dark:from-[#222430] dark:to-[#191B25]
+        ">
+                        <BookOpen className="
+                h-6 w-6 mx-auto mb-2
+                text-zinc-400 dark:text-zinc-500
+            " />
+
                         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                             No units tracked yet — practice a quiz to start.
                         </p>
                     </div>
                 )}
             </div>
+
 
             {/* ── STRENGTHS & FOCUS ── */}
             <StrengthsFocusStrip
@@ -814,24 +1059,26 @@ export default function Algorithm() {
             />
 
             {/* ── STUDY PLAN ── */}
-            {data.recommendations?.length > 0 && (
-                <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <MiniChampion size={18} />
-                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                            Study plan
-                        </h3>
+            {
+                data.recommendations?.length > 0 && (
+                    <div className="rounded-2xl bg-white dark:bg-[#161b22] p-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                            <MiniChampion size={18} />
+                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                Study plan
+                            </h3>
+                        </div>
+                        <div className="space-y-2">
+                            {data.recommendations.map((rec, i) => (
+                                <div key={i} className="flex gap-2 items-start">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">{rec}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        {data.recommendations.map((rec, i) => (
-                            <div key={i} className="flex gap-2 items-start">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">{rec}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             <CoachInsightsOverlay
                 open={overlayOpen}
@@ -840,6 +1087,6 @@ export default function Algorithm() {
                 weakest={data.rankings?.weakest || []}
                 onUnitClick={handleUnitClick}
             />
-        </div>
+        </div >
     );
 }

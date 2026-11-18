@@ -11,7 +11,7 @@ import { playSound } from "@/lib/soundManager";
 import { useNavigate } from "react-router-dom";
 import { UserProfileModal } from "@/components/UserProfileModal";
 import { useToast } from "@/components/ui/use-toast";
-
+import HeroLottie from "@/components/HeroLottie";
 interface TriviaQuestion {
     id: string;
     question_text: string;
@@ -1238,7 +1238,7 @@ export const DailyTriviaCard = () => {
                     ) : null}
 
                     {/* Leaderboard */}
-                    <div className="mt-10 mb-6 px-1">
+                    <div className="mt-2 mb-2 px-1">
                         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <div>
                                 <div className="flex items-center gap-2">
@@ -1274,9 +1274,15 @@ export const DailyTriviaCard = () => {
                                     ))}
                                 </div>
                             ) : topStudents.length === 0 ? (
-                                <div className="w-full py-8 text-center border-0 rounded-xl">
-                                    <p className="text-sm text-muted-foreground italic">
-                                        The leaderboard is empty. Step up and lead the way!
+                                <div className="w-full py-2 flex flex-col items-center text-center">
+                                    <div className="w-full max-w-[140px] mx-auto">
+                                        <HeroLottie />
+                                    </div>
+                                    <p className="mt-1 text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+                                        No one's on the board yet
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        Be the first to lead the way today.
                                     </p>
                                 </div>
                             ) : (
@@ -1300,7 +1306,7 @@ export const DailyTriviaCard = () => {
                     </div>
 
                     {!started && !completed && (
-                        <div className="mt-4 flex items-center justify-center gap-3">
+                        <div className="mt-2 flex items-center justify-center gap-3">
                             <Badge variant="secondary" className="h-6">
                                 {questions.length} Questions
                             </Badge>

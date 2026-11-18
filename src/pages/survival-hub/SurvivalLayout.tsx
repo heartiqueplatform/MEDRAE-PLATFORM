@@ -70,6 +70,7 @@ export default function SurvivalLayout() {
     const { user } = useAuth();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [hovered, setHovered] = useState(false);
+    const [edgeStart, setEdgeStart] = useState<{ x: number; y: number } | null>(null);
     const home = useHomeRoute();
     const isHubHome = location.pathname === "/survival-hub";
 
@@ -163,67 +164,70 @@ export default function SurvivalLayout() {
     return (
         <div className="h-[100dvh] w-full flex bg-slate-50 dark:bg-[#0d1117] overflow-hidden">
             {/* ── Desktop sidebar — always collapsed, hover expands ───── */}
-            <motion.aside
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
-                className="hidden md:flex shrink-0 flex-col
-                           bg-white dark:bg-[#0d1117]
-                           border-r border-slate-200/70 dark:border-white/[0.06]
-                           overflow-hidden relative z-20"
-                animate={{ width: asideWidth }}
-                transition={{ type: "spring", damping: 30, stiffness: 320 }}
-            >
-                {/* Brand header — icon-only when collapsed */}
-                <div
-                    className={`h-14 flex items-center shrink-0
+            {/* ── Desktop sidebar — never rendered below md ───── */}
+            <div className="hidden md:flex shrink-0">
+                <motion.aside
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                    className="flex shrink-0 flex-col
+                               bg-white dark:bg-[#0d1117]
+                               border-r border-slate-200/70 dark:border-white/[0.06]
+                               overflow-hidden relative z-20"
+                    animate={{ width: asideWidth }}
+                    transition={{ type: "spring", damping: 30, stiffness: 320 }}
+                >
+                    {/* Brand header — icon-only when collapsed */}
+                    <div
+                        className={`h-14 flex items-center shrink-0
                                 border-b border-slate-200/70 dark:border-white/[0.06]
                                 ${collapsed ? "justify-center px-0" : "px-3 gap-2.5"}`}
-                >
-                    <div className="h-9 w-9 rounded-xl
+                    >
+                        <div className="h-9 w-9 rounded-xl
                                     bg-slate-100 dark:bg-white/[0.06]
                                     flex items-center justify-center shrink-0">
-                        <MapPin className="h-4 w-4 text-slate-700 dark:text-slate-200" />
-                    </div>
-                    {!collapsed && (
-                        <div className="min-w-0">
-                            <p className="text-sm font-bold leading-tight truncate
-                                          text-slate-900 dark:text-white">
-                                Survival Hub
-                            </p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400
-                                          leading-tight truncate">
-                                Student companion
-                            </p>
+                            <MapPin className="h-4 w-4 text-slate-700 dark:text-slate-200" />
                         </div>
-                    )}
-                </div>
+                        {!collapsed && (
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold leading-tight truncate
+                                          text-slate-900 dark:text-white">
+                                    Survival Hub
+                                </p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400
+                                          leading-tight truncate">
+                                    Student companion
+                                </p>
+                            </div>
+                        )}
+                    </div>
 
-                {/* Nav */}
-                <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2">
-                    {renderNav({ compact: collapsed })}
-                </nav>
+                    {/* Nav */}
+                    <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2">
+                        {renderNav({ compact: collapsed })}
+                    </nav>
 
-                {/* Footer — "Back to dashboard" */}
-                <div className="shrink-0 p-2
+                    {/* Footer — "Back to dashboard" */}
+                    <div className="shrink-0 p-2
                                 border-t border-slate-200/70 dark:border-white/[0.06]">
-                    <button
-                        onClick={goToDashboard}
-                        title={collapsed ? "Back to dashboard" : undefined}
-                        aria-label={collapsed ? "Back to dashboard" : undefined}
-                        className={`w-full flex items-center gap-2
+                        <button
+                            onClick={goToDashboard}
+                            title={collapsed ? "Back to dashboard" : undefined}
+                            aria-label={collapsed ? "Back to dashboard" : undefined}
+                            className={`w-full flex items-center gap-2
                                    h-9 rounded-lg
                                    text-[12px] font-bold
                                    text-slate-600 dark:text-slate-400
                                    active:scale-[0.98] transition-transform
                                    active:bg-slate-100 dark:active:bg-white/5
                                    ${collapsed ? "justify-center px-0" : "px-2.5"}`}
-                        style={{ touchAction: "manipulation" }}
-                    >
-                        <ChevronLeft className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>Back to dashboard</span>}
-                    </button>
-                </div>
-            </motion.aside>
+                            style={{ touchAction: "manipulation" }}
+                        >
+                            <ChevronLeft className="h-4 w-4 shrink-0" />
+                            {!collapsed && <span>Back to dashboard</span>}
+                        </button>
+                    </div>
+                </motion.aside>
+            </div>
 
             {/* ── Content ─────────────────────────────────────── */}
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col">
@@ -260,6 +264,31 @@ export default function SurvivalLayout() {
                 <Outlet />
             </div>
 
+            {/* ── Mobile left-edge swipe-to-open ───────────────── */}
+            {!drawerOpen && (
+                <div
+                    className="md:hidden fixed left-0 top-0 bottom-0 w-4 z-[9998]"
+                    style={{ touchAction: "pan-y" }}
+                    onPointerDown={(e) => {
+                        if (e.pointerType === "mouse") return;
+                        setEdgeStart({ x: e.clientX, y: e.clientY });
+                    }}
+                    onPointerMove={(e) => {
+                        if (!edgeStart) return;
+                        const dx = e.clientX - edgeStart.x;
+                        const dy = Math.abs(e.clientY - edgeStart.y);
+                        if (dx > 60 && dx > dy * 1.5) {
+                            tap();
+                            setDrawerOpen(true);
+                            setEdgeStart(null);
+                        }
+                    }}
+                    onPointerUp={() => setEdgeStart(null)}
+                    onPointerCancel={() => setEdgeStart(null)}
+                    onPointerLeave={() => setEdgeStart(null)}
+                />
+            )}
+
             {/* ── Mobile drawer (animated) ────────────────────── */}
             <AnimatePresence>
                 {drawerOpen && (
@@ -268,7 +297,7 @@ export default function SurvivalLayout() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
                     >
                         <motion.div
                             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"

@@ -163,16 +163,17 @@ export default function LastMinuteReader() {
 
         const bootKey = `${user.id}:${slug}`;
         if (bootstrappedRef.current === bootKey) return;
-        bootstrappedRef.current = bootKey;
-
+        // NOTE: don't set bootstrappedRef.current here — only set it
+        // after a fully successful load (see end of this effect), and
+        // clear it on every early-return error path so a retry can run.
         (async () => {
+            console.log("[bootstrap] start", { slug, userId: user?.id, bootKey });
             setLoading(true); setErr(null);
-
             const { data: p } = await supabase
                 .from("lm_papers")
                 .select("id,title,question_count,created_by")
                 .eq("slug", slug).eq("is_published", true).eq("is_deleted", false).maybeSingle();
-            if (!p) { setErr("Paper not found."); setLoading(false); return; }
+            if (!p) { setErr("Paper not found."); setLoading(false); bootstrappedRef.current = null; return; }
             setPaperId(p.id); setPaperTitle(p.title); setTotal(p.question_count ?? 0);
 
             // 🆕 Fetch the creator's profile
@@ -191,7 +192,7 @@ export default function LastMinuteReader() {
                 }
             }
             const ent = await checkEntitlement(user.id, p.id);
-            if (!ent) { setErr("You don't have access to this paper yet."); setLoading(false); return; }
+            if (!ent) { setErr("You don't have access to this paper yet."); setLoading(false); bootstrappedRef.current = null; return; }
             setExpiresAt(ent.expires_at);
 
             // Attempt row — includes completed_at
@@ -204,13 +205,14 @@ export default function LastMinuteReader() {
             const wasCompleted = !!attemptRow?.completed_at;
 
             // All ordered question IDs
+            // All ordered question IDs — via RPC so RLS on lm_questions
+            // doesn't hide rows from the client.
             const { data: allIds, error: allIdsErr } = await supabase
-                .from("lm_questions").select("id,question_order")
-                .eq("paper_id", p.id).eq("is_deleted", false)
-                .order("question_order", { ascending: true });
-            if (allIdsErr) { setErr(allIdsErr.message); setLoading(false); return; }
+                .rpc("lm_get_all_ids", { p_paper_id: p.id });
+            if (allIdsErr) { setErr(allIdsErr.message); setLoading(false); bootstrappedRef.current = null; return; }
 
             const oIds: string[] = (allIds ?? []).map((r: any) => String(r.id));
+            console.log("[bootstrap] allIds:", allIds?.length, "oIds:", oIds.length);
             setOrderedIds(oIds);
             setAnswers(savedAnswers);
             setTotal(p.question_count ?? oIds.length);
@@ -230,6 +232,7 @@ export default function LastMinuteReader() {
                     pct: r.score_pct ?? 0,
                 });
                 setAttemptCompleted(true);
+                bootstrappedRef.current = bootKey;
                 setLoading(false);
                 return;
             }
@@ -242,7 +245,7 @@ export default function LastMinuteReader() {
             const { data: rows, error } = await supabase.rpc("lm_get_batch", {
                 p_paper_id: p.id, p_offset: start, p_limit: BATCH,
             });
-            if (error) { setErr(error.message); setLoading(false); return; }
+            if (error) { setErr(error.message); setLoading(false); bootstrappedRef.current = null; return; }
 
             const batchIds = (rows ?? []).map((r: any) => String(r.id));
             const answeredInBatch = batchIds.filter((id) => savedAnswers[id]);
@@ -258,11 +261,11 @@ export default function LastMinuteReader() {
                     if (data?.[0]) newReveals[qid] = data[0] as Reveal;
                 }
             }
-
             setBatch((rows ?? []) as Q[]);
             setBatchStart(start);
             setReveals(newReveals);
             setIdx(targetIdx);
+            bootstrappedRef.current = bootKey;   // <-- mark success
             setLoading(false);
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,38 +277,47 @@ export default function LastMinuteReader() {
     useEffect(() => {
         if (!paperId) return;
         const start = Math.floor(idx / BATCH) * BATCH;
-        if (start === batchStart) return;
+        if (start === batchStart) {
+            setLoadingBatch(false);
+            return;
+        }
         let live = true;
         setLoadingBatch(true);
         (async () => {
-            const { data, error } = await supabase.rpc("lm_get_batch", {
-                p_paper_id: paperId, p_offset: start, p_limit: BATCH,
-            });
-            if (!live) return;
-            if (!error) {
-                const freshRows = (data ?? []) as Q[];
-                setBatch(freshRows); setBatchStart(start);
-                const batchIds = freshRows.map((q) => q.id);
-                const answeredInBatch = batchIds.filter((id) => answers[id]);
-                const missing = answeredInBatch.filter((id) => !reveals[id]);
-                if (missing.length > 0) {
-                    const results = await Promise.all(
-                        missing.map((qid) =>
-                            supabase.rpc("lm_submit_answer", { p_question_id: qid, p_selected: answers[qid] })
-                                .then(({ data }) => ({ qid, data }))
-                        )
-                    );
-                    if (!live) return;
-                    const newReveals: Record<string, Reveal> = {};
-                    for (const { qid, data } of results) {
-                        if (data?.[0]) newReveals[qid] = data[0] as Reveal;
-                    }
-                    if (Object.keys(newReveals).length > 0) {
-                        setReveals((prev) => ({ ...prev, ...newReveals }));
+            try {
+                const { data, error } = await supabase.rpc("lm_get_batch", {
+                    p_paper_id: paperId, p_offset: start, p_limit: BATCH,
+                });
+                if (!live) return;
+                if (!error) {
+                    const freshRows = (data ?? []) as Q[];
+                    setBatch(freshRows); setBatchStart(start);
+                    const batchIds = freshRows.map((q) => q.id);
+                    const answeredInBatch = batchIds.filter((id) => answers[id]);
+                    const missing = answeredInBatch.filter((id) => !reveals[id]);
+                    if (missing.length > 0) {
+                        const results = await Promise.all(
+                            missing.map((qid) =>
+                                supabase.rpc("lm_submit_answer", { p_question_id: qid, p_selected: answers[qid] })
+                                    .then(({ data }) => ({ qid, data }))
+                            )
+                        );
+                        if (!live) return;
+                        const newReveals: Record<string, Reveal> = {};
+                        for (const { qid, data } of results) {
+                            if (data?.[0]) newReveals[qid] = data[0] as Reveal;
+                        }
+                        if (Object.keys(newReveals).length > 0) {
+                            setReveals((prev) => ({ ...prev, ...newReveals }));
+                        }
                     }
                 }
+            } finally {
+                // Always clear the spinner for this run — even if we were
+                // superseded by a newer effect run. The newer run will set
+                // it again if it actually needs to fetch.
+                setLoadingBatch(false);
             }
-            setLoadingBatch(false);
         })();
         return () => { live = false; };
     }, [idx, paperId, batchStart, answers, reveals]);
@@ -387,6 +399,7 @@ export default function LastMinuteReader() {
     const submit = useCallback(
         async (letter: "A" | "B" | "C" | "D") => {
             if (!current || answers[current.id] || submitting) return;
+            if (navigator.vibrate) navigator.vibrate(20);
             setSubmitting(current.id);
             const nextAnswers = { ...answers, [current.id]: letter };
             setAnswers(nextAnswers);
@@ -421,6 +434,13 @@ export default function LastMinuteReader() {
     // Finish flow
     // ─────────────────────────────────────────────────────────────
     const handleFinishClick = useCallback(() => {
+        console.log("[finish]", {
+            orderedIdsLen: orderedIds.length,
+            total,
+            answeredCount: Object.keys(answers).length,
+            missingViaOrdered: orderedIds.filter((qid) => !answers[qid]).length,
+            answeredKeysNotInOrdered: Object.keys(answers).filter((k) => !orderedIds.includes(k)).length,
+        });
         if (loading) {
             alert("Still loading — wait one second and try again.");
             return;
@@ -435,17 +455,29 @@ export default function LastMinuteReader() {
             return;
         }
 
+        // Always compute missing from the canonical ordered list.
+        // If orderedIds is empty (shouldn't happen after bootstrap),
+        // fall back to a count comparison so the gate still fires.
+        // Always compute missing from the canonical ordered list.
+        // If orderedIds is empty, the question list isn't loaded yet —
+        // block finishing rather than fabricating bogus jump targets.
         const missing: number[] = [];
-        if (orderedIds.length === total) {
+        if (orderedIds.length > 0) {
             orderedIds.forEach((qid, i) => {
                 if (!answers[qid]) missing.push(i);
             });
         } else {
-            const answeredCount = Object.keys(answers).length;
-            if (answeredCount < total) {
-                setMissingIdxs([]);
-                setShowFinishGate(true);
-                return;
+            // Keep Fix 2 as a safety net for the rare race where the RPC
+            // hasn't returned yet.
+            const missingCount = Math.max(0, total - Object.keys(answers).length);
+            if (missingCount > 0) {
+                batch.forEach((q) => {
+                    const globalIdx = q.question_order - 1;
+                    if (!answers[q.id] && globalIdx >= 0 && globalIdx < total) {
+                        missing.push(globalIdx);
+                    }
+                });
+                while (missing.length < missingCount) missing.push(-1);
             }
         }
 
@@ -580,6 +612,7 @@ export default function LastMinuteReader() {
     // Derived
     // ─────────────────────────────────────────────────────────────
     const answeredCount = Object.keys(answers).length;
+    const answeredIdList = useMemo(() => Object.keys(answers), [answers]);
     const dayLeft = expiresAt
         ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))
         : 0;
@@ -754,9 +787,9 @@ export default function LastMinuteReader() {
                         <button
                             onClick={() => { playSound("tap"); setShowPast(true); }}
                             aria-label="Past results"
-                            className="p-2 rounded-full hover:bg-muted transition-colors shrink-0"
+                            className="shrink-0 flex items-center justify-center h-8 px-3 rounded-full bg-muted hover:bg-muted/70 text-foreground text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95"
                         >
-                            <History className="h-5 w-5" />
+                            Attempts
                         </button>
                     </div>
 
@@ -890,16 +923,16 @@ export default function LastMinuteReader() {
                                                         className={cn(
                                                             "flex justify-between items-center gap-2 min-h-[48px] md:min-h-[52px] py-2 px-3 md:px-4 rounded-lg transition-all duration-200",
                                                             !answered ? "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60" : "bg-white dark:bg-slate-800",
-                                                            answered && reveal?.correct_answer !== letter && answered !== letter ? "opacity-50" : "opacity-100"
+                                                            answered && reveal && reveal.correct_answer !== letter && answered !== letter ? "opacity-50" : "opacity-100"
                                                         )}
                                                     >
                                                         <div className="flex items-center gap-2 md:gap-3">
                                                             <span
                                                                 className={cn(
                                                                     "text-xs font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-md transition-colors duration-300",
-                                                                    answered && reveal?.correct_answer === letter
+                                                                    answered && reveal && reveal.correct_answer === letter
                                                                         ? "bg-emerald-500 text-white"
-                                                                        : answered === letter && reveal?.correct_answer !== letter
+                                                                        : answered === letter && reveal && reveal.correct_answer !== letter
                                                                             ? "bg-rose-500 text-white"
                                                                             : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                                                                 )}
@@ -909,13 +942,13 @@ export default function LastMinuteReader() {
                                                             <span className="text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200">{text}</span>
                                                         </div>
                                                         <div className="flex items-center ml-3 md:ml-4">
-                                                            {answered && reveal?.correct_answer === letter && (
+                                                            {answered && reveal && reveal.correct_answer === letter && (
                                                                 <div className="flex items-center gap-1 md:gap-1.5 animate-[pop_0.3s_ease-out]">
                                                                     <span className="text-[9px] md:text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Correct</span>
                                                                     <GraduationCap className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" />
                                                                 </div>
                                                             )}
-                                                            {answered && answered === letter && reveal?.correct_answer !== letter && (
+                                                            {answered === letter && reveal && reveal.correct_answer !== letter && (
                                                                 <div className="flex items-center gap-1 md:gap-1.5 animate-[shake_0.4s_ease-in-out]">
                                                                     <span className="text-[9px] md:text-[10px] text-rose-600 dark:text-rose-400 uppercase tracking-tight">Wrong</span>
                                                                     <X className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-500 dark:text-rose-400" />
@@ -1205,6 +1238,7 @@ export default function LastMinuteReader() {
                 open={showReview}
                 paperId={paperId}
                 onClose={() => setShowReview(false)}
+                answeredIds={answeredIdList}
             />
 
             <span className="hidden"><Lock /></span>

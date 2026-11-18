@@ -4,10 +4,13 @@ export default {
   darkMode: "class",
 
   content: [
+    "./index.html",
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
+    "./src/pages/**/*.{ts,tsx}",          // ← explicit, belt-and-braces
+    "./src/pages/survival-hub/**/*.{ts,tsx}",  // ← even more explicit
   ],
 
   safelist: [

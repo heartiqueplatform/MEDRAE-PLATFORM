@@ -32,7 +32,7 @@ const backgroundImages = [
   "high2.png",
   "high3.png",
   "high4.png",
-  "high5.png",
+  "indexbackground3.jpg",
   "high6.png",
 ];
 

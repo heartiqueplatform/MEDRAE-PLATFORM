@@ -49,6 +49,7 @@ export function StudentPickerSheet({
 
     const cursorRef = useRef<string | null>(null);
     const loadingRef = useRef(false);
+    const hasLoadedOnceRef = useRef(false);
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const reqIdRef = useRef(0);
 
@@ -64,7 +65,7 @@ export function StudentPickerSheet({
     const loadPage = useCallback(
         async (reset = false) => {
             if (loadingRef.current) return;
-            if (!reset && (done || !cursorRef.current)) return;
+            if (!reset && (done || !hasLoadedOnceRef.current)) return;
 
             const activeInst = effectiveInstitution;
             if (!activeInst) {
@@ -111,6 +112,9 @@ export function StudentPickerSheet({
                         : [...prev, ...page.filter((r) => !seen.has(r.user_id))];
                     return merged;
                 });
+
+                hasLoadedOnceRef.current = true;
+
                 if (page.length < PAGE_SIZE) {
                     setDone(true);
                     cursorRef.current = null;
@@ -139,31 +143,82 @@ export function StudentPickerSheet({
         setDone(false);
         setError(null);
         cursorRef.current = null;
+        hasLoadedOnceRef.current = false;
         loadPage(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, debounced, effectiveInstitution]);
 
-    // infinite scroll
+    // infinite scroll — re-observes after every page append so it keeps
+    // pulling while the sentinel is still visible
+    // infinite scroll — attach to the nearest scrollable ancestor of the
+    // sentinel (CenteredModal's body), not the window. Falls back to window.
     useEffect(() => {
-        if (!open) return;
+        if (!open || showInstitutionPanel) return;
         const el = sentinelRef.current;
         if (!el) return;
-        const io = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting) loadPage(false);
-            },
-            { rootMargin: "200px" }
-        );
-        io.observe(el);
-        return () => io.disconnect();
-    }, [open, loadPage]);
 
+        // find the scroll container: walk up until overflow-y is auto/scroll
+        let scroller: HTMLElement | Window = window;
+        let node: HTMLElement | null = el.parentElement;
+        while (node) {
+            const style = getComputedStyle(node);
+            const oy = style.overflowY;
+            if (oy === "auto" || oy === "scroll") {
+                scroller = node;
+                break;
+            }
+            node = node.parentElement;
+        }
+
+        const check = () => {
+            const rect = el.getBoundingClientRect();
+            const viewportH =
+                scroller instanceof Window
+                    ? window.innerHeight
+                    : (scroller as HTMLElement).getBoundingClientRect().bottom;
+            // trigger when sentinel is within 200px of the viewport bottom
+            if (rect.top <= viewportH + 200) {
+                loadPage(false);
+            }
+        };
+
+        // run once on mount in case page 1 didn't fill the modal
+        check();
+
+        const target: EventTarget =
+            scroller instanceof Window ? window : (scroller as HTMLElement);
+        target.addEventListener("scroll", check, { passive: true });
+
+        return () => {
+            target.removeEventListener("scroll", check);
+        };
+    }, [open, showInstitutionPanel, loadPage, rows.length]);
     const toggle = (s: PickableStudent) => {
         const exists = selected.some((x) => x.user_id === s.user_id);
         if (exists) {
             onSelectedChange(selected.filter((x) => x.user_id !== s.user_id));
         } else {
             onSelectedChange([...selected, s]);
+        }
+    };
+
+    // Rows that can actually be selected (not already in class)
+    const selectableRows = rows.filter((r) => !alreadyInClass.has(r.user_id));
+    const allVisibleSelected =
+        selectableRows.length > 0 &&
+        selectableRows.every((r) => selected.some((x) => x.user_id === r.user_id));
+
+    const toggleSelectAll = () => {
+        tap();
+        if (allVisibleSelected) {
+            // deselect only the currently visible ones
+            const visibleIds = new Set(selectableRows.map((r) => r.user_id));
+            onSelectedChange(selected.filter((x) => !visibleIds.has(x.user_id)));
+        } else {
+            // merge visible selectable rows into the existing selection
+            const selectedIds = new Set(selected.map((x) => x.user_id));
+            const additions = selectableRows.filter((r) => !selectedIds.has(r.user_id));
+            onSelectedChange([...selected, ...additions]);
         }
     };
 
@@ -216,14 +271,14 @@ export function StudentPickerSheet({
             <div className="flex flex-col">
                 {/* Search — hidden while institution panel is showing */}
                 {!showInstitutionPanel && (
-                    <div className="px-4 pb-2">
-                        <div className="flex items-center gap-2 h-10 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.06]">
+                    <div className="px-4 pb-2 flex items-center gap-2">
+                        <div className="flex items-center gap-2 h-10 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.06] flex-1 min-w-0">
                             <Search className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={2.5} />
                             <input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search by name or username…"
-                                className="flex-1 bg-transparent border-0 outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400"
+                                className="flex-1 bg-transparent border-0 outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0"
                                 style={{ touchAction: "manipulation" }}
                             />
                             {query && (
@@ -237,6 +292,21 @@ export function StudentPickerSheet({
                                 </button>
                             )}
                         </div>
+
+                        {selectableRows.length > 0 && (
+                            <button
+                                onClick={toggleSelectAll}
+                                className={`shrink-0 h-10 px-3 rounded-xl text-[11px] font-bold uppercase tracking-wider
+                                            active:scale-[0.97] transition-transform
+                                            ${allVisibleSelected
+                                        ? "bg-rose-50 dark:bg-rose-400/10 text-rose-700 dark:text-rose-400"
+                                        : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
+                                    }`}
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                {allVisibleSelected ? "Clear" : "Select all"}
+                            </button>
+                        )}
                     </div>
                 )}
 

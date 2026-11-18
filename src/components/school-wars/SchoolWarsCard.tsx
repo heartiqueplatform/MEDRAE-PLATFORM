@@ -63,51 +63,171 @@ const SchoolCard = memo(function SchoolCard({
         () => prettyLabel(row.institution, row.institution_label),
         [row.institution, row.institution_label]
     );
-    const score = row.has_activity ? `${row.school_score.toFixed(1)}` : "—";
+
+    const score = row.has_activity
+        ? `${row.school_score.toFixed(1)}`
+        : "—";
+
+    const rankColor =
+        row.rank === 1
+            ? "text-amber-600 dark:text-amber-300"
+            : row.rank === 2
+                ? "text-zinc-500 dark:text-zinc-200"
+                : row.rank === 3
+                    ? "text-orange-600 dark:text-orange-300"
+                    : "text-zinc-400 dark:text-zinc-500";
+
+    const rankBackground =
+        row.rank === 1
+            ? "bg-amber-100/80 dark:bg-amber-300/[0.12]"
+            : row.rank === 2
+                ? "bg-zinc-200/70 dark:bg-white/[0.09]"
+                : row.rank === 3
+                    ? "bg-orange-100/80 dark:bg-orange-300/[0.12]"
+                    : "bg-zinc-100 dark:bg-white/[0.06]";
 
     return (
         <button
             onClick={() => onOpen(row)}
             className="
-                snap-start shrink-0 w-[152px] text-left
-                rounded-2xl bg-white dark:bg-white/[0.03]
-                hover:bg-zinc-100 dark:hover:bg-white/[0.06]
-                active:scale-[0.985] transition-[background,transform] duration-150
-                p-3 flex flex-col gap-3
+                group relative snap-start shrink-0
+                w-[158px] h-[158px]
+                overflow-hidden text-left
+                flex flex-col justify-between
+                rounded-[22px] p-3.5
+
+                bg-gradient-to-br
+                from-white via-[#FAFAFC] to-[#F0F1F5]
+                shadow-[0_5px_18px_rgba(20,20,40,0.07)]
+
+                dark:bg-none
+                dark:bg-gradient-to-br
+                dark:from-[#252630]
+                dark:via-[#1C1D26]
+                dark:to-[#15161D]
+                dark:shadow-[0_8px_24px_rgba(0,0,0,0.28)]
+
+                hover:shadow-[0_8px_22px_rgba(20,20,40,0.10)]
+                dark:hover:shadow-[0_10px_28px_rgba(0,0,0,0.38)]
+
+                active:scale-[0.965]
+                transition-all duration-200 ease-out
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-rose-500/60
             "
-            style={{ contentVisibility: "auto", containIntrinsicSize: "152px 148px" }}
+            style={{
+                contentVisibility: "auto",
+                containIntrinsicSize: "158px 158px",
+            }}
         >
-            <div className="flex items-start justify-between gap-2">
+            {/* Soft decorative glow */}
+            <div
+                className="
+                    pointer-events-none absolute
+                    -top-12 -right-12
+                    w-28 h-28 rounded-full
+                    bg-rose-300/[0.13]
+                    dark:bg-rose-400/[0.09]
+                    blur-2xl
+                "
+            />
+
+            {/* Top */}
+            <div className="relative flex items-start justify-between">
                 <SchoolAvatar
                     label={label}
                     size={40}
                     dimmed={!row.has_activity}
                     top={row.rank === 1}
                 />
-                <span className="text-[10px] font-medium tabular-nums text-zinc-400 dark:text-zinc-500 pt-0.5">
-                    #{row.rank}
+
+                <span className={`
+                    inline-flex items-center justify-center
+                    min-w-[27px] h-[23px] px-1.5
+                    rounded-lg
+                    text-[10px] font-bold tabular-nums
+                    ${rankColor} ${rankBackground}
+                `}>
+                    {row.rank}
                 </span>
             </div>
 
-            <div className="min-w-0">
-                <p className="text-[11px] font-medium text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">
+            {/* Main information */}
+            <div className="relative min-w-0 mt-2">
+                <p className="
+                    text-[11.5px] font-semibold
+                    text-zinc-800 dark:text-zinc-100
+                    leading-[1.4] line-clamp-2
+                    min-h-[32px]
+                    tracking-[-0.02em]
+                ">
                     {label}
                 </p>
-                <div className="flex items-baseline gap-1 mt-1.5">
-                    <span className="text-[17px] font-semibold tabular-nums text-zinc-900 dark:text-white leading-none">
+
+                <div className="flex items-baseline gap-1.5 mt-1.5">
+                    <span className="
+                        text-[24px] font-bold
+                        tracking-[-0.055em]
+                        leading-none tabular-nums
+                        text-zinc-950 dark:text-white
+                    ">
                         {score}
                     </span>
+
                     {row.has_activity && (
-                        <span className="text-[9px] font-medium text-zinc-400">%</span>
+                        <span className="
+                            text-[10px] font-semibold
+                            text-zinc-400 dark:text-zinc-500
+                        ">
+                            %
+                        </span>
                     )}
                 </div>
             </div>
 
-            {isMine && (
-                <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                    You
+            {/* Footer */}
+            <div className="relative flex items-center justify-between mt-2">
+                <span className={`
+                    text-[9px] font-bold uppercase
+                    tracking-[0.1em]
+                    ${isMine
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-zinc-400 dark:text-zinc-500"
+                    }
+                `}>
+                    {isMine
+                        ? "Your institution"
+                        : row.has_activity
+                            ? "Active"
+                            : "No activity"
+                    }
                 </span>
-            )}
+
+                <span className="
+                    flex items-center justify-center
+                    w-5 h-5 rounded-full
+                    bg-zinc-200/70 dark:bg-white/[0.07]
+                    text-zinc-500 dark:text-zinc-400
+                    group-hover:text-rose-500
+                    transition-colors
+                ">
+                    <svg
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        className="w-3 h-3"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M7.5 4.5L13 10L7.5 15.5"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                </span>
+            </div>
         </button>
     );
 });
@@ -453,7 +573,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                             <div className="flex items-center gap-3 px-3.5 py-3">
                                 <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center shrink-0">
                                     <span className="text-zinc-900 dark:text-white text-sm font-semibold tabular-nums">
-                                        #{myRank}
+                                        {myRank}
                                     </span>
                                 </div>
 
