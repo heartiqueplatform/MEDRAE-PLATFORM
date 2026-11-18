@@ -59,7 +59,25 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
     const getReaction = (id: string) => getInteraction?.("episode", id);
 
     /* ── Split tracks once per change ─────────────────────── */
+    /* ── Split tracks — SNAPSHOT ──────────────────────────────
+       Frozen while the user stays in the current view so liking /
+       loving / bookmarking does NOT yank the row out of the list.
+       Rebuilds only on: mount, viewMode change, show change, or
+       when a new page of episodes loads (visibleTracks.length). */
+    const splitKey = `${viewMode}|${selectedShowId ?? "all"}`;
+    const snapshotRef = React.useRef<{
+        key: string;
+        reacted: any[];
+        unreacted: any[];
+    } | null>(null);
+
     const { reactedTracks, unreactedTracks } = useMemo(() => {
+        if (snapshotRef.current && snapshotRef.current.key === splitKey) {
+            return {
+                reactedTracks: snapshotRef.current.reacted,
+                unreactedTracks: snapshotRef.current.unreacted,
+            };
+        }
         const reacted: any[] = [];
         const unreacted: any[] = [];
         for (const t of visibleTracks) {
@@ -67,9 +85,10 @@ export const EpisodesContent = React.memo(function EpisodesContent(props: any) {
             if (it && (it.like || it.love || it.save)) reacted.push(t);
             else unreacted.push(t);
         }
+        snapshotRef.current = { key: splitKey, reacted, unreacted };
         return { reactedTracks: reacted, unreactedTracks: unreacted };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visibleTracks, getInteraction]);
+    }, [splitKey, visibleTracks.length]); // ← getInteraction intentionally NOT here
 
     /* ── Saved sub-filter list ────────────────────────────── */
     const savedFilteredTracks = useMemo(() => {

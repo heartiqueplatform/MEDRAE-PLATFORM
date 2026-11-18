@@ -333,10 +333,10 @@ export function StudentCoinsSection() {
                             <button
                                 onClick={goToRegister}
                                 className="flex-1 inline-flex items-center justify-center gap-2
-                                           h-11 px-5 rounded-xl
-                                           bg-slate-900 hover:bg-slate-800
-                                           text-white text-[13px] font-semibold
-                                           active:scale-[0.98] transition-all"
+               min-h-[52px] py-3.5 px-5 rounded-xl
+               bg-slate-900 hover:bg-slate-800
+               text-white text-[14px] font-semibold
+               active:scale-[0.98] transition-all"
                                 style={{ touchAction: "manipulation" }}
                             >
                                 Start earning free
@@ -344,12 +344,12 @@ export function StudentCoinsSection() {
                             </button>
                             <button
                                 onClick={goToLearn}
-                                className="inline-flex items-center justify-center gap-2
-                                           h-11 px-5 rounded-xl
-                                           bg-transparent hover:bg-slate-100
-                                           border border-slate-300 hover:border-slate-400
-                                           text-slate-700 text-[13px] font-semibold
-                                           active:scale-[0.98] transition-all"
+                                className="flex-1 inline-flex items-center justify-center gap-2
+               min-h-[52px] py-3.5 px-5 rounded-xl
+               bg-transparent hover:bg-slate-100
+               border border-slate-300 hover:border-slate-400
+               text-slate-700 text-[14px] font-semibold
+               active:scale-[0.98] transition-all"
                                 style={{ touchAction: "manipulation" }}
                             >
                                 <Wallet className="w-3.5 h-3.5" strokeWidth={2.4} />

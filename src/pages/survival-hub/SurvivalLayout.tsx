@@ -297,7 +297,7 @@ export default function SurvivalLayout() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                     >
                         <motion.div
                             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
@@ -318,7 +318,7 @@ export default function SurvivalLayout() {
                             initial={{ x: "-100%" }}
                             animate={{ x: 0 }}
                             exit={{ x: "-100%" }}
-                            transition={{ type: "spring", damping: 32, stiffness: 320 }}
+                            transition={{ type: "spring", damping: 26, stiffness: 450 }}
                             drag="x"
                             dragConstraints={{ left: 0, right: 0 }}
                             dragElastic={{ left: 0.4, right: 0 }}

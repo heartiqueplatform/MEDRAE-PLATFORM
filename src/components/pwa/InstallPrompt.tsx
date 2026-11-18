@@ -346,7 +346,7 @@ export default function InstallPrompt() {
                         <Step n={2}>
                             Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.
                         </Step>
-                        <Step n={3}>Confirm. Done! 🎉</Step>
+                        <Step n={3}>Confirm. Done! </Step>
 
                         <button
                             onClick={dismiss}

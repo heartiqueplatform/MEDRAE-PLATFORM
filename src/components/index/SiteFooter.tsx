@@ -164,8 +164,12 @@ export default function SiteFooter() {
     return (
         <footer
             id="contact"
-            className="pt-8 md:pt-12 pb-6 md:pb-8 px-0 md:px-4"
-            style={{ backgroundColor: "#0d1117", color: "#e6edf3" }}
+            className="pt-8 md:pt-12 px-0 md:px-4"
+            style={{
+                backgroundColor: "#0d1117",
+                color: "#e6edf3",
+                paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))",
+            }}
         >
             <div className="max-w-7xl mx-auto px-4 md:px-0">
 
