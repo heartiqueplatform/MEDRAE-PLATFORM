@@ -13,7 +13,6 @@ import {
     type ScrollSection, type GuideLink, type SidebarAccent,
 } from "./navShared";
 
-// Fallback so a missing accent never crashes the page.
 const FALLBACK_ACCENT = {
     activeBg: "bg-slate-100",
     activeText: "text-slate-700",
@@ -61,7 +60,8 @@ export function BaseTopNav({
             <header
                 className="hidden lg:grid fixed top-0 inset-x-0 z-40 h-16
                  grid-cols-[1fr_auto_1fr] items-center gap-6 px-6
-                 bg-white/85 backdrop-blur-md
+                 bg-white/80 backdrop-blur-xl
+                 shadow-[0_1px_0_0_rgba(15,23,42,0.04),0_8px_32px_-12px_rgba(15,23,42,0.10)]
                  border-0"
             >
                 {/* ═══ LEFT: brand + role chip ═══ */}
@@ -70,7 +70,10 @@ export function BaseTopNav({
                         <img
                             src="/pwa-192x192.jpeg"
                             alt="Medrae"
-                            className="h-8 w-8 rounded-xl shadow-sm group-hover:scale-105 transition-transform"
+                            className="h-8 w-8 rounded-xl
+                                       shadow-[0_6px_18px_-6px_rgba(37,99,235,0.55)]
+                                       group-hover:scale-105
+                                       transition-transform duration-300"
                         />
                         <div className="leading-tight">
                             <p className="text-[13px] font-bold">
@@ -86,6 +89,7 @@ export function BaseTopNav({
                     <span className={`hidden xl:inline-flex items-center
                   px-2.5 py-1 rounded-full
                   text-[10px] font-bold uppercase tracking-wider
+                  shadow-[inset_0_0_0_1px_rgba(15,23,42,0.03)]
                   ${A.activeBg} ${A.activeText}`}>
                         {roleLabel} Portal
                     </span>
@@ -123,24 +127,30 @@ export function BaseTopNav({
 
                 {/* ═══ RIGHT: search + auth + overflow ═══ */}
                 <div className="flex items-center gap-2 justify-self-end">
+
+                    {/* Modern search pill — no kbd chip, no border */}
                     <button
                         onClick={() => setSearchOpen(true)}
-                        className="hidden xl:flex items-center gap-2 h-9 px-3 mr-1 rounded-lg
-                     text-slate-500 hover:text-slate-900 hover:bg-slate-100
-                     transition-colors text-[12px] font-semibold"
-                        aria-label="Search"
+                        className="hidden xl:flex items-center gap-2 h-10 px-3.5 mr-1 rounded-full
+                                   bg-slate-100/70 hover:bg-slate-100
+                                   text-slate-500 hover:text-slate-900
+                                   shadow-[0_1px_2px_rgba(15,23,42,0.04)]
+                                   hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.25)]
+                                   transition-all duration-300
+                                   text-[12.5px] font-semibold"
+                        aria-label="Search (⌘K)"
                     >
                         <Search className="w-4 h-4" strokeWidth={2.2} />
                         <span>Search</span>
-                        <kbd className="ml-1 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200
-                          text-[10px] font-bold text-slate-500 leading-none">⌘K</kbd>
                     </button>
 
                     <button
                         onClick={() => window.location.assign("/login")}
-                        className="h-10 px-4 rounded-xl text-sm font-bold text-slate-700
-                     hover:bg-slate-100 transition-colors
-                     flex items-center gap-2"
+                        className="h-10 px-4 rounded-full text-sm font-bold text-slate-700
+                                   hover:bg-slate-100
+                                   hover:shadow-[0_8px_24px_-14px_rgba(15,23,42,0.35)]
+                                   transition-all duration-300
+                                   flex items-center gap-2"
                     >
                         <Users className="w-4 h-4" strokeWidth={2.2} />
                         Sign In
@@ -148,9 +158,13 @@ export function BaseTopNav({
 
                     <button
                         onClick={() => window.location.assign("/register")}
-                        className={`h-10 px-4 rounded-xl text-sm font-bold text-white
-                      flex items-center gap-2 transition-colors
-                      ${A.ctaBg} ${A.ctaHover}`}
+                        className={`h-10 px-4 rounded-full text-sm font-bold text-white
+                                    flex items-center gap-2
+                                    transition-all duration-300
+                                    shadow-[0_10px_28px_-12px_rgba(15,23,42,0.55)]
+                                    hover:shadow-[0_14px_38px_-12px_rgba(15,23,42,0.65)]
+                                    hover:-translate-y-px
+                                    ${A.ctaBg} ${A.ctaHover}`}
                     >
                         <UserPlus className="w-4 h-4" strokeWidth={2.2} />
                         Get Started
@@ -162,8 +176,9 @@ export function BaseTopNav({
                             <button
                                 onClick={handleExitSystem}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-                         text-sm font-semibold text-slate-700
-                         hover:bg-red-50 hover:text-red-600 transition-colors text-left"
+                                           text-sm font-semibold text-slate-700
+                                           hover:bg-red-50 hover:text-red-600
+                                           transition-colors text-left"
                             >
                                 <LogOut className="w-4 h-4" strokeWidth={2.2} />
                                 Exit System
@@ -175,8 +190,8 @@ export function BaseTopNav({
                                     sessionStorage.removeItem("medrae.seen_chooser");
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-                         text-sm font-semibold text-slate-700
-                         hover:bg-slate-100 transition-colors"
+                                           text-sm font-semibold text-slate-700
+                                           hover:bg-slate-100 transition-colors"
                             >
                                 ← Switch role
                             </Link>
@@ -184,6 +199,7 @@ export function BaseTopNav({
                     </NavMenu>
                 </div>
             </header>
+
             <SearchCommand
                 open={searchOpen}
                 onClose={() => setSearchOpen(false)}
