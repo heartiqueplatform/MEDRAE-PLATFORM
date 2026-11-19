@@ -815,7 +815,7 @@ export default function FeedMediaPanel({
 
                         {/* Image stage */}
                         <div
-                            className="relative w-full bg-black flex items-center justify-center overflow-hidden touch-pan-y"
+                            className="relative w-full bg-white dark:bg-muted/30 flex items-center justify-center overflow-hidden touch-pan-y"
                             style={{
                                 aspectRatio:
                                     containerAspect !== undefined &&
