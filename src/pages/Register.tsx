@@ -419,10 +419,13 @@ export function Register() {
           <div className="absolute bottom-0 right-0 h-36 w-36 rounded-full bg-blue-100/70 blur-3xl" />
         </div>
 
-        {/* fanned cards — matches the desktop hero scale, capped by height too */}
-        <div
-          className="relative mx-auto aspect-[3/4]"
-          style={{ width: "min(220px, 30vh)" }}
+        {/* fanned cards — tap anywhere on the fan to advance */}
+        <button
+          type="button"
+          onClick={() => setBgIndex((i) => (i + 1) % backgroundImages.length)}
+          aria-label="Next image"
+          className="relative block mx-auto aspect-[3/4] bg-transparent p-0"
+          style={{ width: "min(220px, 30vh)", touchAction: "manipulation" }}
         >
           {backgroundImages.map((img, index) => {
             const total = backgroundImages.length;
@@ -438,8 +441,6 @@ export function Register() {
               <div
                 key={index}
                 className="absolute inset-0 rounded-xl overflow-hidden
-                     ring-1 ring-slate-300/70
-                     shadow-[0_15px_35px_-10px_rgba(15,23,42,0.35)]
                      transition-all duration-700 ease-out
                      will-change-transform"
                 style={{
@@ -456,20 +457,46 @@ export function Register() {
             );
           })}
 
-          {/* glass sheen on active card */}
+          {/* flat sheen on active card — no ring, no shadow */}
           <div
             className="pointer-events-none absolute inset-0 rounded-xl
-                 ring-1 ring-inset ring-slate-900/10
-                 bg-gradient-to-br from-white/20 via-transparent to-slate-900/10"
+                 bg-gradient-to-br from-white/15 via-transparent to-slate-900/15"
             style={{ zIndex: 60 }}
           />
+        </button>
+
+        {/* progress dots */}
+        <div className="mt-3 flex items-center justify-center gap-1.5">
+          {backgroundImages.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setBgIndex(i)}
+              aria-label={`Go to image ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-500 ease-out
+          ${i === bgIndex ? "w-6 bg-slate-800" : "w-1.5 bg-slate-300 hover:bg-slate-400"}`}
+            />
+          ))}
         </div>
       </div>
+
       {/* LEFT: hero (desktop only) — fanned poker-card image stack on white */}
       <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0 bg-white">
-        {/* Fanned cards */}
+        {/* Soft neutral glows so the white panel isn't flat */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -left-32 h-[420px] w-[420px] rounded-full bg-slate-200/60 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 h-[380px] w-[380px] rounded-full bg-blue-100/70 blur-[120px]" />
+        </div>
+
+        {/* Fanned cards — tap anywhere on the fan to advance */}
         <div className="absolute inset-0 flex items-center justify-center -translate-y-8">
-          <div className="relative w-[min(58%,420px)] aspect-[3/4]">
+          <button
+            type="button"
+            onClick={() => setBgIndex((i) => (i + 1) % backgroundImages.length)}
+            aria-label="Next image"
+            className="relative block w-[min(58%,420px)] aspect-[3/4] bg-transparent p-0"
+            style={{ touchAction: "manipulation" }}
+          >
             {backgroundImages.map((img, index) => {
               const total = backgroundImages.length;
               const mid = (total - 1) / 2;
@@ -484,16 +511,14 @@ export function Register() {
                 <div
                   key={index}
                   className="absolute inset-0 rounded-2xl overflow-hidden
-                             ring-1 ring-slate-300/70
-                             shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)]
-                             transition-all duration-700 ease-out
-                             will-change-transform"
+                       transition-all duration-700 ease-out
+                       will-change-transform"
                   style={{
                     backgroundImage: `url(/${img})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg)
-                                scale(${isActive ? 1 : 0.94})`,
+                          scale(${isActive ? 1 : 0.94})`,
                     zIndex: z,
                     opacity: isActive ? 1 : 0.92,
                     filter: isActive ? "none" : "brightness(0.72) saturate(0.9)",
@@ -502,26 +527,39 @@ export function Register() {
               );
             })}
 
-            {/* Glass sheen + inner border on the active card */}
+            {/* flat sheen on active card — no ring, no shadow */}
             <div
               className="pointer-events-none absolute inset-0 rounded-2xl
-                         ring-1 ring-inset ring-slate-900/10
-                         bg-gradient-to-br from-white/20 via-transparent to-slate-900/10"
+                   bg-gradient-to-br from-white/15 via-transparent to-slate-900/15"
               style={{ zIndex: 60 }}
             />
-          </div>
+          </button>
         </div>
 
-        {/* Bottom gradient + copy (same style as Login hero) */}
+        {/* progress dots under the fan */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-44 z-[65] flex items-center gap-1.5">
+          {backgroundImages.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setBgIndex(i)}
+              aria-label={`Go to image ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-500 ease-out
+          ${i === bgIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"}`}
+            />
+          ))}
+        </div>
+
+        {/* Bottom gradient + copy */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/50 pointer-events-none" />
         <div className="absolute bottom-16 left-12 right-12 text-white space-y-4 z-[70]">
-          <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-sm border border-white/20 text-xs font-semibold tracking-wider uppercase">
+          <div className="inline-flex items-center gap-2 bg-blue-600/30 px-3 py-1 rounded-sm text-xs font-semibold tracking-wider uppercase">
             Join our growing community
           </div>
           <h1 className="text-5xl font-bold leading-tight">
             Empowering the next <br />
             <span>
-              <span className="text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+              <span className="text-red-500">
                 MedRae
               </span>
               <span className="text-white font-bold"> Nursing</span>
@@ -535,7 +573,6 @@ export function Register() {
           </p>
         </div>
       </div>
-
       {/* RIGHT FORM SIDE */}
       <div className="w-full md:w-1/2 flex justify-center items-start px-2 py-0 md:p-8 pt-3 lg:p-12 overflow-y-auto no-scrollbar">
         <div className="w-full md:max-w-2xl md:animate-in md:fade-in md:slide-in-from-right-4 md:duration-700">

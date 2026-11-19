@@ -60,9 +60,7 @@ export function BaseTopNav({
             <header
                 className="hidden lg:grid fixed top-0 inset-x-0 z-40 h-16
                  grid-cols-[1fr_auto_1fr] items-center gap-6 px-6
-                 bg-white/80 backdrop-blur-xl
-                 shadow-[0_1px_0_0_rgba(15,23,42,0.04),0_8px_32px_-12px_rgba(15,23,42,0.10)]
-                 border-0"
+                 bg-white"
             >
                 {/* ═══ LEFT: brand + role chip ═══ */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -70,10 +68,7 @@ export function BaseTopNav({
                         <img
                             src="/pwa-192x192.jpeg"
                             alt="Medrae"
-                            className="h-8 w-8 rounded-xl
-                                       shadow-[0_6px_18px_-6px_rgba(37,99,235,0.55)]
-                                       group-hover:scale-105
-                                       transition-transform duration-300"
+                            className="h-8 w-8 rounded-xl group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="leading-tight">
                             <p className="text-[13px] font-bold">
@@ -89,7 +84,6 @@ export function BaseTopNav({
                     <span className={`hidden xl:inline-flex items-center
                   px-2.5 py-1 rounded-full
                   text-[10px] font-bold uppercase tracking-wider
-                  shadow-[inset_0_0_0_1px_rgba(15,23,42,0.03)]
                   ${A.activeBg} ${A.activeText}`}>
                         {roleLabel} Portal
                     </span>
@@ -128,15 +122,13 @@ export function BaseTopNav({
                 {/* ═══ RIGHT: search + auth + overflow ═══ */}
                 <div className="flex items-center gap-2 justify-self-end">
 
-                    {/* Modern search pill — no kbd chip, no border */}
+                    {/* Flat search pill — no kbd chip, no border */}
                     <button
                         onClick={() => setSearchOpen(true)}
                         className="hidden xl:flex items-center gap-2 h-10 px-3.5 mr-1 rounded-full
-                                   bg-slate-100/70 hover:bg-slate-100
+                                   bg-slate-100 hover:bg-slate-200
                                    text-slate-500 hover:text-slate-900
-                                   shadow-[0_1px_2px_rgba(15,23,42,0.04)]
-                                   hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.25)]
-                                   transition-all duration-300
+                                   transition-colors duration-200
                                    text-[12.5px] font-semibold"
                         aria-label="Search (⌘K)"
                     >
@@ -148,8 +140,7 @@ export function BaseTopNav({
                         onClick={() => window.location.assign("/login")}
                         className="h-10 px-4 rounded-full text-sm font-bold text-slate-700
                                    hover:bg-slate-100
-                                   hover:shadow-[0_8px_24px_-14px_rgba(15,23,42,0.35)]
-                                   transition-all duration-300
+                                   transition-colors duration-200
                                    flex items-center gap-2"
                     >
                         <Users className="w-4 h-4" strokeWidth={2.2} />
@@ -160,10 +151,7 @@ export function BaseTopNav({
                         onClick={() => window.location.assign("/register")}
                         className={`h-10 px-4 rounded-full text-sm font-bold text-white
                                     flex items-center gap-2
-                                    transition-all duration-300
-                                    shadow-[0_10px_28px_-12px_rgba(15,23,42,0.55)]
-                                    hover:shadow-[0_14px_38px_-12px_rgba(15,23,42,0.65)]
-                                    hover:-translate-y-px
+                                    transition-colors duration-200
                                     ${A.ctaBg} ${A.ctaHover}`}
                     >
                         <UserPlus className="w-4 h-4" strokeWidth={2.2} />
