@@ -1158,7 +1158,7 @@ export const DailyTriviaCard = () => {
 
     return (
         <div className="relative select-none overflow-x-hidden">
-            <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/30 shadow-md mt-0">
+            <Card className="overflow-hidden relative bg-white dark:bg-background mt-0">
                 {(started || completed) && (
                     <CardHeader className="bg-blue-50 dark:bg-muted/30 pb-3">
                         {started ? (
