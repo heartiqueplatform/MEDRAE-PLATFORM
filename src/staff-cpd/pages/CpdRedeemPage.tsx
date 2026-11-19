@@ -44,7 +44,7 @@ function NotContributorGate({ onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                bg-white dark:bg-[#0d1117]
-                               border-b border-slate-200/70 dark:border-white/[0.06]
+                            border-0
                                z-30 safe-top">
                 <button
                     onClick={onBack}
@@ -248,7 +248,7 @@ export default function CpdRedeemPage() {
             <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
                 <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                    bg-white dark:bg-[#0d1117]
-                                   border-b border-slate-200/70 dark:border-white/[0.06]">
+                                border-0">
                     <div className={`h-10 w-10 rounded-full shrink-0 ${Sk}`} />
                     <div className="flex-1 space-y-1.5">
                         <div className={`h-3 w-32 ${Sk}`} />
@@ -276,7 +276,7 @@ export default function CpdRedeemPage() {
         <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-white">
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                bg-white dark:bg-[#0d1117]
-                               border-b border-slate-200/70 dark:border-white/[0.06]
+                            border-0
                                z-30 safe-top">
                 <button
                     onClick={handleBack}

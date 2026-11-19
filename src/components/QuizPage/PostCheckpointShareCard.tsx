@@ -167,7 +167,7 @@ export default function PostCheckpointShareCard({
                     >
                         {/* ── Header ───────────────────────────── */}
                         <header className="flex items-center gap-3 px-4 py-3
-                                           border-b border-slate-200/70 dark:border-white/[0.06]">
+                                        border-0">
                             <div className="h-9 w-9 rounded-xl bg-violet-400/10
                                             flex items-center justify-center shrink-0">
                                 <Gift className="h-4 w-4 text-violet-600 dark:text-violet-400" />

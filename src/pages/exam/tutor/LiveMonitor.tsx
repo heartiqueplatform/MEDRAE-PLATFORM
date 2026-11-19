@@ -227,7 +227,7 @@ const TutorLiveMonitor = () => {
             {/* ── HEADER ──────────────────────────────────────── */}
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                bg-white dark:bg-[#0d1117]
-                               border-b border-slate-200/70 dark:border-white/[0.06]
+                            border-0
                                z-30 safe-top">
                 <button
                     onClick={handleBack}
@@ -284,7 +284,7 @@ const TutorLiveMonitor = () => {
                         className="rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden"
                     >
                         <div className="px-4 py-3 flex items-center justify-between gap-2
-                                        border-b border-slate-200/70 dark:border-white/[0.06]">
+                                     border-0">
                             <div className="flex items-center gap-2">
                                 {editingId ? (
                                     <Edit3 className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />

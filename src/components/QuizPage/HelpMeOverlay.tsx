@@ -149,7 +149,7 @@ export function HelpMeOverlay({
                 >
                     {/* ── Header (pinned) ─────────────────── */}
                     <header className="shrink-0 flex items-center gap-3 px-4 h-14
-                                       border-b border-slate-200/70 dark:border-white/[0.06]">
+                                    border-0">
                         <div className="h-9 w-9 rounded-xl bg-blue-400/10
                                         flex items-center justify-center shrink-0">
                             <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />

@@ -31,7 +31,7 @@ export function BattleView({
         >
             {/* HEADER */}
             <header className="shrink-0 bg-white dark:bg-[#161b22]
-                               border-b border-slate-200/70 dark:border-white/[0.06]
+                            border-0
                                z-30 safe-top">
                 <div className="px-4 py-3">
                     <div className="flex items-center justify-between gap-2">

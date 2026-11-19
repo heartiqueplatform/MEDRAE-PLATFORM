@@ -242,7 +242,7 @@ export default function CreateGroupPage() {
             {/* ── Header ─────────────────────────────────────── */}
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                bg-white dark:bg-[#0d1117]
-                               border-b border-slate-200/70 dark:border-white/[0.06]
+                            border-0
                                z-30 safe-top">
                 <button
                     onClick={handleBack}

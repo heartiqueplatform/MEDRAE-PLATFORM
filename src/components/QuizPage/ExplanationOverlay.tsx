@@ -188,7 +188,7 @@ export function ExplanationOverlay({
             <div
                 className="px-5 sm:px-6 py-4 flex items-center justify-between shrink-0
                            bg-white dark:bg-[#0d1117]
-                           border-b border-slate-200/70 dark:border-white/[0.06]"
+                        border-0"
             >
                 <div className="flex items-start gap-3 min-w-0">
                     <div className="min-w-0">

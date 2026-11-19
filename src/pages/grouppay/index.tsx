@@ -171,7 +171,7 @@ export default function GroupPayHome() {
                 className={`
                     flex-shrink-0 w-full flex items-center gap-2 px-2 h-14
                     z-30 safe-top transition-colors duration-200
-                    border-b border-slate-200/70 dark:border-white/[0.06]
+                 border-0
                     ${scrolled
                         ? 'bg-white/90 dark:bg-[#0d1117]/90 backdrop-blur-xl'
                         : 'bg-white dark:bg-[#0d1117]'

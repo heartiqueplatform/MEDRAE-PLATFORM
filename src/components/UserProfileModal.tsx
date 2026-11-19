@@ -501,7 +501,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                 <div className="relative flex flex-col flex-1 min-h-0">
                     {/* ── HEADER ROW ────────────────────────────────── */}
                     <div className="shrink-0 flex items-center gap-2 px-3 h-12
-                border-b border-slate-200/70 dark:border-white/[0.06]">
+             border-0">
                         <div className="flex-1 min-w-0">
                             <h2 className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-white">
                                 {userData.profile?.name || "Profile"}

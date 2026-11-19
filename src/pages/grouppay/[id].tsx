@@ -415,7 +415,7 @@ export default function GroupDetailsPage() {
             {/* ── Header ─────────────────────────────────────── */}
             <header className="shrink-0 flex items-center gap-2 px-2 h-14
                                bg-white dark:bg-[#0d1117]
-                               border-b border-slate-200/70 dark:border-white/[0.06]
+                            border-0
                                z-30 safe-top">
                 <button
                     onClick={handleBack}
@@ -1183,7 +1183,7 @@ export default function GroupDetailsPage() {
                                             overflow-hidden
                                             pb-[env(safe-area-inset-bottom)] sm:pb-0">
                                 <header className="shrink-0 flex items-center gap-2 px-2 h-14
-                                                   border-b border-slate-200/70 dark:border-white/[0.06]">
+                                                border-0">
                                     <button
                                         onClick={() => {
                                             if (processingPayment) return;
