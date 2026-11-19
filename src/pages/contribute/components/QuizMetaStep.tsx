@@ -28,7 +28,7 @@ export function QuizMetaStep({ draft, onChange }: Props) {
         <div className="space-y-4">
             {/* Info banner */}
             <div className="rounded-2xl bg-blue-50 dark:bg-blue-500/10
-                            border border-blue-100 dark:border-blue-500/20 p-3">
+                            border border-0 p-3">
                 <p className="text-[11.5px] text-blue-800 dark:text-blue-300 leading-snug">
                     💡 <strong>Tip:</strong> Quizzes with <strong>50+ questions</strong> earn a
                     one-time <strong>+100 coin</strong> milestone bonus. Keep the title descriptive
