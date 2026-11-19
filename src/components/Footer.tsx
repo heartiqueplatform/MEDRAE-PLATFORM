@@ -332,17 +332,22 @@ const NavItem = memo(({
 
     // Active = vivid blue
     // Active = vivid blue. Inactive = PURE BLACK (light mode) / PURE WHITE (dark mode).
+    // Active = vivid blue, full strength
     const activeColor = isDark ? "#60a5fa" : "#2563eb"; // blue-400 / blue-600
-    const inactiveColor = isDark ? "#ffffff" : "#000000";
-    const iconColorStyle = showActive
+
+    // Inactive = faded grey (NOT pure black/white)
+    const inactiveColor = isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)";
+
+    const iconColorStyle = isActive
         ? { color: activeColor }
         : { color: inactiveColor };
 
-    // BOLD on active, medium on inactive — clear weight jump
-    // Active label = bold blue. Inactive label = pure black (light) / pure white (dark).
-    const labelColor = showActive
+    // Labels
+    const labelColor = isActive
         ? (isDark ? "text-blue-400" : "text-blue-600")
-        : (isDark ? "text-white" : "text-black");
+        : (isDark ? "text-white/55" : "text-black/55");
+
+
     const handlePointerDown = (e: React.PointerEvent) => {
         setPressed(true);
         setPending(true);
@@ -371,51 +376,24 @@ const NavItem = memo(({
             }}
             aria-label={label}
         >
-            {/* Press ripple */}
-            <div
-                className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
-                style={{
-                    background: isDark
-                        ? "radial-gradient(circle, rgba(96,165,250,0.35) 0%, rgba(59,130,246,0.12) 50%, transparent 78%)"
-                        : "radial-gradient(circle, rgba(59,130,246,0.24) 0%, rgba(59,130,246,0.08) 50%, transparent 78%)",
-                    opacity: pressed ? 1 : 0,
-                    transition: "opacity 220ms ease-out",
-                }}
-            />
-
-            {/* Active tile — solid-looking pill */}
-            <div
-                className="absolute top-0.5 left-1/2 -translate-x-1/2 w-11 h-11 rounded-2xl pointer-events-none"
-                style={{
-                    background: activeTileBg,
-                    opacity: isActive ? 1 : 0,
-                    transform: `translateX(-50%) scale(${isActive ? 1 : 0.82})`,
-                    transition: "opacity 260ms ease-out, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-                }}
-            />
-
-            {/* Icon */}
+            {/* Icon — only colour + stroke weight change, no fill, no tile, no ripple */}
             <div className="relative flex items-center justify-center w-[26px] h-[26px] z-10">
-                <span
-                    className="transition-colors duration-200"
-                    style={iconColorStyle}
-                >
+                <span className="transition-colors duration-200" style={iconColorStyle}>
                     <Icon active={isActive} />
                 </span>
 
                 {badge !== undefined && badge > 0 && (
                     <span
                         className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] px-1
-                            text-[9.5px] font-bold flex items-center justify-center
-                            bg-red-500 text-white rounded-full leading-none
-                            ring-2 ring-background"
+                        text-[9.5px] font-bold flex items-center justify-center
+                        bg-red-500 text-white rounded-full leading-none
+                        ring-2 ring-background"
                     >
                         {badge > 99 ? "99+" : badge}
                     </span>
                 )}
             </div>
 
-            {/* Label — BOLD when active */}
             <span
                 className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-bold" : "font-medium"
                     } ${labelColor}`}

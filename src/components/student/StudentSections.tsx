@@ -21,6 +21,7 @@ import { UserProfileModal } from "@/components/UserProfileModal";
 import { DeferredMount } from "@/components/DeferredMount";
 import { SkeletonLeaderboard } from "./SkeletonLeaderboard";
 import StudentSimulationPapers from "./StudentSimulationPapers";
+import { AlgorithmCard } from "../Algorithm/AlgorithmCard";
 
 type Props = {
     activeFilter: string | null;
@@ -77,7 +78,7 @@ export default function StudentSections({
             {isVisible(activeFilter, "algo") && (
                 <div id="sec-algorithm" className="scroll-mt-16">
                     <DeferredMount fallback={<SK h={320} />}>
-                        <Algorithm />
+                        <AlgorithmCard />
                     </DeferredMount>
                 </div>
             )}

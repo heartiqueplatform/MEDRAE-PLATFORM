@@ -204,29 +204,7 @@ const SchoolCard = memo(function SchoolCard({
                     }
                 </span>
 
-                <span className="
-                    flex items-center justify-center
-                    w-5 h-5 rounded-full
-                    bg-zinc-200/70 dark:bg-white/[0.07]
-                    text-zinc-500 dark:text-zinc-400
-                    group-hover:text-rose-500
-                    transition-colors
-                ">
-                    <svg
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        className="w-3 h-3"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M7.5 4.5L13 10L7.5 15.5"
-                            stroke="currentColor"
-                            strokeWidth="1.7"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
-                </span>
+
             </div>
         </button>
     );
@@ -602,7 +580,7 @@ export function SchoolWarsCard({ currentUserInstitution, onInstitutionChanged }:
                                     )}
                                 </div>
 
-                                <ChevronRight className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+
                             </div>
                         </button>
                     </div>

@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Referral from "@/components/Referral";
 import { TermsButton } from "@/components/ui/TermsButton";
-import { UnitBreakdown } from "@/components/UnitBreakdown";
+
 import { DeferredMount } from "@/components/DeferredMount";
 import StudentFilters, { type StudentFilter } from "@/components/student/StudentFilters";
 import StudentSections from "@/components/student/StudentSections";
@@ -489,11 +489,6 @@ export default function StudentDashboard() {
           simulationProgress={simulationProgress}
           onOpenPaper={(id) => handleSmoothNavigate(`/simulation/${id}`)}
         />
-
-        {/* Always-visible utility sections (still not filterable — by design) */}
-        <DeferredMount fallback={<div className="h-[200px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
-          <UnitBreakdown />
-        </DeferredMount>
 
         <StudentCommunityCards />
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export default function StudentCommunityCards() {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full mt-2 px-2 sm:px-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-3 w-full mt-2 px-2 sm:px-0">
             <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-bold">Share Medrae</CardTitle>
@@ -33,7 +33,7 @@ export default function StudentCommunityCards() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
+                    <a href="https://whatsapp.com/channel/0029Vb8QvvCATRSjpk9enj2y" target="_blank" rel="noopener noreferrer">
                         <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl h-11 font-bold">
                             Join Channel
                         </Button>
@@ -49,7 +49,7 @@ export default function StudentCommunityCards() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
+                    <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV?s=cl&p=a&mlu=4&ilr=4&iam=2" target="_blank" rel="noopener noreferrer">
                         <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl h-11 font-bold">
                             WhatsApp Group
                         </Button>
@@ -65,7 +65,7 @@ export default function StudentCommunityCards() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 pt-1 flex flex-col sm:flex-row gap-2">
-                    <a href="https://t.me/heartiquenursingnexusscholar" target="_blank" rel="noopener noreferrer" className="w-full sm:flex-1">
+                    <a href="https://t.me/medraenursingke" target="_blank" rel="noopener noreferrer" className="w-full sm:flex-1">
                         <Button className="w-full h-9 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-bold">Telegram</Button>
                     </a>
                     <a href="https://web.facebook.com/share/g/1AY4nC9Hcp/" target="_blank" rel="noopener noreferrer" className="w-full sm:flex-1">
