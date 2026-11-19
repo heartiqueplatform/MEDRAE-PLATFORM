@@ -884,15 +884,7 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                             </div>
 
                             {/* DESKTOP search */}
-                            <div className="hidden md:block px-5 pb-3 pt-2 shrink-0">
-                                <EpisodeSearchBar
-                                    onSearchMemory={handleSearchMemory}
-                                    onSearchLocal={handleSearchLocal}
-                                    onSearchRemote={handleSearchRemote}
-                                    onSelect={handleSearchSelect}
-                                    placeholder="Search episodes, topics, shows…"
-                                />
-                            </div>
+
 
                             {/* DESKTOP two columns */}
                             <div className="hidden md:grid flex-1 min-h-0 grid-cols-[42%_58%]">
@@ -979,7 +971,21 @@ export const MusicPlayer = ({ forceOpen = false }: { forceOpen?: boolean } = {})
                                     )}
                                 </div>
                                 <div className="min-h-0 min-w-0 overflow-hidden flex flex-col">
-                                    {listEl}
+                                    {/* Search — only spans the list side */}
+                                    <div className="shrink-0 px-4 pt-3 pb-2">
+                                        <EpisodeSearchBar
+                                            onSearchMemory={handleSearchMemory}
+                                            onSearchLocal={handleSearchLocal}
+                                            onSearchRemote={handleSearchRemote}
+                                            onSelect={handleSearchSelect}
+                                            placeholder="Search episodes, topics, shows…"
+                                        />
+                                    </div>
+
+                                    {/* List fills remaining height */}
+                                    <div className="flex-1 min-h-0 overflow-hidden">
+                                        {listEl}
+                                    </div>
                                 </div>
                             </div>
 
