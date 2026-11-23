@@ -225,7 +225,7 @@ export default function StudentDashboard() {
     () => !initialCache.topStudents || initialCache.topStudents.length === 0
   );
   const [leaderboardUpdatedAt, setLeaderboardUpdatedAt] = useState<number | null>(null);
-
+  const [myFeedCount, setMyFeedCount] = useState<number | null>(null);
   // ─── Filter ───
   const [activeFilter, setActiveFilter] = useState<string | null>("all");
   const handleFilterChange = useCallback((filter: StudentFilter) => {
@@ -406,13 +406,26 @@ export default function StudentDashboard() {
     } catch (err) { console.error("Leaderboard Error:", err); }
     finally { setLoadingTopStudents(false); }
   }, [user?.id]);
-
+  const fetchMyFeedCount = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from("qfeed_seen_leaderboard")
+        .select("seen_count")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) setMyFeedCount(data.seen_count ?? 0);
+    } catch (err) {
+      console.error("My feed count fetch failed:", err);
+    }
+  }, [user?.id]);
   const handleOpenDialog = useCallback(() => {
     if (!user?.id) return;
     setOverlayOpen(true);
-    fetchTopStudents();
-  }, [user?.id, fetchTopStudents]);
-
+    fetchTopStudents();      // unchanged
+    fetchMyFeedCount();      // NEW — just for the count
+  }, [user?.id, fetchTopStudents, fetchMyFeedCount]);
   const loadDashboardData = useCallback(async () => {
     if (!user?.id || isLoadingDashboard.current) return;
     isLoadingDashboard.current = true;
@@ -550,7 +563,9 @@ export default function StudentDashboard() {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
                 <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
                 <span className="text-[10px] font-bold text-slate-500 tracking-wider">Your Feed Attempts</span>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+                  {myFeedCount ?? feedsAttemptCount}
+                </p>
               </div>
               <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col items-center text-center">
                 <Trophy className="w-4 h-4 text-amber-500 mb-2" />

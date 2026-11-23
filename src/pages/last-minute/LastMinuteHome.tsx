@@ -23,6 +23,8 @@ import {
     type PaperCreator,
 } from "@/components/last-minute/PaperCreatorStrip";
 import { UserProfileModal } from "@/components/UserProfileModal";
+import HeroLottie from "@/components/HeroLottie";
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -128,7 +130,10 @@ export default function LastMinuteHome() {
     const [query, setQuery] = useState("");
     const [bubbleKey, setBubbleKey] = useState<string | null>(null);
     const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
-
+    // Premium state — reused from QuizPage pattern
+    const [isPremium, setIsPremium] = useState<boolean>(
+        () => getCachedPremium(user?.id) ?? false
+    );
     const contentRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -202,7 +207,30 @@ export default function LastMinuteHome() {
     }, [user?.id]);
 
     useEffect(() => { reload(); }, [reload]);
+    // Resolve premium status — seed from cache, refresh in background
+    useEffect(() => {
+        if (!user?.id) return;
+        let cancelled = false;
 
+        const cached = getCachedPremium(user.id);
+        if (cached !== null && !cancelled) setIsPremium(cached);
+
+        resolveSubscription(user.id).then((snap) => {
+            if (!cancelled) setIsPremium(snap.isPremium);
+        }).catch(() => { /* ignore */ });
+
+        const onOnline = () => {
+            resolveSubscription(user.id, { force: true })
+                .then((snap) => { if (!cancelled) setIsPremium(snap.isPremium); })
+                .catch(() => { /* ignore */ });
+        };
+        window.addEventListener("online", onOnline);
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener("online", onOnline);
+        };
+    }, [user?.id]);
     // ─────────────────────────────────────────────────────────────
     // Filter
     // ─────────────────────────────────────────────────────────────
@@ -346,7 +374,43 @@ export default function LastMinuteHome() {
                             </p>
                         </div>
                     )}
+                    {/* ── SUBSCRIPTION UPSELL (students only, non-premium only) ── */}
+                    {mode === "student" && !isPremium && (
+                        <div className="mx-4 sm:mx-0 mt-3 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50
+                                        dark:from-amber-400/10 dark:to-yellow-400/5
+                                        px-4 py-4 flex flex-col items-center">
 
+                            {/* Lottie — centered, bigger */}
+                            <div className="w-24 h-24 sm:w-28 sm:h-28 -mb-1">
+                                <HeroLottie />
+                            </div>
+
+                            {/* Row: text (left) + button (right) */}
+                            <div className="w-full flex items-center gap-3 mt-1">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[12.5px] font-bold text-amber-900 dark:text-amber-200 leading-snug">
+                                        Subscribe once. Unlock every paper.
+                                    </p>
+                                    <p className="text-[11px] text-amber-700/80 dark:text-amber-300/70 leading-snug mt-0.5">
+                                        Premium members get all Last-Minute papers free  no per-paper payments.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        playSound("tap");
+                                        if (navigator.vibrate) navigator.vibrate(20);
+                                        navigate("/subscription");
+                                    }}
+                                    className="shrink-0 h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-700
+                                               text-white text-[11.5px] font-bold
+                                               active:scale-95 transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                >
+                                    Subscribe
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     {/* ── HERO ── */}
                     <section className="px-4 sm:px-0 pt-4 pb-3">
                         <h2 className="text-[24px] sm:text-[28px] font-black leading-[1.1] tracking-tight">

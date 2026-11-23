@@ -896,8 +896,8 @@ export function MedraeQuizzes() {
                         {paper.paperNumber === papers[0]?.paperNumber && (
                           <LastMinuteCard
                             variant="quiz"
-                            title="Skip the subscription. Buy what you need."
-                            blurb="One payment, one paper, readable instantly. From KSh 49."
+                            title="Full access, one subscription."
+                            blurb="Premium members open every Last-Minute paper at no extra cost. Or purchase any single paper from KSh 19."
                           />
                         )}
 

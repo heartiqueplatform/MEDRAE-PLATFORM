@@ -317,7 +317,7 @@ export function LastMinuteCard({
             <button
                 onClick={() => navigate("/last-minute")}
                 className={cn(
-                    "group inline-flex items-center gap-1.5 h-8 px-3 rounded-lg",
+                    "group inline-flex items-center gap-1.5 h-8 px-3 rounded-sm",
                     "bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-wider",
                     "hover:bg-primary/15 active:scale-95 transition-all",
                     className

@@ -16,7 +16,15 @@ export function AlgorithmSheet({ open, onClose, children, title = "Your Algorith
         if (!open) return;
         const prev = document.body.style.overflow;
         document.body.style.overflow = "hidden";
-        return () => { document.body.style.overflow = prev; };
+        window.dispatchEvent(
+            new CustomEvent("sheet-overlay-visibility", { detail: { open: true } })
+        );
+        return () => {
+            document.body.style.overflow = prev;
+            window.dispatchEvent(
+                new CustomEvent("sheet-overlay-visibility", { detail: { open: false } })
+            );
+        };
     }, [open]);
 
     useEffect(() => {
@@ -49,7 +57,7 @@ export function AlgorithmSheet({ open, onClose, children, title = "Your Algorith
                 "
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-200/70 dark:border-white/[0.06] bg-white dark:bg-[#161b22]">
+                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-0 bg-white dark:bg-[#161b22]">
                     <h2 className="text-[15px] font-semibold text-zinc-900 dark:text-white">{title}</h2>
                     <button
                         onClick={onClose}
@@ -59,7 +67,8 @@ export function AlgorithmSheet({ open, onClose, children, title = "Your Algorith
                         <X className="w-4 h-4" />
                     </button>
                 </div>
-                <div className="flex-1 overflow-y-auto overscroll-contain no-scrollbar">
+                <div className="flex-1 overflow-y-auto pt-3 overscroll-contain no-scrollbar
+                                pb-24 safe-bottom">
                     {children}
                 </div>
             </div>

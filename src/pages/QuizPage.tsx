@@ -1287,7 +1287,27 @@ Please provide a detailed discussion and guidance.`;
                   </button>
                 ))}
               </div>
-
+              {/* 🩹 Refresh help card — button on right, no icon, small font */}
+              <div className="mx-3 md:mx-0 mb-2 rounded-xl bg-amber-50 dark:bg-amber-400/10
+                              px-2.5 py-2 flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10.5px] font-semibold text-amber-900 dark:text-amber-200 leading-snug">
+                    If answers do not respond to taps, please refresh this quiz.
+                  </p>
+                  <p className="text-[9.5px] text-amber-700/80 dark:text-amber-300/70 leading-snug mt-0.5">
+                    Your progress is saved — refreshing will not erase your answers.
+                  </p>
+                </div>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="shrink-0 h-7 px-3 rounded-xl bg-amber-600 hover:bg-amber-700
+                             text-white text-[10.5px] font-bold
+                             active:scale-95 transition-transform"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  Refresh
+                </button>
+              </div>
               {filteredQuestions.length > 0 ? (
                 filteredQuestions.map((q, i) => {
                   const selectedAnswer = answers[q.id];

@@ -81,7 +81,7 @@ export default function CandidateInfo() {
       <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
         <Header onBack={handleBack} />
         <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-          <div className="w-full max-w-md mx-auto px-4 py-4 space-y-2">
+          <div className="w-full max-w-md mx-auto px-4 pt-5 pb-4 space-y-2">
             {/* Identity card skeleton */}
             <div className="rounded-2xl bg-white dark:bg-[#161b22] p-4 space-y-3 animate-pulse">
               <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-white/[0.06] mx-auto" />
@@ -113,7 +113,7 @@ export default function CandidateInfo() {
       <div className="fixed inset-0 flex flex-col bg-slate-50 dark:bg-[#0d1117]">
         <Header onBack={handleBack} />
         <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="flex flex-col items-center justify-center pt-20 pb-16 px-6 text-center">
             <div className="h-14 w-14 rounded-full
                             bg-rose-50 dark:bg-rose-400/10
                             flex items-center justify-center mb-3">
@@ -148,7 +148,7 @@ export default function CandidateInfo() {
       <Header onBack={handleBack} />
 
       <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-        <div className="w-full max-w-md mx-auto px-4 py-4 pb-6 space-y-3 safe-bottom">
+        <div className="w-full max-w-md mx-auto px-4 pt-5 pb-8 space-y-3 safe-bottom">
           {/* Identity card */}
           <section className="rounded-2xl bg-white dark:bg-[#161b22] p-4 text-center space-y-3">
             <div className="h-12 w-12 rounded-xl
@@ -254,7 +254,7 @@ function Header({ onBack }: { onBack: () => void }) {
     <header className="shrink-0 flex items-center gap-2 px-2 h-14
                        bg-white dark:bg-[#0d1117]
                     border-0
-                       z-30 safe-top">
+                       z-30 safe-top mb-3">
       <button
         onClick={onBack}
         aria-label="Go back"

@@ -52,8 +52,18 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
         dispatchChatVisibility(false);
         setIsOpen(false);
     }, []);
-
-    if (isDrawerOpen) return null;
+    // Hide FAB while any full-screen sheet/overlay is open
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    useEffect(() => {
+        const onSheet = (e: Event) => {
+            const detail = (e as CustomEvent<{ open: boolean }>).detail;
+            setIsSheetOpen(!!detail?.open);
+        };
+        window.addEventListener("sheet-overlay-visibility", onSheet as EventListener);
+        return () =>
+            window.removeEventListener("sheet-overlay-visibility", onSheet as EventListener);
+    }, []);
+    if (isDrawerOpen || isSheetOpen) return null;
 
     return (
         <>
@@ -62,7 +72,7 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
                 onClick={handleOpen}
                 aria-label="Open chat"
                 className={cn(
-                    "group fixed right-4 z-30",
+                    "group fixed right-4 z-20",
                     // ── Mobile: sits ABOVE the crown button ──
                     "max-md:bottom-[calc(60px+env(safe-area-inset-bottom,0px)+100px)]",
                     // ── Desktop position ──
