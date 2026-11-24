@@ -33,10 +33,13 @@ type Props = {
     loadingTopStudents: boolean;
     setSelectedUserId: (id: string | null) => void;
     selectedUserId: string | null;
-    // ✅ NEW — Proctorium papers
+    // ✅ Proctorium papers
     simulationPapers: any[];
     simulationProgress: Record<string, number>;
     onOpenPaper: (id: string) => void;
+    // ✅ NEW — loading + retry passed through from dashboard
+    simulationLoading?: boolean;
+    onRetryPapers?: () => void;
 };
 
 const isVisible = (activeFilter: string | null, id: string) =>
@@ -50,6 +53,7 @@ export default function StudentSections({
     activeFilter, user, initialCache, profileState,
     topStudents, loadingTopStudents, setSelectedUserId, selectedUserId,
     simulationPapers, simulationProgress, onOpenPaper,
+    simulationLoading, onRetryPapers,
 }: Props) {
     return (
         <>
@@ -101,12 +105,15 @@ export default function StudentSections({
             )}
 
             {/* ✅ Proctorium — now in the MIDDLE */}
+            {/* ✅ Proctorium — now in the MIDDLE */}
             {isVisible(activeFilter, "papers") && (
                 <div id="sec-proctorium" className="scroll-mt-16">
                     <StudentSimulationPapers
                         papers={simulationPapers}
                         progress={simulationProgress}
                         onOpenPaper={onOpenPaper}
+                        loading={simulationLoading}
+                        onRetry={onRetryPapers}
                     />
                 </div>
             )}
@@ -179,12 +186,6 @@ function LeaderboardCard({
                     <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                         Top Students
                     </CardTitle>
-                    <Link
-                        to="/Medrae-quizzes"
-                        className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                    >
-                        VIEW ALL →
-                    </Link>
                 </div>
                 <details className="group mt-3 bg-slate-100/60 dark:bg-white/[0.04] rounded-xl border-0 overflow-hidden">
                     <summary className="cursor-pointer list-none p-3 flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400 tracking-wider select-none">

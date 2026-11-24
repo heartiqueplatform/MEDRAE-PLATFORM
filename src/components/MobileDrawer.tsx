@@ -684,6 +684,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
             mainItems.push(
                 { title: "Nursing Curriculum", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
                 { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
+                { title: " Medspite Scroll", url: "/neldes", icon: Play, iconTone: "media" as IconTone, badge: "New" },
                 { title: "Clinical Challenge", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
                 {
                     title: "Mistakes",

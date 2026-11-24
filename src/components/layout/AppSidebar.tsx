@@ -541,6 +541,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       base.push(
         { title: "Nursing Curriculum", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
         { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
+        { title: " Medspite Scroll", url: "/neldes", icon: Play, iconTone: "media" as IconTone, badge: "New" },
         { title: "Clinical Challenge", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
         { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
       );

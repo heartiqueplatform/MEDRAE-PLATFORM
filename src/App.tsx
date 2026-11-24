@@ -90,7 +90,7 @@ import { Profile } from "./pages/Profile";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
 import { useEffect, useState, useRef, useCallback, lazy, Suspense } from "react";
 import { initSound, loadSound } from "@/lib/soundManager";
-
+import { NeldesScrollScreen } from "@/modules/neldes-scroll";
 // SplashScreen import removed
 import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
@@ -140,6 +140,8 @@ import ProgressPage from "./pages/nursing/ProgressPage";
 import { UserRoleProvider } from "./context/UserRoleContext";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
 import { DrawerProvider } from "./contexts/DrawerContext";
+import { ConnectivityProvider } from "@/context/ConnectivityContext";
+import { OfflineOverlay } from "@/components/system/OfflineOverlay";
 import NCKExamRevisionPage from "./pages/seo/NCKExamRevisionPage";
 import NCKExamQuestionsPage from "./pages/seo/NCKExamQuestionsPage";
 import NCKPastPapersPage from "./pages/seo/NCKPastPapersPage";
@@ -192,6 +194,7 @@ import ContributePage from "./pages/contribute";
 import SwitchAccount from "./pages/SwitchAccount";
 import MedraeCoinsLanding from "./pages/landing/MedraeCoinsLanding";
 import LandingGate from "./components/LandingGate";
+import UploadProgressPill from "./lib/UploadProgressPill";
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
@@ -320,6 +323,7 @@ const BottomBarWrapper = () => {
       "/wallet",
       "/wallet/admin",
       "/contribute",
+      "/neldes",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -371,6 +375,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/nursing/quiz",
   "/streak/restore",
   "/last-minute",
+  "/neldes",
 ];
 const FooterGate = ({ user }: { user: any }) => {
   const location = useLocation();
@@ -826,7 +831,7 @@ const AppContent = () => {
                         <Route path="/privacy" element={<PrivacyPolicyPage />} />
                         <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
-
+                        <Route path="/neldes" element={<PrivateRoute><NeldesScrollScreen /></PrivateRoute>} />
                         <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
                         <Route path="/exam/candidate" element={<PrivateRoute><ExamCandidateInfo /></PrivateRoute>} />
                         <Route path="/exam/instructions/:paper_id" element={<PrivateRoute><ExamInstructions /></PrivateRoute>} />
@@ -869,14 +874,23 @@ const AppContent = () => {
           </QueryClientProvider>
         </SessionContextProvider>
       </DrawerProvider>
+      {/* 🌐 Global upload progress pill — floating bottom-center,
+          survives all route changes + modals. Auto-hides. */}
+      <UploadProgressPill />
+
+      {/* 🌐 Offline overlay — centered Lottie, closable, sits on top
+          of everything (drawers, modals, toasts). Only shows when the
+          ConnectivityProvider reports a real offline state. */}
+      <OfflineOverlay />
     </>
   );
 };
-
 const App = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <ConnectivityProvider>
+        <AppContent />
+      </ConnectivityProvider>
     </AuthProvider>
   );
 };

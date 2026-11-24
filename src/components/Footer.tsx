@@ -9,6 +9,9 @@ import { useSmartNavigate } from "@/navigation/useSmartNavigate";
 const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module => ({ default: module.MobileDrawer })));
 
 const MISTAKE_COUNT_CACHE_KEY = "footer_mistake_count";
+const NELDES_HINT_SEEN_KEY = "neldes_hint_seen_v1";
+const NELDES_HINT_SIGNUP_KEY = "neldes_hint_signup_ts";
+const HINT_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 const superFastTap = (type: "light" | "success" | "warning" = "light") => {
     requestAnimationFrame(() => {
@@ -23,343 +26,93 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
 /* ============================================================
    ICONS
    ============================================================ */
-
 const SW = (active: boolean) => (active ? 2.5 : 1.8);
-
 const ACTIVE_DETAIL = "rgba(147,197,253,0.9)";
 
-// ── HOME ────────────────────────────────────────────────────
 const IconHome = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M3.5 11.2L11.72 3.4a1.9 1.9 0 0 1 2.56 0L22.5 11.2v9.3a1.5 1.5 0 0 1-1.5 1.5h-4.2a1 1 0 0 1-1-1v-3.6a3.3 3.3 0 0 0-6.6 0V21a1 1 0 0 1-1 1H5a1.5 1.5 0 0 1-1.5-1.5v-9.3Z"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
+        <path d="M3.5 11.2L11.72 3.4a1.9 1.9 0 0 1 2.56 0L22.5 11.2v9.3a1.5 1.5 0 0 1-1.5 1.5h-4.2a1 1 0 0 1-1-1v-3.6a3.3 3.3 0 0 0-6.6 0V21a1 1 0 0 1-1 1H5a1.5 1.5 0 0 1-1.5-1.5v-9.3Z" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" strokeLinejoin="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
     </svg>
 );
 
-// ── QUIZZES — VERIFIED BADGE (shield + tick) ───────────────
-// ── QUIZZES — META-STYLE VERIFIED CHECK ────────────────────
-// ── QUIZZES — META-STYLE VERIFIED CHECK ────────────────────
-// Mathematically rigid scalloped badge: 8 evenly-spaced arcs.
-// Built on a 26×26 viewBox centered at (13, 13).
-// Inner radius = 6, scallop bump radius = 2.1, outer tip = 8.1.
-// Every point is ABSOLUTE and symmetric — no drift.
-const IconQuizzes = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Scalloped 8-point badge — rigid geometry */}
-        <path
-            d="
-                M13 4.9
-                A2.1 2.1 0 0 1 18.72 6.12
-                A2.1 2.1 0 0 1 21.88 10.28
-                A2.1 2.1 0 0 1 21.1 16.72
-                A2.1 2.1 0 0 1 16.88 19.88
-                A2.1 2.1 0 0 1 9.12 19.88
-                A2.1 2.1 0 0 1 4.9 16.72
-                A2.1 2.1 0 0 1 4.12 10.28
-                A2.1 2.1 0 0 1 7.28 6.12
-                A2.1 2.1 0 0 1 13 4.9
-                Z
-            "
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        {/* Checkmark tick — centered */}
-        <path
-            d="m9.5 13 2.5 2.5 4.75-5"
-            stroke={active ? ACTIVE_DETAIL : "currentColor"}
-            strokeWidth={active ? 2.2 : 2.0}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-        />
-    </svg>
-);
-
-// ── FEED ────────────────────────────────────────────────────
 const IconFeed = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect
-            x="3.75"
-            y="4.25"
-            width="15.5"
-            height="17.5"
-            rx="2"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path
-            d="M19.25 8.5h1.5A2.25 2.25 0 0 1 23 10.75v10.5a2.25 2.25 0 0 1-2.25 2.25"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-        />
+        <rect x="3.75" y="4.25" width="15.5" height="17.5" rx="2" stroke="currentColor" strokeWidth={SW(active)} strokeLinejoin="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="M19.25 8.5h1.5A2.25 2.25 0 0 1 23 10.75v10.5a2.25 2.25 0 0 1-2.25 2.25" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         <path d="M7.5 9.25h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
         <path d="M7.5 13h8" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
         <path d="M7.5 16.75h5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
     </svg>
 );
 
-// ── MISTAKES ────────────────────────────────────────────────
-const IconMistakes = ({ active }: { active: boolean }) => (
+const IconQuizzes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M13 21.5S4.2 16.1 4.2 10.3a4.9 4.9 0 0 1 8.8-3.05"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path
-            d="M13 21.5s8.8-5.4 8.8-11.2a4.9 4.9 0 0 0-8.8-3.05"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-            transform="translate(1.2 0)"
-        />
-        <path
-            d="m11.2 6.8 1.8 2.6-1.4 2.2 1.4 2.4-1.4 2.3 1.4 2.4"
-            stroke={active ? ACTIVE_DETAIL : "currentColor"}
-            strokeWidth={active ? 1.7 : 1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            transform="translate(0.7 0)"
-        />
+        <path d="M13 4.9 A2.1 2.1 0 0 1 18.72 6.12 A2.1 2.1 0 0 1 21.88 10.28 A2.1 2.1 0 0 1 21.1 16.72 A2.1 2.1 0 0 1 16.88 19.88 A2.1 2.1 0 0 1 9.12 19.88 A2.1 2.1 0 0 1 4.9 16.72 A2.1 2.1 0 0 1 4.12 10.28 A2.1 2.1 0 0 1 7.28 6.12 A2.1 2.1 0 0 1 13 4.9 Z" stroke="currentColor" strokeWidth={SW(active)} strokeLinejoin="round" strokeLinecap="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="m9.5 13 2.5 2.5 4.75-5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 2.2 : 2.0} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </svg>
 );
 
-// ── CPD ─────────────────────────────────────────────────────
-const IconCpd = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle
-            cx="13"
-            cy="10"
-            r="5.75"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path
-            d="M8.75 14.75 8 22.25l5-2.75 5 2.75-.75-7.5"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-    </svg>
-);
-
-// ── CATALOG ─────────────────────────────────────────────────
-const IconCatalog = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M4.25 5.5A2.25 2.25 0 0 1 6.5 3.25H19A2.25 2.25 0 0 1 21.25 5.5v15A2.25 2.25 0 0 1 19 22.75H6.5A2.25 2.25 0 0 1 4.25 20.5V5.5Z"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path d="M8.5 3.25v19.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
-        <path d="M12 9.5h5.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
-        <path d="M12 13h5.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
-    </svg>
-);
-
-// ── PROGRESS ────────────────────────────────────────────────
-const IconProgress = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4.25 21.75h17.5" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" />
-        <rect x="6.5" y="13" width="3.5" height="7" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <rect x="11.25" y="9" width="3.5" height="11" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <rect x="16" y="5" width="3.5" height="15" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-    </svg>
-);
-
-// ── MENU ────────────────────────────────────────────────────
-const IconMenu = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4.5 7.5h17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
-        <path d="M4.5 13h17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
-        <path d="M4.5 18.5h17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
-    </svg>
-);
-
-// ── HEADPHONES ──────────────────────────────────────────────
 const IconHeadphones = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M5 15.5v-2.5a8 8 0 0 1 16 0v2.5"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-        />
-        <rect
-            x="3.5"
-            y="14"
-            width="5"
-            height="7.5"
-            rx="2"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <rect
-            x="17.5"
-            y="14"
-            width="5"
-            height="7.5"
-            rx="2"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
+        <path d="M5 15.5v-2.5a8 8 0 0 1 16 0v2.5" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <rect x="3.5" y="14" width="5" height="7.5" rx="2" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="17.5" y="14" width="5" height="7.5" rx="2" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
     </svg>
 );
 
-// ── TUTOR EXAMS ─────────────────────────────────────────────
-const IconTutorExams = ({ active }: { active: boolean }) => (
+const IconNeldes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M9 4.25H7.5A2.25 2.25 0 0 0 5.25 6.5v14A2.25 2.25 0 0 0 7.5 22.75h11A2.25 2.25 0 0 0 20.75 20.5v-14A2.25 2.25 0 0 0 18.5 4.25H17"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <rect
-            x="9"
-            y="2.75"
-            width="8"
-            height="4"
-            rx="1.25"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-// ── EXAM RESULTS ────────────────────────────────────────────
-const IconExamResults = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M6.5 3.25H15L21 9.25v12a1.5 1.5 0 0 1-1.5 1.5h-13a1.5 1.5 0 0 1-1.5-1.5v-16A1.5 1.5 0 0 1 6.5 3.25Z"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.22 : 0}
-        />
-        <path
-            d="M15 3.25v6h6"
-            stroke="currentColor"
-            strokeWidth={SW(active)}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path d="m9.5 14.5 2.25 2.25L16 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M9.5 19.5h7" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" />
-    </svg>
-);
-
-// ── ANALYTICS ───────────────────────────────────────────────
-const IconAnalytics = ({ active }: { active: boolean }) => (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="6" y="3.5" width="14" height="19" rx="3" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="M11.5 9.75v6.5l5-3.25z" fill="currentColor" />
     </svg>
 );
 
 /* ============================================================
-   NAV ITEM
-   • Active = vivid blue + BOLD label + solid-ish pill
-   • Inactive = muted grey + medium label
-   • Icon stroke weight jumps 1.8 → 2.5
+   NAV ITEM — standard
    ============================================================ */
-const NavItem = memo(({
-    icon: Icon,
-    label,
-    isActive,
-    onPress,
-    isDark,
-    badge,
-}: {
+const NavItem = memo(({ icon: Icon, label, isActive, onPress, isDark, badge, onLongPress }: {
     icon: (props: { active: boolean }) => JSX.Element;
     label: string;
     isActive: boolean;
     onPress: (e: React.PointerEvent) => void;
     isDark: boolean;
     badge?: number;
+    onLongPress?: () => void;
 }) => {
     const [pressed, setPressed] = useState(false);
     const [pending, setPending] = useState(false);
-
     const showActive = isActive || pending;
-
-    // Active = vivid blue
-    // Active = vivid blue. Inactive = PURE BLACK (light mode) / PURE WHITE (dark mode).
-    // Active = vivid blue, full strength
-    const activeColor = isDark ? "#60a5fa" : "#2563eb"; // blue-400 / blue-600
-
-    // Inactive = faded grey (NOT pure black/white)
+    const activeColor = isDark ? "#60a5fa" : "#2563eb";
     const inactiveColor = isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)";
-
-    const iconColorStyle = isActive
-        ? { color: activeColor }
-        : { color: inactiveColor };
-
-    // Labels
+    const iconColorStyle = isActive ? { color: activeColor } : { color: inactiveColor };
     const labelColor = isActive
         ? (isDark ? "text-blue-400" : "text-blue-600")
         : (isDark ? "text-white/55" : "text-black/55");
 
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const longPressFired = useRef(false);
 
     const handlePointerDown = (e: React.PointerEvent) => {
         setPressed(true);
+        longPressFired.current = false;
+        if (onLongPress) {
+            longPressTimer.current = setTimeout(() => {
+                longPressFired.current = true;
+                onLongPress();
+                superFastTap("warning");
+            }, 500);
+        }
         setPending(true);
         onPress(e);
         setTimeout(() => setPending(false), 500);
     };
-    const clear = () => setPressed(false);
-
-    // Visible active tile — this is the WhatsApp-style "pill"
-    const activeTileBg = isDark
-        ? "rgba(96,165,250,0.22)"
-        : "rgba(37,99,235,0.16)";
+    const clear = () => {
+        setPressed(false);
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
 
     return (
         <button
@@ -376,34 +129,140 @@ const NavItem = memo(({
             }}
             aria-label={label}
         >
-            {/* Icon — only colour + stroke weight change, no fill, no tile, no ripple */}
             <div className="relative flex items-center justify-center w-[26px] h-[26px] z-10">
                 <span className="transition-colors duration-200" style={iconColorStyle}>
-                    <Icon active={isActive} />
+                    <Icon active={showActive} />
                 </span>
-
                 {badge !== undefined && badge > 0 && (
-                    <span
-                        className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] px-1
-                        text-[9.5px] font-bold flex items-center justify-center
-                        bg-red-500 text-white rounded-full leading-none
-                        ring-2 ring-background"
-                    >
+                    <span className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] px-1 text-[9.5px] font-bold flex items-center justify-center bg-red-500 text-white rounded-full leading-none ring-2 ring-background">
                         {badge > 99 ? "99+" : badge}
                     </span>
                 )}
             </div>
-
-            <span
-                className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-bold" : "font-medium"
-                    } ${labelColor}`}
-            >
+            <span className={`leading-none mt-1.5 transition-all duration-200 z-10 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-bold" : "font-medium"} ${labelColor}`}>
                 {label}
             </span>
         </button>
     );
 });
 NavItem.displayName = "NavItem";
+
+/* ============================================================
+   PRIMARY NAV ITEM — elevated center tile (Neldes)
+   ============================================================ */
+const PrimaryNavItem = memo(({
+    icon: Icon, label, isActive, onPress, isDark, hintVisible, onLongPress,
+}: {
+    icon: (props: { active: boolean }) => JSX.Element;
+    label: string;
+    isActive: boolean;
+    onPress: (e: React.PointerEvent) => void;
+    isDark: boolean;
+    hintVisible?: boolean;
+    onLongPress?: () => void;
+}) => {
+    const [pressed, setPressed] = useState(false);
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        setPressed(true);
+        if (onLongPress) {
+            longPressTimer.current = setTimeout(() => {
+                onLongPress();
+                superFastTap("warning");
+            }, 500);
+        }
+        onPress(e);
+    };
+    const clear = () => {
+        setPressed(false);
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    const labelColor = isActive
+        ? (isDark ? "text-blue-400" : "text-blue-600")
+        : (isDark ? "text-white/70" : "text-black/70");
+
+    return (
+        <button
+            onPointerDown={handlePointerDown}
+            onPointerUp={clear}
+            onPointerLeave={clear}
+            onPointerCancel={clear}
+            className="flex flex-col items-center justify-center h-full relative select-none px-2"
+            style={{
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+                transition: "transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transform: pressed ? "scale(0.92)" : "scale(1)",
+            }}
+            aria-label={label}
+        >
+            {/* HINT — pulsing tooltip above the tile for the first 3 days */}
+            {hintVisible && (
+                <div
+                    className="absolute pointer-events-none"
+                    style={{
+                        bottom: "calc(100% + 6px)",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        animation: "neldesHintPulse 1.6s ease-in-out infinite",
+                    }}
+                >
+                    <div
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
+                        style={{
+                            backgroundColor: "#3b82f6",
+                            color: "#ffffff",
+                            boxShadow: "0 4px 14px rgba(59,130,246,0.5)",
+                        }}
+                    >
+                        Try  Medspite ⬆
+                    </div>
+                    <div
+                        className="absolute left-1/2 -translate-x-1/2"
+                        style={{
+                            bottom: "-4px",
+                            width: 0,
+                            height: 0,
+                            borderLeft: "5px solid transparent",
+                            borderRight: "5px solid transparent",
+                            borderTop: "5px solid #3b82f6",
+                        }}
+                    />
+                </div>
+            )}
+
+            <div
+                className="-mt-4 w-[46px] h-[46px] rounded-2xl flex items-center justify-center"
+                style={{
+                    background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+                    boxShadow: "0 6px 18px rgba(59,130,246,0.45)",
+                    transition: "transform 160ms",
+                    transform: pressed ? "translateY(1px)" : "translateY(0)",
+                }}
+            >
+                <span className="text-white">
+                    <Icon active={isActive} />
+                </span>
+            </div>
+            <span className={`leading-none mt-1 transition-all duration-200 tracking-tight text-[9.5px] xs:text-[10.5px] ${isActive ? "font-bold" : "font-semibold"} ${labelColor}`}>
+                {label}
+            </span>
+
+            <style>{`
+                @keyframes neldesHintPulse {
+                    0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+                    50% { transform: translateX(-50%) translateY(-3px); opacity: 0.85; }
+                }
+            `}</style>
+        </button>
+    );
+});
+PrimaryNavItem.displayName = "PrimaryNavItem";
 
 /* ============================================================
    FOOTER
@@ -415,8 +274,6 @@ export function Footer() {
     const { role } = useUserRole();
 
     const isStudent = role === "student";
-    const isTutor = role === "tutor";
-    const isStaff = role === "staff";
 
     const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -424,7 +281,9 @@ export function Footer() {
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     const [chatOpen, setChatOpen] = useState(false);
+    const [showNeldesHint, setShowNeldesHint] = useState(false);
     const scrollContainerRef = useRef<Element | null>(null);
+
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         try {
             if (document.documentElement.classList.contains('dark')) return 'dark';
@@ -433,15 +292,54 @@ export function Footer() {
             if (darkMode !== null) return darkMode === 'true' ? 'dark' : 'light';
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
             return 'light';
-        } catch (e) {
-            return 'light';
-        }
+        } catch { return 'light'; }
     });
+
     const isMounted = useRef(true);
     const prefetchDone = useRef(false);
     const lastScrollY = useRef(0);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+    const gestureStartY = useRef<number | null>(null);
+    const gestureActive = useRef(false);
 
+    /* ── 3-day hint decision ───────────────────────────────────── */
+    useEffect(() => {
+        if (!user?.id) return;
+        try {
+            // If user has already dismissed the hint — never show again
+            if (localStorage.getItem(NELDES_HINT_SEEN_KEY) === "true") {
+                setShowNeldesHint(false);
+                return;
+            }
+            // Record signup timestamp on first sight
+            let signupTs = Number(localStorage.getItem(NELDES_HINT_SIGNUP_KEY) || 0);
+            if (!signupTs) {
+                // Use account created_at if available, else now
+                const created = (user as any).created_at
+                    ? new Date((user as any).created_at).getTime()
+                    : Date.now();
+                signupTs = created;
+                localStorage.setItem(NELDES_HINT_SIGNUP_KEY, String(signupTs));
+            }
+            const age = Date.now() - signupTs;
+            setShowNeldesHint(age < HINT_DURATION_MS);
+        } catch {
+            setShowNeldesHint(false);
+        }
+    }, [user?.id]);
+
+    const dismissHint = useCallback(() => {
+        try { localStorage.setItem(NELDES_HINT_SEEN_KEY, "true"); } catch { }
+        setShowNeldesHint(false);
+    }, []);
+
+    const revealHint = useCallback(() => {
+        try { localStorage.removeItem(NELDES_HINT_SEEN_KEY); } catch { }
+        setShowNeldesHint(true);
+        setTimeout(() => setShowNeldesHint(false), 5000);
+    }, []);
+
+    /* ── Mistake count ─────────────────────────────────────────── */
     useEffect(() => {
         const cached = localStorage.getItem(MISTAKE_COUNT_CACHE_KEY);
         if (cached) {
@@ -469,6 +367,7 @@ export function Footer() {
 
     useEffect(() => { fetchMistakeCount(); }, [fetchMistakeCount]);
 
+    /* ── Theme listener ────────────────────────────────────────── */
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
             if (e.key === 'medrae_dark_mode') setTheme(e.newValue === 'true' ? 'dark' : 'light');
@@ -492,7 +391,6 @@ export function Footer() {
         };
     }, [theme]);
 
-
     const smartNav = useSmartNavigate();
 
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {
@@ -500,11 +398,11 @@ export function Footer() {
         smartNav(e, url);
         superFastTap("light");
     }, [smartNav]);
-    const handleMenuPress = useCallback((e: React.PointerEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        superFastTap("success");
 
+    /* ── Drawer open (tap chevron, swipe-up, or hint) ─────────── */
+    const openDrawer = useCallback(() => {
+        superFastTap("success");
+        dismissHint();
         if (!drawerReady) {
             import("@/components/MobileDrawer")
                 .then(() => setDrawerReady(true))
@@ -513,45 +411,15 @@ export function Footer() {
                 });
             return;
         }
-
-        requestAnimationFrame(() => {
-            setIsDrawerOpen(true);
-        });
-    }, [drawerReady]);
-
-    const handleOpenPodcasts = useCallback((e: React.PointerEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        superFastTap("success");
-
-        let attempts = 0;
-        const MAX_ATTEMPTS = 15;
-
-        const tryOpen = () => {
-            const opener = (window as any).__studifyOpen;
-            if (typeof opener === "function") {
-                opener("episodes");
-                return;
-            }
-            attempts++;
-            if (attempts < MAX_ATTEMPTS) {
-                setTimeout(tryOpen, 100);
-            }
-        };
-
-        tryOpen();
-    }, []);
+        requestAnimationFrame(() => setIsDrawerOpen(true));
+    }, [drawerReady, dismissHint]);
 
     useEffect(() => {
         if (prefetchDone.current) return;
-
         const prefetch = () => {
-            import("@/components/MobileDrawer")
-                .then(() => setDrawerReady(true))
-                .catch(() => { });
+            import("@/components/MobileDrawer").then(() => setDrawerReady(true)).catch(() => { });
             prefetchDone.current = true;
         };
-
         const t = setTimeout(prefetch, 200);
         return () => clearTimeout(t);
     }, []);
@@ -568,16 +436,54 @@ export function Footer() {
         window.addEventListener('resize', updateSafeArea);
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
+
     useEffect(() => {
         const onChatVisibility = (e: Event) => {
             const detail = (e as CustomEvent<{ open: boolean }>).detail;
             setChatOpen(!!detail?.open);
         };
         window.addEventListener("chat-overlay-visibility", onChatVisibility);
-        return () => {
-            window.removeEventListener("chat-overlay-visibility", onChatVisibility);
-        };
+        return () => window.removeEventListener("chat-overlay-visibility", onChatVisibility);
     }, []);
+
+    /* ── PULL-UP GESTURE ────────────────────────────────────────── */
+    useEffect(() => {
+        const onTouchStart = (e: TouchEvent) => {
+            if (window.innerWidth >= 768) return;
+            const touch = e.touches[0];
+            const fromBottom = window.innerHeight - touch.clientY;
+            if (fromBottom <= 60) {
+                gestureStartY.current = touch.clientY;
+                gestureActive.current = true;
+            }
+        };
+        const onTouchMove = (e: TouchEvent) => {
+            if (!gestureActive.current || gestureStartY.current === null) return;
+            const touch = e.touches[0];
+            const dy = gestureStartY.current - touch.clientY;
+            if (dy > 120) {
+                gestureActive.current = false;
+                gestureStartY.current = null;
+                openDrawer();
+            }
+        };
+        const onTouchEnd = () => {
+            gestureActive.current = false;
+            gestureStartY.current = null;
+        };
+        document.addEventListener("touchstart", onTouchStart, { passive: true });
+        document.addEventListener("touchmove", onTouchMove, { passive: true });
+        document.addEventListener("touchend", onTouchEnd, { passive: true });
+        document.addEventListener("touchcancel", onTouchEnd, { passive: true });
+        return () => {
+            document.removeEventListener("touchstart", onTouchStart);
+            document.removeEventListener("touchmove", onTouchMove);
+            document.removeEventListener("touchend", onTouchEnd);
+            document.removeEventListener("touchcancel", onTouchEnd);
+        };
+    }, [openDrawer]);
+
+    /* ── Hide/show on scroll ───────────────────────────────────── */
     useEffect(() => {
         let container: Element | null = null;
         let detach: (() => void) | null = null;
@@ -597,44 +503,33 @@ export function Footer() {
             if (detach) { detach(); detach = null; }
             container = next;
             scrollContainerRef.current = container;
-
             if (!container) return;
-
             const handleScroll = () => {
                 if (window.innerWidth >= 768) return;
                 const y = container.scrollTop;
-
                 if (scrollTimeout.current) {
                     clearTimeout(scrollTimeout.current);
                     scrollTimeout.current = null;
                 }
-
                 if (y > lastScrollY.current && y > 50) setIsVisible(false);
                 else if (y < lastScrollY.current) setIsVisible(true);
                 if (y <= 10) setIsVisible(true);
-
                 lastScrollY.current = y;
-
                 scrollTimeout.current = setTimeout(() => {
                     setIsVisible(true);
                     scrollTimeout.current = null;
                 }, 1500);
             };
-
             container.addEventListener('scroll', handleScroll, { passive: true });
             detach = () => container.removeEventListener('scroll', handleScroll);
         };
 
         attach(findScrollContainer());
-
         const observer = new MutationObserver(() => {
             const next = findScrollContainer();
-            if (next) {
-                attach(next);
-            }
+            if (next) attach(next);
         });
         observer.observe(document.body, { childList: true, subtree: true });
-
         return () => {
             observer.disconnect();
             if (detach) detach();
@@ -654,67 +549,108 @@ export function Footer() {
         (theme === 'dark'
             ? 'before:via-white/8 before:to-transparent '
             : 'before:via-black/6 before:to-transparent');
-    const isOnMenuRoute = location.pathname === "/menu";
 
     return (
         <>
-            {!chatOpen && !isOnMenuRoute && (
-                <div
-                    className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
-                    transition-all duration-300 ease-out
-                    ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
-                    ${footerBgClass}
-                    flex justify-around items-center px-1
-                    select-none`}
-                    style={{
-                        height: `${footerHeight}px`,
-                        willChange: 'transform, opacity',
-                        paddingBottom: `${safeAreaBottom}px`,
-                        WebkitBackfaceVisibility: 'hidden',
-                        backfaceVisibility: 'hidden',
-                    }}
-                >
-                    <NavItem icon={IconHome} label="Home" isActive={isActive(`/dashboard/${role}`)} onPress={(e) => handleNavigate(e, `/dashboard/${role}`)} isDark={theme === 'dark'} />
+            {!chatOpen && (
+                <>
+                    {/* PULL-UP CHEVRON — above the tab bar */}
+                    <button
+                        onClick={openDrawer}
+                        aria-label="Open menu"
+                        className={`fixed left-1/2 -translate-x-1/2 z-[101] md:hidden
+                flex items-center justify-center w-12 h-6
+                transition-all duration-300 ease-out
+                ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
+                        style={{ bottom: `${footerHeight + 8}px`, touchAction: "manipulation" }}
+                    >
+                        <svg
+                            width="20"
+                            height="10"
+                            viewBox="0 0 20 10"
+                            fill="none"
+                            style={{
+                                filter: theme === 'dark'
+                                    ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))'
+                                    : 'drop-shadow(0 1px 2px rgba(255,255,255,0.9))',
+                            }}
+                        >
+                            <path
+                                d="M2 8L10 2L18 8"
+                                stroke={theme === 'dark' ? '#ffffff' : '#000000'}
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
 
-                    {isStudent && (
-                        <NavItem icon={IconFeed} label="Feed" isActive={isActive("/feed")} onPress={(e) => handleNavigate(e, "/feed")} isDark={theme === 'dark'} />
-                    )}
-                    {isTutor && (
-                        <NavItem icon={IconTutorExams} label="Tutor Exams" isActive={isActive("/tutor/exams")} onPress={(e) => handleNavigate(e, "/tutor/exams")} isDark={theme === 'dark'} />
-                    )}
-                    {isStaff && (
-                        <NavItem icon={IconCpd} label="CPD" isActive={isActive("/cpd")} onPress={(e) => handleNavigate(e, "/cpd")} isDark={theme === 'dark'} />
-                    )}
+                    {/* TAB BAR */}
+                    <div
+                        className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
+                                    transition-all duration-300 ease-out
+                                    ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
+                                    ${footerBgClass}
+                                    flex justify-around items-center px-1
+                                    select-none`}
+                        style={{
+                            height: `${footerHeight}px`,
+                            willChange: 'transform, opacity',
+                            paddingBottom: `${safeAreaBottom}px`,
+                            WebkitBackfaceVisibility: 'hidden',
+                            backfaceVisibility: 'hidden',
+                        }}
+                    >
+                        {/* Slot 1 — Home */}
+                        <NavItem
+                            icon={IconHome}
+                            label="Home"
+                            isActive={isActive(`/dashboard/${role}`)}
+                            onPress={(e) => handleNavigate(e, `/dashboard/${role}`)}
+                            isDark={theme === 'dark'}
+                        />
 
-                    {isStudent && (
-                        <NavItem icon={IconQuizzes} label="Quizzes" isActive={isActive("/Medrae-quizzes")} onPress={(e) => handleNavigate(e, "/Medrae-quizzes")} isDark={theme === 'dark'} />
-                    )}
-                    {isTutor && (
-                        <NavItem icon={IconAnalytics} label="Analytics" isActive={isActive("/analytics")} onPress={(e) => handleNavigate(e, "/analytics")} isDark={theme === 'dark'} />
-                    )}
-                    {isStaff && (
-                        <NavItem icon={IconCatalog} label="Catalog" isActive={isActive("/cpd/catalog")} onPress={(e) => handleNavigate(e, "/cpd/catalog")} isDark={theme === 'dark'} />
-                    )}
+                        {/* Slot 2 — Feed */}
+                        <NavItem
+                            icon={IconFeed}
+                            label="Feed"
+                            isActive={isActive("/feed")}
+                            onPress={(e) => handleNavigate(e, "/feed")}
+                            isDark={theme === 'dark'}
+                        />
 
-                    <NavItem
-                        icon={IconHeadphones}
-                        label="Listen"
-                        isActive={isActive("/listen")}
-                        onPress={(e) => handleNavigate(e, "/listen")}
-                        isDark={theme === 'dark'}
-                    />
+                        {/* Slot 3 — NELDES (center, elevated, primary) */}
+                        <PrimaryNavItem
+                            icon={IconNeldes}
+                            label=" Medspite"
+                            isActive={isActive("/neldes")}
+                            onPress={(e) => handleNavigate(e, "/neldes")}
+                            isDark={theme === 'dark'}
+                            hintVisible={showNeldesHint}
+                            onLongPress={revealHint}
+                        />
 
-                    <NavItem
-                        icon={IconMenu}
-                        label="Menu"
-                        isActive={isActive("/menu")}
-                        onPress={(e) => handleNavigate(e, "/menu")}
-                        isDark={theme === 'dark'}
-                        badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
-                    />
-                </div>
+                        {/* Slot 4 — Quizzes (with mistake badge) */}
+                        <NavItem
+                            icon={IconQuizzes}
+                            label="Quizzes"
+                            isActive={isActive("/Medrae-quizzes")}
+                            onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
+                            isDark={theme === 'dark'}
+                            badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
+                        />
+
+                        {/* Slot 5 — Listen */}
+                        <NavItem
+                            icon={IconHeadphones}
+                            label="Listen"
+                            isActive={isActive("/listen")}
+                            onPress={(e) => handleNavigate(e, "/listen")}
+                            isDark={theme === 'dark'}
+                        />
+                    </div>
+                </>
             )}
-
 
             <Suspense fallback={null}>
                 {isDrawerOpen && (

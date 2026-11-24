@@ -1,0 +1,9 @@
+/* Neldes Scroll — hide scrollbars everywhere inside the feed */
+[data-neldes-feed]::-webkit-scrollbar {
+    display: none;
+}
+
+[data-neldes-feed] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
