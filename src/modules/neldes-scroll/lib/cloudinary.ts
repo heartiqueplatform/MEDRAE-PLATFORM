@@ -10,10 +10,8 @@ import {
     CLOUDINARY_CARD_TRANSFORM,
     CLOUDINARY_SHARE_TRANSFORM,
 } from "../config/constants";
-
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
-const CLOUDINARY_UPLOAD_PRESET = import.meta.env
-    .VITE_CLOUDINARY_UPLOAD_PRESET as string;
+const CLOUDINARY_CLOUD_NAME = "dpj5vprwf";
+const CLOUDINARY_UPLOAD_PRESET = "medrae_uploads";
 
 export interface UploadedImage {
     secure_url: string;

@@ -33,12 +33,19 @@ const ConnectivityContext = createContext<ConnectivityValue | undefined>(
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-// Tiny 204 endpoint — no body, no CORS issues, cached-busted
-const PING_URL = "https://www.gstatic.com/generate_204";
-const PING_TIMEOUT_MS = 4000;
-const POLL_ONLINE_MS = 30_000; // gentle poll while online
-const POLL_OFFLINE_MS = 8_000; // faster poll while offline (quick recovery)
-const RECOVERY_FLASH_MS = 3000; // how long "justRecovered" stays true
+// Same-origin tiny asset — no CORS, no CDN blocking, fast on slow data.
+// Falls back to gstatic only if same-origin fetch isn't possible.
+const PING_URL = "/favicon.ico";
+const PING_FALLBACK_URL = "https://www.gstatic.com/generate_204";
+
+const PING_TIMEOUT_MS = 6000;         // forgiving for slow mobile data
+const PING_RETRIES = 2;               // extra attempts per round
+const RETRY_DELAY_MS = 800;           // gap between retries
+const FAILURES_BEFORE_OFFLINE = 2;    // need 2 bad rounds in a row to go offline
+
+const POLL_ONLINE_MS = 30_000;        // gentle poll while online
+const POLL_OFFLINE_MS = 8_000;        // faster poll while offline
+const RECOVERY_FLASH_MS = 3000;       // "justRecovered" window
 
 // ═══════════════════════════════════════════════════════════
 // PROVIDER
@@ -59,33 +66,54 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
     const pollTimer = useRef<number | null>(null);
     const recoveryTimer = useRef<number | null>(null);
     const mountedRef = useRef(true);
+    const failCountRef = useRef(0);
 
-    // ── lightweight ping ────────────────────────────────────
+    // ── single low-level fetch with timeout ─────────────────
+    const singleFetch = useCallback(
+        async (url: string): Promise<boolean> => {
+            try {
+                const ctrl = new AbortController();
+                const timeout = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
+
+                await fetch(`${url}?ts=${Date.now()}`, {
+                    method: "GET",
+                    cache: "no-store",
+                    signal: ctrl.signal,
+                    credentials: "omit",
+                    mode: url.startsWith("http") ? "no-cors" : "same-origin",
+                });
+
+                clearTimeout(timeout);
+                return true;
+            } catch {
+                return false;
+            }
+        },
+        []
+    );
+
+    // ── one "round" = try primary URL, then fallback URL ────
+    const singlePing = useCallback(async (): Promise<boolean> => {
+        if (await singleFetch(PING_URL)) return true;
+        if (await singleFetch(PING_FALLBACK_URL)) return true;
+        return false;
+    }, [singleFetch]);
+
+    // ── ping = retry the round a couple times ───────────────
     const ping = useCallback(async (): Promise<boolean> => {
-        // If the browser already says offline, trust it (fast path)
+        // Fast path: browser says offline — trust it
         if (typeof navigator !== "undefined" && navigator.onLine === false) {
             return false;
         }
 
-        try {
-            const ctrl = new AbortController();
-            const timeout = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
-
-            await fetch(`${PING_URL}?ts=${Date.now()}`, {
-                method: "HEAD",
-                cache: "no-store",
-                signal: ctrl.signal,
-                // don't send credentials to Google
-                credentials: "omit",
-                mode: "no-cors", // 204 endpoint — opaque response is fine
-            });
-
-            clearTimeout(timeout);
-            return true;
-        } catch {
-            return false;
+        for (let i = 0; i <= PING_RETRIES; i++) {
+            if (await singlePing()) return true;
+            if (i < PING_RETRIES) {
+                await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+            }
         }
-    }, []);
+        return false;
+    }, [singlePing]);
 
     // ── apply a new connectivity value ──────────────────────
     const apply = useCallback((next: boolean) => {
@@ -95,7 +123,6 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
             if (prev === next) return prev;
 
             if (next) {
-                // we just recovered
                 setJustRecovered(true);
                 if (recoveryTimer.current) {
                     window.clearTimeout(recoveryTimer.current);
@@ -111,10 +138,29 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
         setState(next ? "online" : "offline");
     }, []);
 
+    // ── apply a ping result, requiring N failures to go offline ─
+    const applyPingResult = useCallback(
+        (ok: boolean) => {
+            if (ok) {
+                failCountRef.current = 0;
+                apply(true);
+            } else {
+                failCountRef.current += 1;
+                // Only declare offline after consecutive failures.
+                // Until then, stay in the current state — no flashing.
+                if (failCountRef.current >= FAILURES_BEFORE_OFFLINE) {
+                    apply(false);
+                }
+            }
+        },
+        [apply]
+    );
+
     // ── manual recheck (exposed) ────────────────────────────
     const recheck = useCallback(async (): Promise<boolean> => {
         setState("checking");
         const ok = await ping();
+        if (ok) failCountRef.current = 0;
         apply(ok);
         return ok;
     }, [ping, apply]);
@@ -126,19 +172,20 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
         mountedRef.current = true;
 
         const onOnline = () => {
-            // browser says online — verify with a real ping
+            // Browser says online — verify with a real ping
             void recheck();
         };
 
         const onOffline = () => {
-            // browser says offline — trust instantly (no ping needed)
+            // Browser says offline — trust instantly
+            failCountRef.current = FAILURES_BEFORE_OFFLINE;
             apply(false);
         };
 
         window.addEventListener("online", onOnline);
         window.addEventListener("offline", onOffline);
 
-        // ── recursive poll (delay depends on current state) ─
+        // ── recursive poll ─────────────────────────────────
         const scheduleNext = (onlineNow: boolean) => {
             if (pollTimer.current) window.clearTimeout(pollTimer.current);
             const ms = onlineNow ? POLL_ONLINE_MS : POLL_OFFLINE_MS;
@@ -146,17 +193,32 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
             pollTimer.current = window.setTimeout(async () => {
                 if (!mountedRef.current) return;
                 const ok = await ping();
-                apply(ok);
-                // schedule again based on the fresh result
+                applyPingResult(ok);
                 scheduleNext(ok);
             }, ms);
         };
 
-        // initial verify + first schedule
+        // ── initial verify: DON'T punish user on first load ─
         void (async () => {
             const ok = await ping();
-            apply(ok);
-            scheduleNext(ok);
+            if (ok) {
+                failCountRef.current = 0;
+                apply(true);
+                scheduleNext(true);
+                return;
+            }
+
+            // First check failed — try once more before deciding
+            const ok2 = await ping();
+            if (ok2) {
+                failCountRef.current = 0;
+                apply(true);
+                scheduleNext(true);
+            } else {
+                failCountRef.current = FAILURES_BEFORE_OFFLINE;
+                apply(false);
+                scheduleNext(false);
+            }
         })();
 
         return () => {
@@ -185,7 +247,6 @@ export function useConnectivity(): ConnectivityValue {
     const ctx = useContext(ConnectivityContext);
 
     // Fail-open: if provider is missing, pretend we're online.
-    // This keeps previews/tests/storybook working without a wrapper.
     if (!ctx) {
         return {
             isOnline: true,

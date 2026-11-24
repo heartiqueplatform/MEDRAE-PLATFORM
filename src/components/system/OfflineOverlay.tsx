@@ -14,7 +14,7 @@ const vibrate = (pattern: number | number[] = 20) => {
 };
 
 const tap = () => {
-    try { playSound("ui-tap"); } catch { /* silent */ }
+
     vibrate(15);
 };
 
@@ -38,7 +38,7 @@ export function OfflineOverlay() {
             setOpen(false);
             if (wasOfflineRef.current) {
                 setShowRecovered(true);
-                try { playSound("ui-tap"); } catch { /* silent */ }
+
                 vibrate([10, 40, 10]);
                 try { sessionStorage.removeItem(DISMISSED_KEY); } catch { /* silent */ }
                 const t = setTimeout(() => setShowRecovered(false), 3000);

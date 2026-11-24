@@ -29,7 +29,7 @@ import "@fontsource/poppins/800.css";
  *    If it never changes, cleanupOldCaches() never fires and old bundles
  *    pile up forever → "takes days to update" symptom.
  */
-const APP_VERSION = "2.0.222222123"; // ← bump on each release
+const APP_VERSION = "2.0.22222212323"; // ← bump on each release
 
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
