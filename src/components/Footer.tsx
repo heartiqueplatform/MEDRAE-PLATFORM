@@ -399,10 +399,13 @@ export function Footer() {
     }, [smartNav]);
 
     /* ── Drawer open (tap chevron, swipe-up, or hint) ─────────── */
+    const drawerReadyRef = useRef(drawerReady);
+    useEffect(() => { drawerReadyRef.current = drawerReady; }, [drawerReady]);
+
     const openDrawer = useCallback(() => {
         superFastTap("success");
         dismissHint();
-        if (!drawerReady) {
+        if (!drawerReadyRef.current) {
             import("@/components/MobileDrawer")
                 .then(() => setDrawerReady(true))
                 .finally(() => {
@@ -411,7 +414,7 @@ export function Footer() {
             return;
         }
         requestAnimationFrame(() => setIsDrawerOpen(true));
-    }, [drawerReady, dismissHint]);
+    }, [dismissHint]);   // ← removed drawerReady from deps
 
     useEffect(() => {
         if (prefetchDone.current) return;
@@ -462,18 +465,18 @@ export function Footer() {
             holdActive.current = false;
             holdStartY.current = null;
         };
-
         const onTouchStart = (e: TouchEvent) => {
             if (window.innerWidth >= 768) return;
             const target = e.target as HTMLElement | null;
             if (!target) return;
 
             const onHandle = !!target.closest('[data-drawer-handle]');
-            const onFooter = !!target.closest('[data-footer-bar]');
-            const onButton = !!target.closest('button');
+            const onNavButton = !!target.closest('[data-footer-bar] button');
 
-            // Only allow: chevron (handle) OR empty footer area (not a nav button)
-            if (!onHandle && (!onFooter || onButton)) return;
+            // Bail if touching a nav button (they do their own thing)
+            if (onNavButton && !onHandle) return;
+            // Bail if not on handle and not on footer background
+            if (!onHandle && !target.closest('[data-footer-bar]')) return;
 
             const touch = e.touches[0];
             holdStartY.current = touch.clientY;

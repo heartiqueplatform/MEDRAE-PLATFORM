@@ -133,14 +133,14 @@ export function EmptyFeed({ kind, message, onRetry, onCreate }: EmptyFeedProps) 
                 className="text-[17px] font-bold mb-1.5"
                 style={{ color: NELDES_COLORS.textPrimary }}
             >
-                Medspite Scroll is empty
+                You've watched all posts
             </p>
             <p
                 className="text-[13px] mb-4 max-w-[300px] leading-snug"
                 style={{ color: NELDES_COLORS.textSecondary }}
             >
                 {message ||
-                    "Be the first to kick it off — post a medical meme, share KMTC / NCK / MOH news, drop a job or attachment, or boost your course."}
+                    "You're all caught up. Check back later  or be the first to post a meme, share KMTC / NCK / MOH news, drop a job, or boost your course."}
             </p>
 
             {/* Category hint pills — shows new users what they can post */}

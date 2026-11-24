@@ -261,14 +261,17 @@ export function NeldesScrollScreen() {
             <ViewedPostViewer
                 post={viewedViewerPost}
                 onClose={() => setViewedViewerPost(null)}
-                onUpdate={viewedFeed.updatePost}
-                onOpenComments={(post) => setCommentPost(post)}
-                onOpenShare={(post) => setSharePost(post)}
-                onOpenOwnerMenu={(post) => setOwnerPost(post)}
-                onCreate={() => setCreateOpen(true)}
-                onRegisterShare={(fn) => {
-                    shareDispatcherRef.current = fn;
+                onUpdate={(id, patch) => {
+                    viewedFeed.updatePost(id, patch);
+                    setViewedViewerPost((prev) =>
+                        prev && prev.id === id ? { ...prev, ...patch } : prev
+                    );
                 }}
+                onOpenComments={setCommentPost}
+                onOpenShare={setSharePost}
+                onOpenOwnerMenu={setOwnerPost}
+                onCreate={() => setCreateOpen(true)}
+                onRegisterShare={(fn) => { shareDispatcherRef.current = fn; }}
             />
             <div className="md:hidden">
                 <CommentSheet

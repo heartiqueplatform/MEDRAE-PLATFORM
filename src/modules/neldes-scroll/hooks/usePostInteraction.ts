@@ -23,31 +23,44 @@ export function usePostInteraction({ post, onUpdate }: UsePostInteractionArgs) {
     const [downloading, setDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // ── LIKE ────────────────────────────────────────────────────
     const toggleLike = useCallback(async () => {
-        const nextLiked = !post.is_liked;
-        const nextCount = post.likes_count + (nextLiked ? 1 : -1);
+        // Capture previous state BEFORE the optimistic flip so revert is exact.
+        const prevLiked = post.is_liked;
+        const prevCount = post.likes_count;
+        const nextLiked = !prevLiked;
+        const nextCount = prevCount + (nextLiked ? 1 : -1);
+
+        // Optimistic update
         onUpdate(post.id, { is_liked: nextLiked, likes_count: nextCount });
+
         try {
             if (nextLiked) await recordInteraction(post.id, "like");
             else await removeInteraction(post.id, "like");
         } catch (e: any) {
-            onUpdate(post.id, { is_liked: !nextLiked, likes_count: post.likes_count });
-            setError(e.message);
+            // Revert to the exact values captured before the flip
+            onUpdate(post.id, { is_liked: prevLiked, likes_count: prevCount });
+            setError(e?.message ?? "Could not update like");
         }
-    }, [post, onUpdate]);
+    }, [post.id, post.is_liked, post.likes_count, onUpdate]);
 
+    // ── SAVE ────────────────────────────────────────────────────
     const toggleSave = useCallback(async () => {
-        const nextSaved = !post.is_saved;
+        const prevSaved = post.is_saved;
+        const nextSaved = !prevSaved;
+
         onUpdate(post.id, { is_saved: nextSaved });
+
         try {
             if (nextSaved) await recordInteraction(post.id, "save");
             else await removeInteraction(post.id, "save");
         } catch (e: any) {
-            onUpdate(post.id, { is_saved: !nextSaved });
-            setError(e.message);
+            onUpdate(post.id, { is_saved: prevSaved });
+            setError(e?.message ?? "Could not update save");
         }
-    }, [post, onUpdate]);
+    }, [post.id, post.is_saved, onUpdate]);
 
+    // ── SHARE ───────────────────────────────────────────────────
     const share = useCallback(
         async (target: ShareTarget) => {
             if (!post.image_url) return;
@@ -61,7 +74,10 @@ export function usePostInteraction({ post, onUpdate }: UsePostInteractionArgs) {
                     downloadBlob(blob, `medrae-${post.id}.jpg`);
                     await recordInteraction(post.id, "share", "whatsapp_status");
                     // WhatsApp doesn't allow programmatic status post — user posts manually
-                    window.open("https://wa.me/?text=" + encodeURIComponent("Shared from Medrae"), "_blank");
+                    window.open(
+                        "https://wa.me/?text=" + encodeURIComponent("Shared from Medrae"),
+                        "_blank"
+                    );
                     return;
                 }
 
@@ -74,14 +90,15 @@ export function usePostInteraction({ post, onUpdate }: UsePostInteractionArgs) {
 
                 await recordInteraction(post.id, "share", target);
             } catch (e: any) {
-                setError(e.message);
+                setError(e?.message ?? "Could not share");
             } finally {
                 setSharing(false);
             }
         },
-        [post]
+        [post.id, post.image_url, post.title, post.caption]
     );
 
+    // ── DOWNLOAD ────────────────────────────────────────────────
     const download = useCallback(async () => {
         if (!post.image_url) return;
         setDownloading(true);
@@ -91,11 +108,11 @@ export function usePostInteraction({ post, onUpdate }: UsePostInteractionArgs) {
             downloadBlob(blob, `medrae-${post.id}.jpg`);
             await recordInteraction(post.id, "download");
         } catch (e: any) {
-            setError(e.message);
+            setError(e?.message ?? "Could not download");
         } finally {
             setDownloading(false);
         }
-    }, [post]);
+    }, [post.id, post.image_url]);
 
     return { toggleLike, toggleSave, share, download, sharing, downloading, error };
 }
