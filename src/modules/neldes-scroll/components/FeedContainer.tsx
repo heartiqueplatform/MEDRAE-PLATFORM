@@ -11,7 +11,7 @@ import { EmptyFeed } from "./EmptyFeed";
 import type { FeedPost, ShareTarget } from "../types";
 import { NELDES_COLORS } from "../config/constants";
 import type { ShareDispatcher } from "./NeldesScrollScreen";
-
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 interface FeedContainerProps {
     posts: FeedPost[];
     loading: boolean;
@@ -44,12 +44,23 @@ export function FeedContainer({
     onRefresh,
     onRegisterShare,
     onCreate,
-    onOpenOwnerMenu,      // ← ADD
-    currentUserId,        // ← ADD
+    onOpenOwnerMenu,
+    currentUserId,
 }: FeedContainerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const sentinelRef = useRef<HTMLDivElement>(null);
+
+    // Pull-to-refresh hook — must come BEFORE any useEffect that uses it
+    const pull = usePullToRefresh({
+        onRefresh,
+        enabled: true,
+    });
+
+    // Hand the real scroller to the pull hook once it mounts
+    useEffect(() => {
+        pull.setScrollEl(containerRef.current);
+    }, [pull.setScrollEl]);
 
     // ── Infinite scroll sentinel ──────────────────────────────
     useEffect(() => {
@@ -143,35 +154,80 @@ export function FeedContainer({
                 msOverflowStyle: "none",
             }}
         >
-            {posts.map((post, index) => (
+            {/* Pull indicator — absolutely positioned over the scroller */}
+            <div
+                className="sticky top-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none"
+                style={{
+                    height: pull.refreshing ? pull.threshold : pull.pull,
+                    transition: pull.refreshing ? "height 0.2s ease-out" : "none",
+                    overflow: "hidden",
+                }}
+            >
                 <div
-                    key={post.id}
-                    data-neldes-card
-                    data-neldes-index={index}
-                    className="w-full h-full snap-start snap-always flex-shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center"
+                    style={{
+                        backgroundColor: "rgba(0,0,0,0.55)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        opacity: pull.refreshing ? 1 : 0.4 + pull.progress * 0.6,
+                        transform: `scale(${pull.refreshing ? 1 : 0.6 + pull.progress * 0.4})`,
+                    }}
                 >
-                    <FeedCard
-                        post={post}
-                        onUpdate={onUpdate}
-                        onOpenComments={onOpenComments}
-                        onOpenShare={onOpenShare}
-                        onVisible={handleVisible}
-                        onRegisterShare={onRegisterShare}
-                        onOpenOwnerMenu={onOpenOwnerMenu}
-                        currentUserId={currentUserId}
-                        onCreate={onCreate}          // ← ADD
-                        index={index}
-                    />
+                    {pull.refreshing ? (
+                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <span
+                            className="text-white text-xs font-bold"
+                            style={{
+                                transform: `rotate(${pull.progress >= 1 ? 180 : 0}deg)`,
+                                transition: "transform 0.2s",
+                            }}
+                        >
+                            ↓
+                        </span>
+                    )}
                 </div>
-            ))}
+            </div>
 
-            {loadingMore && (
-                <div className="w-full h-full snap-start snap-always flex-shrink-0">
-                    <LoadingCard />
-                </div>
-            )}
+            {/* Inner wrapper — THIS is what moves on pull */}
+            <div
+                style={{
+                    transform: `translateY(${pull.refreshing ? pull.threshold : pull.pull
+                        }px)`,
+                    transition: pull.pull > 0 ? "none" : "transform 0.25s ease-out",
+                    willChange: "transform",
+                }}
+            >
+                {posts.map((post, index) => (
+                    <div
+                        key={post.id}
+                        data-neldes-card
+                        data-neldes-index={index}
+                        className="w-full h-full snap-start snap-always flex-shrink-0"
+                    >
+                        <FeedCard
+                            post={post}
+                            onUpdate={onUpdate}
+                            onOpenComments={onOpenComments}
+                            onOpenShare={onOpenShare}
+                            onVisible={handleVisible}
+                            onRegisterShare={onRegisterShare}
+                            onOpenOwnerMenu={onOpenOwnerMenu}
+                            currentUserId={currentUserId}
+                            onCreate={onCreate}
+                            index={index}
+                        />
+                    </div>
+                ))}
 
-            <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
+                {loadingMore && (
+                    <div className="w-full h-full snap-start snap-always flex-shrink-0">
+                        <LoadingCard />
+                    </div>
+                )}
+
+                <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
+            </div>
         </div>
     );
 }

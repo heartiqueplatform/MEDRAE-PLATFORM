@@ -15,8 +15,6 @@ import { PostOwnerSheet } from "./PostOwnerSheet";
 import type { FeedPost, ShareTarget } from "../types";
 import { NELDES_COLORS } from "../config/constants";
 import { ViewedPostViewer } from "./ViewedPostViewer";
-import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 export type ShareDispatcher = (
     post: FeedPost,
     target: ShareTarget
@@ -32,11 +30,7 @@ export function NeldesScrollScreen() {
     const viewedFeed = useViewedFeed();
     const [viewedViewerPost, setViewedViewerPost] = useState<FeedPost | null>(null);
     const feed = tab === "forYou" ? forYouFeed : viewedFeed;
-    const pullRefresh = usePullToRefresh({
-        onRefresh: async () => {
-            await (tab === "forYou" ? forYouFeed.refresh() : viewedFeed.refresh());
-        },
-    });
+
     const [sharePost, setSharePost] = useState<FeedPost | null>(null);
     const [commentPost, setCommentPost] = useState<FeedPost | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
@@ -164,63 +158,40 @@ export function NeldesScrollScreen() {
                     {tabButtons}
                 </div>
 
-                {/* Pull-to-refresh indicator — sits above the scroll container */}
-                <PullToRefreshIndicator
-                    pull={pullRefresh.pull}
-                    progress={pullRefresh.progress}
-                    refreshing={pullRefresh.refreshing}
-                    threshold={pullRefresh.threshold}
-                />
-
-                {/* Scroll container — translateY follows the pull */}
-                <div
-                    ref={pullRefresh.setScrollRef}
-                    className="w-full h-full overflow-y-auto no-scrollbar overscroll-contain"
-                    style={{
-                        transform: `translateY(${pullRefresh.refreshing
-                            ? pullRefresh.threshold
-                            : pullRefresh.pull
-                            }px)`,
-                        transition: pullRefresh.pull > 0 ? "none" : "transform 0.25s ease-out",
-                        willChange: "transform",
-                        WebkitOverflowScrolling: "touch",
-                    }}
-                >
-                    {tab === "forYou" ? (
-                        <FeedContainer
-                            posts={forYouFeed.posts}
-                            loading={forYouFeed.loading}
-                            loadingMore={forYouFeed.loadingMore}
-                            error={forYouFeed.error}
-                            hasMore={forYouFeed.hasMore}
-                            onLoadMore={forYouFeed.loadMore}
-                            onVisible={handleVisible}
-                            currentUserId={currentUserId}
-                            onOpenOwnerMenu={(post) => setOwnerPost(post)}
-                            onUpdate={forYouFeed.updatePost}
-                            onOpenComments={(post) => setCommentPost(post)}
-                            onOpenShare={(post) => setSharePost(post)}
-                            onRefresh={forYouFeed.refresh}
-                            onCreate={() => setCreateOpen(true)}
-                            onRegisterShare={(fn) => {
-                                shareDispatcherRef.current = fn;
-                            }}
-                        />
-                    ) : (
-                        <ViewedContainer
-                            posts={viewedFeed.posts}
-                            loading={viewedFeed.loading}
-                            loadingMore={viewedFeed.loadingMore}
-                            error={viewedFeed.error}
-                            hasMore={viewedFeed.hasMore}
-                            onLoadMore={viewedFeed.loadMore}
-                            onRefresh={viewedFeed.refresh}
-                            onOpenComments={(post) => setCommentPost(post)}
-                            onOpenShare={(post) => setSharePost(post)}
-                            onOpenPost={(post) => setViewedViewerPost(post)}
-                        />
-                    )}
-                </div>
+                {tab === "forYou" ? (
+                    <FeedContainer
+                        posts={forYouFeed.posts}
+                        loading={forYouFeed.loading}
+                        loadingMore={forYouFeed.loadingMore}
+                        error={forYouFeed.error}
+                        hasMore={forYouFeed.hasMore}
+                        onLoadMore={forYouFeed.loadMore}
+                        onVisible={handleVisible}
+                        currentUserId={currentUserId}
+                        onOpenOwnerMenu={(post) => setOwnerPost(post)}
+                        onUpdate={forYouFeed.updatePost}
+                        onOpenComments={(post) => setCommentPost(post)}
+                        onOpenShare={(post) => setSharePost(post)}
+                        onRefresh={forYouFeed.refresh}
+                        onCreate={() => setCreateOpen(true)}
+                        onRegisterShare={(fn) => {
+                            shareDispatcherRef.current = fn;
+                        }}
+                    />
+                ) : (
+                    <ViewedContainer
+                        posts={viewedFeed.posts}
+                        loading={viewedFeed.loading}
+                        loadingMore={viewedFeed.loadingMore}
+                        error={viewedFeed.error}
+                        hasMore={viewedFeed.hasMore}
+                        onLoadMore={viewedFeed.loadMore}
+                        onRefresh={viewedFeed.refresh}
+                        onOpenComments={(post) => setCommentPost(post)}
+                        onOpenShare={(post) => setSharePost(post)}
+                        onOpenPost={(post) => setViewedViewerPost(post)}
+                    />
+                )}
             </div>
 
             {/* ── DESKTOP: centered feed panel with tabs ON the panel ─ */}

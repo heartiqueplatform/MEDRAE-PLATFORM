@@ -356,7 +356,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/chat",
   "/medtube",
   "/quiz",
-  "/Medrae-quizzes",
+
   "/cpd",
   "/subscription",
   "/grouppay",
