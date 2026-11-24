@@ -1,6 +1,6 @@
 // ============================================================
 // Neldes Scroll — skeleton card shown while feed loads.
-// Shimmer sweep across visible blocks. No layout shift.
+// Subtle shimmer sweep. No layout shift. One card per screen.
 // ============================================================
 
 import { NELDES_COLORS } from "../config/constants";
@@ -14,14 +14,14 @@ export function LoadingCard() {
             {/* Image placeholder — mid-tone so it reads against black */}
             <div className="absolute inset-0 bg-[#1a1f27]" />
 
-            {/* Shimmer sweep — full-card diagonal gradient */}
+            {/* Subtle shimmer sweep */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                     background:
-                        "linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.06) 55%, transparent 80%)",
+                        "linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.03) 55%, transparent 80%)",
                     backgroundSize: "200% 100%",
-                    animation: "neldesSkeletonShimmer 1.6s linear infinite",
+                    animation: "neldesSkeletonShimmer 1.8s linear infinite",
                 }}
             />
 
@@ -46,7 +46,6 @@ export function LoadingCard() {
                 ))}
             </div>
 
-            {/* Keyframes — scoped to this component */}
             <style>{`
                 @keyframes neldesSkeletonShimmer {
                     0%   { background-position: 200% 0; }

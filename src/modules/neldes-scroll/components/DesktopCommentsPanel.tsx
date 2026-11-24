@@ -2,6 +2,7 @@
 // ============================================================
 // Neldes Scroll — desktop right-side comments panel.
 // Same data functions as the mobile CommentSheet.
+// Optimistic send: comment appears instantly, reverts on failure.
 // ============================================================
 
 import { useEffect, useState } from "react";
@@ -42,19 +43,42 @@ export function DesktopCommentsPanel({ post }: DesktopCommentsPanelProps) {
 
     const handleSend = async () => {
         if (!post || !body.trim() || sending) return;
+
+        const trimmed = body.trim();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+
+        // Build the optimistic comment (fake id, real-ish shape)
+        const optimistic: MemeComment = {
+            id: -Date.now(),                    // negative — never collides with real ids
+            post_id: post.id,
+            user_id: user.id,
+            user_name: user.user_metadata?.name ?? "You",
+            user_avatar: user.user_metadata?.avatar_url ?? null,
+            body: trimmed,
+            created_at: new Date().toISOString(),
+        };
+
+        // 1. Clear the composer + show it instantly
+        setBody("");
         setSending(true);
+        setComments((prev) => [optimistic, ...prev]);
+
         try {
-            const c = await postComment(post.id, body.trim(), {
+            // 2. Replace the optimistic comment with the real one
+            const real = await postComment(post.id, trimmed, {
                 id: user.id,
-                name: user.user_metadata?.name ?? "You",
-                avatar: user.user_metadata?.avatar_url ?? null,
+                name: optimistic.user_name,
+                avatar: optimistic.user_avatar,
             });
-            setComments((prev) => [c, ...prev]);
-            setBody("");
+            setComments((prev) =>
+                prev.map((c) => (c.id === optimistic.id ? real : c))
+            );
         } catch {
-            /* non-fatal */
+            // 3. Rollback on failure — remove the optimistic comment
+            setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+            // Restore the text so the user doesn't lose it
+            setBody(trimmed);
         } finally {
             setSending(false);
         }
@@ -81,7 +105,7 @@ export function DesktopCommentsPanel({ post }: DesktopCommentsPanelProps) {
                     {post.title || "Comments"}
                 </h3>
 
-                {/* ── Stats row: views · likes · comments ─────── */}
+                {/* Stats row */}
                 <div className="flex items-center gap-3 mt-1.5">
                     <div className="flex items-center gap-1">
                         <Eye className="w-3 h-3" color={NELDES_COLORS.textSecondary} />
@@ -123,35 +147,47 @@ export function DesktopCommentsPanel({ post }: DesktopCommentsPanelProps) {
                     </p>
                 )}
 
-                {comments.map((c) => (
-                    <div key={c.id} className="flex gap-2.5">
-                        {c.user_avatar ? (
-                            <img
-                                src={c.user_avatar}
-                                alt={c.user_name}
-                                className="w-8 h-8 rounded-full object-cover shrink-0"
-                            />
-                        ) : (
-                            <div className="w-8 h-8 rounded-full bg-[#30363d] flex items-center justify-center text-[11px] font-bold text-[#f0f6fc] shrink-0">
-                                {c.user_name?.[0]?.toUpperCase() ?? "U"}
+                {comments.map((c) => {
+                    const isOptimistic = c.id < 0;
+                    return (
+                        <div
+                            key={c.id}
+                            className="flex gap-2.5"
+                            style={{ opacity: isOptimistic ? 0.7 : 1 }}
+                        >
+                            {c.user_avatar ? (
+                                <img
+                                    src={c.user_avatar}
+                                    alt={c.user_name}
+                                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-[#30363d] flex items-center justify-center text-[11px] font-bold text-[#f0f6fc] shrink-0">
+                                    {c.user_name?.[0]?.toUpperCase() ?? "U"}
+                                </div>
+                            )}
+                            <div className="min-w-0">
+                                <p
+                                    className="text-[12px] font-bold"
+                                    style={{ color: NELDES_COLORS.textPrimary }}
+                                >
+                                    {c.user_name}
+                                    {isOptimistic && (
+                                        <span className="ml-1.5 text-[10px] font-normal opacity-60">
+                                            sending…
+                                        </span>
+                                    )}
+                                </p>
+                                <p
+                                    className="text-[13px] leading-snug break-words"
+                                    style={{ color: NELDES_COLORS.textSecondary }}
+                                >
+                                    {c.body}
+                                </p>
                             </div>
-                        )}
-                        <div className="min-w-0">
-                            <p
-                                className="text-[12px] font-bold"
-                                style={{ color: NELDES_COLORS.textPrimary }}
-                            >
-                                {c.user_name}
-                            </p>
-                            <p
-                                className="text-[13px] leading-snug break-words"
-                                style={{ color: NELDES_COLORS.textSecondary }}
-                            >
-                                {c.body}
-                            </p>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Composer */}

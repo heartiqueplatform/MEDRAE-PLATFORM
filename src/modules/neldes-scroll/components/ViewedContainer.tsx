@@ -90,7 +90,7 @@ export function ViewedContainer({
 
     return (
         <div
-            className="w-full h-full overflow-y-auto pt-16 pb-8 px-2"
+            className="w-full h-full overflow-y-auto no-scrollbar pt-16 pb-8 px-2"
             style={{ backgroundColor: NELDES_COLORS.bg }}
         >
             <div className="max-w-5xl mx-auto grid grid-cols-3 gap-1 sm:gap-2">

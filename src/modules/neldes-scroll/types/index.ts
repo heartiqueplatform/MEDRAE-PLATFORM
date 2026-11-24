@@ -2,7 +2,9 @@
 // Neldes Scroll — shared types
 // ============================================================
 
-export type PostType = "meme" | "news" | "job" | "promo";
+// Re-export from the single source of truth so every consumer
+// gets the same PostType (meme | news | job | promo | educational | …)
+export type { PostType } from "./config/postTypes";
 
 export type InteractionAction = "like" | "save" | "share" | "download" | "view";
 
@@ -21,7 +23,7 @@ export interface FeedPost {
     image_url: string | null;
     video_url: string | null;
     link_url: string | null;
-    author_id: string | null;         // ← NEW
+    author_id: string | null;
     author_name: string;
     author_avatar: string | null;
     likes_count: number;

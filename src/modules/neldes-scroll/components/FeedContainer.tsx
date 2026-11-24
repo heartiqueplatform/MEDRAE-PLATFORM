@@ -12,6 +12,7 @@ import type { FeedPost, ShareTarget } from "../types";
 import { NELDES_COLORS } from "../config/constants";
 import type { ShareDispatcher } from "./NeldesScrollScreen";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import { CreatePostCard } from "./CreatePostCard";
 interface FeedContainerProps {
     posts: FeedPost[];
     loading: boolean;
@@ -26,8 +27,9 @@ interface FeedContainerProps {
     onRefresh: () => void;
     onRegisterShare: (fn: ShareDispatcher) => void;
     onCreate: () => void;
-    onOpenOwnerMenu: (post: FeedPost) => void;   // ← ADD
-    currentUserId: string | null;                 // ← ADD
+    onOpenOwnerMenu: (post: FeedPost) => void;
+    onPostViewed?: (postId: number) => void;
+    currentUserId: string | null;
 }
 
 export function FeedContainer({
@@ -46,6 +48,7 @@ export function FeedContainer({
     onCreate,
     onOpenOwnerMenu,
     currentUserId,
+    onPostViewed,
 }: FeedContainerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -119,13 +122,10 @@ export function FeedContainer({
         return <EmptyFeed kind="error" message={error} onRetry={onRefresh} />;
     }
 
+    // ── INITIAL LOADING — ONE full-screen skeleton card ────────
     if (loading && posts.length === 0) {
         return (
-            <div
-                className="w-full h-full flex flex-col"
-                style={{ backgroundColor: NELDES_COLORS.bg }}
-            >
-                <LoadingCard />
+            <div className="w-full h-full" style={{ backgroundColor: NELDES_COLORS.bg }}>
                 <LoadingCard />
             </div>
         );
@@ -154,7 +154,7 @@ export function FeedContainer({
                 msOverflowStyle: "none",
             }}
         >
-            {/* Pull indicator — absolutely positioned over the scroller */}
+            {/* Pull indicator — sits on top of the scroller */}
             <div
                 className="sticky top-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none"
                 style={{
@@ -192,33 +192,67 @@ export function FeedContainer({
             {/* Inner wrapper — THIS is what moves on pull */}
             <div
                 style={{
-                    transform: `translateY(${pull.refreshing ? pull.threshold : pull.pull
-                        }px)`,
+                    transform: `translateY(${pull.refreshing ? pull.threshold : pull.pull}px)`,
                     transition: pull.pull > 0 ? "none" : "transform 0.25s ease-out",
                     willChange: "transform",
                 }}
             >
-                {posts.map((post, index) => (
-                    <div
-                        key={post.id}
-                        data-neldes-card
-                        data-neldes-index={index}
-                        className="w-full h-full snap-start snap-always flex-shrink-0"
-                    >
-                        <FeedCard
-                            post={post}
-                            onUpdate={onUpdate}
-                            onOpenComments={onOpenComments}
-                            onOpenShare={onOpenShare}
-                            onVisible={handleVisible}
-                            onRegisterShare={onRegisterShare}
-                            onOpenOwnerMenu={onOpenOwnerMenu}
-                            currentUserId={currentUserId}
-                            onCreate={onCreate}
-                            index={index}
-                        />
-                    </div>
-                ))}
+                {posts.map((post, index) => {
+                    // Progressive CTA placement:
+                    //   after 3 posts, then 5 more, then 7 more, then 9 more...
+                    //   = positions 3, 8, 15, 24, 35, 48, ...
+                    //   = n*(n+1)/2 + n  for n = 1, 2, 3, ...
+                    // Compute by walking the sequence until we pass the current index.
+                    let ctaAt = false;
+                    {
+                        let next = 3;      // first CTA after 3 posts
+                        let step = 5;      // next gap is 5, then 7, 9...
+                        let pos = next;
+                        while (pos <= posts.length) {
+                            if (index + 1 === pos) { ctaAt = true; break; }
+                            if (pos > index + 1) break;
+                            next += step;
+                            step += 2;
+                            pos = next;
+                        }
+                    }
+
+                    return (
+                        <div key={`fragment-${post.id}`} className="contents">
+                            {/* Real post */}
+                            <div
+                                data-neldes-card
+                                data-neldes-index={index}
+                                className="w-full h-full snap-start snap-always flex-shrink-0"
+                            >
+                                <FeedCard
+                                    post={post}
+                                    onUpdate={onUpdate}
+                                    onOpenComments={onOpenComments}
+                                    onOpenShare={onOpenShare}
+                                    onVisible={handleVisible}
+                                    onRegisterShare={onRegisterShare}
+                                    onOpenOwnerMenu={onOpenOwnerMenu}
+                                    currentUserId={currentUserId}
+                                    onCreate={onCreate}
+                                    index={index}
+                                    onPostViewed={onPostViewed}
+                                />
+                            </div>
+
+                            {/* Inline CTA — appears at 3, 8, 15, 24, 35… */}
+                            {ctaAt && (
+                                <div
+                                    data-neldes-card
+                                    data-neldes-index={`create-${index}`}
+                                    className="w-full h-full snap-start snap-always flex-shrink-0"
+                                >
+                                    <CreatePostCard onCreate={onCreate} position={index + 1} />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
 
                 {loadingMore && (
                     <div className="w-full h-full snap-start snap-always flex-shrink-0">

@@ -8,7 +8,8 @@ export interface FeedCardProps {
     onOpenShare: (post: FeedPost) => void;
     onVisible: (index: number) => void;
     onRegisterShare?: (fn: ShareDispatcher) => void;
-    onOpenOwnerMenu: (post: FeedPost) => void;   // ← NEW
-    currentUserId: string | null;                 // ← NEW
+    onOpenOwnerMenu: (post: FeedPost) => void;
+    currentUserId: string | null;
     index: number;
+    onPostViewed?: (postId: number) => void;   // ← ADD THIS
 }

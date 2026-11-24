@@ -54,7 +54,24 @@ export function NeldesScrollScreen() {
         },
         [ownerPost, forYouFeed, viewedFeed]
     );
+    // Add this callback after handleOwnerDeleted
+    const handlePostViewed = useCallback(
+        (postId: number) => {
+            // Bump views in the feed (source of truth for both mobile + desktop)
+            forYouFeed.updatePost(postId, {
+                views_count:
+                    (forYouFeed.posts.find((p) => p.id === postId)?.views_count ?? 0) + 1,
+            });
 
+            // Also bump activePost so the desktop panel updates live
+            setActivePost((prev) =>
+                prev && prev.id === postId
+                    ? { ...prev, views_count: (prev.views_count ?? 0) + 1 }
+                    : prev
+            );
+        },
+        [forYouFeed]
+    );
     const handleOwnerDeleted = useCallback(
         (id: number) => {
             forYouFeed.refresh();
@@ -174,6 +191,7 @@ export function NeldesScrollScreen() {
                         onOpenShare={(post) => setSharePost(post)}
                         onRefresh={forYouFeed.refresh}
                         onCreate={() => setCreateOpen(true)}
+                        onPostViewed={handlePostViewed}
                         onRegisterShare={(fn) => {
                             shareDispatcherRef.current = fn;
                         }}
@@ -222,6 +240,7 @@ export function NeldesScrollScreen() {
                             onOpenShare={(post) => setSharePost(post)}
                             onRefresh={forYouFeed.refresh}
                             onCreate={() => setCreateOpen(true)}
+                            onPostViewed={handlePostViewed}
                             onRegisterShare={(fn) => {
                                 shareDispatcherRef.current = fn;
                             }}

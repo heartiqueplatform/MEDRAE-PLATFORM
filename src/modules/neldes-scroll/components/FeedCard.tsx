@@ -12,22 +12,9 @@ import { useMarkSeen } from "../hooks/useMarkSeen";
 import { usePostInteraction } from "../hooks/usePostInteraction";
 import { cardImageUrl } from "../lib/cloudinary";
 import { NELDES_COLORS } from "../config/constants";
+import { POST_TYPE_MAP, DEFAULT_POST_TYPE } from "../config/postTypes";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, MoreHorizontal, Plus } from "lucide-react";
-
-const TYPE_LABEL: Record<string, string> = {
-    meme: "Meme",
-    news: "News",
-    job: "Job",
-    promo: "Medrae",
-};
-
-const TYPE_COLOR: Record<string, string> = {
-    meme: "bg-rose-500/90",
-    news: "bg-blue-500/90",
-    job: "bg-emerald-500/90",
-    promo: "bg-amber-500/90",
-};
 
 export function FeedCard({
     post,
@@ -40,8 +27,12 @@ export function FeedCard({
     currentUserId,
     onCreate,
     index,
+    onPostViewed,
 }: FeedCardProps) {
-    const seenRef = useMarkSeen(post.id);
+    const seenRef = useMarkSeen(post.id, () => {
+        // Let the parent bump both the feed + the desktop panel
+        onPostViewed?.(post.id);
+    });
     const lastTapRef = useRef<number>(0);
     const [heartPop, setHeartPop] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -86,6 +77,7 @@ export function FeedCard({
     }, [onVisible, index]);
 
     const imageSrc = cardImageUrl(post.image_url);
+    const meta = POST_TYPE_MAP[post.type] ?? DEFAULT_POST_TYPE;
 
     return (
         <div
@@ -101,9 +93,10 @@ export function FeedCard({
             <div
                 className="absolute inset-0 overflow-hidden"
                 onClick={handleImageTap}
+                onTouchEnd={handleImageTap}
                 role="button"
                 tabIndex={0}
-                style={{ touchAction: "manipulation" }}
+                style={{ touchAction: "pan-y" }}
             >
                 {imageSrc ? (
                     <>
@@ -161,11 +154,12 @@ export function FeedCard({
 
             <div className="absolute top-3 left-3 z-10">
                 <Badge
-                    className={`${TYPE_COLOR[post.type]} text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-0`}
+                    className={`${meta.color} text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-0`}
                 >
-                    {TYPE_LABEL[post.type]}
+                    {meta.badge}
                 </Badge>
             </div>
+
             {/* Owner menu — only visible to the post author */}
             {currentUserId && post.author_id === currentUserId && (
                 <button
@@ -185,6 +179,7 @@ export function FeedCard({
                     <MoreHorizontal className="w-5 h-5 text-white" strokeWidth={2.4} />
                 </button>
             )}
+
             <div className="absolute right-2 bottom-24 z-10">
                 <CardActions
                     post={post}
@@ -235,6 +230,7 @@ export function FeedCard({
                         <span className="text-[11px] font-bold text-white">Post</span>
                     </button>
                 </div>
+
                 {post.title && (
                     <h3
                         className="text-[15px] font-bold leading-snug mb-1 line-clamp-2"
