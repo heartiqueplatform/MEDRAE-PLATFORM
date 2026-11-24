@@ -451,8 +451,12 @@ export function Footer() {
         const onTouchStart = (e: TouchEvent) => {
             if (window.innerWidth >= 768) return;
             const touch = e.touches[0];
+            const target = e.target as HTMLElement | null;
+            // Accept the drag if it starts on the footer bar OR anywhere in the
+            // bottom 140px of the screen (covers the bar + chevron + safe area).
+            const onFooter = !!target?.closest?.('[data-footer-bar]');
             const fromBottom = window.innerHeight - touch.clientY;
-            if (fromBottom <= 60) {
+            if (onFooter || fromBottom <= 140) {
                 gestureStartY.current = touch.clientY;
                 gestureActive.current = true;
             }
@@ -461,7 +465,10 @@ export function Footer() {
             if (!gestureActive.current || gestureStartY.current === null) return;
             const touch = e.touches[0];
             const dy = gestureStartY.current - touch.clientY;
-            if (dy > 120) {
+            // Once the user is clearly dragging up, stop the scroll container
+            // from stealing the gesture.
+            if (dy > 10 && e.cancelable) e.preventDefault();
+            if (dy > 60) {
                 gestureActive.current = false;
                 gestureStartY.current = null;
                 openDrawer();
@@ -472,7 +479,8 @@ export function Footer() {
             gestureStartY.current = null;
         };
         document.addEventListener("touchstart", onTouchStart, { passive: true });
-        document.addEventListener("touchmove", onTouchMove, { passive: true });
+        // passive: false so preventDefault() above actually works
+        document.addEventListener("touchmove", onTouchMove, { passive: false });
         document.addEventListener("touchend", onTouchEnd, { passive: true });
         document.addEventListener("touchcancel", onTouchEnd, { passive: true });
         return () => {
@@ -559,9 +567,9 @@ export function Footer() {
                         onClick={openDrawer}
                         aria-label="Open menu"
                         className={`fixed left-1/2 -translate-x-1/2 z-[101] md:hidden
-                flex items-center justify-center w-12 h-6
-                transition-all duration-300 ease-out
-                ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
+    flex items-center justify-center w-12 h-6
+    transition-all duration-300 ease-out
+    ${isVisible ? 'translate-y-0 opacity-100 animate-pulse' : 'translate-y-full opacity-0'}`}
                         style={{ bottom: `${footerHeight + 8}px`, touchAction: "manipulation" }}
                     >
                         <svg
@@ -587,6 +595,7 @@ export function Footer() {
 
                     {/* TAB BAR */}
                     <div
+                        data-footer-bar
                         className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
                                     transition-all duration-300 ease-out
                                     ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
