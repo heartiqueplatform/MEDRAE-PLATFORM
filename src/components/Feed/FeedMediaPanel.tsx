@@ -16,7 +16,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 import CommentsModal from "@/components/Feed/CommentsModal";
 import { CenteredModal } from "@/components/ui/CenteredModal";
 import { playSound } from "@/lib/soundManager";
-
+import { uploadProgressStore, type UploadSnapshot } from "@/lib/uploadProgressStore";
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
 /* ------------------------------------------------------------------ */
@@ -78,7 +78,8 @@ const tap = () => {
 const STATS_TIMEOUT_MS = 6000;
 const COMMENTS_TIMEOUT_MS = 6000;
 const MAX_FILES = 10;
-
+const MAX_FILE_MB = 12;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     return Promise.race([
         promise,
@@ -267,7 +268,12 @@ export default function FeedMediaPanel({
     const touchDeltaX = useRef<number>(0);
     const [swipeOffset, setSwipeOffset] = useState<number>(0);
     const isMounted = useRef(true);
-
+    const [uploadSnap, setUploadSnap] = useState<UploadSnapshot>(
+        uploadProgressStore.get()
+    );
+    useEffect(() => {
+        return uploadProgressStore.subscribe(setUploadSnap);
+    }, []);
     /* ── Group slice ────────────────────────────────────── */
     const group = useMemo<FeedImage[] | null>(() => {
         if (!groupKey) return null;
@@ -563,12 +569,24 @@ export default function FeedMediaPanel({
         }
     };
 
-    const handleImageUploadWithMetadata = () => {
-        if (uploadFiles.length === 0) return;
-        if (handleImageUpload && typeof handleImageUpload === "function") {
-            const related = uploadFiles.length > 1 ? isRelated : false;
-            handleImageUpload(related);
+    const handleImageUploadWithMetadata = async () => {
+        if (uploadFiles.length === 0 || uploading) return;
+        if (!handleImageUpload || typeof handleImageUpload !== "function") return;
+
+        const related = uploadFiles.length > 1 ? isRelated : false;
+
+        try {
+            await persistPendingFiles(uploadFiles, {
+                title: imageTitle,
+                description: imageDescription,
+                related,
+                userId: user?.id ?? "",
+            });
+        } catch {
+            // IndexedDB blocked (private mode) — proceed anyway
         }
+
+        handleImageUpload(related);
     };
 
     const handlePostComment = async () => {
@@ -708,6 +726,7 @@ export default function FeedMediaPanel({
                             />
                             <button
                                 onClick={() => {
+                                    if (uploading) return;
                                     tap();
                                     setShowUpload(!showUpload);
                                 }}
@@ -727,6 +746,7 @@ export default function FeedMediaPanel({
                                     border-t border-slate-100 dark:border-white/[0.04]">
                             <button
                                 onClick={() => {
+                                    if (uploading) return;
                                     tap();
                                     setShowUpload(true);
                                 }}
@@ -1119,36 +1139,65 @@ export default function FeedMediaPanel({
                 locked={uploading}
                 footer={
                     <div className="px-4 py-3">
-                        <button
-                            onClick={handleImageUploadWithMetadata}
-                            disabled={uploadFiles.length === 0 || uploading}
-                            className={`w-full h-11 rounded-xl text-sm font-bold
-                        flex items-center justify-center gap-2
-                        transition-transform
-                        ${uploadFiles.length === 0 || uploading
-                                    ? "bg-slate-200 dark:bg-white/[0.08] text-slate-400 dark:text-slate-500 cursor-not-allowed"
-                                    : "bg-blue-600 text-white active:scale-[0.97]"
-                                }`}
-                            style={{ touchAction: "manipulation" }}
-                        >
-                            {uploading ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Uploading…
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="h-4 w-4" />
-                                    Post{" "}
-                                    {uploadFiles.length > 0
-                                        ? `${uploadFiles.length} ${uploadFiles.length === 1
-                                            ? "photo"
-                                            : "photos"
-                                        }`
-                                        : "now"}
-                                </>
-                            )}
-                        </button>
+                        {uploading ? (
+                            <div className="w-full">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[11.5px] font-bold text-slate-700 dark:text-slate-200">
+                                        Uploading {uploadSnap.done} of{" "}
+                                        {uploadSnap.total || uploadFiles.length}
+                                    </span>
+                                    <span className="text-[10.5px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
+                                        {uploadSnap.total > 0
+                                            ? Math.round(
+                                                (uploadSnap.done / uploadSnap.total) * 100
+                                            )
+                                            : 0}
+                                        %
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-white/[0.08] overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full bg-blue-600 dark:bg-blue-400 transition-[width] duration-300 ease-out"
+                                        style={{
+                                            width: `${uploadSnap.total > 0
+                                                ? Math.min(
+                                                    100,
+                                                    Math.round(
+                                                        (uploadSnap.done /
+                                                            uploadSnap.total) *
+                                                        100
+                                                    )
+                                                )
+                                                : 0
+                                                }%`,
+                                        }}
+                                    />
+                                </div>
+                                <p className="mt-2 text-[10.5px] text-slate-500 dark:text-slate-400">
+                                    Please keep this screen open  uploads pause if you leave.
+                                </p>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleImageUploadWithMetadata}
+                                disabled={uploadFiles.length === 0}
+                                className={`w-full h-11 rounded-xl text-sm font-bold
+                    flex items-center justify-center gap-2
+                    transition-transform
+                    ${uploadFiles.length === 0
+                                        ? "bg-slate-200 dark:bg-white/[0.08] text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                                        : "bg-blue-600 text-white active:scale-[0.97]"
+                                    }`}
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <Upload className="h-4 w-4" />
+                                Post{" "}
+                                {uploadFiles.length > 0
+                                    ? `${uploadFiles.length} ${uploadFiles.length === 1 ? "photo" : "photos"
+                                    }`
+                                    : "now"}
+                            </button>
+                        )}
                     </div>
                 }
             >
@@ -1256,7 +1305,7 @@ export default function FeedMediaPanel({
                         )}
 
                         <label
-                            className="cursor-pointer flex flex-col items-center justify-center
+                            className="relative cursor-pointer flex flex-col items-center justify-center
                        min-h-[100px] rounded-xl
                        border border-dashed
                        border-slate-200 dark:border-white/[0.1]
@@ -1264,6 +1313,7 @@ export default function FeedMediaPanel({
                        transition-colors"
                             style={{ touchAction: "manipulation" }}
                         >
+
                             <div className="flex flex-col items-center p-4">
                                 <div className="h-9 w-9 rounded-full
                                 bg-blue-50 dark:bg-blue-400/10
@@ -1287,22 +1337,13 @@ export default function FeedMediaPanel({
                                 multiple
                                 className="hidden"
                                 accept="image/*"
+                                disabled={uploading}
                                 onChange={(e) => {
-                                    const picked = Array.from(
-                                        e.target.files || []
-                                    );
-                                    const remaining =
-                                        MAX_FILES - uploadFiles.length;
-                                    const limited = picked.slice(
-                                        0,
-                                        remaining
-                                    );
-                                    setUploadFiles((prev) =>
-                                        [...prev, ...limited].slice(
-                                            0,
-                                            MAX_FILES
-                                        )
-                                    );
+                                    const picked = Array.from(e.target.files || []);
+                                    const safe = picked.filter((f) => f.size <= MAX_FILE_BYTES);
+                                    const remaining = MAX_FILES - uploadFiles.length;
+                                    const limited = safe.slice(0, remaining);
+                                    setUploadFiles((prev) => [...prev, ...limited].slice(0, MAX_FILES));
                                     e.target.value = "";
                                 }}
                             />
@@ -1448,4 +1489,42 @@ function ActionButton({
             <span>{label}</span>
         </button>
     );
+}
+const UPLOAD_DB = "medrae-uploads";
+const UPLOAD_STORE = "pending";
+
+function openUploadDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(UPLOAD_DB, 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(UPLOAD_STORE)) {
+                db.createObjectStore(UPLOAD_STORE, { keyPath: "id" });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function persistPendingFiles(
+    files: File[],
+    meta: { title: string; description: string; related: boolean; userId: string }
+) {
+    const db = await openUploadDB();
+    const tx = db.transaction(UPLOAD_STORE, "readwrite");
+    const store = tx.objectStore(UPLOAD_STORE);
+    for (const file of files) {
+        store.put({
+            id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            file,
+            meta,
+            createdAt: Date.now(),
+        });
+    }
+    await new Promise((res, rej) => {
+        tx.oncomplete = res;
+        tx.onerror = () => rej(tx.error);
+    });
+    db.close();
 }

@@ -38,7 +38,7 @@ import { QuizContributionCard } from "@/components/MedraeQuizzes/QuizContributio
 import { CenteredModal } from "@/components/ui/CenteredModal";
 import { UserProfileModal } from "@/components/UserProfileModal";
 // Category Types
-type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
+type CategoryType = "all" | "saved" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
 // Cache keys and durations
 const FREE_UNITS_CACHE_KEY = "freeUnits";
@@ -265,6 +265,7 @@ const CATEGORY_STORIES: {
   icon: React.ElementType;
 }[] = [
     { id: "all", label: "All Units", avatar: "/pwaa-512x512.png", ring: "ring-gray-500", icon: BookOpen },
+    { id: "saved", label: "Saved", avatar: "/pwaa-512x512.png", ring: "ring-emerald-500", icon: Bookmark },   // ← NEW
     { id: "paper1", label: "Paper 1", avatar: "/indexbackground5.jpg", ring: "ring-amber-500", icon: GraduationCap },
     { id: "paper2", label: "Paper 2", avatar: "/background05.jpg", ring: "ring-blue-500", icon: FileText },
     { id: "practice", label: "Practice", avatar: "/high4.png", ring: "ring-emerald-500", icon: ClipboardCheck },
@@ -276,6 +277,7 @@ const CATEGORY_STORIES: {
 
 const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
   all: "View all available quizzes",
+  saved: "Quizzes you bookmarked for later",     // ← NEW
   paper1: "Core Nursing Fundamentals & Foundation Units",
   paper2: "Leadership, Research & Community Health",
   practice: "Full-length mock exams for readiness evaluation",
@@ -284,7 +286,6 @@ const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
   nclex: "International nursing standards (Coming Soon)",
   help: "Study guides, exam tips & how to make the most of each unit",
 };
-
 export function MedraeQuizzes() {
   const user = useUser();
   const [isPremium, setIsPremium] = useState<boolean>(
@@ -374,7 +375,18 @@ export function MedraeQuizzes() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mirror, getUserState, engagementVersion]);
-
+  // 🆕 count of currently bookmarked units (for the Saved tab badge)
+  const savedCount = React.useMemo(() => {
+    if (!papers.length) return 0;
+    let n = 0;
+    papers.forEach(p =>
+      p.units.forEach((u: any) => {
+        if (u.id && withLocal(u.id).bookmarked) n++;
+      })
+    );
+    return n;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [papers, mirror, engagementVersion]);
   // Hydrate engagement data whenever the paper list changes
   // Hydrate engagement data whenever the paper list changes
   const allQuizIds = React.useMemo(() => {
@@ -518,6 +530,12 @@ export function MedraeQuizzes() {
     }
 
     if (activeCategory !== "all") {
+      if (activeCategory === "saved") {
+        // 🆕 keep only units the user has bookmarked
+        filtered = filtered.filter(unit =>
+          unit.id ? !!withLocal(unit.id).bookmarked : false
+        );
+      }
       if (activeCategory === "paper1" && paperNumber !== 1 && paperNumber !== 5) return [];
       if (activeCategory === "paper2" && paperNumber !== 2) return [];
       if (activeCategory === "practice" && paperNumber !== 4) return [];
@@ -539,6 +557,7 @@ export function MedraeQuizzes() {
     let allAvailableUnits = papers.flatMap(p => p.units);
 
     allAvailableUnits = allAvailableUnits.filter(unit => {
+      if (activeCategory === "saved") return unit.id ? !!withLocal(unit.id).bookmarked : false;   // ← NEW
       if (activeCategory === "paper1") return unit.paperNumber === 1 || unit.paperNumber === 5;
       if (activeCategory === "paper2") return unit.paperNumber === 2;
       if (activeCategory === "practice") return unit.paperNumber === 4;
@@ -558,7 +577,9 @@ export function MedraeQuizzes() {
     let allAvailableUnits = papers.flatMap(p => p.units);
 
     allAvailableUnits = allAvailableUnits.filter(unit => {
+      if (activeCategory === "saved") return unit.id ? !!withLocal(unit.id).bookmarked : false;   // ← NEW
       if (activeCategory === "paper1") return unit.paperNumber === 1 || unit.paperNumber === 5;
+
       if (activeCategory === "paper2") return unit.paperNumber === 2;
       if (activeCategory === "practice") return unit.paperNumber === 4;
       if (activeCategory === "nclex") return unit.paperNumber === 99;
@@ -709,7 +730,9 @@ export function MedraeQuizzes() {
                               : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
                             }`}
                         >
-                          {cat.label}
+                          {cat.id === "saved" && savedCount > 0
+                            ? `${cat.label} (${savedCount})`
+                            : cat.label}
                         </span>
                       </button>
                     );
@@ -888,18 +911,19 @@ export function MedraeQuizzes() {
 
                       <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 w-full">
 
-                        {/* ✅ Contribution card — only once, on the first paper */}
-                        {paper.paperNumber === papers[0]?.paperNumber && (
-                          <QuizContributionCard variant="card" />
-                        )}
-                        {/* ✅ Last Minute card — ONLY on the first paper, so it appears once */}
-                        {paper.paperNumber === papers[0]?.paperNumber && (
-                          <LastMinuteCard
-                            variant="quiz"
-                            title="Full access, one subscription."
-                            blurb="Premium members open every Last-Minute paper at no extra cost. Or purchase any single paper from KSh 19."
-                          />
-                        )}
+                        {/* 🆕 Promo cards — only on the DEFAULT view (no search, "all" tab) */}
+                        {paper.paperNumber === papers[0]?.paperNumber
+                          && activeCategory === "all"
+                          && !searchTerm && (
+                            <>
+                              <QuizContributionCard variant="card" />
+                              <LastMinuteCard
+                                variant="quiz"
+                                title="Full access, one subscription."
+                                blurb="Premium members open every Last-Minute paper at no extra cost. Or purchase any single paper from KSh 19."
+                              />
+                            </>
+                          )}
 
                         {filteredUnits.map((unit, index) => {
                           const questionCount = getQuestionCount(unit.code);
@@ -986,7 +1010,7 @@ export function MedraeQuizzes() {
                                     )}
                                   </div>
                                 </div>
-                                <CardHeader className="pb-2 pt-3 px-4">
+                                <CardHeader className="pb-3 pt-3 px-2">
                                   {/* Engagement stats row */}
                                   {/* Engagement stats row — tappable badges with bubble pops */}
                                   <div className="flex items-center gap-2 flex-wrap mb-2 min-h-[20px]">
@@ -1147,7 +1171,7 @@ export function MedraeQuizzes() {
                                   )}
                                 </CardHeader>
 
-                                <CardContent>
+                                <CardContent className="px-2 pb-4">
                                   <div className="flex flex-col gap-3">
                                     {unit.description && (
                                       <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">
@@ -1259,127 +1283,7 @@ export function MedraeQuizzes() {
                                       </Button>
                                     )}
                                   </div>
-                                  {/* ⭐ RATING ROW — 5 stars, centered */}
-                                  {unit.id && (
-                                    <div className="pt-4 mt-2 border-t border-slate-100 dark:border-white/[0.04]">
-                                      <p className="text-[9px] font-bold tracking-widest
-                                                    text-slate-400 dark:text-slate-500 text-center mb-1.5">
-                                        {myState?.rating
-                                          ? `You rated ${myState.rating} ${myState.rating === 1 ? "star" : "stars"} · tap again to clear`
-                                          : "Tap a star to rate"}
-                                      </p>
-                                      <div className="flex items-center justify-center gap-0">
-                                        {[1, 2, 3, 4, 5].map((n) => {
-                                          const filled = (myState?.rating ?? 0) >= n;
-                                          return (
-                                            <button
-                                              key={n}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (!unit.id) return;
-                                                const current = withLocal(unit.id).rating ?? 0;
-                                                const nextRating = current === n ? 0 : n;
-                                                setBubbleKey(`rt:${unit.code}:${n}`);
-                                                patchMirror(unit.id, { rating: nextRating === 0 ? undefined : nextRating });
-                                                rateQuiz(unit.id, nextRating);
-                                                if (navigator.vibrate) navigator.vibrate(20);
-                                              }}
-                                              className="relative flex items-center justify-center
-                                                         h-9 w-9 rounded-md
-                                                         active:scale-[0.92] transition-transform
-                                                         touch-manipulation"
-                                              style={{ touchAction: "manipulation" }}
-                                              aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
-                                            >
-                                              {bubbleKey === `rt:${unit.code}:${n}` && (
-                                                <BubblePop color="#F59E0B" emoji="⭐" />
-                                              )}
-                                              <Star
-                                                size={20}
-                                                fill={filled ? "currentColor" : "none"}
-                                                strokeWidth={1.75}
-                                                className={`relative z-10 transition-colors ${filled
-                                                  ? "text-amber-500"
-                                                  : "text-slate-300 dark:text-slate-600"
-                                                  }`}
-                                              />
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
 
-                                  {/* ACTIONS ROW — bookmark left, share right, with labels */}
-                                  <div className="flex items-center gap-2 pt-5 mt-1">
-                                    {/* Bookmark */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!unit.id) return;
-                                        setBubbleKey(`bm:${unit.code}`);
-                                        const nextBookmarked = !withLocal(unit.id).bookmarked;
-                                        patchMirror(unit.id, { bookmarked: nextBookmarked });
-                                        toggleBookmark(unit.id);
-                                        if (navigator.vibrate) navigator.vibrate(30);
-                                      }}
-                                      className={`relative flex-1 flex items-center justify-center gap-1.5
-                h-10 rounded-xl
-                text-[11px] font-bold
-                transition-colors
-                active:scale-[0.97]
-                touch-manipulation
-                ${myState?.bookmarked
-                                          ? "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
-                                          : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
-                                        }`}
-                                      title={myState?.bookmarked ? "Remove bookmark" : "Save for later"}
-                                      aria-label={myState?.bookmarked ? "Remove bookmark" : "Bookmark this quiz"}
-                                    >
-                                      {bubbleKey === `bm:${unit.code}` && (
-                                        <BubblePop color="#10B981" emoji="🔖" />
-                                      )}
-                                      <Bookmark
-                                        size={14}
-                                        fill={myState?.bookmarked ? "currentColor" : "none"}
-                                        className="relative z-10 shrink-0"
-                                      />
-                                      <span className="relative z-10">
-                                        {myState?.bookmarked ? "Saved" : "Save"}
-                                      </span>
-                                    </button>
-
-                                    {/* Share */}
-                                    <button
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        const url = `${window.location.origin}/quiz?unit=${encodeURIComponent(unit.title)}`;
-                                        try {
-                                          if (navigator.share) {
-                                            await navigator.share({ title: unit.title, url });
-                                          } else {
-                                            await navigator.clipboard.writeText(url);
-                                          }
-                                          if (unit.id) reportShare(unit.id);
-                                        } catch {
-                                          /* user cancelled */
-                                        }
-                                      }}
-                                      className="flex-1 flex items-center justify-center gap-1.5
-               h-10 rounded-xl
-               text-[11px] font-bold
-               bg-slate-100 dark:bg-white/[0.06]
-               text-slate-600 dark:text-slate-300
-               active:scale-[0.97]
-               transition-transform
-               touch-manipulation"
-                                      title="Share this unit"
-                                      aria-label="Share this quiz"
-                                    >
-                                      <Share2 size={14} className="shrink-0" />
-                                      <span>Share</span>
-                                    </button>
-                                  </div>
                                 </CardContent>
                               </Card>
                               <UnitPics position={index + 1} />
@@ -1451,98 +1355,97 @@ export function MedraeQuizzes() {
             maxHeight="90vh"
           >
             {selectedUnit && (
-              <div className="px-4 pb-4 space-y-3">
+              <div className="px-4 pt-3 pb-4 space-y-3">
 
                 {/* Description */}
+                {/* Description */}
                 {selectedUnit.description && (
-                  <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
-                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                      {selectedUnit.description}
-                    </p>
-                  </div>
+                  <p className="text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {selectedUnit.description}
+                  </p>
                 )}
 
                 {/* 🆕 Creator block */}
                 {/* 🆕 Creator block — tappable, larger avatar, larger name, larger pills */}
                 {selectedUnit.creator_name && (
-                  <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!selectedUnit.created_by) return;
-                        if (navigator.vibrate) navigator.vibrate(20);
-                        // Close the unit modal first so the profile modal doesn't stack underneath
-                        setSelectedUnit(null);
-                        handleCreatorSelect(selectedUnit.created_by);
-                      }}
-                      disabled={!selectedUnit.created_by}
-                      className="w-full flex items-center gap-3 text-left
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!selectedUnit.created_by) return;
+                      if (navigator.vibrate) navigator.vibrate(20);
+                      // Close the unit modal first so the profile modal doesn't stack underneath
+                      setSelectedUnit(null);
+                      handleCreatorSelect(selectedUnit.created_by);
+                    }}
+                    disabled={!selectedUnit.created_by}
+                    className="w-full flex items-center gap-3 text-left
                                  rounded-lg -m-1 p-1
                                  hover:bg-white dark:hover:bg-white/[0.04]
                                  active:scale-[0.985] transition-all
                                  touch-manipulation
                                  disabled:cursor-default disabled:hover:bg-transparent"
-                      title={selectedUnit.created_by ? `View ${selectedUnit.creator_name}'s profile` : undefined}
-                      aria-label={selectedUnit.created_by ? `View ${selectedUnit.creator_name}'s profile` : undefined}
-                    >
-                      {selectedUnit.creator_avatar ? (
-                        <img
-                          src={selectedUnit.creator_avatar}
-                          alt={selectedUnit.creator_name}
-                          className="h-11 w-11 rounded-full object-cover shrink-0 ring-2 ring-slate-200 dark:ring-white/[0.08]"
-                          onError={(e) => (e.currentTarget.style.display = "none")}
-                        />
-                      ) : (
-                        <div className="h-11 w-11 rounded-full bg-slate-200 dark:bg-white/[0.08]
+                    title={selectedUnit.created_by ? `View ${selectedUnit.creator_name}'s profile` : undefined}
+                    aria-label={selectedUnit.created_by ? `View ${selectedUnit.creator_name}'s profile` : undefined}
+                  >
+                    {selectedUnit.creator_avatar ? (
+                      <img
+                        src={selectedUnit.creator_avatar}
+                        alt={selectedUnit.creator_name}
+                        className="h-11 w-11 rounded-full object-cover shrink-0 ring-2 ring-slate-200 dark:ring-white/[0.08]"
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    ) : (
+                      <div className="h-11 w-11 rounded-full bg-slate-200 dark:bg-white/[0.08]
                                         flex items-center justify-center text-base font-bold
                                         text-slate-500 dark:text-slate-400 shrink-0
                                         ring-2 ring-slate-200 dark:ring-white/[0.08]">
-                          {selectedUnit.creator_name.charAt(0).toUpperCase()}
+                        {selectedUnit.creator_name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Created by
+                      </p>
+                      <p className="text-[15px] font-bold text-slate-900 dark:text-white truncate">
+                        {selectedUnit.creator_name}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        {getRoleLabel(selectedUnit.creator_role)}
+                        {selectedUnit.creator_institution && ` · ${selectedUnit.creator_institution}`}
+                      </p>
+                      {(selectedUnit.creator_verified || selectedUnit.creator_nck_verified || selectedUnit.creator_tier) && (
+                        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                          {selectedUnit.creator_tier === "gold" && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+                              Gold
+                            </span>
+                          )}
+                          {selectedUnit.creator_nck_verified && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
+                              NCK ✓
+                            </span>
+                          )}
+                          {selectedUnit.creator_verified && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                              <CheckCircle2 size={20} strokeWidth={2.5} />
+                              Verified
+                            </span>
+                          )}
                         </div>
                       )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          Created by
-                        </p>
-                        <p className="text-[15px] font-bold text-slate-900 dark:text-white truncate">
-                          {selectedUnit.creator_name}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {getRoleLabel(selectedUnit.creator_role)}
-                          {selectedUnit.creator_institution && ` · ${selectedUnit.creator_institution}`}
-                        </p>
-                        {(selectedUnit.creator_verified || selectedUnit.creator_nck_verified || selectedUnit.creator_tier) && (
-                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                            {selectedUnit.creator_tier === "gold" && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
-                                Gold
-                              </span>
-                            )}
-                            {selectedUnit.creator_nck_verified && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
-                                NCK ✓
-                              </span>
-                            )}
-                            {selectedUnit.creator_verified && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
-                                <CheckCircle2 size={20} strokeWidth={2.5} />
-                                Verified
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {user?.id === selectedUnit.created_by && (
-                        <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-wider
+                    </div>
+                    {user?.id === selectedUnit.created_by && (
+                      <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-wider
                                          px-2.5 py-1 rounded-full
                                          bg-emerald-500 text-white
                                          dark:bg-emerald-500 dark:text-white
                                          shadow-sm shadow-emerald-500/30">
-                          You
-                        </span>
-                      )}
-                    </button>
-                  </div>
+                        You
+                      </span>
+                    )}
+                  </button>
+
                 )}
 
                 {/* Details grid */}
@@ -1686,7 +1589,114 @@ export function MedraeQuizzes() {
                     </div>
                   </div>
                 )}
+                {/* ⭐ Engagement row — rating, save, share (skip for help units) */}
+                {selectedUnit.paperNumber !== 6 && selectedUnit.id && (
+                  <div className="rounded-xl bg-slate-50 dark:bg-[#0d1117] p-3 space-y-3">
+                    {/* Rating */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 text-center">
+                        {withLocal(selectedUnit.id).rating
+                          ? `You rated ${withLocal(selectedUnit.id).rating} ${withLocal(selectedUnit.id).rating === 1 ? "star" : "stars"} · tap again to clear`
+                          : "Tap a star to rate"}
+                      </p>
+                      <div className="flex items-center justify-center gap-0">
+                        {[1, 2, 3, 4, 5].map((n) => {
+                          const filled = (withLocal(selectedUnit.id!).rating ?? 0) >= n;
+                          return (
+                            <button
+                              key={n}
+                              onClick={() => {
+                                if (!selectedUnit.id) return;
+                                const current = withLocal(selectedUnit.id).rating ?? 0;
+                                const nextRating = current === n ? 0 : n;
+                                setBubbleKey(`rt:${selectedUnit.code}:${n}`);
+                                patchMirror(selectedUnit.id, {
+                                  rating: nextRating === 0 ? undefined : nextRating,
+                                });
+                                rateQuiz(selectedUnit.id, nextRating);
+                                if (navigator.vibrate) navigator.vibrate(20);
+                              }}
+                              className="relative flex items-center justify-center h-11 w-11 rounded-md
+                                         active:scale-[0.92] transition-transform touch-manipulation"
+                              style={{ touchAction: "manipulation" }}
+                              aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
+                            >
+                              {bubbleKey === `rt:${selectedUnit.code}:${n}` && (
+                                <BubblePop color="#F59E0B" emoji="⭐" />
+                              )}
+                              <Star
+                                size={26}
+                                fill={filled ? "currentColor" : "none"}
+                                strokeWidth={1.75}
+                                className={`relative z-10 transition-colors ${filled
+                                  ? "text-amber-500"
+                                  : "text-slate-300 dark:text-slate-600"
+                                  }`}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
+                    {/* Save + Share row */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (!selectedUnit.id) return;
+                          setBubbleKey(`bm:${selectedUnit.code}`);
+                          const nextBookmarked = !withLocal(selectedUnit.id).bookmarked;
+                          patchMirror(selectedUnit.id, { bookmarked: nextBookmarked });
+                          toggleBookmark(selectedUnit.id);
+                          if (navigator.vibrate) navigator.vibrate(30);
+                        }}
+                        className={`relative flex-1 flex items-center justify-center gap-1.5
+                                    h-11 rounded-xl text-[12px] font-bold
+                                    transition-colors active:scale-[0.97] touch-manipulation
+                                    ${withLocal(selectedUnit.id).bookmarked
+                            ? "bg-emerald-100 dark:bg-emerald-400/15 text-emerald-700 dark:text-emerald-400"
+                            : "bg-white dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                          }`}
+                        title={withLocal(selectedUnit.id).bookmarked ? "Remove bookmark" : "Save for later"}
+                      >
+                        {bubbleKey === `bm:${selectedUnit.code}` && (
+                          <BubblePop color="#10B981" emoji="🔖" />
+                        )}
+                        <Bookmark
+                          size={15}
+                          fill={withLocal(selectedUnit.id).bookmarked ? "currentColor" : "none"}
+                          className="relative z-10 shrink-0"
+                        />
+                        <span className="relative z-10">
+                          {withLocal(selectedUnit.id).bookmarked ? "Saved" : "Save"}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          const url = `${window.location.origin}/quiz?unit=${encodeURIComponent(selectedUnit.title)}`;
+                          try {
+                            if (navigator.share) {
+                              await navigator.share({ title: selectedUnit.title, url });
+                            } else {
+                              await navigator.clipboard.writeText(url);
+                            }
+                            if (selectedUnit.id) reportShare(selectedUnit.id);
+                          } catch { /* user cancelled */ }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5
+                                   h-11 rounded-xl text-[12px] font-bold
+                                   bg-white dark:bg-white/[0.06]
+                                   text-slate-600 dark:text-slate-300
+                                   active:scale-[0.97] transition-transform touch-manipulation"
+                        title="Share this unit"
+                      >
+                        <Share2 size={15} className="shrink-0" />
+                        <span>Share</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* CTA */}
                 {selectedUnit.paperNumber === 6 ? (
                   <button

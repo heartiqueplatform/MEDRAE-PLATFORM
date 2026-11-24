@@ -220,6 +220,9 @@ export default function StudentDashboard() {
   const [simulationPapers, setSimulationPapers] = useState<any[]>(initialCache.simulationPapers ?? []);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
   const [cachedSimulationPapers, setCachedSimulationPapers] = useState<any[]>(initialCache.simulationPapers ?? []);
+  const [simulationLoading, setSimulationLoading] = useState(
+    () => (initialCache.simulationPapers ?? []).length === 0
+  );
   const [topStudents, setTopStudents] = useState<any[]>(initialCache.topStudents ?? []);
   const [loadingTopStudents, setLoadingTopStudents] = useState(
     () => !initialCache.topStudents || initialCache.topStudents.length === 0
@@ -331,48 +334,105 @@ export default function StudentDashboard() {
   const fetchSimulationPapers = useCallback(async () => {
     const CACHE_KEY = "simulation_papers_v3";
     const CACHE_DURATION = 15 * 60 * 1000;
+
+    // ── 1. Paint stale cache immediately — ALWAYS ─────────────
+    // Any cached data is better than empty. TTL only gates the
+    // network call, not the paint.
     const cached = localStorage.getItem(CACHE_KEY);
+    let cachedData: any[] | null = null;
+    let cachedTs = 0;
     if (cached) {
       try {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_DURATION) {
-          setSimulationPapers(data);
-          setCachedSimulationPapers(data);
-          return;
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.data)) {
+          cachedData = parsed.data;
+          cachedTs = parsed.timestamp ?? 0;
+          setSimulationPapers(parsed.data);
+          setCachedSimulationPapers(parsed.data);
         }
-      } catch { }
+      } catch { /* corrupt cache — ignore */ }
     }
+
+    // ── 2. Fresh cache? Skip network entirely ────────────────
+    // ── 2. Fresh cache? Skip network entirely ────────────────
+    if (cachedData && Date.now() - cachedTs < CACHE_DURATION) {
+      setSimulationLoading(false);
+      return;
+    }
+
+    // ── 3. Offline? Cache-only, don't attempt a doomed fetch ─
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // If we have cache, it's already painted above.
+      // If not, state stays as-is — parent handles empty state.
+      setSimulationLoading(false);
+      return;
+    }
+    // ── 4. Online + stale/missing → fetch and merge ──────────
     try {
       const { data: papers, error: paperError } = await supabase
         .from("simulation_papers")
         .select("id, title, description, course, block, is_free, created_at, duration, image_url")
-        .eq("is_active", true).order("created_at", { ascending: false });
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
       if (paperError) throw paperError;
-      if (!papers) return;
-      const { data: results, error: resultsError } = await supabase
-        .from("simulation_results").select("paper_id, score, total_questions").eq("user_id", user.id);
-      if (resultsError) throw resultsError;
+
+      // Empty result → keep cache, don't blank the UI
+      if (!papers || papers.length === 0) {
+        return;
+      }
+
+      // Attempt counts (best-effort — failures don't kill the paint)
+      let attemptCountMap: Record<string, number> = {};
       const progressMap: Record<string, number> = {};
-      const attemptCountMap: Record<string, number> = {};
-      papers.forEach((paper) => {
-        const pr = results?.filter((r) => r.paper_id === paper.id) || [];
-        attemptCountMap[paper.id] = pr.length;
-        if (pr.length > 0) {
-          const highest = Math.max(...pr.map((r) => r.score));
-          const total = paper.total_questions || 10;
-          progressMap[paper.id] = Math.round((highest / total) * 100);
-        } else {
-          progressMap[paper.id] = 0;
+      if (user?.id) {
+        try {
+          const { data: results } = await supabase
+            .from("simulation_results")
+            .select("paper_id, score, total_questions")
+            .eq("user_id", user.id);
+          papers.forEach((paper) => {
+            const pr = results?.filter((r) => r.paper_id === paper.id) || [];
+            attemptCountMap[paper.id] = pr.length;
+            if (pr.length > 0) {
+              const highest = Math.max(...pr.map((r) => r.score));
+              const total = (paper as any).total_questions || 10;
+              progressMap[paper.id] = Math.round((highest / total) * 100);
+            } else {
+              progressMap[paper.id] = 0;
+            }
+          });
+          setSimulationProgress(progressMap);
+        } catch {
+          // Progress/attempt fetch failed — keep whatever's cached
         }
-      });
-      setSimulationProgress(progressMap);
-      const withAttempts = papers.map((p) => ({ ...p, attempt_count: attemptCountMap[p.id] || 0 }));
+      }
+
+      const withAttempts = papers.map((p) => ({
+        ...p,
+        attempt_count: attemptCountMap[p.id] || (p as any).attempt_count || 0,
+      }));
+
       setSimulationPapers(withAttempts);
       setCachedSimulationPapers(withAttempts);
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: withAttempts, timestamp: Date.now() }));
-    } catch { console.log("Simulation papers: offline mode"); }
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ data: withAttempts, timestamp: Date.now() })
+      );
+    } catch {
+      // Network failed — cache already painted (or state untouched).
+      // No console spam, no state mutation.
+    } finally {
+      setSimulationLoading(false);
+    }
   }, [user?.id]);
-
+  // 🔁 Refresh papers when the device comes back online
+  useEffect(() => {
+    const onOnline = () => {
+      fetchSimulationPapers();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [fetchSimulationPapers]);
   const fetchTopStudents = useCallback(async () => {
     if (!user?.id) return;
     const cached = readLeaderboardCache();
@@ -500,9 +560,10 @@ export default function StudentDashboard() {
           selectedUserId={selectedUserId}
           simulationPapers={cachedSimulationPapers}
           simulationProgress={simulationProgress}
+          simulationLoading={simulationLoading}
+          onRetryPapers={() => fetchSimulationPapers()}
           onOpenPaper={(id) => handleSmoothNavigate(`/simulation/${id}`)}
         />
-
         <StudentCommunityCards />
 
         <TermsButton />

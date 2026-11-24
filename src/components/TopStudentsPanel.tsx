@@ -442,6 +442,55 @@ TimeWarning.displayName = "TimeWarning";
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
+
+// ── Trivia empty state — smart, offline-aware ─────────────
+const TriviaEmptyState = memo(({
+    isOffline,
+    onRetry,
+}: {
+    isOffline: boolean;
+    onRetry: () => void;
+}) => (
+    <div className="w-full min-h-[320px] flex flex-col items-center justify-center px-4 py-8 text-center">
+        <div className="w-full max-w-[180px] mx-auto">
+            <HeroLottie />
+        </div>
+
+        <h3 className="mt-2 text-base font-bold text-slate-900 dark:text-white">
+            {isOffline ? "You're offline" : "No questions loaded yet"}
+        </h3>
+        <p className="mt-1 text-[12px] text-muted-foreground leading-snug max-w-[34ch]">
+            {isOffline
+                ? "Today's trivia needs an internet connection the first time. Once loaded, it stays available offline for the rest of the day."
+                : "Today's questions haven't loaded. Tap try again."}
+        </p>
+
+        <div className="mt-5 w-full max-w-[280px] space-y-2">
+            <button
+                onClick={onRetry}
+                className="w-full h-11 rounded-xl bg-blue-600 text-white text-[13px] font-bold
+                           active:scale-[0.98] transition-transform"
+                style={{ touchAction: "manipulation" }}
+            >
+                {isOffline ? "Try again (may fail)" : "Try again"}
+            </button>
+            <a
+                href="https://wa.me/254704473503"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-10 rounded-xl bg-muted text-foreground text-[13px] font-semibold
+                           flex items-center justify-center active:scale-[0.98] transition-transform"
+            >
+                Report on WhatsApp
+            </a>
+        </div>
+    </div>
+));
+TriviaEmptyState.displayName = "TriviaEmptyState";
+
 export const DailyTriviaCard = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -457,7 +506,11 @@ export const DailyTriviaCard = () => {
     const autoSubmitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const timeWarningShownRef = useRef(false);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const [today, setToday] = useState<string>(
+        () => new Date().toISOString().slice(0, 10)
+    );
+
+    // Derived — `QUIZ_ID` is just today's date string
     const QUIZ_ID = today;
 
     const [questions, setQuestions] = useState<TriviaQuestion[]>(() =>
@@ -558,7 +611,25 @@ export const DailyTriviaCard = () => {
         const secText = seconds > 0 ? `${seconds} second${seconds > 1 ? "s" : ""}` : "";
         return [minText, secText].filter(Boolean).join(" and ");
     }, []);
-
+    // ============================================
+    // Midnight rollover — advance `today` when the date changes
+    // ============================================
+    useEffect(() => {
+        const check = () => {
+            const now = new Date().toISOString().slice(0, 10);
+            if (now !== today) setToday(now);
+        };
+        // Cheap poll — minute-level precision is enough
+        const interval = setInterval(check, 60_000);
+        // Also check on focus/tab return (user might have been away overnight)
+        window.addEventListener("focus", check);
+        document.addEventListener("visibilitychange", check);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", check);
+            document.removeEventListener("visibilitychange", check);
+        };
+    }, [today]);
     // ============================================
     // Load questions — cache first, network second
     // ============================================
@@ -620,6 +691,44 @@ export const DailyTriviaCard = () => {
             } finally {
                 if (isMounted.current) setLoading(false);
                 isFetchingQuestions.current = false;
+            }
+
+            // ── Pre-fetch tomorrow's trivia (best-effort, online only) ──
+            // Caches tomorrow's questions so the user can open the app
+            // offline tomorrow morning and still have trivia to play.
+            // Silent — never blocks today's render, never surfaces errors.
+            if (typeof navigator !== "undefined" && navigator.onLine) {
+                const tomorrow = new Date(Date.now() + 86_400_000)
+                    .toISOString()
+                    .slice(0, 10);
+                const tomorrowKey = `trivia_questions_${tomorrow}`;
+
+                // Skip if already cached — avoids one RPC per visit
+                if (!localStorage.getItem(tomorrowKey)) {
+                    try {
+                        const { data: tomorrowData, error: tomorrowErr } =
+                            await supabase.rpc("get_daily_trivia_questions", {
+                                p_date: tomorrow,
+                                p_limit: 15,
+                            });
+                        if (
+                            !tomorrowErr &&
+                            tomorrowData?.length &&
+                            isMounted.current
+                        ) {
+                            localStorage.setItem(
+                                tomorrowKey,
+                                JSON.stringify({
+                                    data: tomorrowData,
+                                    timestamp: Date.now(),
+                                    date: tomorrow,
+                                })
+                            );
+                        }
+                    } catch {
+                        /* best-effort — silent */
+                    }
+                }
             }
         }
         loadQuestions();
@@ -1193,7 +1302,30 @@ export const DailyTriviaCard = () => {
                             <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : questions.length === 0 ? (
-                        <p className="text-center text-sm text-muted-foreground py-8">No questions available.</p>
+                        <TriviaEmptyState
+                            isOffline={typeof navigator !== "undefined" && !navigator.onLine}
+                            onRetry={() => {
+                                // re-run the RPC — same logic as the online-recovery handler
+                                if (isMounted.current) setLoading(true);
+                                (async () => {
+                                    try {
+                                        const { data, error } = await supabase.rpc("get_daily_trivia_questions", {
+                                            p_date: today,
+                                            p_limit: 15,
+                                        });
+                                        if (!error && data?.length && isMounted.current) {
+                                            setQuestions(data);
+                                            localStorage.setItem(
+                                                `trivia_questions_${today}`,
+                                                JSON.stringify({ data, timestamp: Date.now(), date: today })
+                                            );
+                                        }
+                                    } finally {
+                                        if (isMounted.current) setLoading(false);
+                                    }
+                                })();
+                            }}
+                        />
                     ) : !completed ? (
                         <div className="w-full min-h-[200px]">
                             {showTimeWarning && started && (

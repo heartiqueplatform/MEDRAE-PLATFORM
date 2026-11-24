@@ -15,7 +15,7 @@ import AllUsersPopover from "@/components/AllUsersPopover";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
-import OnlineStatusToast from "@/components/OnlineStatusToast";
+
 import { useToast } from "@/components/ui/use-toast";
 import { UserProfileModal } from "@/components/UserProfileModal";
 // ✅ Import shared profile cache (scoped by user id)
@@ -763,7 +763,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
           </div>
         </div>
 
-        <OnlineStatusToast />
+
 
         <div className="flex items-center flex-1">
           <button

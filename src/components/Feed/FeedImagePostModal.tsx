@@ -74,6 +74,7 @@ export default function FeedImagePostModal({
                     className="fixed inset-0 z-[2147483647] bg-black/70
                                flex items-end sm:items-center justify-center sm:p-6"
                     onClick={onClose}
+                    style={{ willChange: "opacity", contain: "layout paint" }}
                 >
                     {/* Close button — always visible, tap-safe */}
                     <button
@@ -114,6 +115,7 @@ export default function FeedImagePostModal({
                         style={{ WebkitOverflowScrolling: "touch" }}
                     >
                         <FeedMediaPanel
+                            key={groupKey}
                             index={0}
                             groupKey={groupKey}
                             feedImages={feedImages}

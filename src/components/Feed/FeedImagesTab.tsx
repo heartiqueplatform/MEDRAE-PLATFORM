@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import FeedImagesGrid from "@/components/Feed/FeedImagesGrid";
 import FeedImagePostModal from "@/components/Feed/FeedImagePostModal";
@@ -42,7 +41,16 @@ const tap = () => {
 
 export default function FeedImagesTab(props: Props) {
     const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
-
+    // Auto-close the modal if the group that's open no longer exists
+    // (e.g. user deleted the only image in it)
+    useEffect(() => {
+        if (!openGroupKey) return;
+        const stillExists = props.feedImages.some((im: any) => {
+            const key = im.post_group_id || `single_${im.id}`;
+            return key === openGroupKey;
+        });
+        if (!stillExists) setOpenGroupKey(null);
+    }, [props.feedImages, openGroupKey]);
     return (
         <div className="w-full max-w-4xl mx-auto">
             {/* ── COMPOSER PROMPT ─────────────────────────── */}

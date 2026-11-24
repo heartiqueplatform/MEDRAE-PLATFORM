@@ -20,7 +20,7 @@ import FeedFeedbackOverlay from "@/components/Feed/FeedFeedbackOverlay";
 import CommentsModal from "@/components/Feed/CommentsModal";
 
 import { clearMediaPanelCaches } from "@/components/Feed/FeedMediaPanel";
-
+import { uploadProgressStore } from "@/lib/uploadProgressStore";
 // ── Request caches ────────────────────────────────────────
 const pendingRequests = new Map<string, Promise<any>>();
 const requestCache = new Map<string, { data: any; at: number }>();
@@ -52,7 +52,7 @@ const fetchWithDedupe = async (
   return p;
 };
 
-// ── Shared image-row mapper (used in 3 places, was duplicated) ──
+// ── Shared image-row mapper ──────────────────────────────
 const mapImageRow = (row: any) => ({
   id: row.id,
   image_url: row.image_url,
@@ -66,7 +66,111 @@ const mapImageRow = (row: any) => ({
   profiles: { name: row.uploader_name, avatar_url: row.uploader_avatar },
 });
 
+// ── Upload constants ─────────────────────────────────────
 const IMAGES_PAGE_SIZE = 15;
+const UPLOAD_TIMEOUT_MS = 30_000;
+const UPLOAD_MAX_RETRIES = 3;
+const UPLOAD_CONCURRENCY = 3;
+const UPLOAD_DB = "medrae-uploads";
+const UPLOAD_STORE = "pending";
+
+// ── Module-scope upload worker with retry + timeout ──────
+async function uploadToCloudinary(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "js1gxxdv");
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/dpj5vprwf/image/upload`,
+    { method: "POST", body: formData }
+  );
+  if (!res.ok) throw new Error("Cloudinary upload failed");
+  const data = await res.json();
+  return data.secure_url as string;
+}
+
+async function uploadWithRetry(file: File): Promise<string> {
+  let lastErr: any = null;
+  for (let attempt = 0; attempt < UPLOAD_MAX_RETRIES; attempt++) {
+    try {
+      const result = await Promise.race<string>([
+        uploadToCloudinary(file),
+        new Promise<string>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("upload timeout")),
+            UPLOAD_TIMEOUT_MS
+          )
+        ),
+      ]);
+      return result;
+    } catch (err) {
+      lastErr = err;
+      await new Promise((r) => setTimeout(r, 500 * Math.pow(3, attempt)));
+    }
+  }
+  throw lastErr ?? new Error("upload failed");
+}
+
+// ── Concurrency runner ───────────────────────────────────
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+  async function next(): Promise<void> {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      results[i] = await worker(items[i], i);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => next())
+  );
+  return results;
+}
+
+// ── IndexedDB helpers ────────────────────────────────────
+function openUploadDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(UPLOAD_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(UPLOAD_STORE)) {
+        db.createObjectStore(UPLOAD_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readPendingEntries(): Promise<any[]> {
+  const db = await openUploadDB();
+  if (!db.objectStoreNames.contains(UPLOAD_STORE)) {
+    db.close();
+    return [];
+  }
+  const rows = await new Promise<any[]>((resolve, reject) => {
+    const tx = db.transaction(UPLOAD_STORE, "readonly");
+    const req = tx.objectStore(UPLOAD_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return rows;
+}
+
+async function deletePendingEntry(id: string): Promise<void> {
+  const db = await openUploadDB();
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(UPLOAD_STORE, "readwrite");
+    tx.objectStore(UPLOAD_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+  });
+  db.close();
+}
 
 export default function Feed() {
   const session = useSession();
@@ -107,6 +211,9 @@ export default function Feed() {
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<any>(null);
+
+  // guard against overlapping drain runs / state feedback loops
+  const drainingRef = useRef(false);
 
   const [isMuted, setIsMuted] = useState(() => {
     try {
@@ -158,12 +265,14 @@ export default function Feed() {
       playSound("alert-sound");
     }
   }, [correctStreak, wrongStreak]);
-  // ── Lock body scroll when fullscreen image viewer is open ──
+
+  // Lock body scroll when fullscreen image viewer is open
   useEffect(() => {
     if (!viewerOpen) return;
     const prevOverflow = document.body.style.overflow;
     const prevPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
@@ -175,7 +284,6 @@ export default function Feed() {
   }, [viewerOpen]);
 
   // ── Load user + initial cached state ─────────────────────
-  // ── ALSO PREFETCH IMAGES HERE so inline media panels show ─
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -189,7 +297,6 @@ export default function Feed() {
         setUser(data.user);
         const uid = data.user.id;
 
-        // Load tokens from profiles (XP)
         supabase
           .from("profiles")
           .select("tokens")
@@ -201,13 +308,14 @@ export default function Feed() {
             }
           });
 
-        const savedAnswers = JSON.parse(localStorage.getItem(`feed_answers_${uid}`) || "{}");
+        const savedAnswers = JSON.parse(
+          localStorage.getItem(`feed_answers_${uid}`) || "{}"
+        );
         setAnswers(savedAnswers);
 
         const cachedCount = localStorage.getItem(`feed_count_${uid}`);
         if (cachedCount) setQuestionCount(parseInt(cachedCount));
 
-        // ── Fire questions AND images in parallel ──
         const [fresh, imageRows] = await Promise.all([
           fetchQuestions(0, 8, uid),
           fetchFirstImageBatch(uid),
@@ -232,11 +340,9 @@ export default function Feed() {
   }, []);
 
   // ── Extra image pages when images tab opens ──────────────
-  // Page 0 is already prefetched on mount. This effect only
-  // handles page >= 1 when the user scrolls the Images tab.
   useEffect(() => {
     if (activeTab !== "images" || !userId || isLoadingImages) return;
-    if (imagePage === 0 && feedImages.length > 0) return; // already loaded on mount
+    if (imagePage === 0 && feedImages.length > 0) return;
     const loadImages = async () => {
       setIsLoadingImages(true);
       try {
@@ -294,7 +400,6 @@ export default function Feed() {
   };
 
   // ── fetchQuestions ───────────────────────────────────────
-  // ── fetchQuestions ───────────────────────────────────────
   const fetchQuestions = async (pageNum: number, limit: number, uid: string) => {
     const key = `questions_${uid}_p${pageNum}_l${limit}`;
     return fetchWithDedupe(key, async () => {
@@ -309,29 +414,37 @@ export default function Feed() {
       const ids = shuffled.map((q: any) => q.id);
       const quizIds = [...new Set(shuffled.map((q: any) => q.quiz_id))];
 
-      // 1. Fetch likes, comments, and quizzes WITH created_by
-      const [{ data: likes }, { data: commentsData }, { data: quizzes }] = await Promise.all([
-        supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
-        supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
-        supabase.from("quizzes").select("id, title, created_by").in("id", quizIds),
-      ]);
+      const [{ data: likes }, { data: commentsData }, { data: quizzes }] =
+        await Promise.all([
+          supabase
+            .from("qfeed_likes")
+            .select("question_id, user_id")
+            .in("question_id", ids),
+          supabase
+            .from("qfeed_comments")
+            .select("id, question_id")
+            .in("question_id", ids),
+          supabase
+            .from("quizzes")
+            .select("id, title, created_by")
+            .in("id", quizIds),
+        ]);
 
-      // 2. 🆕 Fetch creator profiles (all unique created_by values)
       const creatorIds = [
         ...new Set(
-          (quizzes ?? [])
-            .map((q) => q.created_by)
-            .filter((v): v is string => !!v)
+          (quizzes ?? []).map((q) => q.created_by).filter((v): v is string => !!v)
         ),
       ];
-      const { data: creatorProfiles } = creatorIds.length > 0
-        ? await supabase
-          .from("profiles")
-          .select("user_id, name, avatar_url, role, is_verified_contributor, contributor_tier")
-          .in("user_id", creatorIds)
-        : { data: [] };
+      const { data: creatorProfiles } =
+        creatorIds.length > 0
+          ? await supabase
+            .from("profiles")
+            .select(
+              "user_id, name, avatar_url, role, is_verified_contributor, contributor_tier"
+            )
+            .in("user_id", creatorIds)
+          : { data: [] as any[] };
 
-      // 3. Build lookup maps
       const likesMap = new Map<string, any[]>();
       likes?.forEach((l) => {
         if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
@@ -339,23 +452,26 @@ export default function Feed() {
       });
       const commentsCountMap = new Map<string, number>();
       commentsData?.forEach((c) => {
-        commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
+        commentsCountMap.set(
+          c.question_id,
+          (commentsCountMap.get(c.question_id) || 0) + 1
+        );
       });
       const quizMap = new Map<string, any>();
       quizzes?.forEach((q) => quizMap.set(q.id, q));
       const creatorMap = new Map<string, any>();
       (creatorProfiles ?? []).forEach((p) => creatorMap.set(p.user_id, p));
 
-      // 4. Merge author info into each question
       return shuffled.map((q: any) => {
         const quiz = quizMap.get(q.quiz_id);
-        const creator = quiz?.created_by ? creatorMap.get(quiz.created_by) : null;
+        const creator = quiz?.created_by
+          ? creatorMap.get(quiz.created_by)
+          : null;
         return {
           ...q,
           qfeed_likes: likesMap.get(q.id) || [],
           comments_count: commentsCountMap.get(q.id) || 0,
           quiz_title: quiz?.title || "Untitled Quiz",
-          // 🆕 Author info (with verified badge)
           author_id: quiz?.created_by ?? null,
           author_name: creator?.name ?? null,
           author_avatar: creator?.avatar_url ?? null,
@@ -374,7 +490,9 @@ export default function Feed() {
     const fresh = await fetchQuestions(next, 8, userId);
     if (fresh.length > 0) {
       const existing = new Set(questions.map((q) => q.id));
-      const filtered = fresh.filter((q) => !existing.has(q.id) && !answers[q.id]);
+      const filtered = fresh.filter(
+        (q) => !existing.has(q.id) && !answers[q.id]
+      );
       setQuestions((prev) => [...prev, ...filtered]);
       setPage(next);
       if (filtered.length < 8) setHasMore(false);
@@ -394,7 +512,8 @@ export default function Feed() {
       .limit(500);
     const counts = { A: 0, B: 0, C: 0, D: 0 } as Record<string, number>;
     data?.forEach((row: any) => {
-      if (counts[row.selected_option] !== undefined) counts[row.selected_option]++;
+      if (counts[row.selected_option] !== undefined)
+        counts[row.selected_option]++;
     });
     setVoteStats((prev) => ({ ...prev, [qid]: counts }));
     return counts;
@@ -406,7 +525,8 @@ export default function Feed() {
     const isCorrect = q.correct_answer === option;
 
     if (!isMuted) playSound(isCorrect ? "tap-correct" : "tap-wrong", false);
-    if (navigator.vibrate) navigator.vibrate(isCorrect ? 50 : [100, 50, 100]);
+    if (navigator.vibrate)
+      navigator.vibrate(isCorrect ? 50 : [100, 50, 100]);
 
     setAnswers((prev) => {
       const next = { ...prev, [q.id]: option };
@@ -417,16 +537,23 @@ export default function Feed() {
     if (isCorrect) {
       setCorrectStreak((p) => p + 1);
       setWrongStreak(0);
-      confetti({ particleCount: 120, spread: 70, startVelocity: 60, origin: { y: 0.7 } });
+      confetti({
+        particleCount: 120,
+        spread: 70,
+        startVelocity: 60,
+        origin: { y: 0.7 },
+      });
     } else {
       setWrongStreak((p) => p + 1);
       setCorrectStreak(0);
     }
 
-    await supabase.from("qfeed_seen").upsert(
-      { question_id: q.id, user_id: user.id, selected_option: option },
-      { onConflict: "user_id,question_id" }
-    );
+    await supabase
+      .from("qfeed_seen")
+      .upsert(
+        { question_id: q.id, user_id: user.id, selected_option: option },
+        { onConflict: "user_id,question_id" }
+      );
 
     setQuestionCount((prev) => {
       const n = prev + 1;
@@ -496,7 +623,9 @@ export default function Feed() {
     setActiveQuestion(questionId);
     const { data } = await supabase
       .from("qfeed_comments")
-      .select("id, comment_text, created_at, user_id, parent_id, profiles!user_id(name, avatar_url)")
+      .select(
+        "id, comment_text, created_at, user_id, parent_id, profiles!user_id(name, avatar_url)"
+      )
       .eq("question_id", questionId)
       .order("created_at", { ascending: true })
       .limit(100);
@@ -509,7 +638,8 @@ export default function Feed() {
     setComments(
       (data || []).map((c: any) => ({
         ...c,
-        comment_likes: commentLikes?.filter((l: any) => l.comment_id === c.id) || [],
+        comment_likes:
+          commentLikes?.filter((l: any) => l.comment_id === c.id) || [],
       }))
     );
   };
@@ -524,13 +654,17 @@ export default function Feed() {
         parent_id: replyTo,
         comment_text: newComment,
       })
-      .select(`id, comment_text, created_at, user_id, parent_id, profiles:user_id(name, avatar_url)`)
+      .select(
+        `id, comment_text, created_at, user_id, parent_id, profiles:user_id(name, avatar_url)`
+      )
       .single();
     if (inserted) {
       setComments((prev) => [...prev, { ...inserted, comment_likes: [] }]);
       setQuestions((prev) =>
         prev.map((q) =>
-          q.id === activeQuestion ? { ...q, comments_count: (q.comments_count || 0) + 1 } : q
+          q.id === activeQuestion
+            ? { ...q, comments_count: (q.comments_count || 0) + 1 }
+            : q
         )
       );
       setNewComment("");
@@ -543,9 +677,14 @@ export default function Feed() {
     const c = comments.find((x) => x.id === commentId);
     const liked = c?.comment_likes?.some((l: any) => l.user_id === user.id);
     if (liked) {
-      await supabase.from("qfeed_comment_likes").delete().match({ comment_id: commentId, user_id: user.id });
+      await supabase
+        .from("qfeed_comment_likes")
+        .delete()
+        .match({ comment_id: commentId, user_id: user.id });
     } else {
-      await supabase.from("qfeed_comment_likes").insert({ comment_id: commentId, user_id: user.id });
+      await supabase
+        .from("qfeed_comment_likes")
+        .insert({ comment_id: commentId, user_id: user.id });
     }
     setComments((prev) =>
       prev.map((x) => {
@@ -566,7 +705,9 @@ export default function Feed() {
       .eq("id", commentId)
       .eq("user_id", user.id);
     if (error) return;
-    setComments((prev) => prev.filter((c) => c.id !== commentId && c.parent_id !== commentId));
+    setComments((prev) =>
+      prev.filter((c) => c.id !== commentId && c.parent_id !== commentId)
+    );
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === activeQuestion
@@ -576,57 +717,170 @@ export default function Feed() {
     );
   };
 
-  // ── Image upload ─────────────────────────────────────────
-  const uploadToCloudinary = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "js1gxxdv");
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/dpj5vprwf/image/upload`,
-      { method: "POST", body: formData }
-    );
-    if (!res.ok) throw new Error("Cloudinary upload failed");
-    const data = await res.json();
-    return data.secure_url as string;
-  };
-
+  // ── Image upload (parallel + per-file safe) ──────────────
   const handleImageUpload = async (isRelated: boolean = false) => {
     if (!uploadFiles.length || !user) return;
     setUploading(true);
+
+    const filesSnapshot = [...uploadFiles];
+    const title = imageTitle;
+    const description = imageDescription;
+
+    const postGroupId = isRelated
+      ? (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random()}`
+      : null;
+
+    const total = filesSnapshot.length;
+    const label = total === 1 ? "photo" : "photos";
+    uploadProgressStore.start(label, total);
+
+    let completed = 0;
+
+    let results: (string | null)[] = [];
     try {
-      const urls: string[] = [];
-      for (const f of uploadFiles) urls.push(await uploadToCloudinary(f));
+      results = await runWithConcurrency(
+        filesSnapshot,
+        UPLOAD_CONCURRENCY,
+        async (file) => {
+          try {
+            const url = await uploadWithRetry(file);
+            completed++;
+            uploadProgressStore.progress(label, completed, total);
+            return url;
+          } catch (err) {
+            console.warn("[Feed] upload failed for one file:", err);
+            completed++;
+            uploadProgressStore.progress(label, completed, total);
+            return null;
+          }
+        }
+      );
+    } finally {
+      // free the spinner even if everything exploded
+    }
 
-      const postGroupId = isRelated
-        ? (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random()}`
-        : null;
-
-      const rows = urls.map((url, i) => ({
-        image_url: url,
+    const orderedUrls = results
+      .map((url, i) => ({ url, i }))
+      .filter((x): x is { url: string; i: number } => !!x.url)
+      .map((x, order) => ({
+        image_url: x.url,
         storage_path: "cloudinary",
         added_by: user.id,
-        title: imageTitle || null,
-        description: imageDescription || null,
+        title: title || null,
+        description: description || null,
         post_group_id: postGroupId,
-        post_group_order: i,
+        post_group_order: order,
       }));
 
-      const { data: inserted } = await supabase
-        .from("qfeed_images")
-        .insert(rows)
-        .select();
+    const failedCount = results.length - orderedUrls.length;
 
-      if (inserted) setFeedImages((prev) => [...inserted, ...prev]);
-      setUploadFiles([]);
-      setImageTitle("");
-      setImageDescription("");
-      setShowUpload(false);
-    } catch (err: any) {
-      alert(`Upload failed: ${err.message}`);
-    } finally {
+    if (orderedUrls.length === 0) {
       setUploading(false);
+      uploadProgressStore.fail(0, total, label, "Upload failed");
+      setFeedbackMessage(
+        "Upload failed — check your connection and try again."
+      );
+      return;
     }
+    const inserted: any[] = [];
+    for (const row of orderedUrls) {
+      try {
+        const { data, error } = await supabase
+          .from("qfeed_images")
+          .insert(row)
+          .select()
+          .single();
+        if (!error && data) inserted.push(data);
+      } catch (err) {
+        console.warn("[Feed] row insert failed:", err);
+      }
+    }
+
+    if (inserted.length > 0) {
+      setFeedImages((prev) => [...inserted, ...prev]);
+    }
+
+    setUploadFiles([]);
+    setImageTitle("");
+    setImageDescription("");
+    setShowUpload(false);
+    setUploading(false);
+
+    if (failedCount > 0) {
+      setFeedbackMessage(
+        `${orderedUrls.length} uploaded, ${failedCount} skipped.`
+      );
+    }
+    uploadProgressStore.succeed(orderedUrls.length, total, label);
   };
+
+  // ── Background-safe drain of IndexedDB queue ─────────────
+  const drainPendingUploads = useCallback(async () => {
+    if (!userId) return;
+    if (drainingRef.current) return;
+    drainingRef.current = true;
+    let touched = false;
+    try {
+      const rows = await readPendingEntries();
+      const mine = rows.filter((r) => r.meta?.userId === userId);
+      if (mine.length === 0) return;
+
+      touched = true;
+      setUploading(true);
+      for (const entry of mine) {
+        try {
+          const url = await uploadWithRetry(entry.file);
+          const isRelated = entry.meta.related === true;
+          const groupId = isRelated
+            ? entry.meta.groupId ||
+            (crypto as any).randomUUID?.() ||
+            `${Date.now()}-${Math.random()}`
+            : null;
+
+          const { data } = await supabase
+            .from("qfeed_images")
+            .insert({
+              image_url: url,
+              storage_path: "cloudinary",
+              added_by: userId,
+              title: entry.meta.title || null,
+              description: entry.meta.description || null,
+              post_group_id: groupId,
+              post_group_order: entry.meta.order ?? 0,
+            })
+            .select()
+            .single();
+
+          if (data) setFeedImages((prev) => [data, ...prev]);
+          await deletePendingEntry(entry.id);
+        } catch (err) {
+          console.warn("[Feed] drain failed for one entry:", err);
+        }
+      }
+    } catch {
+      /* IndexedDB unavailable — ignore */
+    } finally {
+      if (touched) setUploading(false);
+      drainingRef.current = false;
+    }
+  }, [userId]);
+
+  // Resume pending uploads on mount + when app becomes visible
+  useEffect(() => {
+    if (!userId) return;
+    const t = setTimeout(() => {
+      drainPendingUploads();
+    }, 1500);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") drainPendingUploads();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [userId, drainPendingUploads]);
 
   // ── Image viewer ─────────────────────────────────────────
   const openViewer = (img: any) => {
@@ -637,12 +891,20 @@ export default function Feed() {
     setViewerOpen(false);
     setTimeout(() => setActiveImage(null), 300);
   };
-  const handleDeleteImage = async (img: any) => {
-    if (!confirm("Delete this image?")) return;
-    await supabase.from("qfeed_images").delete().eq("id", img.id);
-    setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
-  };
 
+  const handleDeleteImage = async (img: any) => {
+    if (!img?.id) return;
+    const { error } = await supabase
+      .from("qfeed_images")
+      .delete()
+      .eq("id", img.id);
+    if (error) {
+      setFeedbackMessage("Couldn't delete — try again.");
+      return;
+    }
+    setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
+    setFeedbackMessage("Deleted");
+  };
   // ── Pull to refresh ──────────────────────────────────────
   const onRefresh = async () => {
     clearFeedCaches();
@@ -672,8 +934,6 @@ export default function Feed() {
 
   return (
     <>
-      {/* Sticky header — TABS ONLY (no FeedControls) */}
-      {/* Sticky header — transparent so pills float */}
       <div className="sticky top-0 z-40 w-full bg-transparent">
         <div className="w-full max-w-4xl mx-auto">
           <FeedTabs
@@ -765,7 +1025,10 @@ export default function Feed() {
               userTokens={userTokens}
               onResetQuestions={async () => {
                 if (!user?.id) return;
-                await supabase.from("qfeed_seen").delete().eq("user_id", user.id);
+                await supabase
+                  .from("qfeed_seen")
+                  .delete()
+                  .eq("user_id", user.id);
                 localStorage.removeItem(`feed_questions_${user.id}`);
                 localStorage.removeItem(`feed_answers_${user.id}`);
                 localStorage.removeItem(`feed_count_${user.id}`);
@@ -775,7 +1038,10 @@ export default function Feed() {
               }}
               onResetImages={async () => {
                 if (!user?.id) return;
-                await supabase.from("seen_images").delete().eq("user_id", user.id);
+                await supabase
+                  .from("seen_images")
+                  .delete()
+                  .eq("user_id", user.id);
                 const { data } = await supabase
                   .from("qfeed_images")
                   .select("*")
@@ -789,13 +1055,10 @@ export default function Feed() {
             />
           )}
 
-          <div className="py-6 flex justify-center">
-
-          </div>
+          <div className="py-6 flex justify-center"></div>
         </div>
       </PullToRefresh>
 
-      {/* Feedback overlay — portaled, above everything including sticky header */}
       {createPortal(
         <FeedFeedbackOverlay
           message={feedbackMessage}
@@ -804,7 +1067,6 @@ export default function Feed() {
         document.body
       )}
 
-      {/* Image fullscreen viewer */}
       {createPortal(
         <AnimatePresence>
           {viewerOpen && activeImage && (
@@ -815,16 +1077,16 @@ export default function Feed() {
               transition={{ duration: 0.15 }}
               className="fixed inset-0 z-[2147483647] bg-black flex items-center justify-center overflow-hidden touch-pan-y"
               onClick={closeViewer}
-              style={{
-                overflow: "hidden",
-                touchAction: "pan-y pinch-zoom",
-              }}
+              style={{ overflow: "hidden", touchAction: "pan-y pinch-zoom" }}
             >
               <img
                 key={activeImage.id}
                 src={
                   activeImage.image_url?.includes("cloudinary")
-                    ? activeImage.image_url.replace("/upload/", "/upload/w_800,f_auto,q_auto/")
+                    ? activeImage.image_url.replace(
+                      "/upload/",
+                      "/upload/w_800,f_auto,q_auto/"
+                    )
                     : activeImage.image_url
                 }
                 alt={activeImage.title || "Image"}
@@ -861,7 +1123,6 @@ export default function Feed() {
         document.body
       )}
 
-      {/* Comments modal */}
       <CommentsModal
         activeQuestion={activeQuestion}
         setActiveQuestion={setActiveQuestion}

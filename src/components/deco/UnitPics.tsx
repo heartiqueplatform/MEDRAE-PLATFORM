@@ -15,7 +15,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { playSound } from "@/lib/soundManager";
-
+import { useConnectivity } from "@/context/ConnectivityContext";
+import OfflineLottie from "@/components/OfflineLottie"; // ← SAME global component
 // Cache helpers
 import {
     getCachedImage, cacheImage, pruneCache, deleteCachedImage,
@@ -197,6 +198,8 @@ const ProgressiveImage = ({
 export function UnitPics({ position }: UnitPicsProps) {
     const user = useUser();
     const { isPremium } = usePremiumFeature();
+    const { isOnline, justRecovered } = useConnectivity();   // ✅ ADD
+    const [loadFailed, setLoadFailed] = useState(false);
     const [image, setImage] = useState<UnitImage | null>(null);
     const [loading, setLoading] = useState(true);
     const [allImages, setAllImages] = useState<UnitImage[]>([]);
@@ -252,22 +255,28 @@ export function UnitPics({ position }: UnitPicsProps) {
             } else {
                 setLoading(true);
             }
+
             try {
                 const data = await fetchUnitImages(forceRefresh);
+                setLoadFailed(false);
+
                 if (data.length > 0) {
                     setAllImages(data);
                     const { image: picked, used } = pickRandomFrom(data, []);
                     setImage(picked);
                     setUsedIndices(used);
                 } else if (!cached || cached.length === 0) {
-                    setAllImages([]);
-                    setImage(null);
+                    if (typeof navigator === "undefined" || navigator.onLine) {
+                        setAllImages([]);
+                        setImage(null);
+                    } else {
+                        setLoadFailed(true);
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching images:", error);
                 if (!cached || cached.length === 0) {
-                    setAllImages([]);
-                    setImage(null);
+                    setLoadFailed(true);
                 }
             } finally {
                 setLoading(false);
@@ -278,10 +287,29 @@ export function UnitPics({ position }: UnitPicsProps) {
 
     useEffect(() => {
         if (!shouldShow) return;
+
+        if (!isOnline) {
+            const cached = getCachedList();
+            if (cached && cached.length > 0) {
+                setAllImages(cached);
+                const { image: picked, used } = pickRandomFrom(
+                    cached,
+                    usedIndicesRef.current
+                );
+                setImage(picked);
+                setUsedIndices(used);
+                setLoadFailed(false);
+            } else {
+                setLoadFailed(true);
+            }
+            setLoading(false);
+            return;
+        }
+
         fetchAllImages();
         pruneCache().catch(() => { });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shouldShow]);
+    }, [shouldShow, isOnline]);
 
     useEffect(() => {
         if (!shouldShow) return;
@@ -293,7 +321,11 @@ export function UnitPics({ position }: UnitPicsProps) {
         return () => unsubscribe();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shouldShow, fetchAllImages]);
-
+    useEffect(() => {
+        if (!shouldShow || !justRecovered) return;
+        fetchAllImages(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [justRecovered, shouldShow]);
     useEffect(() => {
         if (shouldShow && allImages.length > 0) {
             const { image: picked, used } = pickRandomFrom(
@@ -509,7 +541,9 @@ export function UnitPics({ position }: UnitPicsProps) {
 
     if (!shouldShow) return null;
 
-    if (loading) {
+    const showOffline = !isOnline || loadFailed;   // ✅ ADD
+
+    if (loading && !image && !showOffline) {       // ✅ guard
         return (
             <div className="col-span-1 sm:col-span-2 lg:col-span-1 my-2 px-0 h-full">
                 <div className="rounded-2xl overflow-hidden
@@ -839,7 +873,30 @@ export function UnitPics({ position }: UnitPicsProps) {
                         </span>
                     </CardFooter>
                 </Card>
+            ) : showOffline ? (                                        /* ✅ NEW branch */
+                <Card className="overflow-hidden border-0
+                     bg-slate-50 dark:bg-[#0d1117]
+                     flex-1 flex flex-col rounded-2xl">
+                    <div className="relative w-full flex-1" style={{ aspectRatio: "4/3" }}>
+                        <div className="absolute inset-0 flex items-center justify-center px-6">
+                            <div className="w-[65%] h-[65%] max-w-[200px] max-h-[160px]">
+                                <OfflineLottie />
+                            </div>
+                        </div>
+                        <div className="absolute inset-x-0 bottom-0 p-4 text-center">
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                Can't load promotions
+                            </p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[220px] mx-auto">
+                                {isOnline
+                                    ? "Slow connection  we'll retry automatically"
+                                    : "You're offline  reconnect to see promotions"}
+                            </p>
+                        </div>
+                    </div>
+                </Card>
             ) : (
+
                 /* ─── EMPTY STATE ────────────────────────────── */
                 <Card className="overflow-hidden border-0
                                   bg-slate-50 dark:bg-[#0d1117]

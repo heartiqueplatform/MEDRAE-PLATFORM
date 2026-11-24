@@ -27,6 +27,7 @@ import { getMyReferralCode, getMyReferralStats, type ReferralStats } from "@/lib
 import { CenteredModal } from "@/components/ui/CenteredModal";
 import { UserProfileModal } from "@/components/UserProfileModal";
 import HeroLottie from "@/components/HeroLottie";
+import { LeaveQuizModal } from "@/components/QuizPage/LeaveQuizModal";
 interface Question {
   id: string;
   quiz_id: string;
@@ -1881,81 +1882,29 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
           </div>
         </div>
       </main>
-      <CenteredModal
+      <LeaveQuizModal
         open={pendingBack}
         onClose={() => setPendingBack(false)}
-        title="Leaving so soon?"
-        maxWidthClass="max-w-sm"
-      >
-        <div className="px-4 pb-4 pt-1 space-y-4">
-          {/* Copy */}
-          <div className="text-center space-y-2">
-            <div className="h-14 w-14 rounded-full bg-teal-50 dark:bg-teal-400/10
-                            flex items-center justify-center mx-auto">
-              <Timer className="h-6 w-6 text-teal-600 dark:text-teal-400" />
-            </div>
-            <p className="text-[13px] font-bold text-slate-900 dark:text-white">
-              Serious nurses finish what they start.
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-              You've answered {Object.keys(answers).length - lastCheckpoint} this batch.
-              Finish all 10 to save your streak.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-2">
-            <button
-              onClick={() => {
+        answeredCount={Object.keys(answers).length - lastCheckpoint}
+        leaving={leavingQuiz}
+        quizId={quizId}              // ← NEW — real UUID from loadQuiz
+        unitCode={unit ?? undefined}
+        onStay={() => setPendingBack(false)}
+        onConfirmLeave={() => {
+          if (leavingQuiz) return;
+          setLeavingQuiz(true);
+          if (navigator.vibrate) navigator.vibrate([30, 20, 80, 20, 30]);
+          if (!isMuted) playSound("tap");
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setTimeout(() => {
                 setPendingBack(false);
-                if (navigator.vibrate) navigator.vibrate(20);
-                if (!isMuted) playSound("tap");
-              }}
-              className="w-full h-11 rounded-xl bg-blue-600 text-white text-[13px] font-bold
-                         flex items-center justify-center
-                         active:scale-[0.97] transition-transform"
-              style={{ touchAction: "manipulation" }}
-            >
-              Stay and finish
-            </button>
-
-            <button
-              onClick={() => {
-                if (leavingQuiz) return;
-                setLeavingQuiz(true);
-                // Strong vibration — three pulses
-                if (navigator.vibrate) navigator.vibrate([30, 20, 80, 20, 30]);
-                if (!isMuted) playSound("tap");
-                // Two frames, then 250ms — spinner paints before navigating
-                requestAnimationFrame(() => {
-                  requestAnimationFrame(() => {
-                    setTimeout(() => {
-                      setPendingBack(false);
-                      navigate(-1);
-                    }, 250);
-                  });
-                });
-              }}
-              disabled={leavingQuiz}
-              className="w-full h-10 rounded-xl bg-rose-50 dark:bg-rose-400/10
-                         text-rose-700 dark:text-rose-400 text-[13px] font-bold
-                         flex items-center justify-center gap-1.5
-                         active:scale-[0.97] transition-transform
-                         disabled:opacity-70"
-              style={{ touchAction: "manipulation" }}
-            >
-              {leavingQuiz ? (
-                <>
-                  <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-                  Going…
-                </>
-              ) : (
-                "Not today"
-              )}
-            </button>
-          </div>
-        </div>
-      </CenteredModal>
+                navigate(-1);
+              }, 250);
+            });
+          });
+        }}
+      />
     </div>
 
 

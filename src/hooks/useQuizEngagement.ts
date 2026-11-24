@@ -24,6 +24,24 @@ export interface QuizUserState {
     completedAt: string | null;
 }
 
+// ── NEW — reactions ─────────────────────────────────────────
+export type ReactionType = "like" | "fire" | "love";
+
+export interface QuizReactions {
+    likeCount: number;
+    fireCount: number;
+    loveCount: number;
+    myReaction: ReactionType | null;
+}
+
+const EMPTY_REACTIONS: QuizReactions = Object.freeze({
+    likeCount: 0,
+    fireCount: 0,
+    loveCount: 0,
+    myReaction: null,
+});
+// ────────────────────────────────────────────────────────────
+
 const EMPTY_STATS: QuizStats = Object.freeze({
     startCount: 0, completeCount: 0, uniqueStudents: 0,
     bookmarkCount: 0, shareCount: 0,
@@ -67,32 +85,47 @@ function eqState(a: QuizUserState, b: QuizUserState): boolean {
     );
 }
 
+function eqReactions(a: QuizReactions, b: QuizReactions): boolean {
+    return (
+        a.likeCount === b.likeCount &&
+        a.fireCount === b.fireCount &&
+        a.loveCount === b.loveCount &&
+        a.myReaction === b.myReaction
+    );
+}
+
 export function useQuizEngagement() {
     const [stats, setStats] = useState<Map<string, QuizStats>>(new Map());
     const [userState, setUserState] = useState<Map<string, QuizUserState>>(new Map());
+    const [reactions, setReactions] = useState<Map<string, QuizReactions>>(new Map());
     const [version, setVersion] = useState(0);
 
     // ✅ Refs mirror state so get() can be identity-stable.
     const statsRef = useRef(stats);
     const stateRef = useRef(userState);
+    const reactionsRef = useRef(reactions);
 
     const hydratedStatsRef = useRef<Set<string>>(new Set());
     const hydratedStateRef = useRef<Set<string>>(new Set());
+    const hydratedReactionsRef = useRef<Set<string>>(new Set());
+
     const inFlightStatsRef = useRef<Set<string>>(new Set());
     const inFlightStateRef = useRef<Set<string>>(new Set());
+    const inFlightReactionsRef = useRef<Set<string>>(new Set());
 
     // Sync refs + bump version only when state actually changed.
     useEffect(() => {
         statsRef.current = stats;
         stateRef.current = userState;
+        reactionsRef.current = reactions;
         setVersion((v) => v + 1);
-    }, [stats, userState]);
+    }, [stats, userState, reactions]);
 
     // ── write-if-changed helpers ──
     const writeStats = useCallback((id: string, next: QuizStats) => {
         setStats((prev) => {
             const cur = prev.get(id);
-            if (cur && eqStats(cur, next)) return prev;   // no-op
+            if (cur && eqStats(cur, next)) return prev;
             const map = new Map(prev);
             map.set(id, next);
             return map;
@@ -102,7 +135,17 @@ export function useQuizEngagement() {
     const writeState = useCallback((id: string, next: QuizUserState) => {
         setUserState((prev) => {
             const cur = prev.get(id);
-            if (cur && eqState(cur, next)) return prev;   // no-op
+            if (cur && eqState(cur, next)) return prev;
+            const map = new Map(prev);
+            map.set(id, next);
+            return map;
+        });
+    }, []);
+
+    const writeReactions = useCallback((id: string, next: QuizReactions) => {
+        setReactions((prev) => {
+            const cur = prev.get(id);
+            if (cur && eqReactions(cur, next)) return prev;
             const map = new Map(prev);
             map.set(id, next);
             return map;
@@ -197,6 +240,52 @@ export function useQuizEngagement() {
         });
     }, []);
 
+    // ── hydrate reactions (batched, skip in-flight) ──
+    const hydrateReactions = useCallback(async (quizIds: string[]) => {
+        if (quizIds.length === 0) return;
+        const newIds = quizIds.filter((id) => !hydratedReactionsRef.current.has(id));
+        if (newIds.length === 0) return;
+
+        // Fetch aggregates in parallel — one RPC per quiz. Table is tiny;
+        // 20 concurrent RPC calls is fine. Skip in-flight (user may be
+        // reacting while this resolves).
+        const results = await Promise.all(
+            newIds.map(async (id) => {
+                const { data, error } = await supabase.rpc("get_quiz_reactions", {
+                    p_quiz_id: id,
+                });
+                if (error) {
+                    console.error("hydrateReactions:", error);
+                    return null;
+                }
+                const row = Array.isArray(data) ? data[0] : data;
+                return { id, row };
+            })
+        );
+
+        newIds.forEach((id) => hydratedReactionsRef.current.add(id));
+
+        setReactions((prev) => {
+            let mutated = false;
+            const next = new Map(prev);
+            for (const r of results) {
+                if (!r || !r.row) continue;
+                if (inFlightReactionsRef.current.has(r.id)) continue;
+                const server: QuizReactions = {
+                    likeCount: Number(r.row.like_count ?? 0),
+                    fireCount: Number(r.row.fire_count ?? 0),
+                    loveCount: Number(r.row.love_count ?? 0),
+                    myReaction: (r.row.my_reaction as ReactionType) ?? null,
+                };
+                const cur = next.get(r.id);
+                if (cur && eqReactions(cur, server)) continue;
+                next.set(r.id, server);
+                mutated = true;
+            }
+            return mutated ? next : prev;
+        });
+    }, []);
+
     // ── actions (optimistic + in-flight guard) ──
     const reportStart = useCallback((quizId: string) => {
         setStats((prev) => {
@@ -279,7 +368,6 @@ export function useQuizEngagement() {
     }, []);
 
     const toggleBookmark = useCallback((quizId: string) => {
-        // Capture the current bookmarked value BEFORE mutating.
         const wasBookmarked = stateRef.current.get(quizId)?.bookmarked ?? false;
 
         setUserState((prev) => {
@@ -350,6 +438,66 @@ export function useQuizEngagement() {
         });
     }, []);
 
+    // ── NEW — toggle reaction (optimistic + rollback) ──
+    const toggleReaction = useCallback(
+        async (quizId: string, reaction: ReactionType): Promise<void> => {
+            const prev = reactionsRef.current.get(quizId) ?? EMPTY_REACTIONS;
+            const isSame = prev.myReaction === reaction;
+
+            // Optimistic: remove if same, else replace
+            const optimistic: QuizReactions = {
+                likeCount:
+                    (prev.myReaction === "like" ? Math.max(0, prev.likeCount - 1) : prev.likeCount) +
+                    (!isSame && reaction === "like" ? 1 : 0),
+                fireCount:
+                    (prev.myReaction === "fire" ? Math.max(0, prev.fireCount - 1) : prev.fireCount) +
+                    (!isSame && reaction === "fire" ? 1 : 0),
+                loveCount:
+                    (prev.myReaction === "love" ? Math.max(0, prev.loveCount - 1) : prev.loveCount) +
+                    (!isSame && reaction === "love" ? 1 : 0),
+                myReaction: isSame ? null : reaction,
+            };
+
+            setReactions((m) => {
+                const next = new Map(m);
+                next.set(quizId, optimistic);
+                return next;
+            });
+
+            inFlightReactionsRef.current.add(quizId);
+
+            const { data, error } = await supabase.rpc("toggle_quiz_reaction", {
+                p_quiz_id: quizId,
+                p_reaction: reaction,
+            });
+
+            if (error) {
+                console.error("toggle_quiz_reaction:", error);
+                // Rollback to previous state
+                setReactions((m) => {
+                    const next = new Map(m);
+                    next.set(quizId, prev);
+                    return next;
+                });
+                inFlightReactionsRef.current.delete(quizId);
+                return;
+            }
+
+            const row = Array.isArray(data) ? data[0] : data;
+            if (row) {
+                const server: QuizReactions = {
+                    likeCount: Number(row.like_count ?? 0),
+                    fireCount: Number(row.fire_count ?? 0),
+                    loveCount: Number(row.love_count ?? 0),
+                    myReaction: (row.my_reaction as ReactionType) ?? null,
+                };
+                writeReactions(quizId, server);
+            }
+            inFlightReactionsRef.current.delete(quizId);
+        },
+        [writeReactions]
+    );
+
     // ✅ Stable getters — read from ref, identity never changes
     const getStats = useCallback(
         (quizId: string) => statsRef.current.get(quizId) ?? EMPTY_STATS,
@@ -361,10 +509,16 @@ export function useQuizEngagement() {
         []
     );
 
+    const getReactions = useCallback(
+        (quizId: string) => reactionsRef.current.get(quizId) ?? EMPTY_REACTIONS,
+        []
+    );
+
     return {
-        version,                 // ✅ NEW — feed into consumer memo deps
-        hydrateStats, hydrateUserState,
+        version,
+        hydrateStats, hydrateUserState, hydrateReactions,
         reportStart, reportComplete, rateQuiz, toggleBookmark, reportShare, voteDifficulty,
-        getStats, getUserState,
+        toggleReaction,
+        getStats, getUserState, getReactions,
     };
 }
