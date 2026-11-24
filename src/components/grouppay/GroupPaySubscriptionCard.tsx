@@ -15,7 +15,18 @@ import {
     getIndividualPrice,
     getSavingsPerMember,
 } from "@/types/grouppay";
-import { playSound } from "@/lib/soundManager";   // matches your other files
+import { playSound } from "@/lib/soundManager";
+import { useConnectivity } from "@/context/ConnectivityContext";
+
+// ═══════════════════════════════════════════════════════════
+// DERIVED CONSTANTS (this was the fix — they were undefined)
+// ═══════════════════════════════════════════════════════════
+const CURRENCY = GROUPPAY_CONFIG.CURRENCY;            // "KSh"
+const GROUP_2MO = getGroupPricePerMember("2-months");  // 299
+const GROUP_1MO = getGroupPricePerMember("1-month");   // 199
+const IND_2MO = getIndividualPrice("2-months");      // 399
+const IND_1MO = getIndividualPrice("1-month");       // 249
+const SAVE_2MO = getSavingsPerMember("2-months");     // 100
 
 const vibrate = (pattern: number | number[] = 20) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -24,7 +35,11 @@ const vibrate = (pattern: number | number[] = 20) => {
 };
 
 const tap = (type: "light" | "success" = "light") => {
-    playSound("ui-tap");
+    try {
+        playSound("ui-tap");
+    } catch {
+        /* audio context not unlocked yet — stay silent */
+    }
     if (type === "success") vibrate([15, 30, 15]);
     else vibrate(15);
 };
@@ -39,9 +54,11 @@ export function GroupPaySubscriptionCard({
     compact = false,
 }: GroupPaySubscriptionCardProps) {
     const navigate = useNavigate();
+    const { isOnline } = useConnectivity();
 
     const handleClick = () => {
         tap();
+        // Always navigate — the GroupPay page owns the offline fallback UI.
         navigate("/grouppay");
     };
 
@@ -51,53 +68,54 @@ export function GroupPaySubscriptionCard({
     if (compact) {
         return (
             <div
-                onClick={handleClick}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleClick();
-                    }
-                }}
-                className={`cursor-pointer rounded-2xl bg-white dark:bg-[#161b22]
-                            active:bg-slate-50 dark:active:bg-white/[0.04]
-                            transition-colors ${className}`}
+                className={`rounded-2xl bg-white dark:bg-[#161b22] ${className}`}
                 style={{ touchAction: "manipulation" }}
             >
-                <div className="p-3">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-violet-50 dark:bg-violet-400/10 flex items-center justify-center shrink-0">
-                            <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" strokeWidth={2.2} />
-                        </div>
+                <button
+                    type="button"
+                    onClick={handleClick}
+                    aria-label={`Open GroupPay — save ${CURRENCY} ${SAVE_2MO} per member`}
+                    className="w-full text-left cursor-pointer rounded-2xl
+                               active:bg-slate-50 dark:active:bg-white/[0.04]
+                               transition-colors focus:outline-none
+                               focus-visible:ring-2 focus-visible:ring-violet-500/50"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <div className="p-3">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-violet-50 dark:bg-violet-400/10 flex items-center justify-center shrink-0">
+                                <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" strokeWidth={2.2} />
+                            </div>
 
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                                    GroupPay
-                                </h4>
-                                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold
-                                                 bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
-                                    Save {CURRENCY} {SAVE_2MO}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+                                        GroupPay
+                                    </h4>
+                                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold
+                                                     bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
+                                        Save {CURRENCY} {SAVE_2MO}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                    Split the cost with your study group.
+                                </p>
+                            </div>
+
+                            {/* price now visible on mobile too */}
+                            <div className="flex items-baseline gap-2 shrink-0">
+                                <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-white">
+                                    {CURRENCY} {GROUP_2MO}
+                                </span>
+                                <span className="hidden sm:inline text-[11px] text-slate-400 dark:text-slate-500 line-through tabular-nums">
+                                    {CURRENCY} {IND_2MO}
                                 </span>
                             </div>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                Split the cost with your study group.
-                            </p>
-                        </div>
 
-                        <div className="hidden sm:flex items-baseline gap-2 shrink-0">
-                            <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-white">
-                                {CURRENCY} {GROUP_2MO}
-                            </span>
-                            <span className="text-[11px] text-slate-400 dark:text-slate-500 line-through tabular-nums">
-                                {CURRENCY} {IND_2MO}
-                            </span>
+                            <ArrowRight className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
                         </div>
-
-                        <ArrowRight className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
                     </div>
-                </div>
+                </button>
             </div>
         );
     }
@@ -107,18 +125,7 @@ export function GroupPaySubscriptionCard({
     // ═══════════════════════════════════════════════════════════
     return (
         <div
-            onClick={handleClick}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleClick();
-                }
-            }}
-            className={`cursor-pointer rounded-2xl bg-white dark:bg-[#161b22]
-                        active:bg-slate-50 dark:active:bg-white/[0.04]
-                        transition-colors overflow-hidden ${className}`}
+            className={`rounded-2xl bg-white dark:bg-[#161b22] overflow-hidden ${className}`}
             style={{ touchAction: "manipulation" }}
         >
             <div className="p-4 space-y-4">
@@ -235,16 +242,15 @@ export function GroupPaySubscriptionCard({
                 {/* ── CTA ────────────────────────────────────────── */}
                 <button
                     type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleClick();
-                    }}
+                    onClick={handleClick}
+                    aria-label={isOnline ? "Create or join a group" : "Open GroupPay (offline)"}
                     className="w-full h-10 rounded-xl bg-violet-600 text-white text-sm font-bold
                                active:scale-[0.97] transition-transform
-                               flex items-center justify-center gap-1.5"
+                               flex items-center justify-center gap-1.5
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
                     style={{ touchAction: "manipulation" }}
                 >
-                    Create or join a group
+                    {isOnline ? "Create or join a group" : "Open GroupPay (offline)"}
                     <ArrowRight className="h-4 w-4" />
                 </button>
             </div>
