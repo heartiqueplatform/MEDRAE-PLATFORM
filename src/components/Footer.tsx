@@ -445,86 +445,64 @@ export function Footer() {
         return () => window.removeEventListener("chat-overlay-visibility", onChatVisibility);
     }, []);
 
-    /* ── PULL-UP GESTURE (hold-to-arm, then swipe) ──────────────── */
-    const [pullOffset, setPullOffset] = useState(0);
-    const pullOffsetRef = useRef(0);                       // ← mirror for stable reads
+    /* ── LONG-PRESS-TO-OPEN DRAWER ─────────────────────────────── */
     const holdTimer = useRef<NodeJS.Timeout | null>(null);
-    const armedRef = useRef(false);
-    const gestureStartY = useRef<number | null>(null);
-    const gestureActive = useRef(false);
+    const holdStartY = useRef<number | null>(null);
+    const holdActive = useRef(false);
 
     useEffect(() => {
-        pullOffsetRef.current = pullOffset;
-    }, [pullOffset]);
-
-    useEffect(() => {
-        const HOLD_MS = 180;
-        const ARM_DISTANCE = 8;
-        const TRIGGER_DISTANCE = 80;
-        const MAX_PEEK = 120;
+        const HOLD_MS = 600;           // hold duration to open
+        const MOVE_CANCEL = 12;        // cancel if finger moves > 12px
 
         const clearHold = () => {
             if (holdTimer.current) {
                 clearTimeout(holdTimer.current);
                 holdTimer.current = null;
             }
+            holdActive.current = false;
+            holdStartY.current = null;
         };
 
         const onTouchStart = (e: TouchEvent) => {
             if (window.innerWidth >= 768) return;
-            const touch = e.touches[0];
             const target = e.target as HTMLElement | null;
-            const onFooter = !!target?.closest?.('[data-footer-bar]');
-            const fromBottom = window.innerHeight - touch.clientY;
-            if (!onFooter && fromBottom > 140) return;
+            if (!target) return;
 
-            gestureStartY.current = touch.clientY;
-            gestureActive.current = true;
-            armedRef.current = false;
-            setPullOffset(0);
-            pullOffsetRef.current = 0;
+            const onHandle = !!target.closest('[data-drawer-handle]');
+            const onFooter = !!target.closest('[data-footer-bar]');
+            const onButton = !!target.closest('button');
+
+            // Only allow: chevron (handle) OR empty footer area (not a nav button)
+            if (!onHandle && (!onFooter || onButton)) return;
+
+            const touch = e.touches[0];
+            holdStartY.current = touch.clientY;
+            holdActive.current = true;
 
             clearHold();
             holdTimer.current = setTimeout(() => {
-                armedRef.current = true;
-                superFastTap("warning");
+                if (!holdActive.current) return;
+                holdActive.current = false;
+                superFastTap("success");
+                openDrawer();
             }, HOLD_MS);
         };
 
         const onTouchMove = (e: TouchEvent) => {
-            if (!gestureActive.current || gestureStartY.current === null) return;
-            const touch = e.touches[0];
-            const dy = gestureStartY.current - touch.clientY;
-
-            if (!armedRef.current) {
-                if (Math.abs(dy) > ARM_DISTANCE) clearHold();
-                return;
-            }
-
-            if (dy > 0) {
-                if (e.cancelable) e.preventDefault();
-                const clamped = Math.min(dy, MAX_PEEK);
-                setPullOffset(clamped / TRIGGER_DISTANCE);
+            if (!holdActive.current || holdStartY.current === null) return;
+            const dy = Math.abs(e.touches[0].clientY - holdStartY.current);
+            if (dy > MOVE_CANCEL) {
+                // user is scrolling — cancel the hold
+                clearHold();
             }
         };
 
         const onTouchEnd = () => {
             clearHold();
-            const wasArmed = armedRef.current;
-            const progress = pullOffsetRef.current;          // ← read from ref
-            gestureActive.current = false;
-            armedRef.current = false;
-            gestureStartY.current = null;
-            setPullOffset(0);
-            pullOffsetRef.current = 0;
-
-            if (wasArmed && progress >= 1) {
-                openDrawer();
-            }
         };
 
         document.addEventListener("touchstart", onTouchStart, { passive: true });
-        document.addEventListener("touchmove", onTouchMove, { passive: false });
+        document.addEventListener("touchmove", onTouchMove, { passive: true });
         document.addEventListener("touchend", onTouchEnd, { passive: true });
         document.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
@@ -535,7 +513,7 @@ export function Footer() {
             document.removeEventListener("touchend", onTouchEnd);
             document.removeEventListener("touchcancel", onTouchEnd);
         };
-    }, [openDrawer]);                                    // ← ONLY openDrawer
+    }, [openDrawer]);                               // ← ONLY openDrawer
     /* ── Hide/show on scroll ───────────────────────────────────── */
     useEffect(() => {
         let container: Element | null = null;
@@ -607,9 +585,10 @@ export function Footer() {
         <>
             {!chatOpen && (
                 <>
-                    {/* PULL-UP CHEVRON — above the tab bar */}
+                    {/* DRAWER CHEVRON — tap to open menu */}
                     <button
                         onClick={openDrawer}
+                        data-drawer-handle
                         aria-label="Open menu"
                         className={`fixed left-1/2 -translate-x-1/2 z-[101] md:hidden
     flex items-center justify-center w-12 h-6
@@ -637,30 +616,7 @@ export function Footer() {
                             />
                         </svg>
                     </button>
-                    {/* 3D PEEK — visible while the user drags up after arming */}
-                    {pullOffset > 0 && (
-                        <div
-                            className="fixed left-1/2 -translate-x-1/2 z-[99] md:hidden pointer-events-none"
-                            style={{
-                                bottom: `${footerHeight + 8}px`,
-                                width: "calc(100% - 32px)",
-                                height: 160,
-                                borderRadius: 24,
-                                background:
-                                    theme === "dark"
-                                        ? "linear-gradient(180deg, #1f2937, #111827)"
-                                        : "linear-gradient(180deg, #ffffff, #f3f4f6)",
-                                boxShadow: "0 -8px 30px rgba(0,0,0,0.25)",
-                                transform: `translateY(${(1 - Math.min(pullOffset, 1)) * 60}px)
-                        scale(${0.85 + Math.min(pullOffset, 1) * 0.15})
-                        rotateX(${(1 - Math.min(pullOffset, 1)) * -18}deg)`,
-                                transformOrigin: "bottom center",
-                                opacity: Math.min(pullOffset, 1) * 0.95,
-                                transition: pullOffset === 0 ? "all 0.25s cubic-bezier(0.34,1.56,0.64,1)" : "none",
-                                perspective: 800,
-                            }}
-                        />
-                    )}
+
                     {/* TAB BAR */}
                     <div
                         data-footer-bar
