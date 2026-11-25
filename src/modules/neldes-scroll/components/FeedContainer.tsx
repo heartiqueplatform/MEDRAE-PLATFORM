@@ -61,12 +61,15 @@ export function FeedContainer({
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+    const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
-    // Track the scroll element as state so both hooks re-bind when it mounts.
-    useEffect(() => {
-        setScrollEl(containerRef.current);
-    }, []);
-
+    const setContainerRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            containerRef.current = node;
+            setScrollEl(node);
+        },
+        []
+    );
     const pull = usePullToRefresh({
         onRefresh,
         enabled: true,
@@ -77,14 +80,16 @@ export function FeedContainer({
     }, [pull.setScrollEl, scrollEl]);
 
     const push = usePushToLoadMore({
-        onLoadMore,
+        onLoadMore: async () => {
+            setHasAttemptedLoad(true);
+            await onLoadMore();
+        },
         loadingMore,
         hasMore,
         scrollEl,
         enabled: true,
     });
 
-    // ── Active card tracking ─────────────────────────────────
     const onVisibleRef = useRef(onVisible);
     useEffect(() => {
         onVisibleRef.current = onVisible;
@@ -95,7 +100,6 @@ export function FeedContainer({
         onVisibleRef.current(index);
     }, []);
 
-    // ── SCROLL OBSERVER ──────────────────────────────────────
     useEffect(() => {
         const root = containerRef.current;
         if (!root) return;
@@ -161,7 +165,7 @@ export function FeedContainer({
 
     return (
         <div
-            ref={containerRef}
+            ref={setContainerRef}
             className="w-full h-full overflow-y-scroll snap-y snap-mandatory overscroll-contain"
             style={{
                 backgroundColor: NELDES_COLORS.bg,
@@ -171,7 +175,6 @@ export function FeedContainer({
                 msOverflowStyle: "none",
             }}
         >
-            {/* Pull indicator (top) */}
             <div
                 className="sticky top-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none"
                 style={{
@@ -206,7 +209,6 @@ export function FeedContainer({
                 </div>
             </div>
 
-            {/* Inner wrapper */}
             <div
                 style={{
                     transform: `translateY(${pull.refreshing ? pull.threshold : pull.pull}px)`,
@@ -272,37 +274,28 @@ export function FeedContainer({
                     );
                 })}
 
-                {/* Inline loading card while fetching */}
                 {(loadingMore || push.requesting) && (
                     <div className="w-full h-full snap-start snap-always flex-shrink-0">
                         <LoadingCard />
                     </div>
                 )}
-                {!hasMore && !loadingMore && posts.length > 0 && (
+
+                {!hasMore && !loadingMore && hasAttemptedLoad && posts.length > 0 && (
                     <div
                         data-neldes-card
                         data-neldes-index="end"
-                        className="w-full h-full snap-start snap-always flex-shrink-0 flex flex-col"
+                        className="w-full h-full snap-start snap-always flex-shrink-0"
                     >
-                        <div className="flex-1 flex items-center justify-center px-6">
-                            <p className="text-white/60 text-sm font-medium text-center">
-                                No more content
-                            </p>
-                        </div>
-                        <div className="flex-shrink-0" style={{ height: "60%" }}>
-                            <CreatePostCard
-                                onCreate={onCreate}
-                                position={posts.length + 1}
-                                isEnrolled={isEnrolled}
-                                onGetApproved={onGetApproved}
-                            />
-                        </div>
+                        <CreatePostCard
+                            onCreate={onCreate}
+                            position={posts.length + 1}
+                            isEnrolled={isEnrolled}
+                            onGetApproved={onGetApproved}
+                        />
                     </div>
                 )}
             </div>
 
-            {/* Push indicator (bottom) — mirrors pull, appears when user
-                swipes up at the end while a load is pending/in-flight. */}
             <div
                 className="sticky bottom-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none"
                 style={{

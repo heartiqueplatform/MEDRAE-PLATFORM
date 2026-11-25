@@ -2,17 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Options {
-    /** Fires when the user pushes up at the bottom of the scroll container. */
     onLoadMore: () => Promise<void> | void;
-    /** How far (px) the user must push past the bottom to trigger. */
     threshold?: number;
-    /** Max visual overshoot before damping flattens out. */
     maxPush?: number;
-    /** Live flag from the feed — block while true, release when it flips false. */
     loadingMore: boolean;
-    /** Live flag — block entirely when there's nothing more to fetch. */
     hasMore: boolean;
-    /** The scroll element (same one used by usePullToRefresh). */
     scrollEl: HTMLElement | null;
     enabled?: boolean;
 }
@@ -46,10 +40,8 @@ export function usePushToLoadMore({
     useEffect(() => { loadingMoreRef.current = loadingMore; }, [loadingMore]);
     useEffect(() => { onLoadMoreRef.current = onLoadMore; }, [onLoadMore]);
 
-    // When the feed finishes loading new posts, collapse the indicator.
     useEffect(() => {
         if (requesting && !loadingMore) {
-            // Small delay so the spinner is visible for at least a moment.
             const t = setTimeout(() => {
                 setRequesting(false);
                 setPush(0);
@@ -64,7 +56,6 @@ export function usePushToLoadMore({
     };
 
     const atBottom = (el: HTMLElement) => {
-        // 2px tolerance for sub-pixel rounding
         return el.scrollHeight - el.scrollTop - el.clientHeight <= 2;
     };
 
@@ -86,11 +77,8 @@ export function usePushToLoadMore({
         try {
             await onLoadMoreRef.current();
         } catch {
-            // swallow — useMemesFeed already captures error state
             setRequesting(false);
         }
-        // requesting stays true until loadingMore flips false (see effect above),
-        // so the spinner doesn't flicker between the gesture and the fetch start.
     }, [threshold]);
 
     useEffect(() => {
@@ -108,7 +96,6 @@ export function usePushToLoadMore({
 
             const delta = e.touches[0].clientY - startY.current;
 
-            // Finger moves UP → delta is negative. We want that.
             if (delta >= 0 || !atBottom(scrollEl)) {
                 if (pushing.current) {
                     setPush(0);
@@ -118,8 +105,6 @@ export function usePushToLoadMore({
                 return;
             }
 
-            // Only preventDefault once the user is clearly pushing past the
-            // bottom edge — otherwise we'd block normal scrolling.
             if (!hasMoreRef.current || loadingMoreRef.current) return;
 
             e.preventDefault();
@@ -131,7 +116,6 @@ export function usePushToLoadMore({
             void finish();
         };
 
-        // Desktop trackpad / mouse wheel: same idea, deltaY > 0 at bottom.
         let wheelLock = false;
         const onWheel = (e: WheelEvent) => {
             if (!enabledRef.current || requestingRef.current) return;
@@ -146,9 +130,7 @@ export function usePushToLoadMore({
             setRequesting(true);
             Promise.resolve(onLoadMoreRef.current())
                 .catch(() => { })
-                .finally(() => {
-                    // requesting collapses via the loadingMore effect
-                });
+                .finally(() => { });
         };
 
         scrollEl.addEventListener("touchstart", onTouchStart, { passive: true });

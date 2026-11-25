@@ -21,6 +21,10 @@ import { GroupPaySubscriptionCard } from "@/components/grouppay/GroupPaySubscrip
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { useHomeRoute } from "@/hooks/useHomeRoute";
 import { LastMinuteCard } from "@/components/last-minute/LastMinuteCard";
+import { FreeTierCard } from "@/components/subscription/FreeTierCard";
+import { OneMonthTierCard } from "@/components/subscription/OneMonthTierCard";
+import { TwoMonthTierCard } from "@/components/subscription/TwoMonthTierCard";
+import { CenteredModal } from "@/components/ui/CenteredModal";
 // ─────────────────────────────────────────────────────────────
 // Pricing
 // ─────────────────────────────────────────────────────────────
@@ -74,8 +78,16 @@ const OverlayMessage = ({
   const ok = type === "success";
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-3xl bg-background dark:bg-slate-950 border border-border/60 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <CenteredModal
+      open
+      onClose={onClose}
+      hideHeader
+      noScrollBody
+      maxWidthClass="max-w-md"
+      maxHeight="auto"
+      bodyClassName="relative"
+    >
+      <div className="w-full overflow-hidden rounded-3xl">
         <div
           className={`h-1 w-full ${ok
             ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
@@ -84,7 +96,9 @@ const OverlayMessage = ({
         />
         <div className="p-6 md:p-8 space-y-5 text-center">
           <div
-            className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center ${ok ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+            className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center ${ok
+              ? "bg-emerald-500/10 text-emerald-500"
+              : "bg-rose-500/10 text-rose-500"
               }`}
           >
             {ok ? (
@@ -113,7 +127,7 @@ const OverlayMessage = ({
           )}
         </div>
       </div>
-    </div>
+    </CenteredModal>
   );
 };
 
@@ -703,7 +717,39 @@ export function Subscription() {
     if (key === "free") return;
     handleMpesapayment(paidRole, PRICE_TABLE[paidRole][key === "1-month" ? "ONE_MONTH" : "TWO_MONTHS"], key);
   };
-
+  const renderTierCard = (t: any, i: number) => {
+    if (t.key === "free") {
+      return <FreeTierCard key={t.key} tier={t} index={i} onOpenInfo={() => setShowInfoOverlay(true)} />;
+    }
+    if (t.key === "1-month") {
+      return (
+        <OneMonthTierCard
+          key={t.key}
+          tier={t}
+          index={i}
+          hasActivePlan={hasActivePlan}
+          hasAgreedToTerms={hasAgreedToTerms}
+          showTermsWarning={showTermsWarning}
+          loading={loading}
+          onSelect={() => onSelectTier(t.key as any)}
+          onOpenInfo={() => setShowInfoOverlay(true)}
+        />
+      );
+    }
+    return (
+      <TwoMonthTierCard
+        key={t.key}
+        tier={t}
+        index={i}
+        hasActivePlan={hasActivePlan}
+        hasAgreedToTerms={hasAgreedToTerms}
+        showTermsWarning={showTermsWarning}
+        loading={loading}
+        onSelect={() => onSelectTier(t.key as any)}
+        onOpenInfo={() => setShowInfoOverlay(true)}
+      />
+    );
+  };
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
       {/* Sticky top bar with back arrow — full-screen chrome */}
@@ -763,8 +809,7 @@ export function Subscription() {
               />
             )}
 
-            {/* ─── Header ───────────────────────────────────────── */}
-            {/* ─── Header ───────────────────────────────────────── */}
+            {/* Page header */}
             <section className="pt-2 md:pt-6 max-w-2xl">
               <h1 className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
                 {hasActivePlan ? "Your plan" : "Choose your role plan"}
@@ -772,7 +817,7 @@ export function Subscription() {
               <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
                 {hasActivePlan
                   ? "Manage your subscription and view your payment history."
-                  : `You're signed in as ${roleLabel}. Pick a tier  cancel anytime by not renewing.`}
+                  : `You are signed in as ${roleLabel}. Pick a tier, cancel anytime by not renewing.`}
               </p>
             </section>
 
@@ -895,18 +940,7 @@ export function Subscription() {
                       key={t.key}
                       className="snap-center shrink-0 w-[85vw] max-w-sm"
                     >
-                      <TierCard
-                        tier={t}
-                        index={i}
-                        hasActivePlan={hasActivePlan}
-                        selected={false}
-                        hasAgreedToTerms={hasAgreedToTerms}
-                        showTermsWarning={showTermsWarning}
-                        loading={loading}
-                        onSelect={() => onSelectTier(t.key as any)}
-                        onOpenTerms={() => setShowLegalTerms(true)}
-                        onOpenInfo={() => setShowInfoOverlay(true)}
-                      />
+                      {renderTierCard(t, i)}
                     </div>
                   ))}
                 </div>
@@ -924,112 +958,115 @@ export function Subscription() {
 
               {/* Desktop grid */}
               <div className="hidden md:grid md:grid-cols-3 gap-5 items-stretch">
-                {tiers.map((t, i) => (
-                  <TierCard
-                    key={t.key}
-                    tier={t}
-                    index={i}
-                    hasActivePlan={hasActivePlan}
-                    selected={false}
-                    hasAgreedToTerms={hasAgreedToTerms}
-                    showTermsWarning={showTermsWarning}
-                    loading={loading}
-                    onSelect={() => onSelectTier(t.key as any)}
-                    onOpenTerms={() => setShowLegalTerms(true)}
-                    onOpenInfo={() => setShowInfoOverlay(true)}
-                  />
-                ))}
+                {tiers.map((t, i) => renderTierCard(t, i))}
               </div>
 
               {/* Shared checkout strip */}
               {!hasActivePlan && (
-                <div className="mt-6 rounded-2xl border border-0 bg-muted/30 p-4 md:p-5 space-y-4">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
-                          M-Pesa number
-                        </Label>
-                        <button
-                          onClick={() => setShowInfoOverlay(true)}
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                <div className="mt-6 rounded-2xl bg-muted/30 p-5 md:p-6 space-y-5">
+                  <div className="space-y-2">
+                    <h3 className="text-base font-semibold text-foreground">
+                      Ready to pay
+                    </h3>
+                    <p className="text-[13px] text-muted-foreground leading-relaxed">
+                      Enter the M-Pesa number you want to pay with. Then tap the price button on whichever plan you want above. We will send an STK push to that number and you confirm it on your phone with your M-Pesa PIN.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-semibold text-foreground">
+                      M-Pesa number
+                    </Label>
+
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-[#00A651] flex items-center justify-center pointer-events-none">
+                        <Smartphone className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+                      </div>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="0712 345 678"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          if (showPhoneHint) setShowPhoneHint(false);
+                        }}
+                        className={`pl-12 pr-3 h-14 rounded-xl bg-background text-lg font-semibold tracking-wide tabular-nums
+                      border-2 transition-colors
+                      ${showPhoneHint
+                            ? "border-rose-400 focus-visible:ring-2 focus-visible:ring-rose-400/30"
+                            : "border-border focus-visible:ring-2 focus-visible:ring-[#00A651]/40 focus-visible:border-[#00A651]"
+                          }`}
+                        aria-invalid={showPhoneHint}
+                        aria-describedby="mpesa-help"
+                      />
+                    </div>
+
+                    <p id="mpesa-help" className="text-[12px] text-muted-foreground leading-relaxed">
+                      Use the number registered on your M-Pesa. The STK push goes to this number and only this number.
+                    </p>
+
+                    <AnimatePresence>
+                      {showPhoneHint && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.15 }}
+                          className="text-[12px] font-medium text-rose-500 flex items-center gap-1.5 pt-1"
                         >
-                          <HelpCircle className="h-3 w-3" />
-                          What's included
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="0712 345 678"
-                          value={phoneNumber}
-                          onChange={(e) => {
-                            setPhoneNumber(e.target.value);
-                            // Clear the hint the moment the user starts typing
-                            if (showPhoneHint) setShowPhoneHint(false);
-                          }}
-                          className={`pl-10 h-12 rounded-xl bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors ${showPhoneHint ? "border-rose-400 ring-2 ring-rose-400/30" : ""
-                            }`}
-                          aria-invalid={showPhoneHint}
-                        />
-                      </div>
-
-                      {/* ✅ Smart inline hint — appears only when the user taps Pay
-                    without a valid number. Auto-clears on input or timeout. */}
-                      <AnimatePresence>
-                        {showPhoneHint && (
-                          <motion.p
-                            initial={{ opacity: 0, y: -4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            transition={{ duration: 0.15 }}
-                            className="text-[11px] font-medium text-rose-500 flex items-center gap-1.5 pt-1"
-                          >
-                            <AlertCircle className="h-3 w-3 shrink-0" />
-                            Add your M-Pesa number above to continue — e.g. 0712 345 678
-                          </motion.p>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    <div className="flex-1 space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground">Terms</p>
-                      <label className="flex items-start gap-2.5 cursor-pointer min-h-12">
-                        <input
-                          type="checkbox"
-                          checked={hasAgreedToTerms}
-                          onChange={(e) => {
-                            setHasAgreedToTerms(e.target.checked);
-                            if (e.target.checked) setShowTermsWarning(false);
-                          }}
-                          className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
-                        />
-                        <span className="text-xs leading-relaxed text-muted-foreground">
-                          I accept the{" "}
-                          <button
-                            type="button"
-                            onClick={() => setShowLegalTerms(true)}
-                            className="font-semibold text-primary underline underline-offset-2"
-                          >
-                            Terms
-                          </button>{" "}
-                          including the no-refund policy.
-                        </span>
-                      </label>
-                      {showTermsWarning && !hasAgreedToTerms && (
-                        <p className="text-xs font-medium text-rose-500">
-                          Accept the terms to continue.
-                        </p>
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          Enter a valid M-Pesa number, for example 0712 345 678.
+                        </motion.p>
                       )}
-                    </div>
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="rounded-xl bg-background p-4 space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      About the M-Pesa fee
+                    </p>
+                    <p className="text-[13px] text-foreground leading-relaxed">
+                      The price on the plan card is the full amount you pay Medrae. Safaricom separately applies its own M-Pesa transaction fee on top of that, and the exact fee depends on your M-Pesa tariff. Safaricom shows you the fee on your phone before you enter your PIN. Medrae does not receive any part of that fee.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-foreground">Terms</p>
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasAgreedToTerms}
+                        onChange={(e) => {
+                          setHasAgreedToTerms(e.target.checked);
+                          if (e.target.checked) setShowTermsWarning(false);
+                        }}
+                        className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
+                      />
+                      <span className="text-[13px] leading-relaxed text-muted-foreground">
+                        I accept the{" "}
+                        <button
+                          type="button"
+                          onClick={() => setShowLegalTerms(true)}
+                          className="font-semibold text-primary underline underline-offset-2"
+                        >
+                          Terms
+                        </button>{" "}
+                        including the no refund policy.
+                      </span>
+                    </label>
+                    {showTermsWarning && !hasAgreedToTerms && (
+                      <p className="text-xs font-medium text-rose-500">
+                        Accept the terms to continue.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-[11px] text-muted-foreground">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-wrap">
                       <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span className="h-2 w-2 rounded-full bg-[#00A651]" />
                         Secured by Safaricom
                       </span>
                       <span className="flex items-center gap-1.5">
@@ -1096,238 +1133,3 @@ export function Subscription() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// TierCard — one card, three variants
-// ─────────────────────────────────────────────────────────────
-function TierCard({
-  tier,
-  index,
-  hasActivePlan,
-  hasAgreedToTerms,
-  showTermsWarning,
-  loading,
-  onSelect,
-  onOpenTerms,
-  onOpenInfo,
-}: {
-  tier: {
-    key: string;
-    name: string;
-    priceLabel: string;
-    sub: string;
-    blurb: string;
-    features: string[];
-    excluded: string[];
-    ctaLabel: string;
-    featured: boolean;
-    accent: boolean;
-    theme: "neutral" | "sky" | "amber";
-    saveBadge?: string | null;
-  };
-  index: number;
-  hasActivePlan: boolean;
-  selected: boolean;
-  hasAgreedToTerms: boolean;
-  showTermsWarning: boolean;
-  loading: boolean;
-  onSelect: () => void;
-  onOpenTerms: () => void;
-  onOpenInfo: () => void;
-}) {
-  const isFree = tier.key === "free";
-
-  // ── Theme per card ────────────────────────────────────────
-  const THEME = {
-    neutral: {
-      card: "border-border/60 bg-card",
-      topBar: null,
-      iconBg: "bg-muted",
-      iconColor: "text-muted-foreground",
-      badgeBg: "bg-muted text-muted-foreground",
-      priceColor: "text-foreground",
-      button:
-        "variant-outline" as const,
-      buttonClass:
-        "w-full h-11 rounded-xl text-sm font-semibold bg-muted/50 hover:bg-muted text-muted-foreground border border-border/60",
-    },
-    sky: {
-      card: "border-sky-500/25 bg-gradient-to-b from-sky-500/[0.04] to-transparent",
-      topBar: "bg-gradient-to-r from-sky-400/0 via-sky-500 to-sky-400/0",
-      iconBg: "bg-sky-500/15",
-      iconColor: "text-sky-500",
-      badgeBg: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-      priceColor: "text-foreground",
-      button:
-        "secondary" as const,
-      buttonClass:
-        "w-full h-11 rounded-xl text-sm font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/20",
-    },
-    amber: {
-      card: "border-amber-500/40 bg-gradient-to-b from-amber-500/[0.06] via-amber-500/[0.02] to-transparent ring-1 ring-amber-500/20 shadow-lg shadow-amber-500/5",
-      topBar: "bg-gradient-to-r from-amber-400/0 via-amber-500 to-amber-400/0",
-      iconBg: "bg-amber-500/15",
-      iconColor: "text-amber-500",
-      badgeBg: "bg-amber-500 text-white",
-      priceColor: "text-amber-600 dark:text-amber-400",
-      button: "default" as const,
-      buttonClass:
-        "w-full h-11 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20",
-    },
-  }[tier.theme];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.05 }}
-      className="h-full"
-    >
-      <Card
-        className={`h-full rounded-3xl overflow-hidden flex flex-col relative ${THEME.card}`}
-      >
-        {/* Top accent bar — unique per theme */}
-        {THEME.topBar && (
-          <div className={`absolute inset-x-0 top-0 h-1 ${THEME.topBar}`} />
-        )}
-
-        {/* Featured badge */}
-        {tier.featured && (
-          <div className="absolute top-4 right-4">
-            <Badge
-              className={`border-0 text-[10px] font-semibold uppercase tracking-wider ${THEME.badgeBg}`}
-            >
-              Most popular
-            </Badge>
-          </div>
-        )}
-
-        <CardContent className="p-6 md:p-7 flex flex-col flex-1 gap-6">
-          {/* Header with themed icon */}
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${THEME.iconBg}`}
-            >
-              {tier.theme === "neutral" && (
-                <Minus className={`w-5 h-5 ${THEME.iconColor}`} strokeWidth={2.5} />
-              )}
-              {tier.theme === "sky" && (
-                <Zap className={`w-5 h-5 ${THEME.iconColor}`} strokeWidth={2.5} />
-              )}
-              {tier.theme === "amber" && (
-                <Crown className={`w-5 h-5 ${THEME.iconColor}`} strokeWidth={2.5} />
-              )}
-            </div>
-            <div className="space-y-0.5">
-              <h3 className="text-lg font-semibold tracking-tight">{tier.name}</h3>
-              <p className="text-xs text-muted-foreground">{tier.blurb}</p>
-            </div>
-          </div>
-
-          {/* Price */}
-          <div className="space-y-1">
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span
-                className={`text-3xl md:text-4xl font-semibold tracking-tight tabular-nums ${THEME.priceColor}`}
-              >
-                {tier.priceLabel}
-              </span>
-              {tier.saveBadge && (
-                <Badge
-                  variant="secondary"
-                  className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px] font-semibold"
-                >
-                  {tier.saveBadge}
-                </Badge>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
-              {tier.sub}
-            </p>
-          </div>
-
-          {/* Features */}
-          <ul className="space-y-2.5 flex-1">
-            {tier.features.map((f, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm">
-                <div
-                  className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${THEME.iconBg}`}
-                >
-                  <Check
-                    className={`h-2.5 w-2.5 ${THEME.iconColor}`}
-                    strokeWidth={3}
-                  />
-                </div>
-                <span className="leading-relaxed text-foreground/90">{f}</span>
-              </li>
-            ))}
-            {tier.excluded.map((f, i) => (
-              <li
-                key={`x-${i}`}
-                className="flex items-start gap-2.5 text-sm opacity-50"
-              >
-                <div className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0 bg-muted">
-                  <Minus
-                    className="h-2.5 w-2.5 text-muted-foreground"
-                    strokeWidth={3}
-                  />
-                </div>
-                <span className="leading-relaxed line-through">{f}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* CTA */}
-          <div className="space-y-3 pt-1">
-            {isFree ? (
-              <Button
-                variant="outline"
-                disabled
-                className={THEME.buttonClass}
-              >
-                {tier.ctaLabel}
-              </Button>
-            ) : (
-              <Button
-                onClick={onSelect}
-                disabled={loading || hasActivePlan}
-                variant={THEME.button}
-                className={THEME.buttonClass}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing
-                  </>
-                ) : hasActivePlan ? (
-                  <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Active
-                  </>
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    {tier.ctaLabel}
-                  </>
-                )}
-              </Button>
-            )}
-
-            {!isFree && showTermsWarning && !hasAgreedToTerms && (
-              <p className="text-[11px] text-rose-500 text-center">
-                Accept terms above to continue.
-              </p>
-            )}
-            {!isFree && (
-              <button
-                onClick={onOpenInfo}
-                className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-              >
-                What's included
-              </button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}

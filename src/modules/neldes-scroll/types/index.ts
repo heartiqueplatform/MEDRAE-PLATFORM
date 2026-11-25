@@ -34,6 +34,7 @@ export interface FeedPost {
     is_liked: boolean;
     is_saved: boolean;
     published_at: string;
+    is_pinned?: boolean;
 }
 
 export interface PostInteractionState {
@@ -63,4 +64,9 @@ export interface MemesFeedResult {
     hasMore: boolean;
     refresh: () => Promise<void>;
     loadMore: () => Promise<void>;
+}
+export interface FeedCursor {
+    is_pinned: boolean;
+    published_at: string;
+    id: number;
 }

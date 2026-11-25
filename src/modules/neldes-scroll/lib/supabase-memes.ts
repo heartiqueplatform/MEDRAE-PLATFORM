@@ -2,6 +2,7 @@
 // Neldes Scroll — typed Supabase wrappers.
 // No React here. Pure functions. Easy to console.log / test.
 // ============================================================
+import type { FeedCursor } from "../types";
 
 import { supabase } from "@/lib/supabaseClient";
 import type {
@@ -12,15 +13,21 @@ import type {
 } from "../types";
 
 /** Pull one page from memes_get_feed. */
+
+/** Pull one page from memes_get_feed using stable pagination. */
 export async function fetchFeedPage(
-    cursor: string = new Date().toISOString(),
+    cursor: FeedCursor | null = null,
     limit = 10
 ): Promise<FeedPost[]> {
     const { data, error } = await supabase.rpc("memes_get_feed", {
         p_limit: limit,
-        p_cursor: cursor,
+        p_cursor_pinned: cursor?.is_pinned ?? null,
+        p_cursor: cursor?.published_at ?? null,
+        p_cursor_id: cursor?.id ?? null,
     });
+
     if (error) throw new Error(error.message);
+
     return (data ?? []) as FeedPost[];
 }
 
@@ -55,10 +62,22 @@ export async function removeInteraction(
 }
 
 /** Mark post as seen (called once per card when in view 1s). */
+
+/** Mark post as seen. Throws if Supabase fails so it can be retried. */
 export async function markSeen(postId: number): Promise<void> {
-    const { error } = await supabase.rpc("memes_mark_seen", { p_post_id: postId });
-    // Non-fatal — never block UI on this.
-    if (error) console.warn("[neldes] markSeen failed:", error.message);
+    const { data: { user }, error: authError } =
+        await supabase.auth.getUser();
+
+    if (authError) throw new Error(authError.message);
+    if (!user) throw new Error("Cannot mark post as seen: user not authenticated");
+
+    const { error } = await supabase.rpc("memes_mark_seen", {
+        p_post_id: postId,
+    });
+
+    if (error) {
+        throw new Error(error.message);
+    }
 }
 
 /** Fetch comments for a post. */

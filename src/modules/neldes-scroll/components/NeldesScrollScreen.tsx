@@ -4,8 +4,10 @@ import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMemesFeed } from "../hooks/useMemesFeed";
 import { useViewedFeed } from "../hooks/useViewedFeed";
+import { useMyPosts } from "../hooks/useMyPosts";
 import { FeedContainer } from "./FeedContainer";
 import { ViewedContainer } from "./ViewedContainer";
+import { MyPostsContainer } from "./MyPostsContainer";
 import { ShareSheet } from "./ShareSheet";
 import { CommentSheet } from "./CommentSheet";
 import { CreatePostSheet } from "./CreatePostSheet";
@@ -22,26 +24,33 @@ export type ShareDispatcher = (
     target: ShareTarget
 ) => Promise<void>;
 
-type Tab = "forYou" | "viewed";
+type Tab = "myPosts" | "viewed" | "forYou";
 
 export function NeldesScrollScreen() {
     const navigate = useNavigate();
     const [tab, setTab] = useState<Tab>("forYou");
 
+    const session = useSession();
+    const currentUserId = session?.user?.id ?? null;
+
     const forYouFeed = useMemesFeed();
     const viewedFeed = useViewedFeed();
-    const [viewedViewerPost, setViewedViewerPost] = useState<FeedPost | null>(null);
-    const feed = tab === "forYou" ? forYouFeed : viewedFeed;
+    const myPostsFeed = useMyPosts(currentUserId);
 
+    const [viewedViewerPost, setViewedViewerPost] = useState<FeedPost | null>(null);
     const [sharePost, setSharePost] = useState<FeedPost | null>(null);
     const [commentPost, setCommentPost] = useState<FeedPost | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
     const [activePost, setActivePost] = useState<FeedPost | null>(null);
-    const session = useSession();
-    const currentUserId = session?.user?.id ?? null;
     const [ownerPost, setOwnerPost] = useState<FeedPost | null>(null);
 
-    // ── Coin program enrollment (NEW) ─────────────────────────
+    const feed =
+        tab === "forYou"
+            ? forYouFeed
+            : tab === "viewed"
+                ? viewedFeed
+                : myPostsFeed;
+
     const [isEnrolled, setIsEnrolled] = useState(false);
 
     useEffect(() => {
@@ -56,16 +65,13 @@ export function NeldesScrollScreen() {
                 .select("status")
                 .eq("user_id", currentUserId)
                 .maybeSingle();
-            if (!cancelled) {
-                setIsEnrolled(data?.status === "approved");
-            }
+            if (!cancelled) setIsEnrolled(data?.status === "approved");
         })();
         return () => {
             cancelled = true;
         };
     }, [currentUserId]);
 
-    // ── Layout gate: wait one frame so the fixed container has real size ──
     const [layoutReady, setLayoutReady] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setLayoutReady(true));
@@ -85,12 +91,13 @@ export function NeldesScrollScreen() {
             if (!ownerPost) return;
             forYouFeed.updatePost(ownerPost.id, patch);
             viewedFeed.updatePost(ownerPost.id, patch);
+            myPostsFeed.updatePost(ownerPost.id, patch);
             setViewedViewerPost((prev) =>
                 prev && prev.id === ownerPost.id ? { ...prev, ...patch } : prev
             );
             setOwnerPost(null);
         },
-        [ownerPost, forYouFeed, viewedFeed]
+        [ownerPost, forYouFeed, viewedFeed, myPostsFeed]
     );
 
     const handlePostViewed = useCallback(
@@ -99,7 +106,6 @@ export function NeldesScrollScreen() {
                 views_count:
                     (forYouFeed.posts.find((p) => p.id === postId)?.views_count ?? 0) + 1,
             });
-
             setActivePost((prev) =>
                 prev && prev.id === postId
                     ? { ...prev, views_count: (prev.views_count ?? 0) + 1 }
@@ -113,15 +119,16 @@ export function NeldesScrollScreen() {
         (id: number) => {
             forYouFeed.refresh();
             viewedFeed.refresh();
+            myPostsFeed.refresh();
             setViewedViewerPost((prev) => (prev && prev.id === id ? null : prev));
             setOwnerPost(null);
         },
-        [forYouFeed, viewedFeed]
+        [forYouFeed, viewedFeed, myPostsFeed]
     );
 
     const handleVisible = useCallback(
         (index: number) => {
-            feed.maybePrefetch(index);
+            feed.maybePrefetch?.(index);
             const post = feed.posts[index];
             if (post) setActivePost(post);
         },
@@ -155,33 +162,33 @@ export function NeldesScrollScreen() {
 
     const tabButtons = (
         <div
-            className="flex items-center gap-1 p-1 rounded-full"
+            className="flex items-center justify-center gap-0.5 p-0.5 rounded-full"
             style={{
                 backgroundColor: "rgba(0,0,0,0.55)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
+                minWidth: 240,
             }}
         >
-            <button
-                onClick={() => setTab("viewed")}
-                className={`px-4 h-8 rounded-full text-[12px] font-bold transition-colors ${tab === "viewed"
-                    ? "bg-white text-black"
-                    : "text-white/80 hover:text-white"
-                    }`}
-                style={{ touchAction: "manipulation" }}
-            >
-                Viewed
-            </button>
-            <button
-                onClick={() => setTab("forYou")}
-                className={`px-4 h-8 rounded-full text-[12px] font-bold transition-colors ${tab === "forYou"
-                    ? "bg-white text-black"
-                    : "text-white/80 hover:text-white"
-                    }`}
-                style={{ touchAction: "manipulation" }}
-            >
-                For You
-            </button>
+            {(
+                [
+                    { id: "myPosts" as Tab, label: "My Posts" },
+                    { id: "viewed" as Tab, label: "Viewed" },
+                    { id: "forYou" as Tab, label: "For You" },
+                ]
+            ).map(({ id, label }) => (
+                <button
+                    key={id}
+                    onClick={() => setTab(id)}
+                    className={`flex-1 h-8 rounded-full text-[12px] font-bold text-center transition-colors ${tab === id
+                        ? "bg-white text-black"
+                        : "text-white/80 hover:text-white"
+                        }`}
+                    style={{ touchAction: "manipulation" }}
+                >
+                    {label}
+                </button>
+            ))}
         </div>
     );
 
@@ -190,7 +197,6 @@ export function NeldesScrollScreen() {
             className="fixed inset-0 w-full overflow-hidden"
             style={{ backgroundColor: NELDES_COLORS.bg, height: "100dvh" }}
         >
-            {/* ── BACK BUTTON (top-left) ─────────────────────────── */}
             <button
                 onClick={handleBack}
                 aria-label="Go back"
@@ -204,12 +210,8 @@ export function NeldesScrollScreen() {
                 />
             </button>
 
-            {/* ── MOBILE: full-screen feed with tabs overlaid ─────── */}
-            <div
-                className="md:hidden w-full relative"
-                style={{ height: "100dvh" }}
-            >
-                <div className="fixed top-3 left-1/2 -translate-x-1/2 z-40">
+            <div className="md:hidden w-full relative" style={{ height: "100dvh" }}>
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40">
                     {tabButtons}
                 </div>
 
@@ -230,13 +232,11 @@ export function NeldesScrollScreen() {
                         onRefresh={forYouFeed.refresh}
                         onCreate={() => setCreateOpen(true)}
                         onPostViewed={handlePostViewed}
-                        onRegisterShare={(fn) => {
-                            shareDispatcherRef.current = fn;
-                        }}
+                        onRegisterShare={(fn) => { shareDispatcherRef.current = fn; }}
                         isEnrolled={isEnrolled}
                         onGetApproved={handleGetApproved}
                     />
-                ) : (
+                ) : tab === "viewed" ? (
                     <ViewedContainer
                         posts={viewedFeed.posts}
                         loading={viewedFeed.loading}
@@ -249,11 +249,34 @@ export function NeldesScrollScreen() {
                         onOpenShare={(post) => setSharePost(post)}
                         onOpenPost={(post) => setViewedViewerPost(post)}
                     />
+                ) : (
+                    <MyPostsContainer
+                        posts={myPostsFeed.posts}
+                        loading={myPostsFeed.loading}
+                        loadingMore={myPostsFeed.loadingMore}
+                        error={myPostsFeed.error}
+                        hasMore={myPostsFeed.hasMore}
+                        onLoadMore={myPostsFeed.loadMore}
+                        onVisible={handleVisible}
+                        onUpdate={myPostsFeed.updatePost}
+                        onOpenComments={(post) => setCommentPost(post)}
+                        onOpenShare={(post) => setSharePost(post)}
+                        onRefresh={myPostsFeed.refresh}
+                        onRegisterShare={(fn) => { shareDispatcherRef.current = fn; }}
+                        onCreate={() => setCreateOpen(true)}
+                        onOpenOwnerMenu={(post) => setOwnerPost(post)}
+                        onPostViewed={handlePostViewed}
+                        currentUserId={currentUserId}
+                        isEnrolled={isEnrolled}
+                        onGetApproved={handleGetApproved}
+                    />
                 ))}
             </div>
 
-            {/* ── DESKTOP: centered feed panel with tabs ON the panel ─ */}
-            <div className="hidden md:flex w-full items-center justify-center px-6 py-6 gap-4" style={{ height: "100dvh" }}>
+            <div
+                className="hidden md:flex w-full items-center justify-center px-6 py-6 gap-4"
+                style={{ height: "100dvh" }}
+            >
                 <div
                     className="relative rounded-2xl overflow-hidden flex-shrink-0"
                     style={{ aspectRatio: "9 / 16", height: "calc(100dvh - 3rem)", backgroundColor: "#000" }}
@@ -279,13 +302,11 @@ export function NeldesScrollScreen() {
                             onRefresh={forYouFeed.refresh}
                             onCreate={() => setCreateOpen(true)}
                             onPostViewed={handlePostViewed}
-                            onRegisterShare={(fn) => {
-                                shareDispatcherRef.current = fn;
-                            }}
+                            onRegisterShare={(fn) => { shareDispatcherRef.current = fn; }}
                             isEnrolled={isEnrolled}
                             onGetApproved={handleGetApproved}
                         />
-                    ) : (
+                    ) : tab === "viewed" ? (
                         <ViewedContainer
                             posts={viewedFeed.posts}
                             loading={viewedFeed.loading}
@@ -298,6 +319,27 @@ export function NeldesScrollScreen() {
                             onOpenShare={(post) => setSharePost(post)}
                             onOpenPost={(post) => setViewedViewerPost(post)}
                         />
+                    ) : (
+                        <MyPostsContainer
+                            posts={myPostsFeed.posts}
+                            loading={myPostsFeed.loading}
+                            loadingMore={myPostsFeed.loadingMore}
+                            error={myPostsFeed.error}
+                            hasMore={myPostsFeed.hasMore}
+                            onLoadMore={myPostsFeed.loadMore}
+                            onVisible={handleVisible}
+                            onUpdate={myPostsFeed.updatePost}
+                            onOpenComments={(post) => setCommentPost(post)}
+                            onOpenShare={(post) => setSharePost(post)}
+                            onRefresh={myPostsFeed.refresh}
+                            onRegisterShare={(fn) => { shareDispatcherRef.current = fn; }}
+                            onCreate={() => setCreateOpen(true)}
+                            onOpenOwnerMenu={(post) => setOwnerPost(post)}
+                            onPostViewed={handlePostViewed}
+                            currentUserId={currentUserId}
+                            isEnrolled={isEnrolled}
+                            onGetApproved={handleGetApproved}
+                        />
                     ))}
                 </div>
 
@@ -309,7 +351,6 @@ export function NeldesScrollScreen() {
                 </div>
             </div>
 
-            {/* ── Sheets ──────────────────────────────────────────── */}
             <ShareSheet
                 open={!!sharePost}
                 post={sharePost}
@@ -349,7 +390,10 @@ export function NeldesScrollScreen() {
                 open={createOpen}
                 onClose={() => setCreateOpen(false)}
                 onCreated={() => {
-                    setTimeout(() => forYouFeed.refresh(), 250);
+                    setTimeout(() => {
+                        forYouFeed.refresh();
+                        myPostsFeed.refresh();
+                    }, 250);
                 }}
             />
         </div>

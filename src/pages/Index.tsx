@@ -15,8 +15,7 @@ const ROLES = [
     highlights: ["Exam prep", "Instant explanations", "Progress tracking"],
     accent: "text-blue-300",
     accentBg: "bg-blue-500/25",
-    cardBg: "bg-blue-500/[0.08] hover:bg-blue-500/[0.14]",
-    cardGlow: "hover:shadow-[0_24px_70px_-24px_rgba(59,130,246,0.55)]",
+    cardBg: "bg-blue-500/[0.50] hover:bg-blue-500/[0.60]",
   },
   {
     id: "staff",
@@ -26,30 +25,27 @@ const ROLES = [
     highlights: ["CPD portfolio", "MedraeCoins", "Verified contributor"],
     accent: "text-emerald-300",
     accentBg: "bg-emerald-500/25",
-    cardBg: "bg-emerald-500/[0.08] hover:bg-emerald-500/[0.14]",
-    cardGlow: "hover:shadow-[0_24px_70px_-24px_rgba(16,185,129,0.55)]",
+    cardBg: "bg-emerald-500/[0.50] hover:bg-emerald-500/[0.60]",
   },
   {
     id: "tutor",
     Icon: Users,
     title: "I'm a tutor or institution",
     desc: "Host digital exams for your cohort with DigiProctor exam mode.",
-    highlights: ["Cohort control", "Auto-grading", "Analytics"],
+    highlights: ["Cohort control", "Auto grading", "Analytics"],
     accent: "text-violet-300",
     accentBg: "bg-violet-500/25",
-    cardBg: "bg-violet-500/[0.08] hover:bg-violet-500/[0.14]",
-    cardGlow: "hover:shadow-[0_24px_70px_-24px_rgba(139,92,246,0.55)]",
+    cardBg: "bg-violet-500/[0.50] hover:bg-violet-500/[0.60]",
   },
   {
     id: "medrae-coins",
     Icon: Coins,
     title: "What are MedraeCoins?",
-    desc: "Learn how coins work for students and staff — earning, cash-out, and policy.",
-    highlights: ["Earn by engaging", "Earn by teaching", "Anti-abuse rules"],
+    desc: "Learn how coins work for students and staff, earning, cash out, and policy.",
+    highlights: ["Earn by engaging", "Earn by teaching", "Anti abuse rules"],
     accent: "text-amber-300",
     accentBg: "bg-amber-500/25",
-    cardBg: "bg-amber-500/[0.08] hover:bg-amber-500/[0.14]",
-    cardGlow: "hover:shadow-[0_24px_70px_-24px_rgba(245,158,11,0.55)]",
+    cardBg: "bg-amber-500/[0.50] hover:bg-amber-500/[0.60]",
   },
 ] as const;
 
@@ -121,39 +117,26 @@ export default function Index() {
   const onCardMove = (e: MouseEvent<HTMLButtonElement>) => {
     const el = e.currentTarget;
     const r = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width - 0.5;
-    const py = (e.clientY - r.top) / r.height - 0.5;
     el.style.setProperty("--mx", `${e.clientX - r.left}px`);
     el.style.setProperty("--my", `${e.clientY - r.top}px`);
-    el.style.setProperty("--rx", `${py * -5}deg`);
-    el.style.setProperty("--ry", `${px * 5}deg`);
-  };
-  const onCardLeave = (e: MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.setProperty("--rx", "0deg");
-    e.currentTarget.style.setProperty("--ry", "0deg");
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#05080e] text-white no-scrollbar">
+    <div className="min-h-screen relative overflow-hidden bg-[#0e0b09] text-white no-scrollbar">
 
       <style>{`
         :root {
           --index-scrim:
-            radial-gradient(ellipse at 72% 42%,
-              rgba(5,8,14,0.08) 0%,
-              rgba(5,8,14,0.55) 38%,
-              rgba(5,8,14,0.92) 78%,
-              rgba(5,8,14,0.99) 100%),
-            linear-gradient(to right,
-              rgba(5,8,14,0.98) 0%,
-              rgba(5,8,14,0.80) 30%,
-              rgba(5,8,14,0.42) 65%,
-              rgba(5,8,14,0.15) 100%);
+            radial-gradient(ellipse at 50% 45%,
+              rgba(22, 18, 14, 0.10) 0%,
+              rgba(22, 18, 14, 0.55) 45%,
+              rgba(18, 14, 11, 0.90) 80%,
+              rgba(14, 11, 9, 0.99) 100%);
           --index-fade: linear-gradient(to bottom,
-            rgba(5,8,14,0.85) 0%,
-            rgba(5,8,14,0) 22%,
-            rgba(5,8,14,0) 68%,
-            rgba(5,8,14,0.98) 100%);
+            rgba(16, 13, 10, 0.92) 0%,
+            rgba(16, 13, 10, 0) 22%,
+            rgba(16, 13, 10, 0) 68%,
+            rgba(14, 11, 9, 0.99) 100%);
         }
 
         @keyframes kb-a {
@@ -198,7 +181,7 @@ export default function Index() {
           pointer-events: none;
         }
 
-        .spot { position: relative; overflow: hidden; transform-style: preserve-3d; }
+        .spot { position: relative; overflow: hidden; }
         .spot::before {
           content: "";
           position: absolute; inset: 0;
@@ -211,31 +194,12 @@ export default function Index() {
           z-index: 0;
         }
         .spot:hover::before { opacity: 1; }
-        .spot::after {
-          content: "";
-          position: absolute; inset: -1px;
-          border-radius: inherit;
-          background: linear-gradient(120deg,
-            transparent 30%, rgba(255,255,255,0.14) 50%, transparent 70%);
-          transform: translateX(-130%);
-          transition: transform 1.1s cubic-bezier(.2,.7,.2,1);
-          pointer-events: none;
-          z-index: 0;
-        }
-        .spot:hover::after { transform: translateX(130%); }
-        .tilt {
-          transform: perspective(900px) rotateX(var(--rx, 0)) rotateY(var(--ry, 0));
-          transition: transform .55s cubic-bezier(.2,.7,.2,1);
-        }
 
         @media (prefers-reduced-motion: reduce) {
           .kb-a, .kb-b, .blob, .accent-grad, .rise { animation: none !important; }
-          .spot::after { transition: none; }
-          .tilt { transform: none !important; }
         }
       `}</style>
 
-      {/* ═════════ BACKGROUND ═════════ */}
       <div className="fixed inset-0 z-0 overflow-hidden">
 
         <div
@@ -269,15 +233,14 @@ export default function Index() {
             transition: "transform 600ms ease-out",
           }}
         >
-          <div className="blob absolute -top-40 -left-32 w-[560px] h-[560px] rounded-full bg-blue-600/30 blur-[140px]" style={{ animationDelay: "0s" }} />
-          <div className="blob absolute top-1/3 -right-32 w-[500px] h-[500px] rounded-full bg-emerald-500/22 blur-[140px]" style={{ animationDelay: "-8s" }} />
-          <div className="blob absolute -bottom-32 left-1/4 w-[440px] h-[440px] rounded-full bg-violet-600/25 blur-[140px]" style={{ animationDelay: "-15s" }} />
+          <div className="blob absolute -top-40 -left-32 w-[560px] h-[560px] rounded-full bg-amber-800/25 blur-[140px]" style={{ animationDelay: "0s" }} />
+          <div className="blob absolute top-1/3 -right-32 w-[500px] h-[500px] rounded-full bg-orange-900/25 blur-[140px]" style={{ animationDelay: "-8s" }} />
+          <div className="blob absolute -bottom-32 left-1/4 w-[440px] h-[440px] rounded-full bg-stone-700/30 blur-[140px]" style={{ animationDelay: "-15s" }} />
         </div>
 
         <div className="absolute inset-0 pointer-events-none grain" />
       </div>
 
-      {/* ═════════ CONTENT ═════════ */}
       <main className="relative z-10 w-full max-w-6xl mx-auto px-5 md:px-8 py-10 md:py-14">
 
         <div className="flex items-center mb-10 md:mb-16 rise" style={{ animationDelay: "0.05s" }}>
@@ -285,14 +248,14 @@ export default function Index() {
             <img
               src="/pwa-192x192.jpeg"
               alt="Medrae"
-              className="h-14 w-14 md:h-24 md:w-24 rounded-2xl md:rounded-3xl shadow-[0_16px_50px_-12px_rgba(37,99,235,0.65)]"
+              className="h-14 w-14 md:h-24 md:w-24 rounded-2xl md:rounded-3xl"
             />
             <div>
               <p className="text-2xl md:text-5xl font-black tracking-tight leading-none">
                 <span className="text-red-500">MEDRAE</span>{" "}
                 <span className="text-white">NURSING</span>
               </p>
-              <p className="mt-2 md:mt-3 text-[10px] md:text-sm font-bold uppercase tracking-[0.28em] md:tracking-[0.32em] text-slate-400">
+              <p className="mt-2 md:mt-3 text-[10px] md:text-sm font-bold uppercase tracking-[0.28em] md:tracking-[0.32em] text-stone-400">
                 Kenya Nursing Network
               </p>
             </div>
@@ -310,45 +273,44 @@ export default function Index() {
           </h1>
 
           <p
-            className="mt-4 md:mt-5 text-[15px] md:text-[17px] italic font-semibold text-slate-300 leading-[1.7] rise"
+            className="mt-4 md:mt-5 text-[15px] md:text-[17px] italic font-semibold text-stone-300 leading-[1.7] rise"
             style={{ animationDelay: "0.30s" }}
           >
             We learn with love. We care with heart.
           </p>
 
           <p
-            className="mt-3 md:mt-4 text-[14px] md:text-[16px] text-slate-300 max-w-xl leading-relaxed rise"
+            className="mt-3 md:mt-4 text-[14px] md:text-[16px] text-stone-300 max-w-xl leading-relaxed rise"
             style={{ animationDelay: "0.40s" }}
           >
-            From nursing school to NCK licensure to CPD — one platform, one place.
-            Choose your path below and we'll show you exactly what's waiting.
+            From nursing school to NCK licensure to CPD, one platform, one place.
+            Choose your path below and we will show you exactly what is waiting.
           </p>
         </div>
 
         <div
-          className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-10 md:mb-14 text-[11px] md:text-[12px] text-slate-300 rise"
+          className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-10 md:mb-14 text-[11px] md:text-[12px] text-stone-300 rise"
           style={{ animationDelay: "0.55s" }}
         >
           <span className="inline-flex items-center gap-1.5">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
             Trusted by 2K+ nurses
           </span>
-          <span className="hidden sm:inline text-slate-600">·</span>
+          <span className="hidden sm:inline text-stone-600">·</span>
           <span className="inline-flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-blue-400" />
-            NCK-aligned content
+            <Shield className="w-3.5 h-3.5 text-amber-400" />
+            NCK aligned content
           </span>
-          <span className="hidden sm:inline text-slate-600">·</span>
+          <span className="hidden sm:inline text-stone-600">·</span>
           <span className="inline-flex items-center gap-1.5">
             <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
             4.8 average rating
           </span>
         </div>
 
-        {/* Role cards — borderless, colour-coded glass */}
         <div>
           <p
-            className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3 rise"
+            className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-3 rise"
             style={{ animationDelay: "0.65s" }}
           >
             Choose your path
@@ -356,18 +318,15 @@ export default function Index() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 max-w-5xl">
             {ROLES.map(
-              ({ id, Icon, title, desc, highlights, accent, accentBg, cardBg, cardGlow }, i) => (
+              ({ id, Icon, title, desc, highlights, accent, accentBg, cardBg }, i) => (
                 <button
                   key={id}
                   onClick={() => pick(id)}
                   onMouseMove={onCardMove}
-                  onMouseLeave={onCardLeave}
-                  className={`group w-full text-left rounded-2xl rise tilt spot
+                  className={`group w-full text-left rounded-2xl rise spot
                               ${cardBg}
-                              backdrop-blur-xl
-                              ${cardGlow}
                               p-5 md:p-6
-                              transition-[background-color,box-shadow] duration-300
+                              transition-colors duration-300
                               active:scale-[0.98]`}
                   style={{
                     touchAction: "manipulation",
@@ -388,7 +347,7 @@ export default function Index() {
                     <p className="text-[15px] md:text-[16px] font-bold leading-tight mt-4 text-white">
                       {title}
                     </p>
-                    <p className="text-[12.5px] md:text-[13px] text-slate-300/90 mt-2 leading-snug">
+                    <p className="text-[12.5px] md:text-[13px] text-stone-300/90 mt-2 leading-snug">
                       {desc}
                     </p>
 
@@ -398,7 +357,7 @@ export default function Index() {
                           key={chip}
                           className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider
                                      px-2 py-0.5 rounded-full
-                                     bg-white/[0.07] text-slate-200"
+                                     bg-white/[0.07] text-stone-200"
                         >
                           {chip}
                         </span>
@@ -407,17 +366,16 @@ export default function Index() {
 
                     <div className="mt-5 flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-wider
-                                       text-slate-400
+                                       text-stone-400
                                        group-hover:text-white
                                        transition-colors">
                         Continue
                       </span>
                       <span className="relative flex items-center justify-center">
-                        <ArrowRight className="w-4 h-4 text-slate-400
+                        <ArrowRight className="w-4 h-4 text-stone-400
                                                group-hover:text-white
                                                group-hover:translate-x-1.5
                                                transition-all duration-300" />
-                        <span className="absolute -inset-2 rounded-full bg-white/0 group-hover:bg-white/15 blur-md transition-all duration-500" />
                       </span>
                     </div>
                   </div>
@@ -428,14 +386,14 @@ export default function Index() {
         </div>
 
         <div className="mt-10 md:mt-14 space-y-3 rise" style={{ animationDelay: "1.15s" }}>
-          <p className="text-[12px] md:text-[13px] italic font-semibold text-slate-400">
+          <p className="text-[12px] md:text-[13px] italic font-semibold text-stone-400">
             Care begins with love.
           </p>
-          <p className="text-[12px] md:text-[13px] text-slate-400">
+          <p className="text-[12px] md:text-[13px] text-stone-400">
             Already have an account?{" "}
             <button
               onClick={() => nav("/login")}
-              className="text-blue-400 font-bold hover:underline"
+              className="text-amber-400 font-bold hover:underline"
             >
               Sign in
             </button>
@@ -445,7 +403,7 @@ export default function Index() {
 
       <div className="fixed bottom-5 right-5 z-20 flex items-center gap-2
                       px-3 py-2 rounded-full
-                      bg-black/50 backdrop-blur-md
+                      bg-stone-900/60 backdrop-blur-md
                       ring-0
                       shadow-[0_8px_30px_-12px_rgba(0,0,0,0.65)]">
         {SLIDESHOW.map((_, i) => (

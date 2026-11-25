@@ -24,6 +24,7 @@ import {
 } from "@/components/last-minute/PaperCreatorStrip";
 import { UserProfileModal } from "@/components/UserProfileModal";
 import HeroLottie from "@/components/HeroLottie";
+import UpgradeLottie from "@/components/UpgradeLottie";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 
 // ─────────────────────────────────────────────────────────────
@@ -374,43 +375,7 @@ export default function LastMinuteHome() {
                             </p>
                         </div>
                     )}
-                    {/* ── SUBSCRIPTION UPSELL (students only, non-premium only) ── */}
-                    {mode === "student" && !isPremium && (
-                        <div className="mx-4 sm:mx-0 mt-3 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50
-                                        dark:from-amber-400/10 dark:to-yellow-400/5
-                                        px-4 py-4 flex flex-col items-center">
 
-                            {/* Lottie — centered, bigger */}
-                            <div className="w-24 h-24 sm:w-28 sm:h-28 -mb-1">
-                                <HeroLottie />
-                            </div>
-
-                            {/* Row: text (left) + button (right) */}
-                            <div className="w-full flex items-center gap-3 mt-1">
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-[12.5px] font-bold text-amber-900 dark:text-amber-200 leading-snug">
-                                        Subscribe once. Unlock every paper.
-                                    </p>
-                                    <p className="text-[11px] text-amber-700/80 dark:text-amber-300/70 leading-snug mt-0.5">
-                                        Premium members get all Last-Minute papers free  no per-paper payments.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        playSound("tap");
-                                        if (navigator.vibrate) navigator.vibrate(20);
-                                        navigate("/subscription");
-                                    }}
-                                    className="shrink-0 h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-700
-                                               text-white text-[11.5px] font-bold
-                                               active:scale-95 transition-transform"
-                                    style={{ touchAction: "manipulation" }}
-                                >
-                                    Subscribe
-                                </button>
-                            </div>
-                        </div>
-                    )}
                     {/* ── HERO ── */}
                     <section className="px-4 sm:px-0 pt-4 pb-3">
                         <h2 className="text-[24px] sm:text-[28px] font-black leading-[1.1] tracking-tight">
@@ -550,6 +515,76 @@ export default function LastMinuteHome() {
                             </div>
                         ) : (
                             <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 w-full">
+                                {mode === "student" && !isPremium && (
+                                    <div
+                                        className="group relative overflow-hidden rounded-2xl
+                   bg-gradient-to-br from-amber-50 to-yellow-50
+                   dark:from-amber-400/10 dark:to-yellow-400/5
+                   cursor-pointer p-0
+                   active:scale-[0.99] transition-transform
+                   flex flex-col"
+                                        onClick={() => {
+                                            playSound("tap");
+                                            if (navigator.vibrate) navigator.vibrate(20);
+                                            navigate("/subscription");
+                                        }}
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <div className="relative h-60 sm:h-64 w-full overflow-hidden
+                        bg-gradient-to-br from-amber-100 to-yellow-100
+                        dark:from-amber-400/15 dark:to-yellow-400/10
+                        flex items-center justify-center">
+                                            <div className="w-40 h-40 sm:w-48 sm:h-48">
+                                                <UpgradeLottie />
+                                            </div>
+                                            <div className="absolute top-3 left-3 bg-amber-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                                                <Sparkles className="w-3 h-3" /> PREMIUM
+                                            </div>
+                                        </div>
+
+                                        <div className="pb-2 pt-3 px-4">
+                                            <div className="flex items-center gap-2 flex-wrap mb-2 min-h-[20px]">
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                    <Star size={11} fill="currentColor" /> Best value
+                                                </span>
+                                            </div>
+                                            <h3 className="text-lg font-bold leading-tight text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
+                                                Subscribe once. Unlock every paper.
+                                            </h3>
+                                        </div>
+
+                                        <div className="px-4 pb-4 flex-1 flex flex-col">
+                                            <div className="flex flex-col gap-3 flex-1">
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">
+                                                    Premium members get all Last-Minute papers free, no per-paper payments.
+                                                </p>
+
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-400/15 text-amber-700 dark:text-amber-300">
+                                                        All papers
+                                                    </span>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-400/15 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" /> Always
+                                                    </span>
+                                                </div>
+
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        playSound("tap");
+                                                        if (navigator.vibrate) navigator.vibrate(20);
+                                                        navigate("/subscription");
+                                                    }}
+                                                    className="mt-auto w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2
+                               bg-amber-600 hover:bg-amber-700 text-white
+                               shadow-lg shadow-amber-200 dark:shadow-none"
+                                                >
+                                                    <Sparkles className="h-4 w-4" /> Subscribe
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 {filtered.map((p) => {
                                     const s = state[p.id];
                                     const entitled = !!s?.is_entitled;

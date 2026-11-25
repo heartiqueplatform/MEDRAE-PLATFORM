@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchViewedPage, type ViewedPost } from "../lib/supabase-memes";
 import type { FeedPost } from "../types";
 
+const VIEWED_PAGE_SIZE = 20;
+
 export function useViewedFeed() {
     const [posts, setPosts] = useState<ViewedPost[]>([]);
     const [loading, setLoading] = useState(true);
@@ -12,6 +14,7 @@ export function useViewedFeed() {
 
     const cursorRef = useRef<string>(new Date().toISOString());
     const inflightRef = useRef(false);
+    const initialLoadDoneRef = useRef(false);
 
     const loadPage = useCallback(async (isRefresh: boolean) => {
         if (inflightRef.current) return;
@@ -20,18 +23,25 @@ export function useViewedFeed() {
         if (isRefresh) {
             cursorRef.current = new Date().toISOString();
             setLoading(true);
+            setHasMore(true);
         } else {
             setLoadingMore(true);
         }
         setError(null);
 
         try {
-            const page = await fetchViewedPage(cursorRef.current, 20);
-            if (page.length === 0) {
-                setHasMore(false);
-            } else {
-                setPosts((prev) => (isRefresh ? page : [...prev, ...page]));
+            const page = await fetchViewedPage(cursorRef.current, VIEWED_PAGE_SIZE);
+
+            if (page.length > 0) {
                 cursorRef.current = page[page.length - 1].last_interacted;
+            }
+
+            if (page.length > 0 && page.length < VIEWED_PAGE_SIZE) {
+                setHasMore(false);
+            }
+
+            if (page.length > 0) {
+                setPosts((prev) => (isRefresh ? page : [...prev, ...page]));
             }
         } catch (e: any) {
             setError(e?.message || "Failed to load viewed posts");
@@ -43,6 +53,8 @@ export function useViewedFeed() {
     }, []);
 
     useEffect(() => {
+        if (initialLoadDoneRef.current) return;
+        initialLoadDoneRef.current = true;
         loadPage(true);
     }, [loadPage]);
 

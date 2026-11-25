@@ -1,12 +1,14 @@
+
 // ============================================================
-// Neldes Scroll — feed state. One hook, one concern.
-// Handles: initial load, pagination, refresh, error, dedupe.
+// Neldes Scroll — feed state.
+// Handles initial load, infinite pagination, refresh,
+// stable cursors, deduplication and terminal detection.
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchFeedPage } from "../lib/supabase-memes";
 import { FEED_PAGE_SIZE, PREFETCH_THRESHOLD } from "../config/constants";
-import type { FeedPost } from "../types";
+import type { FeedPost, FeedCursor } from "../types";
 
 export function useMemesFeed() {
     const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -15,53 +17,87 @@ export function useMemesFeed() {
     const [error, setError] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
 
-    const cursorRef = useRef<string>(new Date().toISOString());
+    // Stable cursor: pinned status + date + ID.
+    const cursorRef = useRef<FeedCursor | null>(null);
+
     const seenIdsRef = useRef<Set<number>>(new Set());
     const inflightRef = useRef(false);
+    const initialLoadDoneRef = useRef(false);
 
     const loadPage = useCallback(async (isRefresh: boolean) => {
+        // Never allow overlapping requests.
         if (inflightRef.current) return;
+
         inflightRef.current = true;
 
         if (isRefresh) {
-            cursorRef.current = new Date().toISOString();
+            cursorRef.current = null;
             seenIdsRef.current.clear();
             setLoading(true);
-            // Reset the end-of-feed latch so a refresh can revive the feed.
             setHasMore(true);
         } else {
             setLoadingMore(true);
         }
+
         setError(null);
 
         try {
-            const page = await fetchFeedPage(cursorRef.current, FEED_PAGE_SIZE);
+            const page = await fetchFeedPage(
+                cursorRef.current,
+                FEED_PAGE_SIZE
+            );
 
-            // Advance the cursor off the RAW page (not the deduped subset).
-            // Otherwise overlapping rows never move the cursor forward and
-            // the next fetch re-requests the same boundary rows forever.
-            if (page.length > 0) {
-                cursorRef.current = page[page.length - 1].published_at;
+            // Empty response means the feed is exhausted.
+            if (page.length === 0) {
+                setHasMore(false);
+
+                if (isRefresh) {
+                    setPosts([]);
+                }
+
+                return;
             }
 
-            const fresh = page.filter((p) => !seenIdsRef.current.has(p.id));
-            fresh.forEach((p) => seenIdsRef.current.add(p.id));
+            // Advance cursor using the last database row,
+            // not the last newly inserted frontend row.
+            const lastPost = page[page.length - 1];
 
-            // End-of-feed is decided by the SERVER page size, not by the
-            // client dedupe count. A fully-deduped page is a retry signal,
-            // not proof that the feed is exhausted.
+            cursorRef.current = {
+                is_pinned: Boolean(lastPost.is_pinned),
+                published_at: lastPost.published_at,
+                id: lastPost.id,
+            };
+
+            // Deduplicate posts.
+            const fresh = page.filter(
+                (post) => !seenIdsRef.current.has(post.id)
+            );
+
+            fresh.forEach((post) => {
+                seenIdsRef.current.add(post.id);
+            });
+
+            // A short page means no further eligible posts
+            // existed when this page was queried.
             if (page.length < FEED_PAGE_SIZE) {
                 setHasMore(false);
             }
 
-            if (fresh.length > 0) {
-                setPosts((prev) => (isRefresh ? fresh : [...prev, ...fresh]));
-            }
-            // If fresh.length === 0 but page.length > 0, the cursor has
-            // already advanced, so the next sentinel call will fetch the
-            // next window. Nothing to append; keep hasMore as-is.
-        } catch (e: any) {
-            setError(e?.message || "Failed to load feed");
+            // Append instead of replacing.
+            setPosts((previous) =>
+                isRefresh
+                    ? fresh
+                    : [...previous, ...fresh]
+            );
+
+        } catch (e: unknown) {
+            const message =
+                e instanceof Error
+                    ? e.message
+                    : "Failed to load feed";
+
+            setError(message);
+
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -69,28 +105,51 @@ export function useMemesFeed() {
         }
     }, []);
 
+    // Initial load only once.
     useEffect(() => {
-        loadPage(true);
+        if (initialLoadDoneRef.current) return;
+
+        initialLoadDoneRef.current = true;
+        void loadPage(true);
     }, [loadPage]);
 
-    const refresh = useCallback(() => loadPage(true), [loadPage]);
+    const refresh = useCallback(
+        () => loadPage(true),
+        [loadPage]
+    );
+
     const loadMore = useCallback(() => {
-        if (!hasMore || loadingMore || loading) return;
+        if (!hasMore || loadingMore || loading || inflightRef.current) {
+            return;
+        }
+
         return loadPage(false);
     }, [hasMore, loadingMore, loading, loadPage]);
 
-    // Prefetch when near end
+    // Automatically request more before reaching the end.
     const maybePrefetch = useCallback(
         (currentIndex: number) => {
-            if (currentIndex >= posts.length - PREFETCH_THRESHOLD) loadMore();
+            if (
+                hasMore &&
+                !loading &&
+                !loadingMore &&
+                currentIndex >= posts.length - PREFETCH_THRESHOLD
+            ) {
+                void loadMore();
+            }
         },
-        [posts.length, loadMore]
+        [posts.length, hasMore, loading, loadingMore, loadMore]
     );
 
-    /** Apply a local optimistic update to one post. */
     const updatePost = useCallback(
         (id: number, patch: Partial<FeedPost>) => {
-            setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+            setPosts((previous) =>
+                previous.map((post) =>
+                    post.id === id
+                        ? { ...post, ...patch }
+                        : post
+                )
+            );
         },
         []
     );
