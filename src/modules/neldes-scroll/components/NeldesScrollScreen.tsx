@@ -1,5 +1,5 @@
 // src/modules/neldes-scroll/components/NeldesScrollScreen.tsx
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMemesFeed } from "../hooks/useMemesFeed";
@@ -11,10 +11,12 @@ import { CommentSheet } from "./CommentSheet";
 import { CreatePostSheet } from "./CreatePostSheet";
 import { DesktopCommentsPanel } from "./DesktopCommentsPanel";
 import { useSession } from "@supabase/auth-helpers-react";
+import { supabase } from "@/lib/supabaseClient";
 import { PostOwnerSheet } from "./PostOwnerSheet";
 import type { FeedPost, ShareTarget } from "../types";
 import { NELDES_COLORS } from "../config/constants";
 import { ViewedPostViewer } from "./ViewedPostViewer";
+
 export type ShareDispatcher = (
     post: FeedPost,
     target: ShareTarget
@@ -39,9 +41,45 @@ export function NeldesScrollScreen() {
     const currentUserId = session?.user?.id ?? null;
     const [ownerPost, setOwnerPost] = useState<FeedPost | null>(null);
 
+    // ── Coin program enrollment (NEW) ─────────────────────────
+    const [isEnrolled, setIsEnrolled] = useState(false);
+
+    useEffect(() => {
+        if (!currentUserId) {
+            setIsEnrolled(false);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            const { data } = await supabase
+                .from("medrae_stu_enrollments")
+                .select("status")
+                .eq("user_id", currentUserId)
+                .maybeSingle();
+            if (!cancelled) {
+                setIsEnrolled(data?.status === "approved");
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [currentUserId]);
+
+    // ── Layout gate: wait one frame so the fixed container has real size ──
+    const [layoutReady, setLayoutReady] = useState(false);
+    useEffect(() => {
+        const id = requestAnimationFrame(() => setLayoutReady(true));
+        return () => cancelAnimationFrame(id);
+    }, []);
+
+    const handleGetApproved = useCallback(() => {
+        navigate("/coins/apply");
+    }, [navigate]);
+
     const shareDispatcherRef = useState<{ current: ShareDispatcher | null }>(
         () => ({ current: null })
     )[0];
+
     const handleOwnerUpdated = useCallback(
         (patch: { title?: string; caption?: string; link_url?: string | null }) => {
             if (!ownerPost) return;
@@ -54,16 +92,14 @@ export function NeldesScrollScreen() {
         },
         [ownerPost, forYouFeed, viewedFeed]
     );
-    // Add this callback after handleOwnerDeleted
+
     const handlePostViewed = useCallback(
         (postId: number) => {
-            // Bump views in the feed (source of truth for both mobile + desktop)
             forYouFeed.updatePost(postId, {
                 views_count:
                     (forYouFeed.posts.find((p) => p.id === postId)?.views_count ?? 0) + 1,
             });
 
-            // Also bump activePost so the desktop panel updates live
             setActivePost((prev) =>
                 prev && prev.id === postId
                     ? { ...prev, views_count: (prev.views_count ?? 0) + 1 }
@@ -72,6 +108,7 @@ export function NeldesScrollScreen() {
         },
         [forYouFeed]
     );
+
     const handleOwnerDeleted = useCallback(
         (id: number) => {
             forYouFeed.refresh();
@@ -116,7 +153,6 @@ export function NeldesScrollScreen() {
         else navigate("/");
     }, [navigate]);
 
-    // Shared tab button markup — For You on right, Viewed on left
     const tabButtons = (
         <div
             className="flex items-center gap-1 p-1 rounded-full"
@@ -151,8 +187,8 @@ export function NeldesScrollScreen() {
 
     return (
         <div
-            className="fixed inset-0 w-full h-full overflow-hidden"
-            style={{ backgroundColor: NELDES_COLORS.bg }}
+            className="fixed inset-0 w-full overflow-hidden"
+            style={{ backgroundColor: NELDES_COLORS.bg, height: "100dvh" }}
         >
             {/* ── BACK BUTTON (top-left) ─────────────────────────── */}
             <button
@@ -169,13 +205,15 @@ export function NeldesScrollScreen() {
             </button>
 
             {/* ── MOBILE: full-screen feed with tabs overlaid ─────── */}
-            <div className="md:hidden w-full h-full relative">
-                {/* Tabs — centered over the feed */}
+            <div
+                className="md:hidden w-full relative"
+                style={{ height: "100dvh" }}
+            >
                 <div className="fixed top-3 left-1/2 -translate-x-1/2 z-40">
                     {tabButtons}
                 </div>
 
-                {tab === "forYou" ? (
+                {layoutReady && (tab === "forYou" ? (
                     <FeedContainer
                         posts={forYouFeed.posts}
                         loading={forYouFeed.loading}
@@ -195,6 +233,8 @@ export function NeldesScrollScreen() {
                         onRegisterShare={(fn) => {
                             shareDispatcherRef.current = fn;
                         }}
+                        isEnrolled={isEnrolled}
+                        onGetApproved={handleGetApproved}
                     />
                 ) : (
                     <ViewedContainer
@@ -209,22 +249,20 @@ export function NeldesScrollScreen() {
                         onOpenShare={(post) => setSharePost(post)}
                         onOpenPost={(post) => setViewedViewerPost(post)}
                     />
-                )}
+                ))}
             </div>
 
             {/* ── DESKTOP: centered feed panel with tabs ON the panel ─ */}
-            <div className="hidden md:flex h-full w-full items-center justify-center px-6 py-6 gap-4">
-                {/* Feed panel — 9:16 */}
+            <div className="hidden md:flex w-full items-center justify-center px-6 py-6 gap-4" style={{ height: "100dvh" }}>
                 <div
-                    className="relative h-full max-h-[calc(100vh-3rem)] rounded-2xl overflow-hidden flex-shrink-0"
-                    style={{ aspectRatio: "9 / 16", backgroundColor: "#000" }}
+                    className="relative rounded-2xl overflow-hidden flex-shrink-0"
+                    style={{ aspectRatio: "9 / 16", height: "calc(100dvh - 3rem)", backgroundColor: "#000" }}
                 >
-                    {/* Tabs — centered over the feed panel */}
                     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40">
                         {tabButtons}
                     </div>
 
-                    {tab === "forYou" ? (
+                    {layoutReady && (tab === "forYou" ? (
                         <FeedContainer
                             posts={forYouFeed.posts}
                             loading={forYouFeed.loading}
@@ -244,6 +282,8 @@ export function NeldesScrollScreen() {
                             onRegisterShare={(fn) => {
                                 shareDispatcherRef.current = fn;
                             }}
+                            isEnrolled={isEnrolled}
+                            onGetApproved={handleGetApproved}
                         />
                     ) : (
                         <ViewedContainer
@@ -258,13 +298,12 @@ export function NeldesScrollScreen() {
                             onOpenShare={(post) => setSharePost(post)}
                             onOpenPost={(post) => setViewedViewerPost(post)}
                         />
-                    )}
+                    ))}
                 </div>
 
-                {/* Comments panel — right side */}
                 <div
-                    className="h-full max-h-[calc(100vh-3rem)] flex-shrink-0 rounded-2xl overflow-hidden"
-                    style={{ width: 380, backgroundColor: "#161b22" }}
+                    className="flex-shrink-0 rounded-2xl overflow-hidden"
+                    style={{ width: 380, height: "calc(100dvh - 3rem)", backgroundColor: "#161b22" }}
                 >
                     <DesktopCommentsPanel post={displayPost} />
                 </div>

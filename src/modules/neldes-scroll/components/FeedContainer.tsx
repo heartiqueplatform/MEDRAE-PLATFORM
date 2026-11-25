@@ -1,7 +1,8 @@
 // src/modules/neldes-scroll/components/FeedContainer.tsx
 // ============================================================
 // Neldes Scroll — scroll container.
-// Owns: vertical snap, infinite scroll, prefetch, active index.
+// Owns: vertical snap, infinite scroll (push-at-end), prefetch,
+// active index.
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,7 +13,9 @@ import type { FeedPost, ShareTarget } from "../types";
 import { NELDES_COLORS } from "../config/constants";
 import type { ShareDispatcher } from "./NeldesScrollScreen";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import { usePushToLoadMore } from "../hooks/usePushToLoadMore";
 import { CreatePostCard } from "./CreatePostCard";
+
 interface FeedContainerProps {
     posts: FeedPost[];
     loading: boolean;
@@ -30,6 +33,9 @@ interface FeedContainerProps {
     onOpenOwnerMenu: (post: FeedPost) => void;
     onPostViewed?: (postId: number) => void;
     currentUserId: string | null;
+
+    isEnrolled: boolean;
+    onGetApproved: () => void;
 }
 
 export function FeedContainer({
@@ -49,80 +55,91 @@ export function FeedContainer({
     onOpenOwnerMenu,
     currentUserId,
     onPostViewed,
+    isEnrolled,
+    onGetApproved,
 }: FeedContainerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
-    const sentinelRef = useRef<HTMLDivElement>(null);
+    const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
-    // Pull-to-refresh hook — must come BEFORE any useEffect that uses it
+    // Track the scroll element as state so both hooks re-bind when it mounts.
+    useEffect(() => {
+        setScrollEl(containerRef.current);
+    }, []);
+
     const pull = usePullToRefresh({
         onRefresh,
         enabled: true,
     });
 
-    // Hand the real scroller to the pull hook once it mounts
     useEffect(() => {
-        pull.setScrollEl(containerRef.current);
-    }, [pull.setScrollEl]);
+        pull.setScrollEl(scrollEl);
+    }, [pull.setScrollEl, scrollEl]);
 
-    // ── Infinite scroll sentinel ──────────────────────────────
+    const push = usePushToLoadMore({
+        onLoadMore,
+        loadingMore,
+        hasMore,
+        scrollEl,
+        enabled: true,
+    });
+
+    // ── Active card tracking ─────────────────────────────────
+    const onVisibleRef = useRef(onVisible);
     useEffect(() => {
-        if (!sentinelRef.current) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !loadingMore) {
-                    onLoadMore();
-                }
-            },
-            { root: containerRef.current, rootMargin: "400px" }
-        );
-        observer.observe(sentinelRef.current);
-        return () => observer.disconnect();
-    }, [hasMore, loadingMore, onLoadMore]);
+        onVisibleRef.current = onVisible;
+    }, [onVisible]);
 
-    // ── Active card tracking ──────────────────────────────────
-    const handleVisible = useCallback(
-        (index: number) => {
-            if (index === activeIndex) return;
-            setActiveIndex(index);
-            onVisible(index);
-        },
-        [activeIndex, onVisible]
-    );
+    const handleVisible = useCallback((index: number) => {
+        setActiveIndex((prev) => (prev === index ? prev : index));
+        onVisibleRef.current(index);
+    }, []);
 
-    // ── SCROLL OBSERVER (desktop + mobile) ────────────────────
-    // Watches every card. Whichever card is >= 50% visible wins.
-    // Works with mouse wheel, trackpad, touch — any input source.
+    // ── SCROLL OBSERVER ──────────────────────────────────────
     useEffect(() => {
         const root = containerRef.current;
         if (!root) return;
 
-        const cards = root.querySelectorAll<HTMLElement>("[data-neldes-card]");
-        if (cards.length === 0) return;
+        let observer: IntersectionObserver | null = null;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                let best: IntersectionObserverEntry | null = null;
-                for (const e of entries) {
-                    if (!e.isIntersecting) continue;
-                    if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
-                }
-                if (!best) return;
-                const idx = Number(best.target.getAttribute("data-neldes-index") ?? "-1");
-                if (idx >= 0) handleVisible(idx);
-            },
-            { root, threshold: [0.5, 0.6, 0.75, 1.0] }
-        );
+        const attach = () => {
+            observer?.disconnect();
+            const cards = root.querySelectorAll<HTMLElement>("[data-neldes-card]");
+            if (cards.length === 0) {
+                observer = null;
+                return;
+            }
+            observer = new IntersectionObserver(
+                (entries) => {
+                    let best: IntersectionObserverEntry | null = null;
+                    for (const e of entries) {
+                        if (!e.isIntersecting) continue;
+                        if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
+                    }
+                    if (!best) return;
+                    const idx = Number(best.target.getAttribute("data-neldes-index") ?? "-1");
+                    if (idx >= 0) handleVisible(idx);
+                },
+                { root, threshold: [0.5, 0.6, 0.75, 1.0] }
+            );
+            cards.forEach((c) => observer!.observe(c));
+        };
 
-        cards.forEach((c) => observer.observe(c));
-        return () => observer.disconnect();
-    }, [posts.length, handleVisible]);
+        attach();
+
+        const mo = new MutationObserver(() => attach());
+        mo.observe(root, { childList: true, subtree: true });
+
+        return () => {
+            mo.disconnect();
+            observer?.disconnect();
+        };
+    }, [handleVisible]);
 
     if (error && posts.length === 0) {
         return <EmptyFeed kind="error" message={error} onRetry={onRefresh} />;
     }
 
-    // ── INITIAL LOADING — ONE full-screen skeleton card ────────
     if (loading && posts.length === 0) {
         return (
             <div className="w-full h-full" style={{ backgroundColor: NELDES_COLORS.bg }}>
@@ -154,7 +171,7 @@ export function FeedContainer({
                 msOverflowStyle: "none",
             }}
         >
-            {/* Pull indicator — sits on top of the scroller */}
+            {/* Pull indicator (top) */}
             <div
                 className="sticky top-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none"
                 style={{
@@ -189,7 +206,7 @@ export function FeedContainer({
                 </div>
             </div>
 
-            {/* Inner wrapper — THIS is what moves on pull */}
+            {/* Inner wrapper */}
             <div
                 style={{
                     transform: `translateY(${pull.refreshing ? pull.threshold : pull.pull}px)`,
@@ -198,18 +215,16 @@ export function FeedContainer({
                 }}
             >
                 {posts.map((post, index) => {
-                    // Progressive CTA placement:
-                    //   after 3 posts, then 5 more, then 7 more, then 9 more...
-                    //   = positions 3, 8, 15, 24, 35, 48, ...
-                    //   = n*(n+1)/2 + n  for n = 1, 2, 3, ...
-                    // Compute by walking the sequence until we pass the current index.
                     let ctaAt = false;
                     {
-                        let next = 3;      // first CTA after 3 posts
-                        let step = 5;      // next gap is 5, then 7, 9...
+                        let next = 3;
+                        let step = 5;
                         let pos = next;
                         while (pos <= posts.length) {
-                            if (index + 1 === pos) { ctaAt = true; break; }
+                            if (index + 1 === pos) {
+                                ctaAt = true;
+                                break;
+                            }
                             if (pos > index + 1) break;
                             next += step;
                             step += 2;
@@ -219,7 +234,6 @@ export function FeedContainer({
 
                     return (
                         <div key={`fragment-${post.id}`} className="contents">
-                            {/* Real post */}
                             <div
                                 data-neldes-card
                                 data-neldes-index={index}
@@ -240,27 +254,88 @@ export function FeedContainer({
                                 />
                             </div>
 
-                            {/* Inline CTA — appears at 3, 8, 15, 24, 35… */}
                             {ctaAt && (
                                 <div
                                     data-neldes-card
                                     data-neldes-index={`create-${index}`}
                                     className="w-full h-full snap-start snap-always flex-shrink-0"
                                 >
-                                    <CreatePostCard onCreate={onCreate} position={index + 1} />
+                                    <CreatePostCard
+                                        onCreate={onCreate}
+                                        position={index + 1}
+                                        isEnrolled={isEnrolled}
+                                        onGetApproved={onGetApproved}
+                                    />
                                 </div>
                             )}
                         </div>
                     );
                 })}
 
-                {loadingMore && (
+                {/* Inline loading card while fetching */}
+                {(loadingMore || push.requesting) && (
                     <div className="w-full h-full snap-start snap-always flex-shrink-0">
                         <LoadingCard />
                     </div>
                 )}
+                {!hasMore && !loadingMore && posts.length > 0 && (
+                    <div
+                        data-neldes-card
+                        data-neldes-index="end"
+                        className="w-full h-full snap-start snap-always flex-shrink-0 flex flex-col"
+                    >
+                        <div className="flex-1 flex items-center justify-center px-6">
+                            <p className="text-white/60 text-sm font-medium text-center">
+                                No more content
+                            </p>
+                        </div>
+                        <div className="flex-shrink-0" style={{ height: "60%" }}>
+                            <CreatePostCard
+                                onCreate={onCreate}
+                                position={posts.length + 1}
+                                isEnrolled={isEnrolled}
+                                onGetApproved={onGetApproved}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
 
-                <div ref={sentinelRef} className="h-1 w-full" aria-hidden />
+            {/* Push indicator (bottom) — mirrors pull, appears when user
+                swipes up at the end while a load is pending/in-flight. */}
+            <div
+                className="sticky bottom-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none"
+                style={{
+                    height: push.requesting ? push.threshold : push.push,
+                    transition: push.requesting ? "height 0.2s ease-out" : "none",
+                    overflow: "hidden",
+                    marginTop: `-${push.requesting ? push.threshold : push.push}px`,
+                }}
+            >
+                <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center"
+                    style={{
+                        backgroundColor: "rgba(0,0,0,0.55)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        opacity: push.requesting ? 1 : 0.4 + push.progress * 0.6,
+                        transform: `scale(${push.requesting ? 1 : 0.6 + push.progress * 0.4})`,
+                    }}
+                >
+                    {push.requesting ? (
+                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <span
+                            className="text-white text-xs font-bold"
+                            style={{
+                                transform: `rotate(${push.progress >= 1 ? 0 : 180}deg)`,
+                                transition: "transform 0.2s",
+                            }}
+                        >
+                            ↑
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
     );

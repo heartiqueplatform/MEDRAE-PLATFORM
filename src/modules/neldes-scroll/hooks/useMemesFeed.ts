@@ -27,6 +27,8 @@ export function useMemesFeed() {
             cursorRef.current = new Date().toISOString();
             seenIdsRef.current.clear();
             setLoading(true);
+            // Reset the end-of-feed latch so a refresh can revive the feed.
+            setHasMore(true);
         } else {
             setLoadingMore(true);
         }
@@ -34,15 +36,30 @@ export function useMemesFeed() {
 
         try {
             const page = await fetchFeedPage(cursorRef.current, FEED_PAGE_SIZE);
+
+            // Advance the cursor off the RAW page (not the deduped subset).
+            // Otherwise overlapping rows never move the cursor forward and
+            // the next fetch re-requests the same boundary rows forever.
+            if (page.length > 0) {
+                cursorRef.current = page[page.length - 1].published_at;
+            }
+
             const fresh = page.filter((p) => !seenIdsRef.current.has(p.id));
             fresh.forEach((p) => seenIdsRef.current.add(p.id));
 
-            if (fresh.length === 0) {
+            // End-of-feed is decided by the SERVER page size, not by the
+            // client dedupe count. A fully-deduped page is a retry signal,
+            // not proof that the feed is exhausted.
+            if (page.length < FEED_PAGE_SIZE) {
                 setHasMore(false);
-            } else {
-                setPosts((prev) => (isRefresh ? fresh : [...prev, ...fresh]));
-                cursorRef.current = fresh[fresh.length - 1].published_at;
             }
+
+            if (fresh.length > 0) {
+                setPosts((prev) => (isRefresh ? fresh : [...prev, ...fresh]));
+            }
+            // If fresh.length === 0 but page.length > 0, the cursor has
+            // already advanced, so the next sentinel call will fetch the
+            // next window. Nothing to append; keep hasMore as-is.
         } catch (e: any) {
             setError(e?.message || "Failed to load feed");
         } finally {
