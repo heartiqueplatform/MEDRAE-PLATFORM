@@ -374,7 +374,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/live-classes",
   "/nursing/quiz",
   "/streak/restore",
-  "/last-minute",
+
   "/neldes",
 ];
 const FooterGate = ({ user }: { user: any }) => {

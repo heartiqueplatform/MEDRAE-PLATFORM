@@ -151,7 +151,7 @@ export function FeedContainer({
             </div>
         );
     }
-
+    // empty branch — ADD the two props
     if (!loading && posts.length === 0) {
         return (
             <EmptyFeed
@@ -159,6 +159,8 @@ export function FeedContainer({
                 message="Be the first to make Medspite Scroll."
                 onRetry={onRefresh}
                 onCreate={onCreate}
+                isEnrolled={isEnrolled}
+                onGetApproved={onGetApproved}
             />
         );
     }
