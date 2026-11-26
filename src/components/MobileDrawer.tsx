@@ -1085,10 +1085,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                         </div>
                                         <ChevronRight className="h-4 w-4 text-slate-400 dark:text-[#6e7681] flex-shrink-0" />
                                     </button>
-                                    {/* ── REFERRAL CARD ── */}
-                                    {isLearner && (
-                                        <ReferralCard onNavigate={() => setIsOpen(false)} />
-                                    )}
+
                                     {/* HORIZONTAL IDENTITY STRIP */}
                                     <div className="-mx-3.5 px-3.5">
                                         <div className="flex items-center gap-2 px-1 pb-2">
@@ -1138,7 +1135,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                             })}
                                         </div>
                                     </div>
-
+                                    {/* ── REFERRAL CARD ── */}
+                                    {isLearner && (
+                                        <ReferralCard onNavigate={() => setIsOpen(false)} />
+                                    )}
                                     {/* SECTIONS */}
                                     <div className="space-y-4">
                                         {sections.map((section, idx) => section.items.length > 0 && (

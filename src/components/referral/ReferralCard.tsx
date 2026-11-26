@@ -2,16 +2,20 @@
 
 import { memo, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Gift, ChevronRight, Sparkles, Users } from "lucide-react";
+import { ChevronRight, Users } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
 import {
     getMyReferralCode,
     getMyReferralStats,
     type ReferralStats,
 } from "@/lib/referrals";
+import ShareLottie from "@/components/lottie/ShareLottie";
 
 const CACHE_KEY = "sidebar_cache_referral_v1";
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
+
+// 👇 single knob for card height
+const CARD_HEIGHT = 300;
 
 type CachedReferral = {
     code: string;
@@ -57,17 +61,14 @@ export const ReferralCard = memo(function ReferralCard({
     );
     const [ready, setReady] = useState<boolean>(!!cached);
 
-    // Fetch fresh in the background (cache-first paint, then refresh)
     useEffect(() => {
         if (!userId) return;
         let cancelled = false;
 
-        const stale =
-            !cached || Date.now() - cached.ts > CACHE_TTL;
+        const stale = !cached || Date.now() - cached.ts > CACHE_TTL;
 
         (async () => {
             try {
-                // Always have a code ready — cheap call
                 const freshCode = await getMyReferralCode(userId);
                 if (cancelled) return;
                 if (freshCode) {
@@ -92,13 +93,11 @@ export const ReferralCard = memo(function ReferralCard({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
-    // Don't render a broken card
     if (!ready || !code) return null;
 
     const hasEarned = stats.daysEarned > 0;
     const hasPending = stats.pending > 0;
 
-    // Contextual subtitle — the "smart" bit
     let subtitle: string;
     if (hasEarned && hasPending) {
         subtitle = `+${stats.daysEarned} days earned · ${stats.pending} pending`;
@@ -114,79 +113,94 @@ export const ReferralCard = memo(function ReferralCard({
 
     const handleClick = () => {
         if (navigator.vibrate) navigator.vibrate(10);
-        // Navigate FIRST so /share mounts behind the drawer
         navigate("/share");
-        // Then close on the next frame — drawer animates out over the NEW page
         requestAnimationFrame(() => onNavigate?.());
     };
+
     return (
         <button
             onClick={handleClick}
-            className="group relative w-full overflow-hidden rounded-2xl p-3.5 text-left
-                       bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700
-                       dark:from-blue-700 dark:via-blue-700 dark:to-indigo-800
-                       shadow-md shadow-blue-600/20
+            className="group relative w-full overflow-hidden rounded-xl text-left
+                       bg-white dark:bg-[#0d1117]
+                       ring-0 shadow-none
                        active:scale-[0.98] transition-transform"
             style={{
                 touchAction: "manipulation",
                 WebkitTapHighlightColor: "transparent",
+                height: CARD_HEIGHT,
+                minHeight: CARD_HEIGHT,
             }}
             aria-label="Open referral program"
         >
-            {/* decorative blob */}
+            {/* ===== FULL-BLEED LOTTIE — nothing else ===== */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-white/10 blur-xl"
-            />
+                className="pointer-events-none absolute inset-0"
+            >
+                <ShareLottie loop />
+            </div>
 
-            <div className="relative flex items-center gap-3">
-                <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full
-                               bg-white/20 ring-1 ring-white/30"
-                >
-                    {hasEarned ? (
-                        <Gift className="h-5 w-5 text-white" strokeWidth={2.4} />
-                    ) : (
-                        <Sparkles
-                            className="h-5 w-5 text-white"
-                            strokeWidth={2.4}
-                        />
-                    )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                        <p className="text-[13px] font-bold text-white leading-tight">
-                            Invite & Earn
-                        </p>
-                        <span
-                            className="rounded-full bg-amber-400 px-1.5 py-0.5
-                                       text-[8.5px] font-extrabold uppercase tracking-wider text-amber-950"
-                        >
-                            +2 days
-                        </span>
-                    </div>
-                    <p className="mt-0.5 text-[10.5px] font-medium text-blue-50/90 truncate">
-                        {subtitle}
+            {/* ===== Content pinned to the bottom, protected by text-shadow only ===== */}
+            <div
+                className="relative flex h-full flex-col justify-end p-4"
+                style={{ minHeight: CARD_HEIGHT }}
+            >
+                <div className="flex items-center gap-1.5">
+                    <p
+                        className="text-[16px] font-bold text-slate-900 dark:text-[#f0f6fc] leading-tight
+                                   drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]
+                                   dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                    >
+                        Invite & Earn
                     </p>
-                    <div className="mt-1 flex items-center gap-2 text-[9.5px] font-semibold text-blue-100/80">
-                        <span className="font-mono tracking-wider">{code}</span>
-                        {hasEarned && (
-                            <>
-                                <span className="h-1 w-1 rounded-full bg-blue-200/60" />
-                                <span className="inline-flex items-center gap-0.5">
-                                    <Users className="h-2.5 w-2.5" />
-                                    {stats.invites}
-                                </span>
-                            </>
-                        )}
-                    </div>
+                    <span
+                        className="rounded-full bg-blue-600 px-1.5 py-0.5
+                                   text-[9px] font-extrabold uppercase tracking-wider text-white"
+                    >
+                        +2 days
+                    </span>
                 </div>
 
-                <ChevronRight
-                    className="h-4 w-4 flex-shrink-0 text-white/80
-                               group-active:translate-x-0.5 transition-transform"
-                />
+                <p
+                    className="mt-1 text-[11.5px] font-medium text-slate-600 dark:text-[#8b949e]
+                               drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]
+                               dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                >
+                    {subtitle}
+                </p>
+
+                <div className="mt-3 flex items-center gap-2">
+                    <span
+                        className="rounded-full bg-white/90 dark:bg-[#161b22]/90 px-2.5 py-1
+                                   font-mono text-[10.5px] font-semibold tracking-wider
+                                   text-slate-700 dark:text-[#c9d1d9]
+                                   backdrop-blur-sm"
+                    >
+                        {code}
+                    </span>
+                    {hasEarned && (
+                        <span
+                            className="inline-flex items-center gap-1 rounded-full
+                                       bg-white/90 dark:bg-[#161b22]/90 px-2.5 py-1
+                                       text-[10px] font-semibold
+                                       text-slate-700 dark:text-[#c9d1d9]
+                                       backdrop-blur-sm
+                                       ring-1 ring-slate-200/70 dark:ring-[#30363d]/70"
+                        >
+                            <Users className="h-3 w-3" />
+                            {stats.invites}
+                        </span>
+                    )}
+                    <span
+                        className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-semibold
+                                   text-blue-600 dark:text-[#58a6ff]
+                                   drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]
+                                   dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                    >
+                        Share
+                        <ChevronRight className="h-3.5 w-3.5 group-active:translate-x-0.5 transition-transform" />
+                    </span>
+                </div>
             </div>
         </button>
     );
