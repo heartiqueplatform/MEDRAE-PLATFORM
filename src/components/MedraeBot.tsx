@@ -351,7 +351,7 @@ const MedraeBot = () => {
         if (!referralCode) return;
         window.open(
             `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(
-                "🎓 Free AI tutor for students — use my link and we both get Premium:"
+                "🎓 Study smarter with Medrae Nursing — join through my link and we both unlock FREE Premium access!"
             )}`,
             "_blank"
         );
@@ -362,7 +362,7 @@ const MedraeBot = () => {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: "Medrae — free AI tutor for students",
+                    title: "Medrae Nursing — Your smarter companion for nursing education.",
                     text: "🎓 Use my link and we BOTH get FREE Premium:",
                     url: shareUrl,
                 });

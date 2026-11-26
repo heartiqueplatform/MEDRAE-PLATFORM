@@ -32,7 +32,7 @@ const tap = (type: "light" | "success" = "light") => {
 const SHARE_IMAGE_PATH = "/medraeshare.jpeg";
 
 const buildShareMessage = (code: string): string =>
-    `🎓 I'm studying smarter with *Medrae* — an AI tutor for students.\n\n` +
+    `🎓 I'm studying smarter with *Medrae* — A smarter study companion for nursing students.\n\n` +
     `Use my link and we BOTH get FREE Premium:\n` +
     `👉 https://medrae.app/?ref=${code}\n\n` +
     `You get 1 day free. I get 2. Everyone wins 💚`;
@@ -253,7 +253,7 @@ export function CheckpointOverlay({
             `https://t.me/share/url?url=${encodeURIComponent(
                 shareUrl
             )}&text=${encodeURIComponent(
-                "🎓 Free AI tutor for students — use my link and we both get Premium:"
+                "🎓 Study smarter with Medrae Nursing — join through my link and we both unlock FREE Premium access!"
             )}`,
             "_blank"
         );
@@ -281,7 +281,7 @@ export function CheckpointOverlay({
                 try {
                     await navigator.share({
                         files: [file],
-                        title: "Medrae — free AI tutor for students",
+                        title: "Medrae Nursing — Your smarter companion for nursing education.",
                         text: `${text}\n${shareUrl}`,
                     });
                     return;
@@ -293,7 +293,7 @@ export function CheckpointOverlay({
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: "Medrae — free AI tutor for students",
+                    title: "Medrae Nursing — Your smarter companion for nursing education.",
                     text,
                     url: shareUrl,
                 });

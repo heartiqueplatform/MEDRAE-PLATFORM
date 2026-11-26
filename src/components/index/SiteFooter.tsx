@@ -232,7 +232,7 @@ export default function SiteFooter() {
                                     Ready to start preparing?
                                 </p>
                                 <p className="text-[11px] md:text-[12px] mt-0.5" style={{ color: "#8b949e" }}>
-                                    Create your free account and access 6,500+ questions, AI tutoring, CPD portfolio, and more.
+                                    Create your free account and access 10k+ questions, AI tutoring, CPD portfolio, and more.
                                 </p>
                             </div>
                             <button
