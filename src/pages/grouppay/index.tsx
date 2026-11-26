@@ -210,7 +210,10 @@ export default function GroupPayHome() {
                 {showSkeleton ? (
                     <SkeletonLayout />
                 ) : (
-                    <div className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4 pb-32 safe-bottom">
+                    <div
+                        className="w-full md:max-w-6xl md:mx-auto md:px-4 md:pt-4"
+                        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 160px)' }}
+                    >
                         {/* ── HERO CAROUSEL ──────────────────────── */}
                         <section
                             className="relative -mx-0 md:rounded-2xl md:overflow-hidden"

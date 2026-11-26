@@ -233,13 +233,29 @@ export default function StudentDashboard() {
   const [activeFilter, setActiveFilter] = useState<string | null>("all");
   const handleFilterChange = useCallback((filter: StudentFilter) => {
     if (navigator.vibrate) navigator.vibrate(10);
+
+    // Tapping the same pill again → reset
     if (activeFilter === filter.id) {
       setActiveFilter("all");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
     setActiveFilter(filter.id);
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+    // Scroll to the matching section once it's rendered
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (filter.targetId === "top") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+        const el = document.getElementById(filter.targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 50);
+    });
   }, [activeFilter]);
 
   // ─── Refs ───

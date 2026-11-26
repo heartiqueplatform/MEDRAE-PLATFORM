@@ -153,18 +153,32 @@ function UnitRow({ subject, onOpen }: { subject: any; onOpen: () => void }) {
         </div>
 
         <div className="mt-1.5 flex items-center gap-2">
-          <div className="flex-1 h-1 rounded-full overflow-hidden
-                          bg-slate-100 dark:bg-white/[0.06]">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${subject.progress}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className={`h-full rounded-full ${barColor}`}
-            />
+          {/* Tiny battery — fixed size, left aligned */}
+          <div className="flex items-center gap-[2px] shrink-0">
+            <div className="relative w-[34px] h-[10px] rounded-[3px]
+                    border-[1.5px] border-slate-300 dark:border-slate-600
+                    p-[1.5px] overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${subject.progress}%` }}
+                transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+                className={`h-full rounded-[1.5px] ${barColor}`}
+              />
+            </div>
+            {/* Battery nub */}
+            <span className="w-[2px] h-[4px] rounded-r-[1px] bg-slate-300 dark:bg-slate-600 shrink-0" />
           </div>
-          <span className="shrink-0 text-[10px] font-bold tabular-nums
-                           text-slate-600 dark:text-slate-300 w-7 text-right">
+
+          {/* % label right next to it */}
+          <span className="text-[10px] font-bold tabular-nums text-slate-600 dark:text-slate-300">
             {subject.progress}%
+          </span>
+
+          {/* push the rest of the row (attempts · hours) to the right */}
+          <span className="ml-auto text-[10px] text-slate-500 dark:text-slate-400 tabular-nums truncate">
+            {subject.topicsCompleted} attempt{subject.topicsCompleted === 1 ? "" : "s"}
+            <span className="mx-1 opacity-60">·</span>
+            {subject.hoursStudied}h
           </span>
         </div>
 

@@ -589,36 +589,96 @@ export function Footer() {
             {!chatOpen && (
                 <>
                     {/* DRAWER CHEVRON — tap to open menu */}
+                    {/* DRAWER CHEVRON — tap to open menu */}
                     <button
                         onClick={openDrawer}
+                        onPointerDown={(e) => {
+                            e.currentTarget.style.transform = "translateX(-50%) scale(0.82)";
+                        }}
+                        onPointerUp={(e) => {
+                            e.currentTarget.style.transform = "translateX(-50%) scale(1)";
+                        }}
+                        onPointerLeave={(e) => {
+                            e.currentTarget.style.transform = "translateX(-50%) scale(1)";
+                        }}
                         data-drawer-handle
                         aria-label="Open menu"
-                        className={`fixed left-1/2 -translate-x-1/2 z-[101] md:hidden
-    flex items-center justify-center w-12 h-6
-    transition-all duration-300 ease-out
-    ${isVisible ? 'translate-y-0 opacity-100 animate-pulse' : 'translate-y-full opacity-0'}`}
-                        style={{ bottom: `${footerHeight + 8}px`, touchAction: "manipulation" }}
+                        className={`fixed left-1/2 z-[101] md:hidden
+        flex items-center justify-center w-14 h-8
+        transition-all duration-300 ease-out
+        ${isVisible ? 'opacity-100' : 'translate-y-full opacity-0'}`}
+                        style={{
+                            bottom: `${footerHeight + 8}px`,
+                            touchAction: "manipulation",
+                            transform: "translateX(-50%) scale(1)",
+                            transition: "transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease-out",
+                            WebkitTapHighlightColor: "transparent",
+                        }}
                     >
-                        <svg
-                            width="20"
-                            height="10"
-                            viewBox="0 0 20 10"
-                            fill="none"
-                            style={{
-                                filter: theme === 'dark'
-                                    ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))'
-                                    : 'drop-shadow(0 1px 2px rgba(255,255,255,0.9))',
-                            }}
-                        >
-                            <path
-                                d="M2 8L10 2L18 8"
-                                stroke={theme === 'dark' ? '#ffffff' : '#000000'}
-                                strokeWidth="2.2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
+                        <span className="chevron-glow-wrap">
+                            <svg
+                                width="26"
+                                height="13"
+                                viewBox="0 0 26 13"
+                                fill="none"
+                                className="chevron-svg"
+                            >
+                                <path
+                                    d="M3 10L13 3L23 10"
+                                    stroke="currentColor"
+                                    strokeWidth="3.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        </span>
                     </button>
+
+                    <style>{`
+  .chevron-glow-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #60a5fa;
+    animation: chevronColorCycle 3s linear infinite;
+  }
+
+  .chevron-glow-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -2px -4px;
+    border-radius: 999px;
+    background: currentColor;
+    filter: blur(4px);
+    opacity: 0.35;
+    z-index: -1;
+    animation: chevronGlowGrow 1.8s ease-in-out infinite;
+  }
+
+  .chevron-svg {
+    animation: chevronPulse 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes chevronPulse {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-2px) scale(1.06); }
+  }
+
+  @keyframes chevronGlowGrow {
+    0%, 100% { opacity: 0.25; transform: scale(0.95); }
+    50%      { opacity: 0.5;  transform: scale(1.08); }
+  }
+
+  @keyframes chevronColorCycle {
+    0%   { color: #60a5fa; }
+    33%  { color: #a78bfa; }
+    66%  { color: #22d3ee; }
+    100% { color: #60a5fa; }
+  }
+`}</style>
 
                     {/* TAB BAR */}
                     <div

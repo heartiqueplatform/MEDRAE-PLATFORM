@@ -2,9 +2,9 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
     Sparkles,
     PlusCircle,
@@ -20,24 +20,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import { playSound } from "@/lib/soundManager";
-
-/* ------------------------------------------------------------------ */
-/*  Carousel images — matched to unit-card image height               */
-/* ------------------------------------------------------------------ */
-const CAROUSEL_IMAGES = [
-    {
-        src: "https://plus.unsplash.com/premium_photo-1672660509844-449cb70bfcbe?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
-        alt: "Creator writing quiz questions",
-    },
-    {
-        src: "https://images.unsplash.com/photo-1604594849809-dfedbc827105?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
-        alt: "Nursing study notes and coins",
-    },
-    {
-        src: "https://images.unsplash.com/photo-1772413438631-a4bc7ccf0f4a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
-        alt: "Students collaborating on quizzes",
-    },
-] as const;
+import RevenueLottie from "@/components/lottie/RevenueLottie";
 
 /* ------------------------------------------------------------------ */
 /*  Coin rewards                                                      */
@@ -67,16 +50,10 @@ export function QuizContributionCard({ compact = false }: Props) {
     const navigate = useNavigate();
     const [summary, setSummary] = useState<OwnQuizSummary | null>(null);
     const [loading, setLoading] = useState(false);
-    const [imgIndex, setImgIndex] = useState(0);
 
-    /* ── Auto-advance carousel every 4s ── */
-    useEffect(() => {
-        const t = setInterval(
-            () => setImgIndex((i) => (i + 1) % CAROUSEL_IMAGES.length),
-            4000
-        );
-        return () => clearInterval(t);
-    }, []);
+    // Lazy-mount the Lottie when the card scrolls into view
+    const bannerRef = useRef<HTMLDivElement>(null);
+    const bannerInView = useInView(bannerRef, { once: true, margin: "120px" });
 
     /* ── Fetch author stats ── */
     useEffect(() => {
@@ -164,26 +141,21 @@ export function QuizContributionCard({ compact = false }: Props) {
                        text-gray-900 dark:text-white
                        h-full min-h-[28rem] flex flex-col"
         >
-            {/* ══ CAROUSEL (matches unit card image height) ══ */}
-            <div className="relative h-60 sm:h-64 w-full overflow-hidden shrink-0">
-                <AnimatePresence mode="wait">
-                    <motion.img
-                        key={imgIndex}
-                        src={CAROUSEL_IMAGES[imgIndex].src}
-                        alt={CAROUSEL_IMAGES[imgIndex].alt}
-                        initial={{ opacity: 0, scale: 1.08 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.04 }}
-                        transition={{ duration: 0.9, ease: "easeOut" }}
-                        className="absolute inset-0 h-full w-full object-cover"
-                        loading={imgIndex === 0 ? "eager" : "lazy"}
-                    />
-                </AnimatePresence>
+            {/* ══ BANNER — Revenue Lottie replaces carousel ══ */}
+            <div
+                ref={bannerRef}
+                className="relative h-60 sm:h-64 w-full overflow-hidden shrink-0
+                           bg-gradient-to-br from-purple-600 via-fuchsia-600 to-indigo-700"
+            >
+                {/* Lottie hero */}
+                <div className="absolute inset-0">
+                    {bannerInView && <RevenueLottie />}
+                </div>
 
                 {/* Gradient overlay for label legibility */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
 
-                {/* Top-right "NEW" style badge */}
+                {/* Top-right "EARN" badge */}
                 <div className="absolute top-3 right-3">
                     <div className="flex items-center gap-1 text-[10px] font-bold
                                     px-2 py-1 rounded-lg
@@ -195,29 +167,15 @@ export function QuizContributionCard({ compact = false }: Props) {
                 </div>
 
                 {/* Bottom label */}
-                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-                    <div className="min-w-0">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-white/80">
-                            Creator Program
-                        </p>
-                        <p className="text-sm font-bold text-white leading-tight truncate">
-                            {hasAnyQuiz ? "Your quizzes are earning" : "Share questions. Earn MedraeCoins."}
-                        </p>
-                    </div>
-                    {/* Carousel dots */}
-                    <div className="flex gap-1 shrink-0">
-                        {CAROUSEL_IMAGES.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setImgIndex(i)}
-                                aria-label={`Show image ${i + 1}`}
-                                className={`h-1.5 rounded-full transition-all ${i === imgIndex
-                                    ? "w-4 bg-white"
-                                    : "w-1.5 bg-white/50 hover:bg-white/80"
-                                    }`}
-                            />
-                        ))}
-                    </div>
+                <div className="absolute bottom-3 left-3 right-3 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/80">
+                        Creator Program
+                    </p>
+                    <p className="text-sm font-bold text-white leading-tight truncate">
+                        {hasAnyQuiz
+                            ? "Your quizzes are earning"
+                            : "Share questions. Earn MedraeCoins."}
+                    </p>
                 </div>
             </div>
 

@@ -55,6 +55,7 @@ import { CenteredModal } from "@/components/ui/CenteredModal";
 import { useUserRole } from "@/context/UserRoleContext";
 import { getProfileCache, setProfileCache, clearProfileCache } from "@/lib/profileCache";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
+import { ReferralCard } from "./referral/ReferralCard";
 
 interface MobileDrawerProps {
     userRole?: "student" | "tutor" | "staff";
@@ -1084,7 +1085,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen, onInte
                                         </div>
                                         <ChevronRight className="h-4 w-4 text-slate-400 dark:text-[#6e7681] flex-shrink-0" />
                                     </button>
-
+                                    {/* ── REFERRAL CARD ── */}
+                                    {isLearner && (
+                                        <ReferralCard onNavigate={() => setIsOpen(false)} />
+                                    )}
                                     {/* HORIZONTAL IDENTITY STRIP */}
                                     <div className="-mx-3.5 px-3.5">
                                         <div className="flex items-center gap-2 px-1 pb-2">

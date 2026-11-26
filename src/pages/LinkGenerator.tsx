@@ -1,25 +1,30 @@
 "use client";
 
-import { useState, useCallback, memo, useRef, useEffect } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Copy,
-    Share2,
     Users,
-    MessageSquare,
     CheckCircle,
-    Heart,
-    Sparkles,
     FileText,
     Gift,
     Clock,
     Trophy,
     Crown,
+    ShieldAlert,
+    ShieldCheck,
+    Link2,
+    TrendingUp,
+    Info,
+    AlertTriangle,
+    Ban,
+    CheckCircle2,
+    ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
 import { useSession } from "@supabase/auth-helpers-react";
+import { supabase } from "@/lib/supabaseClient";
 import {
     getMyReferralCode,
     getMyReferralStats,
@@ -28,60 +33,249 @@ import {
     type ReferralStats,
 } from "@/lib/referrals";
 
+// ── Extracted ──
+import {
+    QRCodeDisplay,
+    ErrorState,
+    StatBlock,
+    HowItWorksRow,
+    StackExample,
+    RuleRow,
+} from "@/components/referral/referral-ui";
+import { generateReferralPDF } from "@/components/referral/referral-pdf";
+
 // ─────────────────────────────────────────────────────────────
-// QR Code display — unchanged
+// Compact icon buttons (red + WhatsApp green, SVG-based)
 // ─────────────────────────────────────────────────────────────
-const QRCodeDisplay = memo(({ value, qrRef }: { value: string; qrRef?: React.RefObject<HTMLDivElement> }) => (
-    <div
-        ref={qrRef}
-        className="bg-white dark:bg-slate-800 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 mb-6 shadow-inner transition-colors duration-200"
-    >
-        <QRCodeSVG
-            value={value}
-            size={200}
-            level="H"
-            className="rounded-lg w-full h-auto"
-            bgColor="#ffffff"
-            fgColor="#1e293b"
+function WhatsAppIcon({ className = "w-5 h-5" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+        </svg>
+    );
+}
+
+function ShareIcon({ className = "w-5 h-5" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </svg>
+    );
+}
+
+function CopyIcon({ className = "w-5 h-5" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+    );
+}
+
+function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Skeleton primitives
+// ─────────────────────────────────────────────────────────────
+function SkeletonLine({ width = "w-full", height = "h-3" }: { width?: string; height?: string }) {
+    return (
+        <div
+            className={`${width} ${height} rounded-md bg-slate-200/80 dark:bg-slate-700/60 animate-pulse`}
         />
-    </div>
-));
+    );
+}
 
-QRCodeDisplay.displayName = "QRCodeDisplay";
-
-// ─────────────────────────────────────────────────────────────
-// Loading skeleton (shown while we fetch the user's code)
-// ─────────────────────────────────────────────────────────────
-const LoadingState = () => (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-        <p className="mt-4 text-sm font-bold text-slate-400">Loading your invite...</p>
-    </div>
-);
-
-// ─────────────────────────────────────────────────────────────
-// Error state (rare — only if the user somehow has no code)
-// ─────────────────────────────────────────────────────────────
-const ErrorState = () => (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center">
-        <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-rose-600 dark:text-rose-400" />
+function SkeletonCard({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4">
+            {children}
         </div>
-        <h1 className="text-xl   text-slate-900 dark:text-slate-100">
-            Couldn't load your invite code
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-            Please refresh the page. If this keeps happening, contact support.
-        </p>
-    </div>
-);
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Skeleton page — mirrors the real layout so there's no jump
+// ─────────────────────────────────────────────────────────────
+function ReferralSkeleton({ onBack }: { onBack: () => void }) {
+    return (
+        <div className="h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-[#0d1117] overflow-hidden">
+            {/* Header (real) */}
+            <header className="flex-shrink-0 w-full flex items-center gap-2 px-2 h-14 safe-top bg-white dark:bg-[#0d1117]">
+                <button
+                    onClick={onBack}
+                    aria-label="Go back"
+                    className="flex items-center justify-center h-10 w-10 rounded-full
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors"
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                        Invite a Nurse
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        Share your link. Earn premium days.
+                    </p>
+                </div>
+            </header>
+
+            {/* Skeleton content — same structure as the real page */}
+            <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden no-scrollbar overscroll-contain">
+                <div className="w-full md:max-w-7xl md:mx-auto md:px-6 md:py-6 pb-24 safe-bottom">
+                    {/* Intro skeleton */}
+                    <div className="text-center space-y-2 max-w-md mx-auto w-full px-4 pt-4 md:max-w-2xl">
+                        <div className="mx-auto">
+                            <SkeletonLine width="w-3/4 mx-auto" height="h-6" />
+                        </div>
+                        <div className="mx-auto space-y-1.5">
+                            <SkeletonLine width="w-full" height="h-3" />
+                            <SkeletonLine width="w-5/6 mx-auto" height="h-3" />
+                        </div>
+                    </div>
+
+                    {/* Two column skeleton */}
+                    <div className="mt-5 grid grid-cols-1 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)] gap-4 md:gap-8 items-start px-4 md:px-0">
+                        {/* LEFT */}
+                        <div className="space-y-4">
+                            {/* Stats row */}
+                            <div className="grid grid-cols-3 gap-2">
+                                {[0, 1, 2].map((i) => (
+                                    <div
+                                        key={i}
+                                        className="bg-white dark:bg-slate-900 rounded-xl p-3 space-y-2"
+                                    >
+                                        <SkeletonLine width="w-8" height="h-8" />
+                                        <SkeletonLine width="w-12" height="h-2" />
+                                        <SkeletonLine width="w-8" height="h-4" />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* QR card skeleton */}
+                            <SkeletonCard>
+                                <div className="flex items-center justify-center gap-2.5 mb-3">
+                                    <div className="h-9 w-9 rounded-full bg-slate-200/80 dark:bg-slate-700/60 animate-pulse" />
+                                    <div className="text-left space-y-1.5">
+                                        <SkeletonLine width="w-24" height="h-3" />
+                                        <SkeletonLine width="w-16" height="h-2" />
+                                    </div>
+                                </div>
+                                <div className="mx-auto h-[196px] w-[196px] max-w-full rounded-xl bg-slate-200/80 dark:bg-slate-700/60 animate-pulse" />
+                                <div className="mt-3 space-y-2">
+                                    <SkeletonLine width="w-24 mx-auto" height="h-2" />
+                                    <SkeletonLine width="w-32 mx-auto" height="h-6" />
+                                </div>
+                            </SkeletonCard>
+
+                            {/* Action row skeleton */}
+                            <SkeletonCard>
+                                <div className="flex items-center justify-center gap-3">
+                                    {[0, 1, 2, 3].map((i) => (
+                                        <div key={i} className="flex flex-col items-center gap-1">
+                                            <div className="h-11 w-11 rounded-full bg-slate-200/80 dark:bg-slate-700/60 animate-pulse" />
+                                            <SkeletonLine width="w-10" height="h-2" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </SkeletonCard>
+                        </div>
+
+                        {/* RIGHT */}
+                        <div className="space-y-4">
+                            {/* How it works skeleton */}
+                            <SkeletonCard>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="h-4 w-4 rounded bg-slate-200/80 dark:bg-slate-700/60 animate-pulse" />
+                                    <SkeletonLine width="w-40" height="h-4" />
+                                </div>
+                                <div className="space-y-3">
+                                    {[0, 1, 2, 3].map((i) => (
+                                        <div key={i} className="flex items-start gap-3">
+                                            <div className="h-7 w-7 rounded-full bg-slate-200/80 dark:bg-slate-700/60 animate-pulse flex-shrink-0" />
+                                            <div className="flex-1 space-y-1.5">
+                                                <SkeletonLine width="w-32" height="h-3" />
+                                                <SkeletonLine width="w-full" height="h-2" />
+                                                <SkeletonLine width="w-4/5" height="h-2" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </SkeletonCard>
+
+                            {/* Stack card skeleton */}
+                            <SkeletonCard>
+                                <SkeletonLine width="w-40" height="h-3" />
+                                <div className="mt-2 space-y-1.5">
+                                    <SkeletonLine width="w-full" height="h-2" />
+                                    <SkeletonLine width="w-5/6" height="h-2" />
+                                </div>
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {[0, 1, 2].map((i) => (
+                                        <div
+                                            key={i}
+                                            className="h-14 rounded-lg bg-slate-200/80 dark:bg-slate-700/60 animate-pulse"
+                                        />
+                                    ))}
+                                </div>
+                            </SkeletonCard>
+
+                            {/* Rules card skeleton */}
+                            <SkeletonCard>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="h-4 w-4 rounded bg-slate-200/80 dark:bg-slate-700/60 animate-pulse" />
+                                    <SkeletonLine width="w-32" height="h-4" />
+                                </div>
+                                <div className="space-y-2.5">
+                                    {[0, 1, 2].map((i) => (
+                                        <div key={i} className="flex items-start gap-2">
+                                            <div className="h-4 w-4 rounded bg-slate-200/80 dark:bg-slate-700/60 animate-pulse flex-shrink-0 mt-0.5" />
+                                            <div className="flex-1 space-y-1.5">
+                                                <SkeletonLine width="w-28" height="h-3" />
+                                                <SkeletonLine width="w-full" height="h-2" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </SkeletonCard>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+                .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
+                .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+        </div>
+    );
+}
 
 // ─────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────
 export default function LinkGenerator() {
     const session = useSession();
+    const navigate = useNavigate();
     const [shortCode, setShortCode] = useState<string | null>(null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [displayName, setDisplayName] = useState<string>("");
     const [stats, setStats] = useState<ReferralStats>({
         invites: 0,
         pending: 0,
@@ -90,13 +284,24 @@ export default function LinkGenerator() {
     const [loading, setLoading] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
     const qrRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
-    // ─── Load the user's referral code + stats ───
+    /* ── Header glass on scroll ── */
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+        const onScroll = () => setScrolled(el.scrollTop > 8);
+        onScroll();
+        el.addEventListener("scroll", onScroll, { passive: true });
+        return () => el.removeEventListener("scroll", onScroll);
+    }, []);
+
+    /* ── Load code + stats + profile ── */
     useEffect(() => {
         if (!session?.user?.id) return;
         let cancelled = false;
-
         (async () => {
             const [code, s] = await Promise.all([
                 getMyReferralCode(session.user.id),
@@ -105,22 +310,39 @@ export default function LinkGenerator() {
             if (cancelled) return;
             setShortCode(code);
             setStats(s);
+
+            try {
+                const { data: profileRow } = await supabase
+                    .from("profiles")
+                    .select("avatar_url, name, username")
+                    .eq("user_id", session.user.id)
+                    .single();
+                if (!cancelled) {
+                    setAvatarUrl(profileRow?.avatar_url ?? null);
+                    setDisplayName(profileRow?.name || profileRow?.username || "");
+                }
+            } catch {
+                // Non-fatal
+            }
+
             setLoading(false);
         })();
-
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [session?.user?.id]);
 
-    // ─── Derived ───
-    const fullRedirectUrl = shortCode
-        ? buildReferralLink(shortCode)
-        : "";
+    const fullRedirectUrl = shortCode ? buildReferralLink(shortCode) : "";
+    const productionUrl =
+        typeof window !== "undefined"
+            ? window.location.origin
+            : "https://medrae.vercel.app";
 
-    const productionUrl = typeof window !== "undefined"
-        ? window.location.origin
-        : "https://medrae.vercel.app";
+    const handleBack = useCallback(() => {
+        if (navigator.vibrate) navigator.vibrate(10);
+        navigate(-1);
+    }, [navigate]);
 
-    // ─── Share handler (native share on mobile, fallback to copy) ───
     const handleShare = useCallback(async () => {
         if (!shortCode) return;
         const shareData = {
@@ -128,7 +350,6 @@ export default function LinkGenerator() {
             text: buildWhatsAppMessage(shortCode),
             url: fullRedirectUrl,
         };
-
         try {
             if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                 await navigator.share(shareData);
@@ -136,7 +357,7 @@ export default function LinkGenerator() {
             } else {
                 await navigator.clipboard.writeText(fullRedirectUrl);
                 setIsCopied(true);
-                toast.success("Link copied! Send it to your friend.");
+                toast.success("Link copied. Send it to your friend.");
                 setTimeout(() => setIsCopied(false), 2000);
             }
         } catch (err) {
@@ -147,290 +368,415 @@ export default function LinkGenerator() {
         }
     }, [fullRedirectUrl, shortCode]);
 
-    // ─── Copy link ───
     const handleCopy = useCallback(async () => {
         if (!fullRedirectUrl) return;
         try {
             await navigator.clipboard.writeText(fullRedirectUrl);
             setIsCopied(true);
-            toast.success("Link copied to clipboard!");
+            toast.success("Link copied to clipboard.");
             setTimeout(() => setIsCopied(false), 2000);
         } catch {
             toast.error("Failed to copy. Please try again.");
         }
     }, [fullRedirectUrl]);
 
-    // ─── SVG → canvas (for PDF export) ───
-    const convertSvgToCanvas = useCallback(async (svgElement: SVGElement): Promise<HTMLCanvasElement> => {
-        return new Promise((resolve, reject) => {
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            const svgString = new XMLSerializer().serializeToString(svgElement);
-            const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-            const url = URL.createObjectURL(svgBlob);
-
-            const img = new Image();
-            img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx?.drawImage(img, 0, 0, img.width, img.height);
-                URL.revokeObjectURL(url);
-                resolve(canvas);
-            };
-            img.onerror = reject;
-            img.src = url;
-        });
-    }, []);
-
-    // ─── Download QR as PDF ───
     const handleDownloadPDF = useCallback(async () => {
         if (!qrRef.current || !shortCode) return;
-
         setIsDownloading(true);
-
         try {
-            const svgElement = qrRef.current.querySelector("svg");
-            if (!svgElement) {
-                toast.error("QR code not found");
-                return;
-            }
-
-            const canvas = await convertSvgToCanvas(svgElement);
-            const qrImageData = canvas.toDataURL("image/png");
-
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "mm",
-                format: "a4",
+            await generateReferralPDF({
+                qrContainer: qrRef.current,
+                shortCode,
+                productionUrl,
             });
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-
-            // Title
-            pdf.setFontSize(24);
-            pdf.setTextColor(37, 99, 235);
-            pdf.text("MEDRAE NURSING", pageWidth / 2, 30, { align: "center" });
-
-            pdf.setFontSize(14);
-            pdf.setTextColor(100, 116, 139);
-            pdf.text("Join the No.1 Nursing Network in Kenya", pageWidth / 2, 45, { align: "center" });
-
-            // QR code
-            const qrSize = 80;
-            const qrX = (pageWidth - qrSize) / 2;
-            const qrY = 65;
-            pdf.addImage(qrImageData, "PNG", qrX, qrY, qrSize, qrSize);
-
-            // Code
-            pdf.setFontSize(18);
-            pdf.setTextColor(37, 99, 235);
-            pdf.text(shortCode, pageWidth / 2, qrY + qrSize + 15, { align: "center" });
-
-            // Instructions
-            pdf.setFontSize(11);
-            pdf.setTextColor(71, 85, 105);
-            pdf.text("Scan this QR code or enter the code above", pageWidth / 2, qrY + qrSize + 30, { align: "center" });
-            pdf.text("to get 1 day of Premium free!", pageWidth / 2, qrY + qrSize + 40, { align: "center" });
-
-            // Footer
-            pdf.setFontSize(9);
-            pdf.setTextColor(148, 163, 184);
-            pdf.text("Medrae Nursing • Empowering Kenyan Nurses", pageWidth / 2, pageHeight - 20, { align: "center" });
-            pdf.text(productionUrl, pageWidth / 2, pageHeight - 12, { align: "center" });
-
-            pdf.save(`Medrae_Invite_${shortCode}.pdf`);
-            toast.success("PDF downloaded successfully!");
+            toast.success("PDF poster downloaded. Print it and pin it up.");
         } catch (error) {
             console.error("PDF generation failed:", error);
             toast.error("Failed to generate PDF. Please try again.");
         } finally {
             setIsDownloading(false);
         }
-    }, [shortCode, productionUrl, convertSvgToCanvas]);
+    }, [shortCode, productionUrl]);
 
-    // ─── Loading / error states ───
-    if (loading) return <LoadingState />;
-    if (!shortCode) return <ErrorState />;
+    if (loading) return <ReferralSkeleton onBack={handleBack} />;
 
-    // ─── Main render ───
+    if (!shortCode) {
+        return (
+            <div className="h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-[#0d1117] overflow-hidden">
+                <header className="flex-shrink-0 w-full flex items-center gap-2 px-2 h-14 safe-top bg-white dark:bg-[#0d1117]">
+                    <button
+                        onClick={handleBack}
+                        aria-label="Go back"
+                        className="flex items-center justify-center h-10 w-10 rounded-full
+                                   text-slate-700 dark:text-slate-200
+                                   active:bg-slate-100 dark:active:bg-white/5
+                                   transition-colors"
+                        style={{ touchAction: "manipulation" }}
+                    >
+                        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
+                            Invite a Nurse
+                        </h1>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                            Share your link. Earn premium days.
+                        </p>
+                    </div>
+                </header>
+                <div className="flex-1 min-h-0 flex items-center justify-center">
+                    <ErrorState onBack={handleBack} />
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* ─── Header ─── */}
-            <div className="text-center space-y-3 max-w-md mx-auto">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                    <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h1 className="text-2xl sm:text-3xl   bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                    Invite a Nurse
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-[300px] mx-auto leading-relaxed">
-                    Share your personal link. When a friend signs up, you get <strong className="text-blue-600 dark:text-blue-400">2 days Premium</strong> — they get <strong className="text-emerald-600 dark:text-emerald-400">1 day</strong>.
-                </p>
-            </div>
-
-            {/* ─── Rewards explainer ─── */}
-            <div className="mt-5 w-full max-w-md bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-2xl p-4 border border-violet-200 dark:border-violet-900/50">
-                <div className="flex items-center gap-2 mb-3">
-                    <Gift className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                    <p className="text-xs   uppercase tracking-wider text-violet-700 dark:text-violet-300">
-                        What You Both Get
-                    </p>
-                </div>
-
-                <div className="space-y-2">
-                    {/* You */}
-                    <div className="flex items-center gap-3 bg-white/60 dark:bg-slate-900/40 rounded-xl p-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
-                            <Trophy size={15} className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-violet-900 dark:text-violet-200">
-                                You get 2 days
-                            </p>
-                            <p className="text-[10px] text-violet-600 dark:text-violet-400 leading-tight">
-                                Every real signup stacks onto your premium
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Friend */}
-                    <div className="flex items-center gap-3 bg-white/60 dark:bg-slate-900/40 rounded-xl p-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                            <Crown size={15} className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                                They get 1 day
-                            </p>
-                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 leading-tight">
-                                A free taste of Premium when they join
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* How it works */}
-                    <div className="pt-1 flex items-start gap-2">
-                        <Clock className="w-3 h-3 text-violet-500 dark:text-violet-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-violet-600 dark:text-violet-400 leading-relaxed">
-                            Rewards only unlock when they <strong>actually create an account</strong>. Clicks don't count.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Your stats — only if > 0 */}
-                {stats.invites > 0 && (
-                    <div className="mt-3 pt-3 border-t border-violet-200 dark:border-violet-900/50 flex items-center justify-center gap-3 text-[11px]   text-violet-700 dark:text-violet-300">
-                        <span>👥 {stats.invites} joined</span>
-                        <span>·</span>
-                        <span>🎁 {stats.daysEarned} days earned</span>
-                    </div>
-                )}
-            </div>
-
-            {/* ─── QR Code ─── */}
-            <div className="relative group mt-6">
-                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 rounded-[3rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
-
-                <div className="relative bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 text-center transition-colors duration-200">
-                    <QRCodeDisplay value={fullRedirectUrl} qrRef={qrRef} />
-
-                    <div className="space-y-1">
-                        <p className="text-[10px]   uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                            Your Personal Code
-                        </p>
-                        <div className="flex items-center justify-center gap-2">
-                            <p className="text-xl sm:text-2xl   text-blue-600 dark:text-blue-400 tracking-widest uppercase font-mono">
-                                {shortCode}
-                            </p>
-                            <button
-                                onClick={handleCopy}
-                                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                                title="Copy link"
-                            >
-                                {isCopied ? (
-                                    <CheckCircle className="h-4 w-4 text-green-500" />
-                                ) : (
-                                    <Copy className="h-4 w-4 text-slate-400" />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ─── Actions ─── */}
-            <div className="w-full max-w-xs space-y-3 mt-8">
-                <div className="flex gap-3">
-                    <Button
-                        onClick={handleShare}
-                        className="flex-1 h-12 sm:h-14 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all duration-200"
-                        style={{ touchAction: "manipulation" }}
-                    >
-                        <Share2 className="h-5 w-5" />
-                        Share
-                    </Button>
-
-                    <Button
-                        onClick={handleDownloadPDF}
-                        disabled={isDownloading}
-                        className="flex-1 h-12 sm:h-14 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:scale-100"
-                        style={{ touchAction: "manipulation" }}
-                    >
-                        {isDownloading ? (
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        ) : (
-                            <FileText className="h-5 w-5" />
-                        )}
-                        PDF
-                    </Button>
-                </div>
-
-                <a
-                    href={`https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(shortCode))}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full h-12 sm:h-14 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all duration-200"
+        <div className="h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-[#0d1117] overflow-hidden">
+            {/* ─── FULL-SCREEN HEADER ─────────────────────── */}
+            <header
+                className={`
+                    flex-shrink-0 w-full flex items-center gap-2 px-2 h-14
+                    z-30 safe-top transition-colors duration-200
+                    ${scrolled
+                        ? "bg-white/90 dark:bg-[#0d1117]/90 backdrop-blur-xl"
+                        : "bg-white dark:bg-[#0d1117]"
+                    }
+                `}
+            >
+                <button
+                    onClick={handleBack}
+                    aria-label="Go back"
+                    className="flex items-center justify-center h-10 w-10 rounded-full
+                               text-slate-700 dark:text-slate-200
+                               active:bg-slate-100 dark:active:bg-white/5
+                               transition-colors"
                     style={{ touchAction: "manipulation" }}
                 >
-                    <MessageSquare className="h-5 w-5" />
-                    Send via WhatsApp
-                </a>
-            </div>
-
-            {/* ─── Community proof ─── */}
-            <div className="pt-8 flex flex-col items-center gap-3">
-                <div className="flex -space-x-2">
-                    {[1, 2, 3].map((i) => (
-                        <img
-                            key={i}
-                            src={`https://i.pravatar.cc/100?img=${i + 20}`}
-                            className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"
-                            alt="Community member"
-                            loading="lazy"
-                        />
-                    ))}
-                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                        +2k
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Heart className="h-3 w-3 text-rose-500 fill-rose-500" />
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        Growing the Kenyan Nursing Tribe
+                    <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold leading-tight truncate
+                                   text-slate-900 dark:text-white">
+                        Invite a Nurse
+                    </h1>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+                        Share your link. Earn premium days.
                     </p>
-                    <Sparkles className="h-3 w-3 text-amber-500" />
+                </div>
+                <span className="shrink-0 inline-flex items-center gap-1
+                                 text-[10px] font-bold uppercase tracking-wider
+                                 px-2 py-1 rounded-full
+                                 bg-blue-50 dark:bg-blue-500/10
+                                 text-blue-700 dark:text-blue-400">
+                    +2 days each
+                </span>
+            </header>
+
+            {/* ─── SCROLLING CONTENT ─────────────────────── */}
+            <div
+                ref={contentRef}
+                className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden
+                           no-scrollbar overscroll-contain
+                           [-webkit-overflow-scrolling:touch]"
+            >
+                <div className="w-full md:max-w-7xl md:mx-auto md:px-6 md:py-6 pb-24 safe-bottom">
+                    {/* ─── INTRO ─────────────────────────── */}
+                    <div className="text-center space-y-2 max-w-md mx-auto w-full px-4 pt-4 md:max-w-2xl">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                            The more you invite, the more days you earn
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-[13px] md:text-sm leading-relaxed">
+                            Invite a fellow nurse and you both win. You get{" "}
+                            <strong className="text-blue-600 dark:text-blue-400">2 days Premium</strong>, they get{" "}
+                            <strong className="text-emerald-600 dark:text-emerald-400">1 day free</strong>. Stack unlimited days, climb the leaderboard, and help your school win School Wars.
+                        </p>
+                    </div>
+
+                    {/* ─── DESKTOP 2-COLUMN / MOBILE STACK ── */}
+                    <div className="mt-5 grid grid-cols-1 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)] gap-4 md:gap-8 items-start px-4 md:px-0">
+                        {/* ═══ LEFT: action side ═══ */}
+                        <div className="space-y-4 md:sticky md:top-4 md:self-start">
+                            {/* Stats row */}
+                            <div className="grid grid-cols-3 gap-2">
+                                <StatBlock icon={<Users className="w-4 h-4" />} label="Invites" value={stats.invites} tone="blue" />
+                                <StatBlock icon={<Gift className="w-4 h-4" />} label="Days" value={stats.daysEarned} tone="emerald" />
+                                <StatBlock icon={<Clock className="w-4 h-4" />} label="Pending" value={stats.pending} tone="amber" />
+                            </div>
+
+                            {/* QR + avatar + code */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 text-center">
+                                {/* Avatar + name strip */}
+                                <div className="flex items-center justify-center gap-2.5 mb-3">
+                                    <Avatar className="h-9 w-9 ring-2 ring-blue-100 dark:ring-blue-500/20">
+                                        <AvatarImage
+                                            src={avatarUrl || "/placeholder.svg"}
+                                            alt={displayName || "You"}
+                                            className="object-cover"
+                                        />
+                                        <AvatarFallback className="text-xs font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                                            {(displayName || "U")[0].toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-left min-w-0">
+                                        <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate max-w-[160px]">
+                                            {displayName || "Your Invite"}
+                                        </p>
+                                        <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                            Referral Link
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <QRCodeDisplay value={fullRedirectUrl} qrRef={qrRef} />
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                                    Your Personal Code
+                                </p>
+                                <div className="flex items-center justify-center gap-2 mt-1">
+                                    <p className="text-xl sm:text-2xl md:text-3xl font-mono font-bold text-blue-600 dark:text-blue-400 tracking-widest uppercase">
+                                        {shortCode}
+                                    </p>
+                                    <button
+                                        onClick={handleCopy}
+                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
+                                        title="Copy link"
+                                        aria-label="Copy referral link"
+                                    >
+                                        {isCopied ? (
+                                            <CheckCircle className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 text-slate-400" />
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        This is your <strong className="text-slate-700 dark:text-slate-200">unique link</strong>. Never share your account credentials.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* ── COMPACT ACTION ROW ────────────── */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-3">
+                                <div className="flex items-center justify-center gap-3">
+                                    {/* WhatsApp */}
+                                    <a
+                                        href={`https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(shortCode))}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label="Send via WhatsApp"
+                                        title="Send via WhatsApp"
+                                        className="group flex flex-col items-center gap-1 min-w-0"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <span className="flex items-center justify-center h-11 w-11 rounded-full
+                                                         bg-[#25D366] text-white shadow-sm
+                                                         group-active:scale-90 transition-transform">
+                                            <WhatsAppIcon className="w-5 h-5" />
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                            WhatsApp
+                                        </span>
+                                    </a>
+
+                                    {/* Share */}
+                                    <button
+                                        onClick={handleShare}
+                                        aria-label="Share link"
+                                        title="Share"
+                                        className="group flex flex-col items-center gap-1 min-w-0"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <span className="flex items-center justify-center h-11 w-11 rounded-full
+                                                         bg-red-600 text-white shadow-sm
+                                                         group-active:scale-90 transition-transform">
+                                            <ShareIcon className="w-5 h-5" />
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                            Share
+                                        </span>
+                                    </button>
+
+                                    {/* Copy */}
+                                    <button
+                                        onClick={handleCopy}
+                                        aria-label="Copy link"
+                                        title="Copy link"
+                                        className="group flex flex-col items-center gap-1 min-w-0"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <span className="flex items-center justify-center h-11 w-11 rounded-full
+                                                         bg-slate-800 dark:bg-slate-700 text-white shadow-sm
+                                                         group-active:scale-90 transition-transform">
+                                            {isCopied ? <CheckCircle className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                            {isCopied ? "Copied" : "Copy"}
+                                        </span>
+                                    </button>
+
+                                    {/* Download */}
+                                    <button
+                                        onClick={handleDownloadPDF}
+                                        disabled={isDownloading}
+                                        aria-label="Download PDF poster"
+                                        title="Download poster"
+                                        className="group flex flex-col items-center gap-1 min-w-0 disabled:opacity-50"
+                                        style={{ touchAction: "manipulation" }}
+                                    >
+                                        <span className="flex items-center justify-center h-11 w-11 rounded-full
+                                                         bg-emerald-600 text-white shadow-sm
+                                                         group-active:scale-90 transition-transform">
+                                            {isDownloading ? (
+                                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                            ) : (
+                                                <DownloadIcon className="w-5 h-5" />
+                                            )}
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                            {isDownloading ? "Saving..." : "Poster"}
+                                        </span>
+                                    </button>
+                                </div>
+                                <p className="mt-2 text-center text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                                    Tip: Download the poster and print it for your school notice board. The QR works straight off paper.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ═══ RIGHT: info side ═══ */}
+                        <div className="space-y-4">
+                            {/* How it works */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                                <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                            How the referral program works
+                                        </h2>
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-3">
+                                    <HowItWorksRow step="1" icon={<Link2 className="w-4 h-4" />} title="Share your link or post the PDF" body="Send your link on WhatsApp, or download the PDF poster and pin it on your school notice board. Only your unique link or QR counts." />
+                                    <HowItWorksRow step="2" icon={<Users className="w-4 h-4" />} title="They sign up with it" body="When they open your link and create a real account, the system automatically links them to you." />
+                                    <HowItWorksRow step="3" icon={<Crown className="w-4 h-4" />} title="They get 1 day Premium" body="Your friend receives 1 day of Premium access on signup. No payment needed." />
+                                    <HowItWorksRow step="4" icon={<Trophy className="w-4 h-4" />} title="You get 2 days Premium" body="You receive 2 days of Premium for every confirmed signup. Days stack. No cap." />
+                                </div>
+                            </div>
+
+                            {/* Stack examples */}
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-2xl p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                                        The more you invite, the more you earn
+                                    </p>
+                                </div>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    No monthly cap. Every confirmed signup stacks onto your Premium balance. Some nurses have earned over <strong className="text-blue-600 dark:text-blue-400">180 days</strong> from referrals.
+                                </p>
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                                    <StackExample invites={3} days={6} />
+                                    <StackExample invites={10} days={20} />
+                                    <StackExample invites={30} days={60} highlight />
+                                </div>
+                            </div>
+
+                            {/* Print & Post */}
+                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-2xl p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                                        Put it on your school notice board
+                                    </p>
+                                </div>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    Tap <strong className="text-emerald-700 dark:text-emerald-300">Poster</strong> to download a print ready A4 PDF with your QR code and invite code. Print it at any cyber, pin it on your hostel, class, or clinical notice board, and let classmates scan straight from the paper.
+                                </p>
+                                <ul className="mt-2 space-y-1 text-[10px] text-slate-600 dark:text-slate-400">
+                                    <li className="flex items-start gap-1.5">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                                        Print ready A4, works at any cyber or school printer
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                                        Includes your QR code and typed invite code (works without a camera)
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                                        Great for hostels, lecture halls, and clinical rotation groups
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* Rules */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                                <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                                            Rules & eligibility
+                                        </h2>
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-2.5">
+                                    <RuleRow icon={<CheckCircle2 className="w-4 h-4" />} tone="emerald" title="Real nurses only" body="Only real, verifiable nursing students and practitioners qualify." />
+                                    <RuleRow icon={<AlertTriangle className="w-4 h-4" />} tone="amber" title="One account per person" body="Each person can only be referred once. Duplicate accounts earn nothing." />
+                                    <RuleRow icon={<Ban className="w-4 h-4" />} tone="rose" title="Fake accounts are suspended" body="Creating fake accounts, using bots, or manipulating the system may lead to suspension of your account and loss of all earned rewards, just like Facebook's fake account policy." />
+                                    <RuleRow icon={<Ban className="w-4 h-4" />} tone="rose" title="Self referral is not allowed" body="You cannot refer yourself. Same device or same IP signups are reviewed." />
+                                    <RuleRow icon={<ShieldCheck className="w-4 h-4" />} tone="blue" title="Rewards can be revoked" body="Fraudulent referrals are removed from your balance without notice." />
+                                </div>
+                            </div>
+
+                            {/* Transparency */}
+                            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-4">
+                                <div className="flex items-start gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-slate-500 dark:text-slate-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        <strong className="text-slate-700 dark:text-slate-200">Our commitment:</strong> Every referral is reviewed within 24 hours. Genuine signups are credited automatically. Fraud is reversed. This keeps the program fair for thousands of real Kenyan nurses.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ─── COMMUNITY PROOF ─────────────────── */}
+                    <div className="pt-6 flex flex-col items-center gap-2 px-4">
+                        <div className="flex -space-x-2">
+                            {[1, 2, 3].map((i) => (
+                                <img
+                                    key={i}
+                                    src={`https://i.pravatar.cc/100?img=${i + 20}`}
+                                    className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800"
+                                    alt="Community member"
+                                    loading="lazy"
+                                />
+                            ))}
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                +2k
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                Growing the Kenyan Nursing Tribe
+                            </p>
+                        </div>
+                    </div>
+
+                    <p className="mt-6 text-center text-[9px] font-mono text-slate-400 dark:text-slate-600 uppercase tracking-wider px-4">
+                        Medrae Nursing Network. Invite. Earn. Print. Post. Advance.
+                    </p>
+                    <div className="h-16" aria-hidden="true" />
                 </div>
             </div>
 
-            {/* ─── Hint ─── */}
-            <p className="mt-6 text-center text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Download QR as PDF to print or share physically
-            </p>
-
-            <p className="mt-4 text-center text-[9px] font-mono text-slate-400 dark:text-slate-600 uppercase tracking-wider">
-                Medrae Nursing Network • Empowering Kenyan Nurses
-            </p>
+            {/* ─── Local safe-area helpers ─── */}
+            <style>{`
+                .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
+                .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
         </div>
     );
 }

@@ -324,6 +324,7 @@ const BottomBarWrapper = () => {
       "/wallet/admin",
       "/contribute",
       "/neldes",
+      "/share",
       // 👈 one entry, all three routes
     ];
     if (FULLSCREEN.some((p) => location.pathname.startsWith(p))) return null;
@@ -374,7 +375,7 @@ const FOOTER_HIDDEN_PREFIXES = [
   "/live-classes",
   "/nursing/quiz",
   "/streak/restore",
-
+  "/share",
   "/neldes",
 ];
 const FooterGate = ({ user }: { user: any }) => {
@@ -671,7 +672,7 @@ const AppContent = () => {
 
                           {/* Market pages */}
 
-                          <Route path="/share" element={<LinkGenerator />} />
+
 
                           {/* Student Exam Flow */}
 
@@ -838,6 +839,7 @@ const AppContent = () => {
                         <Route path="/exam/access/:paper_id" element={<PrivateRoute><ExamAccessPage /></PrivateRoute>} />
                         <Route path="/exam/:paper_id/results" element={<PrivateRoute><StudentResultsPage /></PrivateRoute>} />
                         <Route path="/exam/results" element={<PrivateRoute><ResultsListPage /></PrivateRoute>} />
+                        <Route path="/share" element={<PrivateRoute><LinkGenerator /></PrivateRoute>} />
                         {/* ═══════════════════════════════════════════════════════════
     TUTOR EXAM CONTROL — full-screen, no dashboard shell
     (same treatment as /nursing, /live-classes, /my-classes)
