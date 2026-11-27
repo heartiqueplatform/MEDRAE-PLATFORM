@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import {
     ChevronLeft, Lock, Unlock, Coins, Smartphone, Loader2, AlertCircle,
@@ -92,6 +93,7 @@ function fireConfetti() {
         origin: { x: 0.5, y: 0.35 },
         colors: ["#10B981", "#34D399", "#FCD34D"],
         disableForReducedMotion: true,
+        zIndex: 2147483647,
     });
 }
 // ── Success overlay shown immediately when payment confirmed ──
@@ -111,7 +113,7 @@ function SuccessOverlay({
         return () => window.clearTimeout(t);
     }, [onContinue, autoContinueMs]);
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_180ms_ease-out]">
             <div className="w-full max-w-sm rounded-3xl bg-card overflow-hidden shadow-2xl animate-[popIn_260ms_cubic-bezier(0.34,1.56,0.64,1)]">
                 <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-cyan-400" />
@@ -132,7 +134,8 @@ function SuccessOverlay({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -155,6 +158,7 @@ export default function LastMinuteGate() {
     const [busy, setBusy] = useState(false);
     const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
     const [showSuccess, setShowSuccess] = useState<{ title: string; subtitle: string } | null>(null);
+
     const [creatorProfileOpen, setCreatorProfileOpen] = useState(false);
     const [phone, setPhone] = useState("");
     const [tokens, setTokens] = useState(0);

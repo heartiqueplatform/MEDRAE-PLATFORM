@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Referral from "@/components/Referral";
 import { TermsButton } from "@/components/ui/TermsButton";
-
+import { createPortal } from "react-dom";
 import { DeferredMount } from "@/components/DeferredMount";
 import StudentFilters, { type StudentFilter } from "@/components/student/StudentFilters";
 import StudentSections from "@/components/student/StudentSections";
@@ -52,13 +52,13 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }: any) => {
   const config = rankConfig[rank];
   if (!config) return null;
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80"
+      className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/80"
       onClick={onClose}
       style={{ padding: "16px", overflow: "auto", WebkitOverflowScrolling: "touch" }}
     >
@@ -121,7 +121,8 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }: any) => {
           Tap anywhere to continue
         </p>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 };
 

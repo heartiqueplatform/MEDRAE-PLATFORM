@@ -30,10 +30,10 @@ export interface UploadedImage {
 /* ------------------------------------------------------------------ */
 export async function uploadMemeImage(file: File): Promise<UploadedImage> {
     const compressed = await imageCompression(file, {
-        maxSizeMB: 0.25,
-        maxWidthOrHeight: 1080,
+        maxWidthOrHeight: 1600,
+        initialQuality: 0.9,
         useWebWorker: true,
-        initialQuality: 0.85,
+        fileType: "image/jpeg",
     });
 
     const form = new FormData();
@@ -136,16 +136,15 @@ async function uploadOneWithRetry(
 
     let compressed: Blob;
     try {
-        compressed = await imageCompression(file, {
-            maxSizeMB: 0.25,
-            maxWidthOrHeight: 1080,
+        compressed = await imageCompression(file, {   // ✅ no `const` — assigns outer
+            maxWidthOrHeight: 1600,
+            initialQuality: 0.9,
             useWebWorker: true,
-            initialQuality: 0.85,
+            fileType: "image/jpeg",
         });
     } catch {
-        compressed = file; // compression failed — upload original, don't fail batch
+        compressed = file;
     }
-
     const size = compressed.size;
     let lastErr: Error | null = null;
 
