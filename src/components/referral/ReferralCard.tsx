@@ -2,25 +2,18 @@
 
 import { memo, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Users } from "lucide-react";
+import { ChevronRight, Users, Gift, Sparkles } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
 import {
     getMyReferralCode,
     getMyReferralStats,
     type ReferralStats,
 } from "@/lib/referrals";
-import ShareLottie from "@/components/lottie/ShareLottie";
 
 const CACHE_KEY = "sidebar_cache_referral_v1";
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
 
-// 👇 single knob for card height
-const CARD_HEIGHT = 300;
-
-// 👇 Lottie nudge + zoom knobs (tune these only)
-const LOTTIE_SHIFT_X = 60;   // px — big push to the RIGHT so left side is free
-const LOTTIE_SHIFT_Y = 0;    // px — positive = down, negative = up
-const LOTTIE_SCALE = 1.14;   // >1 = fills more of the card (less empty gap)
+const CARD_HEIGHT = 200;
 
 type CachedReferral = {
     code: string;
@@ -107,11 +100,9 @@ export const ReferralCard = memo(function ReferralCard({
     if (hasEarned && hasPending) {
         subtitle = `+${stats.daysEarned} days earned · ${stats.pending} pending`;
     } else if (hasEarned) {
-        subtitle = `You've earned ${stats.daysEarned} Premium ${stats.daysEarned === 1 ? "day" : "days"
-            }`;
+        subtitle = `You've earned ${stats.daysEarned} Premium ${stats.daysEarned === 1 ? "day" : "days"}`;
     } else if (hasPending) {
-        subtitle = `${stats.pending} invite${stats.pending === 1 ? "" : "s"
-            } awaiting confirmation`;
+        subtitle = `${stats.pending} invite${stats.pending === 1 ? "" : "s"} awaiting confirmation`;
     } else {
         subtitle = "Invite a nurse · earn 2 days each";
     }
@@ -125,10 +116,10 @@ export const ReferralCard = memo(function ReferralCard({
     return (
         <button
             onClick={handleClick}
-            className="group relative w-full overflow-hidden rounded-xl text-left
-                       bg-white dark:bg-[#0d1117]
-                       ring-0 shadow-none
-                       active:scale-[0.98] transition-transform"
+            className="group relative w-full overflow-hidden rounded-2xl text-left
+                       active:scale-[0.98] transition-transform
+                       bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50
+                       dark:from-[#1a1408] dark:via-[#161005] dark:to-[#1f1608]"
             style={{
                 touchAction: "manipulation",
                 WebkitTapHighlightColor: "transparent",
@@ -137,82 +128,79 @@ export const ReferralCard = memo(function ReferralCard({
             }}
             aria-label="Open referral program"
         >
-            {/* ===== FULL-BLEED LOTTIE — pushed RIGHT, left side free for text ===== */}
+            {/* soft golden glow blobs — pure CSS, no animation */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 overflow-hidden"
-            >
-                <div
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        transform: `translate(${LOTTIE_SHIFT_X}px, ${LOTTIE_SHIFT_Y}px) scale(${LOTTIE_SCALE})`,
-                        transformOrigin: "center center",
-                    }}
-                >
-                    <ShareLottie loop />
-                </div>
-            </div>
-
-            {/* ===== Content pinned to the bottom, left-aligned ===== */}
+                className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full
+                           bg-amber-300/40 dark:bg-amber-500/15 blur-2xl"
+            />
             <div
-                className="relative flex h-full flex-col justify-end p-4"
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full
+                           bg-orange-300/30 dark:bg-orange-500/10 blur-2xl"
+            />
+
+            <div
+                className="relative flex h-full flex-col p-4"
                 style={{ minHeight: CARD_HEIGHT }}
             >
-                <div className="flex items-center gap-1.5">
-                    <p
-                        className="text-[16px] font-bold text-slate-900 dark:text-[#f0f6fc] leading-tight
-                                   drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]
-                                   dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
-                    >
-                        Invite & Earn
-                    </p>
+                {/* top row — icon + bonus pill */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-center h-10 w-10 rounded-xl
+                                    bg-gradient-to-br from-amber-400 to-orange-500">
+                        <Gift className="h-5 w-5 text-white" strokeWidth={2.4} />
+                    </div>
                     <span
-                        className="rounded-full bg-blue-600 px-1.5 py-0.5
-                                   text-[9px] font-extrabold uppercase tracking-wider text-white"
+                        className="rounded-full bg-amber-500/15 dark:bg-amber-400/15
+                                   px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider
+                                   text-amber-800 dark:text-amber-300
+                                   inline-flex items-center gap-1"
                     >
+                        <Sparkles className="h-3 w-3" />
                         +2 days
                     </span>
                 </div>
 
-                <p
-                    className="mt-1 text-[11.5px] font-medium text-slate-600 dark:text-[#8b949e]
-                               drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]
-                               dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
-                >
-                    {subtitle}
-                </p>
+                {/* headline */}
+                <div className="mt-3">
+                    <p className="text-[18px] font-extrabold text-amber-950 dark:text-amber-50 leading-tight">
+                        Invite &amp; Earn
+                    </p>
+                    <p className="mt-1 text-[12px] font-medium text-amber-900/70 dark:text-amber-200/60 leading-snug">
+                        {subtitle}
+                    </p>
+                </div>
 
-                <div className="mt-3 flex items-center gap-2">
+                <div className="flex-1" />
+
+                {/* bottom row — code · invites · CTA */}
+                <div className="flex items-center gap-2 flex-wrap">
                     <span
-                        className="rounded-full bg-white/90 dark:bg-[#161b22]/90 px-2.5 py-1
-                                   font-mono text-[10.5px] font-semibold tracking-wider
-                                   text-slate-700 dark:text-[#c9d1d9]
-                                   backdrop-blur-sm"
+                        className="rounded-full bg-white/80 dark:bg-amber-950/40
+                                   px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-wider
+                                   text-amber-900 dark:text-amber-200"
                     >
                         {code}
                     </span>
                     {hasEarned && (
                         <span
                             className="inline-flex items-center gap-1 rounded-full
-                                       bg-white/90 dark:bg-[#161b22]/90 px-2.5 py-1
+                                       bg-white/80 dark:bg-amber-950/40 px-2.5 py-1
                                        text-[10px] font-semibold
-                                       text-slate-700 dark:text-[#c9d1d9]
-                                       backdrop-blur-sm
-                                       ring-1 ring-slate-200/70 dark:ring-[#30363d]/70"
+                                       text-amber-900 dark:text-amber-200"
                         >
                             <Users className="h-3 w-3" />
                             {stats.invites}
                         </span>
                     )}
                     <span
-                        className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-semibold
-                                   text-blue-600 dark:text-[#58a6ff]
-                                   drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]
-                                   dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                        className="ml-auto inline-flex items-center gap-1
+                                   rounded-full bg-gradient-to-r from-amber-500 to-orange-500
+                                   px-3 py-1.5 text-[11.5px] font-bold text-white
+                                   group-active:translate-x-0.5 transition-transform"
                     >
                         Share
-                        <ChevronRight className="h-3.5 w-3.5 group-active:translate-x-0.5 transition-transform" />
+                        <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.6} />
                     </span>
                 </div>
             </div>
