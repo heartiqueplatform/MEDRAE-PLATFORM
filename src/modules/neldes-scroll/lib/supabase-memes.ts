@@ -30,7 +30,13 @@ export async function fetchFeedPage(
 
     return (data ?? []) as FeedPost[];
 }
-
+/** Bump the total share counter on a post (every tap counts). */
+export async function incrementShare(postId: number): Promise<void> {
+    const { error } = await supabase.rpc("memes_increment_share", {
+        p_post_id: postId,
+    });
+    if (error) throw new Error(error.message);
+}
 /** Record a like / save / share / download action. */
 export async function recordInteraction(
     postId: number,
