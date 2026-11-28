@@ -104,7 +104,7 @@ export const ReferralCard = memo(function ReferralCard({
     } else if (hasPending) {
         subtitle = `${stats.pending} invite${stats.pending === 1 ? "" : "s"} awaiting confirmation`;
     } else {
-        subtitle = "Invite a nurse · earn 2 days each";
+        subtitle = "Invite a friend earn 2 days each";
     }
 
     const handleClick = () => {
