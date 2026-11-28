@@ -188,15 +188,14 @@ export function GroupPaySubscriptionCard({
                         ))}
                     </ol>
                 </div>
-
                 <button
                     type="button"
                     onClick={handleClick}
                     aria-label={isOnline ? "Create or join a group" : "Open GroupPay while offline"}
-                    className="w-full h-11 rounded-xl bg-violet-600 text-white text-sm font-bold
-                               active:scale-[0.97] transition-transform
-                               flex items-center justify-center gap-1.5
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+                    className="w-full max-w-sm mx-auto h-11 rounded-xl bg-violet-600 text-white text-sm font-bold
+               active:scale-[0.97] transition-transform
+               flex items-center justify-center gap-1.5
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
                     style={{ touchAction: "manipulation" }}
                 >
                     {isOnline ? "Create or join a group" : "Open GroupPay offline"}
