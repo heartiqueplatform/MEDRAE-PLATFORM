@@ -17,7 +17,7 @@ export const STUDENT_FILTERS: StudentFilter[] = [
     { id: "dailystatus", label: "Community Pulse", icon: Activity, targetId: "sec-dailystatus", accent: "rose" },
     { id: "dose", label: "Medrae Studify", icon: Radio, targetId: "sec-dailydose", accent: "rose" },
     { id: "wars", label: "School Board", icon: School, targetId: "sec-schoolwars", accent: "violet" },
-    { id: "algo", label: "Algorithm", icon: Brain, targetId: "sec-algorithm", accent: "emerald" },
+    { id: "algo", label: "Exam Readiness", icon: Brain, targetId: "sec-algorithm", accent: "emerald" },
     { id: "papers", label: "Proctorium", icon: FileText, targetId: "sec-proctorium", accent: "blue" },
     { id: "countdown", label: "Countdown", icon: Activity, targetId: "sec-countdown", accent: "amber" },
     { id: "leader", label: "Leaderboard", icon: Trophy, targetId: "sec-leaderboard", accent: "amber" },

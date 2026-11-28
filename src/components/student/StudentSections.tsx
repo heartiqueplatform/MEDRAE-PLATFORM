@@ -79,13 +79,7 @@ export default function StudentSections({
                 </div>
             )}
 
-            {isVisible(activeFilter, "algo") && (
-                <div id="sec-algorithm" className="scroll-mt-16">
-                    <DeferredMount fallback={<SK h={320} />}>
-                        <AlgorithmCard />
-                    </DeferredMount>
-                </div>
-            )}
+
 
             {isVisible(activeFilter, "dose") && (
                 <div id="sec-dailydose" className="scroll-mt-16">
@@ -94,7 +88,13 @@ export default function StudentSections({
                     </DeferredMount>
                 </div>
             )}
-
+            {isVisible(activeFilter, "algo") && (
+                <div id="sec-algorithm" className="scroll-mt-16">
+                    <DeferredMount fallback={<SK h={320} />}>
+                        <AlgorithmCard />
+                    </DeferredMount>
+                </div>
+            )}
             {/* Short paper 1 */}
             {isVisible(activeFilter, "papers") && (
                 <div id="sec-paper1" className="scroll-mt-16">

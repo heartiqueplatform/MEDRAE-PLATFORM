@@ -1,4 +1,4 @@
-import { Laptop, Lightbulb, Layout, Clock, ListChecks, ArrowRight, WifiOff, RefreshCw } from "lucide-react";
+import { Laptop, Lightbulb, Layout, Clock, ListChecks, ArrowRight, WifiOff, RefreshCw, ShieldCheck, Monitor } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
@@ -28,33 +28,48 @@ export default function StudentSimulationPapers({
         <DeferredMount fallback={<div className="h-[400px] rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
             <section className="mt-1 space-y-2">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 px-2 sm:px-0">
-                    <div>
-                        <h2 className="text-2xl tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-                            Proctorium Papers V1
-                            <span className="text-xs font-bold px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full">
-                                {papers.length} Available
-                            </span>
-                        </h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                            Simulations designed to mirror NCK exam conditions. Practice time management, reduce anxiety, and identify weak areas before the real exam.
-                        </p>
-                    </div>
-                </div>
+                <div className="flex flex-col gap-3 px-2 sm:px-0">
+                    {/* Header — facts only */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-2">
+                        <div>
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex items-center gap-2.5 flex-wrap">
+                                    {/* YOUR WORD — style preserved */}
+                                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                        Proctorium
+                                    </h2>
 
-                {/* Tip row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 px-2 sm:px-0">
-                    <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border-0">
-                        <Laptop className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="text-xs font-medium text-amber-800 dark:text-amber-200/80 leading-relaxed">
-                            <span className="font-bold">Desktop Recommended:</span> For the smoothest DigiProctor experience, we suggest using a laptop or tablet.
-                        </p>
+                                    {/* [🛡 DigiProctor style Environment] */}
+                                    <span className="inline-flex items-center gap-1.5 rounded-full
+                     bg-blue-100 dark:bg-blue-500/20
+                     text-blue-700 dark:text-blue-300
+                     ring-1 ring-blue-200/60 dark:ring-blue-400/20
+                     px-2.5 py-0.5 text-[11px] font-semibold">
+                                        <ShieldCheck className="w-3 h-3" />
+                                        DigiProctor style Environment
+                                    </span>
+                                </div>
+                                <span className="text-[11px] font-semibold px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full tabular-nums">
+                                    {papers.length} papers
+                                </span>
+                            </div>
+                            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">
+                                Full-length simulations under NCK exam conditions.
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/5 border-0">
-                        <Lightbulb className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <p className="text-xs font-medium text-blue-800 dark:text-blue-200/80 leading-relaxed">
-                            <span className="font-bold">Pro Tip:</span> Treat this as the real exam—find a quiet space, set a timer, and avoid breaks to build true stamina.
-                        </p>
+
+                    {/* Capability strip — replaces the two tip cards */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" /> Timed
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5" /> Proctored
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <Monitor className="w-3.5 h-3.5" /> Desktop recommended
+                        </span>
                     </div>
                 </div>
 
