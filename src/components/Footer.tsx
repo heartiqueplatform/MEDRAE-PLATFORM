@@ -62,8 +62,24 @@ const IconHeadphones = ({ active }: { active: boolean }) => (
 
 const IconNeldes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="6" y="3.5" width="14" height="19" rx="3" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
-        <path d="M11.5 9.75v6.5l5-3.25z" fill="currentColor" />
+        {/* outer card */}
+        <rect
+            x="3.5"
+            y="2.5"
+            width="19"
+            height="21"
+            rx="4"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
+        />
+        {/* scroll/feed lines (inside the card, right side) */}
+        <path d="M15.5 8.5h4" stroke={active ? "#ffffff" : "currentColor"} strokeWidth={active ? 1.9 : 1.7} strokeLinecap="round" opacity={active ? 0.9 : 0.6} />
+        <path d="M15.5 13h4" stroke={active ? "#ffffff" : "currentColor"} strokeWidth={active ? 1.9 : 1.7} strokeLinecap="round" opacity={active ? 0.9 : 0.6} />
+        <path d="M15.5 17.5h2.5" stroke={active ? "#ffffff" : "currentColor"} strokeWidth={active ? 1.9 : 1.7} strokeLinecap="round" opacity={active ? 0.9 : 0.6} />
+        {/* play triangle (left-center) */}
+        <path d="M8.5 9v8l5.5-4z" fill={active ? "#ffffff" : "currentColor"} />
     </svg>
 );
 
@@ -150,6 +166,10 @@ NavItem.displayName = "NavItem";
 /* ============================================================
    PRIMARY NAV ITEM — elevated center tile (Neldes)
    ============================================================ */
+/* ============================================================
+   PRIMARY NAV ITEM — elevated center tile (Medspite)
+   Clean solid surface, no glow, no gradient.
+   ============================================================ */
 const PrimaryNavItem = memo(({
     icon: Icon, label, isActive, onPress, isDark, hintVisible, onLongPress,
 }: {
@@ -186,6 +206,15 @@ const PrimaryNavItem = memo(({
         ? (isDark ? "text-blue-400" : "text-blue-600")
         : (isDark ? "text-white/70" : "text-black/70");
 
+    // Single chosen accent — no glow, no gradient
+    const tileBg = isActive
+        ? (isDark ? "#1d4ed8" : "#2563eb")   // strong blue when active
+        : (isDark ? "#1e293b" : "#e2e8f0");  // calm slate when idle
+
+    const iconColor = isActive
+        ? "#ffffff"
+        : (isDark ? "#93c5fd" : "#2563eb");
+
     return (
         <button
             onPointerDown={handlePointerDown}
@@ -201,7 +230,6 @@ const PrimaryNavItem = memo(({
             }}
             aria-label={label}
         >
-            {/* HINT — pulsing tooltip above the tile for the first 3 days */}
             {hintVisible && (
                 <div
                     className="absolute pointer-events-none"
@@ -237,15 +265,15 @@ const PrimaryNavItem = memo(({
             )}
 
             <div
-                className="-mt-4 w-[46px] h-[46px] rounded-2xl flex items-center justify-center"
+                className="-mt-4 w-[46px] h-[46px] rounded-xl flex items-center justify-center"
                 style={{
-                    background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-                    boxShadow: "0 6px 18px rgba(59,130,246,0.45)",
-                    transition: "transform 160ms",
+                    background: tileBg,
+                    transition: "background 200ms ease, transform 160ms",
                     transform: pressed ? "translateY(1px)" : "translateY(0)",
+                    boxShadow: "none",
                 }}
             >
-                <span className="text-white">
+                <span style={{ color: iconColor }}>
                     <Icon active={isActive} />
                 </span>
             </div>
@@ -589,7 +617,6 @@ export function Footer() {
             {!chatOpen && (
                 <>
                     {/* DRAWER CHEVRON — tap to open menu */}
-                    {/* DRAWER CHEVRON — tap to open menu */}
                     <button
                         onClick={openDrawer}
                         onPointerDown={(e) => {
@@ -604,72 +631,48 @@ export function Footer() {
                         data-drawer-handle
                         aria-label="Open menu"
                         className={`fixed left-1/2 z-[101] md:hidden
-        flex items-center justify-center w-14 h-8
-        transition-all duration-300 ease-out
-        ${isVisible ? 'opacity-100' : 'translate-y-full opacity-0'}`}
+    flex items-center justify-center w-14 h-8
+    transition-all duration-300 ease-out
+    ${isVisible ? 'opacity-100' : 'translate-y-full opacity-0'}`}
                         style={{
                             bottom: `${footerHeight + 8}px`,
                             touchAction: "manipulation",
                             transform: "translateX(-50%) scale(1)",
                             transition: "transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease-out",
                             WebkitTapHighlightColor: "transparent",
+                            background: "transparent",
+                            border: "none",
+                            padding: 0,
                         }}
                     >
-                        <span className="chevron-glow-wrap">
-                            <svg
-                                width="26"
-                                height="13"
-                                viewBox="0 0 26 13"
-                                fill="none"
-                                className="chevron-svg"
-                            >
-                                <path
-                                    d="M3 10L13 3L23 10"
-                                    stroke="currentColor"
-                                    strokeWidth="3.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                        </span>
+                        <svg
+                            width="26"
+                            height="13"
+                            viewBox="0 0 26 13"
+                            fill="none"
+                            className="chevron-svg"
+                        >
+                            <path
+                                d="M3 10L13 3L23 10"
+                                stroke="currentColor"
+                                strokeWidth="3.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
                     </button>
 
                     <style>{`
-  .chevron-glow-wrap {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #60a5fa;
-    animation: chevronColorCycle 3s linear infinite;
-  }
-
-  .chevron-glow-wrap::before {
-    content: "";
-    position: absolute;
-    inset: -2px -4px;
-    border-radius: 999px;
-    background: currentColor;
-    filter: blur(4px);
-    opacity: 0.35;
-    z-index: -1;
-    animation: chevronGlowGrow 1.8s ease-in-out infinite;
-  }
-
   .chevron-svg {
-    animation: chevronPulse 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-    position: relative;
-    z-index: 1;
+    color: #60a5fa;
+    animation:
+      chevronPulse 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite,
+      chevronColorCycle 4s linear infinite;
   }
 
   @keyframes chevronPulse {
     0%, 100% { transform: translateY(0) scale(1); }
     50%      { transform: translateY(-2px) scale(1.06); }
-  }
-
-  @keyframes chevronGlowGrow {
-    0%, 100% { opacity: 0.25; transform: scale(0.95); }
-    50%      { opacity: 0.5;  transform: scale(1.08); }
   }
 
   @keyframes chevronColorCycle {
@@ -678,8 +681,11 @@ export function Footer() {
     66%  { color: #22d3ee; }
     100% { color: #60a5fa; }
   }
-`}</style>
 
+  @media (prefers-reduced-motion: reduce) {
+    .chevron-svg { animation: none; }
+  }
+`}</style>
                     {/* TAB BAR */}
                     <div
                         data-footer-bar

@@ -17,6 +17,11 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 min
 // 👇 single knob for card height
 const CARD_HEIGHT = 300;
 
+// 👇 Lottie nudge + zoom knobs (tune these only)
+const LOTTIE_SHIFT_X = 60;   // px — big push to the RIGHT so left side is free
+const LOTTIE_SHIFT_Y = 0;    // px — positive = down, negative = up
+const LOTTIE_SCALE = 1.14;   // >1 = fills more of the card (less empty gap)
+
 type CachedReferral = {
     code: string;
     stats: ReferralStats;
@@ -132,15 +137,24 @@ export const ReferralCard = memo(function ReferralCard({
             }}
             aria-label="Open referral program"
         >
-            {/* ===== FULL-BLEED LOTTIE — nothing else ===== */}
+            {/* ===== FULL-BLEED LOTTIE — pushed RIGHT, left side free for text ===== */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0"
+                className="pointer-events-none absolute inset-0 overflow-hidden"
             >
-                <ShareLottie loop />
+                <div
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        transform: `translate(${LOTTIE_SHIFT_X}px, ${LOTTIE_SHIFT_Y}px) scale(${LOTTIE_SCALE})`,
+                        transformOrigin: "center center",
+                    }}
+                >
+                    <ShareLottie loop />
+                </div>
             </div>
 
-            {/* ===== Content pinned to the bottom, protected by text-shadow only ===== */}
+            {/* ===== Content pinned to the bottom, left-aligned ===== */}
             <div
                 className="relative flex h-full flex-col justify-end p-4"
                 style={{ minHeight: CARD_HEIGHT }}
