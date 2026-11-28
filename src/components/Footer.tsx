@@ -60,6 +60,111 @@ const IconHeadphones = ({ active }: { active: boolean }) => (
     </svg>
 );
 
+/* ── TUTOR EXAMS — clipboard w/ tick ───────────────────────── */
+const IconTutorExams = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 4.25H7.5A2.25 2.25 0 0 0 5.25 6.5v14A2.25 2.25 0 0 0 7.5 22.75h11A2.25 2.25 0 0 0 20.75 20.5v-14A2.25 2.25 0 0 0 18.5 4.25H17" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" strokeLinejoin="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="9" y="2.75" width="8" height="4" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="m10 14.5 2.25 2.25L16.5 12.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.8 : SW(false)} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+/* ── CPD (staff) — award medal ─────────────────────────────── */
+const IconCpd = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="13" cy="10" r="5.75" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="M8.75 14.75 8 22.25l5-2.75 5 2.75-.75-7.5" stroke="currentColor" strokeWidth={SW(active)} strokeLinecap="round" strokeLinejoin="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+    </svg>
+);
+
+/* ── ANALYTICS (tutor) — bar chart ─────────────────────────── */
+const IconAnalytics = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5.25" y="12" width="4" height="7.5" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="11" y="7.5" width="4" height="12" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="16.75" y="4.25" width="4" height="15.25" rx="1.25" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+    </svg>
+);
+
+/* ── CATALOG (staff) — open book ───────────────────────────── */
+const IconCatalog = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4.25 5.5A2.25 2.25 0 0 1 6.5 3.25H19A2.25 2.25 0 0 1 21.25 5.5v15A2.25 2.25 0 0 1 19 22.75H6.5A2.25 2.25 0 0 1 4.25 20.5V5.5Z" stroke="currentColor" strokeWidth={SW(active)} strokeLinejoin="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="M8.5 3.25v19.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M12 9.5h5.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+        <path d="M12 13h5.5" stroke={active ? ACTIVE_DETAIL : "currentColor"} strokeWidth={active ? 1.7 : SW(false)} strokeLinecap="round" />
+    </svg>
+);
+
+/* ── CLASSES (tutor) — video camera ────────────────────────── */
+const IconClasses = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3.25" y="7.5" width="14" height="11" rx="2.5" stroke="currentColor" strokeWidth={SW(active)} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <path d="M17.25 12l5.5-3.25v8.5L17.25 14z" stroke="currentColor" strokeWidth={SW(active)} strokeLinejoin="round" fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+    </svg>
+);
+
+/* ── CERTIFICATES (staff) — trophy ─────────────────────────── */
+const IconCertificates = ({ active }: { active: boolean }) => (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* cup body */}
+        <path
+            d="M8 4.25h10v4.5a5 5 0 0 1-10 0v-4.5Z"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.22 : 0}
+        />
+        {/* left handle */}
+        <path
+            d="M8 5.75H5.75A2.25 2.25 0 0 0 3.5 8v.75a3.25 3.25 0 0 0 3.25 3.25H8"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+        />
+        {/* right handle */}
+        <path
+            d="M18 5.75h2.25A2.25 2.25 0 0 1 22.5 8v.75a3.25 3.25 0 0 1-3.25 3.25H18"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+        />
+        {/* stem */}
+        <path
+            d="M13 13.75v4"
+            stroke="currentColor"
+            strokeWidth={SW(active)}
+            strokeLinecap="round"
+        />
+        {/* base */}
+        <path
+            d="M9 21.75h8"
+            stroke={active ? ACTIVE_DETAIL : "currentColor"}
+            strokeWidth={active ? 1.8 : SW(false)}
+            strokeLinecap="round"
+        />
+        <path
+            d="M10.25 21.75c0-2 1-4 2.75-4s2.75 2 2.75 4"
+            stroke={active ? ACTIVE_DETAIL : "currentColor"}
+            strokeWidth={active ? 1.8 : SW(false)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+        />
+        {/* star inside the cup */}
+        <path
+            d="m13 6.75.7 1.5 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6L10.7 8.45l1.6-.2.7-1.5Z"
+            fill={active ? ACTIVE_DETAIL : "currentColor"}
+            stroke="none"
+        />
+    </svg>
+);
+
 const IconNeldes = ({ active }: { active: boolean }) => (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         {/* outer card */}
@@ -164,11 +269,7 @@ const NavItem = memo(({ icon: Icon, label, isActive, onPress, isDark, badge, onL
 NavItem.displayName = "NavItem";
 
 /* ============================================================
-   PRIMARY NAV ITEM — elevated center tile (Neldes)
-   ============================================================ */
-/* ============================================================
    PRIMARY NAV ITEM — elevated center tile (Medspite)
-   Clean solid surface, no glow, no gradient.
    ============================================================ */
 const PrimaryNavItem = memo(({
     icon: Icon, label, isActive, onPress, isDark, hintVisible, onLongPress,
@@ -206,10 +307,9 @@ const PrimaryNavItem = memo(({
         ? (isDark ? "text-blue-400" : "text-blue-600")
         : (isDark ? "text-white/70" : "text-black/70");
 
-    // Single chosen accent — no glow, no gradient
     const tileBg = isActive
-        ? (isDark ? "#1d4ed8" : "#2563eb")   // strong blue when active
-        : (isDark ? "#1e293b" : "#e2e8f0");  // calm slate when idle
+        ? (isDark ? "#1d4ed8" : "#2563eb")
+        : (isDark ? "#1e293b" : "#e2e8f0");
 
     const iconColor = isActive
         ? "#ffffff"
@@ -302,6 +402,8 @@ export function Footer() {
     const { role } = useUserRole();
 
     const isStudent = role === "student";
+    const isTutor = role === "tutor";
+    const isStaff = role === "staff";
 
     const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -328,20 +430,16 @@ export function Footer() {
     const lastScrollY = useRef(0);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
-
     /* ── 3-day hint decision ───────────────────────────────────── */
     useEffect(() => {
         if (!user?.id) return;
         try {
-            // If user has already dismissed the hint — never show again
             if (localStorage.getItem(NELDES_HINT_SEEN_KEY) === "true") {
                 setShowNeldesHint(false);
                 return;
             }
-            // Record signup timestamp on first sight
             let signupTs = Number(localStorage.getItem(NELDES_HINT_SIGNUP_KEY) || 0);
             if (!signupTs) {
-                // Use account created_at if available, else now
                 const created = (user as any).created_at
                     ? new Date((user as any).created_at).getTime()
                     : Date.now();
@@ -442,7 +540,7 @@ export function Footer() {
             return;
         }
         requestAnimationFrame(() => setIsDrawerOpen(true));
-    }, [dismissHint]);   // ← removed drawerReady from deps
+    }, [dismissHint]);
 
     useEffect(() => {
         if (prefetchDone.current) return;
@@ -482,8 +580,8 @@ export function Footer() {
     const holdActive = useRef(false);
 
     useEffect(() => {
-        const HOLD_MS = 600;           // hold duration to open
-        const MOVE_CANCEL = 12;        // cancel if finger moves > 12px
+        const HOLD_MS = 600;
+        const MOVE_CANCEL = 12;
 
         const clearHold = () => {
             if (holdTimer.current) {
@@ -501,9 +599,7 @@ export function Footer() {
             const onHandle = !!target.closest('[data-drawer-handle]');
             const onNavButton = !!target.closest('[data-footer-bar] button');
 
-            // Bail if touching a nav button (they do their own thing)
             if (onNavButton && !onHandle) return;
-            // Bail if not on handle and not on footer background
             if (!onHandle && !target.closest('[data-footer-bar]')) return;
 
             const touch = e.touches[0];
@@ -523,7 +619,6 @@ export function Footer() {
             if (!holdActive.current || holdStartY.current === null) return;
             const dy = Math.abs(e.touches[0].clientY - holdStartY.current);
             if (dy > MOVE_CANCEL) {
-                // user is scrolling — cancel the hold
                 clearHold();
             }
         };
@@ -544,7 +639,8 @@ export function Footer() {
             document.removeEventListener("touchend", onTouchEnd);
             document.removeEventListener("touchcancel", onTouchEnd);
         };
-    }, [openDrawer]);                               // ← ONLY openDrawer
+    }, [openDrawer]);
+
     /* ── Hide/show on scroll ───────────────────────────────────── */
     useEffect(() => {
         let container: Element | null = null;
@@ -703,7 +799,7 @@ export function Footer() {
                             backfaceVisibility: 'hidden',
                         }}
                     >
-                        {/* Slot 1 — Home */}
+                        {/* Slot 1 — Home (all roles) */}
                         <NavItem
                             icon={IconHome}
                             label="Home"
@@ -712,16 +808,36 @@ export function Footer() {
                             isDark={theme === 'dark'}
                         />
 
-                        {/* Slot 2 — Feed */}
-                        <NavItem
-                            icon={IconFeed}
-                            label="Feed"
-                            isActive={isActive("/feed")}
-                            onPress={(e) => handleNavigate(e, "/feed")}
-                            isDark={theme === 'dark'}
-                        />
+                        {/* Slot 2 — Feed (student) / Exams (tutor) / CPD (staff) */}
+                        {isStudent && (
+                            <NavItem
+                                icon={IconFeed}
+                                label="Feed"
+                                isActive={isActive("/feed")}
+                                onPress={(e) => handleNavigate(e, "/feed")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
+                        {isTutor && (
+                            <NavItem
+                                icon={IconTutorExams}
+                                label="Exams"
+                                isActive={isActive("/tutor/exams")}
+                                onPress={(e) => handleNavigate(e, "/tutor/exams")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
+                        {isStaff && (
+                            <NavItem
+                                icon={IconCpd}
+                                label="CPD"
+                                isActive={isActive("/cpd")}
+                                onPress={(e) => handleNavigate(e, "/cpd")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
 
-                        {/* Slot 3 — NELDES (center, elevated, primary) */}
+                        {/* Slot 3 — MEDSPITE (center, elevated, primary — all roles) */}
                         <PrimaryNavItem
                             icon={IconNeldes}
                             label=" Medspite"
@@ -732,24 +848,64 @@ export function Footer() {
                             onLongPress={revealHint}
                         />
 
-                        {/* Slot 4 — Quizzes (with mistake badge) */}
-                        <NavItem
-                            icon={IconQuizzes}
-                            label="Quizzes"
-                            isActive={isActive("/Medrae-quizzes")}
-                            onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
-                            isDark={theme === 'dark'}
-                            badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
-                        />
+                        {/* Slot 4 — Quizzes +badge (student) / Analytics (tutor) / Catalog (staff) */}
+                        {isStudent && (
+                            <NavItem
+                                icon={IconQuizzes}
+                                label="Quizzes"
+                                isActive={isActive("/Medrae-quizzes")}
+                                onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
+                                isDark={theme === 'dark'}
+                                badge={isStudent && mistakeCount > 0 ? mistakeCount : undefined}
+                            />
+                        )}
+                        {isTutor && (
+                            <NavItem
+                                icon={IconAnalytics}
+                                label="Analytics"
+                                isActive={isActive("/analytics")}
+                                onPress={(e) => handleNavigate(e, "/analytics")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
+                        {isStaff && (
+                            <NavItem
+                                icon={IconCatalog}
+                                label="Catalog"
+                                isActive={isActive("/cpd/catalog")}
+                                onPress={(e) => handleNavigate(e, "/cpd/catalog")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
 
-                        {/* Slot 5 — Listen */}
-                        <NavItem
-                            icon={IconHeadphones}
-                            label="Listen"
-                            isActive={isActive("/listen")}
-                            onPress={(e) => handleNavigate(e, "/listen")}
-                            isDark={theme === 'dark'}
-                        />
+                        {/* Slot 5 — Listen (student) / Classes (tutor) / Certs (staff) */}
+                        {isStudent && (
+                            <NavItem
+                                icon={IconHeadphones}
+                                label="Listen"
+                                isActive={isActive("/listen")}
+                                onPress={(e) => handleNavigate(e, "/listen")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
+                        {isTutor && (
+                            <NavItem
+                                icon={IconClasses}
+                                label="Classes"
+                                isActive={isActive("/my-classes")}
+                                onPress={(e) => handleNavigate(e, "/my-classes")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
+                        {isStaff && (
+                            <NavItem
+                                icon={IconCertificates}
+                                label="Certs"
+                                isActive={isActive("/cpd/certificates")}
+                                onPress={(e) => handleNavigate(e, "/cpd/certificates")}
+                                isDark={theme === 'dark'}
+                            />
+                        )}
                     </div>
                 </>
             )}

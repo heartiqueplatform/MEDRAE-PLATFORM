@@ -351,7 +351,8 @@ const BottomBarWrapper = () => {
 // Routes where the fixed bottom Footer should NOT appear.
 // These are full-screen pages that own the whole viewport.
 const FOOTER_HIDDEN_PREFIXES = [
-
+  "/switch-account",
+  "/reset-password",
   "/menu",
   "/listen",
   "/chat",
