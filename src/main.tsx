@@ -1,14 +1,5 @@
 "use client";
 
-// ─────────────────────────────────────────────────────────────
-// Boot white guard — force white paint at parse time so no dark
-// frame can appear before React, AuthGate, or the loader resolves.
-// ─────────────────────────────────────────────────────────────
-if (typeof document !== "undefined") {
-    document.documentElement.style.backgroundColor = "#ffffff";
-    if (document.body) document.body.style.backgroundColor = "#ffffff";
-}
-
 import { createRoot } from "react-dom/client";
 import { registerSW } from 'virtual:pwa-register';
 import App from "./App.tsx";
@@ -29,7 +20,7 @@ import "@fontsource/poppins/800.css";
  *    If it never changes, cleanupOldCaches() never fires and old bundles
  *    pile up forever → "takes days to update" symptom.
  */
-const APP_VERSION = "2.0.2"; // ← bump on each release
+const APP_VERSION = "2.0.3"; // ← BUMPED — required so this deploy triggers cleanup
 
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
@@ -55,11 +46,24 @@ const setupPWA = async () => {
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
 
-        // ── FIX C: always clean stale medrae-* caches on SW controller change
+        // ── FIX C: clean stale medrae-* caches on SW controller change.
+        //    ❌ NO auto-reload. Auto-reloading here causes
+        //    splash → dashboard → splash flashes on every SW install.
+        //    The `pwa-update-available` banner is the user's trigger.
+        let hasReloadedForSW = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             cleanupOldCaches();
             console.log('Service Worker updated');
-            if (!document.hidden) {
+            // Only reload if there was genuinely a pending update AND we
+            // haven't already reloaded once this session.
+            if (
+                !document.hidden &&
+                !hasReloadedForSW &&
+                sessionStorage.getItem('medrae_sw_reloaded') !== '1' &&
+                localStorage.getItem('pwaUpdatePending') === 'true'
+            ) {
+                hasReloadedForSW = true;
+                sessionStorage.setItem('medrae_sw_reloaded', '1');
                 setTimeout(() => window.location.reload(), 1500);
             }
         });
@@ -76,7 +80,6 @@ const setupPWA = async () => {
         });
 
         // ── FIX D: re-check for updates whenever the tab becomes visible again.
-        //    Long-lived tabs otherwise keep the old SW indefinitely.
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.getRegistration()
@@ -113,11 +116,14 @@ const cleanupOldCaches = async () => {
 
 /**
  * Pre-cache Critical Assets
+ *
+ * ── FIX: Only cache truly offline-needed assets.
+ *    ❌ Removed '/' and '/index.css' — re-fetching the app shell
+ *    after load can trigger SW navigation-preload churn and wasted
+ *    bandwidth. The SW handles the shell itself.
  */
 const precacheAssets = async () => {
     const criticalAssets = [
-        '/',
-        '/index.css',
         '/manifest.json',
         '/icon-192.png',
         '/icon-512.png'
@@ -384,31 +390,14 @@ const initApp = async () => {
     );
 
     // ─────────────────────────────────────────────────────────────
-    // Hide the loader ONLY after #root has real painted content.
+    // ❌ REMOVED: double-rAF hideMedraeLoader().
+    //    AuthGate shows a spinner on first paint, so hiding the
+    //    splash here caused a splash → spinner → dashboard blink.
+    //
+    //    ✅ The splash is now hidden from AuthGate.tsx when auth
+    //    settles (loading === false). The 5s safety net in index.html
+    //    is the fallback if anything errors before that.
     // ─────────────────────────────────────────────────────────────
-    const tryHideLoader = (attempts = 0) => {
-        const rootEl = document.getElementById("root");
-
-        const hasContent =
-            rootEl &&
-            rootEl.children.length > 0 &&
-            rootEl.getBoundingClientRect().height > 50;
-
-        if (hasContent || attempts >= 25) {
-            setTimeout(() => {
-                (window as any).hideMedraeLoader?.();
-            }, 80);
-            return;
-        }
-
-        setTimeout(() => tryHideLoader(attempts + 1), 200);
-    };
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            tryHideLoader();
-        });
-    });
 
     // PWA setup in the background — never blocks first paint.
     if ('serviceWorker' in navigator) {

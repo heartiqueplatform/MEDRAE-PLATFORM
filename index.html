@@ -236,7 +236,7 @@
   <!-- ============================================ -->
   <!-- PWA THEME COLORS - FIXED -->
   <!-- ============================================ -->
-  <meta name="theme-color" content="#4ade80" />
+
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Medrae Nursing" />
@@ -828,7 +828,8 @@
     }
 
     html,
-    body {
+    body,
+    #root {
       background-color: var(--bg-color, #ffffff);
       margin: 0;
       padding: 0;
@@ -837,22 +838,19 @@
 
     #initial-loader {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100dvh;
+      inset: 0;
       z-index: 2147483647;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 20px;
-      padding: calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+      padding: 24px;
       background-color: var(--bg-color, #ffffff);
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       opacity: 1;
       transition: opacity 200ms ease-out;
-      contain: layout style paint;
+      contain: paint;
       box-sizing: border-box;
       overflow: hidden;
     }
@@ -1030,7 +1028,7 @@
     </div>
   </div>
   <!-- App root -->
-  <div id="root" style="height:100%;"></div>
+  <div id="root" style="height:100%; opacity:0;"></div>
   <script type="module" src="/src/main.tsx"></script>
 
   <!-- ============================================ -->
@@ -1041,7 +1039,13 @@
     var __medraeHideTimeout;
     window.hideMedraeLoader = function () {
       var loader = document.getElementById('initial-loader');
+      var root = document.getElementById('root');
       if (!loader || loader.classList.contains('is-hiding')) return;
+
+      // 1. Show root INSTANTLY (no fade) — it's already painted underneath
+      if (root) root.style.opacity = '1';
+
+      // 2. Fade ONLY the loader out
       loader.classList.add('is-hiding');
       clearTimeout(__medraeHideTimeout);
       __medraeHideTimeout = setTimeout(function () {
@@ -1058,11 +1062,9 @@
 
     // ---------- Safety net 2: hide on window load ----------
     window.addEventListener('load', function () {
-      setTimeout(function () {
-        if (typeof window.hideMedraeLoader === 'function') {
-          window.hideMedraeLoader();
-        }
-      }, 800);
+      if (typeof window.hideMedraeLoader === 'function') {
+        window.hideMedraeLoader();
+      }
     });
   </script>
 </body>
