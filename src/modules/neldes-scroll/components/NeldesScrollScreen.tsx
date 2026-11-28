@@ -18,7 +18,7 @@ import { PostOwnerSheet } from "./PostOwnerSheet";
 import type { FeedPost, ShareTarget } from "../types";
 import { NELDES_COLORS } from "../config/constants";
 import { ViewedPostViewer } from "./ViewedPostViewer";
-
+import { toast } from "sonner";
 export type ShareDispatcher = (
     post: FeedPost,
     target: ShareTarget
@@ -142,12 +142,19 @@ export function NeldesScrollScreen() {
 
     const handleShareTarget = useCallback(
         async (target: ShareTarget) => {
-            if (!shareDispatcherRef.current || !sharePost) {
+            if (!sharePost) {
+                setSharePost(null);
+                return;
+            }
+            if (!shareDispatcherRef.current) {
+                toast.error("Share not ready — scroll to the post and try again.");
                 setSharePost(null);
                 return;
             }
             try {
                 await shareDispatcherRef.current(sharePost, target);
+            } catch (e: any) {
+                toast.error(e?.message ?? "Share failed");
             } finally {
                 setSharePost(null);
             }

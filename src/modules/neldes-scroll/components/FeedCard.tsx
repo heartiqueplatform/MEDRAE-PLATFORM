@@ -15,6 +15,7 @@ import { NELDES_COLORS } from "../config/constants";
 import { POST_TYPE_MAP, DEFAULT_POST_TYPE } from "../config/postTypes";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, MoreHorizontal, Plus } from "lucide-react";
+import { FollowButton } from "@/components/FollowButton";
 
 export function FeedCard({
     post,
@@ -78,6 +79,8 @@ export function FeedCard({
 
     const imageSrc = cardImageUrl(post.image_url);
     const meta = POST_TYPE_MAP[post.type] ?? DEFAULT_POST_TYPE;
+
+    const isOwnPost = !!currentUserId && post.author_id === currentUserId;
 
     return (
         <div
@@ -213,6 +216,18 @@ export function FeedCard({
                         {post.author_name}
                     </span>
 
+                    {/* Connect — hidden for own posts. FollowButton also self-hides if author_id is empty. */}
+                    {!isOwnPost && post.author_id && (
+                        <FollowButton
+                            targetUserId={post.author_id}
+                            currentUserId={currentUserId ?? undefined}
+                            size="sm"
+                            followLabel="Follow"
+                            unfollowLabel="Following"
+                            mutualLabel="Peer"
+                            loadingLabel="Follow"
+                        />
+                    )}
                     {/* Post-mine shortcut — inline, right of author name */}
                     <button
                         onClick={(e) => {

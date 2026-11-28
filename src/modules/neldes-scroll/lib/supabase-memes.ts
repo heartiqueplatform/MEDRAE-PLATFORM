@@ -37,27 +37,40 @@ export async function recordInteraction(
     action: InteractionAction,
     shareTo?: ShareTarget
 ): Promise<void> {
-    const { error } = await supabase.from("memes_interactions").insert({
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Not authenticated");
+
+    const payload = {
         post_id: postId,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
+        user_id: user.id,
         action,
         share_to: shareTo ?? null,
-    });
-    // Ignore duplicate-key (already liked) — safe.
-    if (error && error.code !== "23505") throw new Error(error.message);
+    };
+    console.log("[recordInteraction] payload →", payload);  // ← add this
+
+    const { error } = await supabase.from("memes_interactions").insert(payload);
+
+    if (error && error.code !== "23505") {
+        console.error("[recordInteraction]", error.code, error.message, error.details, "payload:", payload);
+        if (action === "like" || action === "save") throw new Error(error.message);
+    }
 }
 
+/** Remove a like or save. */
 /** Remove a like or save. */
 export async function removeInteraction(
     postId: number,
     action: "like" | "save"
 ): Promise<void> {
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Not authenticated");
+
     const { error } = await supabase
         .from("memes_interactions")
         .delete()
         .eq("post_id", postId)
         .eq("action", action)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
+        .eq("user_id", user.id);
     if (error) throw new Error(error.message);
 }
 

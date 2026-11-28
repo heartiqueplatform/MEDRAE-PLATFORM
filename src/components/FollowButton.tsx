@@ -19,6 +19,12 @@ interface Props {
     /** Visual size. Default 'sm'. */
     size?: "sm" | "md";
     className?: string;
+
+    /* ── Optional label overrides (default: Follow / Following / Peer) ── */
+    followLabel?: string;
+    unfollowLabel?: string;
+    mutualLabel?: string;
+    loadingLabel?: string;
 }
 
 export const FollowButton = memo(function FollowButton({
@@ -27,6 +33,10 @@ export const FollowButton = memo(function FollowButton({
     onStateChange,
     size = "sm",
     className = "",
+    followLabel = "Follow",
+    unfollowLabel = "Following",
+    mutualLabel = "Peer",
+    loadingLabel = "Follow",
 }: Props) {
     const { user } = useAuth();
     const me = currentUserId ?? user?.id ?? null;
@@ -50,65 +60,72 @@ export const FollowButton = memo(function FollowButton({
 
     const sizeClasses =
         size === "md"
-            ? "text-[13px] px-4 py-2"
-            : "text-[12px] px-3 py-1.5";
-    const base = `inline-flex items-center justify-center gap-1 font-semibold rounded-sm transition-colors active:scale-95 ${sizeClasses} ${className}`;
-    // Loading: render the Follow style but muted, still clickable (optimistic covers the fast path)
+            ? "text-[13px] px-4 py-2 gap-1.5 rounded-lg"
+            : "text-[12px] px-3 py-1.5 gap-1 rounded-md";
+
+    // Shared shell — no rounded-* here; size decides.
+    const base = `inline-flex items-center justify-center font-semibold transition-colors duration-150 active:scale-[0.97] ${sizeClasses} ${className}`;
+    const check = <Check className="w-3 h-3" strokeWidth={3} />;
+
+    // ── Loading — muted, same shape as "Follow", still clickable ──
     if (loading) {
         return (
             <button
                 type="button"
                 onClick={handleClick}
-                className={`${base} bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500`}
+                className={`${base} bg-slate-100 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500`}
                 style={{ touchAction: "manipulation" }}
             >
-                Follow
+                {loadingLabel}
             </button>
         );
     }
 
+    // ── Mutual — "Peer" — soft emerald tint, no border ──
     if (mutual) {
         return (
             <button
                 type="button"
                 onClick={handleClick}
-                className={`${base} bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/15`}
+                className={`${base} bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/15`}
                 style={{ touchAction: "manipulation" }}
                 aria-pressed="true"
-                aria-label="Mutual follow. Tap to unfollow."
+                aria-label={`${mutualLabel}. Tap to unfollow.`}
             >
-                Mutual
-                <Check className="w-3 h-3" strokeWidth={3} />
+                {mutualLabel}
+                {check}
             </button>
         );
     }
 
+    // ── Following one-way — muted slate, no border ──
     if (iFollow) {
         return (
             <button
                 type="button"
                 onClick={handleClick}
-                className={`${base} bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700`}
+                className={`${base} bg-slate-100 text-slate-700 dark:bg-white/[0.08] dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/[0.12]`}
                 style={{ touchAction: "manipulation" }}
                 aria-pressed="true"
-                aria-label="Following. Tap to unfollow."
+                aria-label={`${unfollowLabel}. Tap to unfollow.`}
             >
-                Following
-                <Check className="w-3 h-3" strokeWidth={3} />
+                {unfollowLabel}
+                {check}
             </button>
         );
     }
 
+    // ── Not following — "Follow" — solid indigo (calm, not LinkedIn blue) ──
     return (
         <button
             type="button"
             onClick={handleClick}
-            className={`${base} bg-blue-600 text-white hover:bg-blue-700`}
+            className={`${base} bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600`}
             style={{ touchAction: "manipulation" }}
             aria-pressed="false"
-            aria-label="Follow"
+            aria-label={followLabel}
         >
-            Follow
+            {followLabel}
         </button>
     );
 });
