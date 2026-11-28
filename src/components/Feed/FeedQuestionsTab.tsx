@@ -7,6 +7,8 @@ import FeedMediaPanel from "@/components/Feed/FeedMediaPanel";
 import { playSound } from "@/lib/soundManager";
 import { UserProfileModal } from "@/components/UserProfileModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { useConnectivity } from "@/context/ConnectivityContext";
+import OfflineLottie from "@/components/OfflineLottie";
 interface Props {
     questions: any[];
     loading: boolean;
@@ -50,7 +52,71 @@ const tap = () => {
     playSound("ui-tap");
     vibrate(12);
 };
+/* ------------------------------------------------------------------ */
+/*  Offline empty state — shown when the Questions feed is empty     */
+/*  because we're offline. Uses the same Lottie as OfflineOverlay.   */
+/* ------------------------------------------------------------------ */
+function OfflineQuestionsEmpty({ onRetry }: { onRetry: () => void }) {
+    return (
+        <div className="w-full max-w-4xl mx-auto px-1">
+            <div className="
+                rounded-2xl
+                bg-white dark:bg-[#161b22]
+                px-5 py-10 sm:py-14
+                flex flex-col items-center text-center
+                mb-2
+            ">
+                {/* Lottie — same asset as the OfflineOverlay */}
+                <div className="w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60 shrink-0">
+                    <OfflineLottie />
+                </div>
 
+                <h3 className="
+                    mt-5 text-lg sm:text-xl font-bold tracking-tight
+                    text-slate-900 dark:text-white
+                ">
+                    No questions loaded yet
+                </h3>
+
+                <p className="
+                    mt-2 max-w-sm text-sm leading-relaxed
+                    text-slate-500 dark:text-slate-400
+                ">
+                    You're offline and we haven't cached any questions for this
+                    feed yet. Move to a stronger connection and we'll load them
+                    automatically.
+                </p>
+
+                <button
+                    type="button"
+                    onClick={onRetry}
+                    className="
+                        mt-6 h-11 px-5 rounded-2xl
+                        bg-violet-600 text-white
+                        text-sm font-bold
+                        flex items-center justify-center gap-2
+                        active:scale-[0.97] transition-transform
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60
+                    "
+                    style={{ touchAction: "manipulation" }}
+                >
+                    <svg
+                        viewBox="0 0 24 24" fill="none"
+                        className="h-4 w-4" strokeWidth={2.4} stroke="currentColor"
+                    >
+                        <path d="M21 12a9 9 0 1 1-3-6.7" />
+                        <polyline points="21 3 21 9 15 9" />
+                    </svg>
+                    Try again
+                </button>
+
+                <p className="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
+                    Cached questions will still work offline once loaded.
+                </p>
+            </div>
+        </div>
+    );
+}
 /* ------------------------------------------------------------------ */
 /*  Skeleton — solid blocks, visible in both light & dark             */
 /* ------------------------------------------------------------------ */
@@ -610,7 +676,12 @@ export default function FeedQuestionsTab({
     setImageDescription,
 }: Props) {
     const sentinelRef = useRef<HTMLDivElement>(null);
+    const { isOnline } = useConnectivity();
 
+    // Feed is genuinely empty AND we're offline → show offline state,
+    // not a blank feed. `loading` guards against flashing during retries.
+    const showOfflineEmpty =
+        !isOnline && !loading && questions.length === 0;
     // 🆕 Author profile modal state
     const [profileModalUser, setProfileModalUser] = useState<string | null>(null);
 
@@ -642,6 +713,11 @@ export default function FeedQuestionsTab({
 
     return (
         <div className="w-full max-w-4xl mx-auto px-1">
+            {showOfflineEmpty && (
+                <OfflineQuestionsEmpty
+                    onRetry={() => window.location.reload()}
+                />
+            )}
             {loading && questions.length === 0 && (
                 <>
                     <SkeletonCard />

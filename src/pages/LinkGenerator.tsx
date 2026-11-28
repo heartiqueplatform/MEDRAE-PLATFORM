@@ -126,7 +126,7 @@ function ReferralSkeleton({ onBack }: { onBack: () => void }) {
                 </button>
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
-                        Invite a Nurse
+                        Invite a Friend
                     </h1>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
                         Share your link. Earn premium days.
@@ -417,7 +417,7 @@ export default function LinkGenerator() {
                     </button>
                     <div className="flex-1 min-w-0">
                         <h1 className="text-base font-bold leading-tight truncate text-slate-900 dark:text-white">
-                            Invite a Nurse
+                            Invite a Friend
                         </h1>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
                             Share your link. Earn premium days.
@@ -458,7 +458,7 @@ export default function LinkGenerator() {
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-bold leading-tight truncate
                                    text-slate-900 dark:text-white">
-                        Invite a Nurse
+                        Invite a Friend
                     </h1>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
                         Share your link. Earn premium days.
@@ -757,8 +757,8 @@ export default function LinkGenerator() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                                Growing the Kenyan Nursing Tribe
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500  tracking-widest">
+                                Growing the Kenyan Nursing Community
                             </p>
                         </div>
                     </div>

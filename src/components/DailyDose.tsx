@@ -49,7 +49,6 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
     const { tracks, setCurrentIndex, togglePlay, refreshEpisodes } = useMusicPlayer();
     const [refreshed, setRefreshed] = useState(false);
 
-    // ✅ Podcast engagement hook — same one used in the player
     const { hydrate: hydrateInteractions, get: getInteraction } = useEpisodeInteractions();
 
     // Ensure we have episodes even if the provider hasn't fetched yet
@@ -59,7 +58,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
         }
     }, [tracks.length, refreshed, refreshEpisodes]);
 
-    // ✅ Hydrate reaction + play counts for the tracks on this page
+    // Hydrate reaction + play counts for the tracks on this page
     useEffect(() => {
         const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const ids = tracks
@@ -69,13 +68,13 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
         hydrateInteractions(ids);
     }, [tracks, hydrateInteractions]);
 
-    // Featured = deterministic per day; Top = deterministic shuffle of everything else
+    // Featured = deterministic per day; Top = 10 shuffled others
     const { featured, topPicks } = useMemo(() => {
         if (!tracks.length) return { featured: null as Track | null, topPicks: [] as Track[] };
         const seed = daySeed();
         const shuffled = seededShuffle(tracks, seed);
         const feat = shuffled[0] ?? null;
-        const top = shuffled.slice(1, 7); // 6 picks — pairs cleanly with grid
+        const top = shuffled.slice(1, 11); // 10 picks
         return { featured: feat, topPicks: top };
     }, [tracks]);
 
@@ -97,129 +96,23 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
     return (
         <section className="w-full">
             {/* ── header row ── */}
-            {/* ── header row ── */}
-            <div className="flex items-center justify-end mb-3  px-4">
+            <div className="flex items-center justify-end mb-3 px-4">
                 <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-gh-l-muted dark:text-gh-muted uppercase tracking-widest shrink-0">
                     <Calendar size={11} />
                     {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </div>
             </div>
 
-            {/* ── FEATURED EPISODE — edge-to-edge premium hero on phone ── */}
-            <motion.button
-                onClick={() => handlePlay(featured)}
-                whileHover={{ scale: 1.006 }}
-                whileTap={{ scale: 0.996 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                className="relative w-full overflow-hidden rounded-xl sm:rounded-xl
-                    bg-gh-l-card dark:bg-gh-card p-0 md:p-5 mb-6 text-left font-sans antialiased"
-            >
-                {/* blurred artwork background */}
-                {featured.artwork && (
-                    <div className="absolute inset-0 -z-10 opacity-25">
-                        <img src={featured.artwork} alt="" className="w-full h-full object-cover scale-125 blur-2xl" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-gh-l-card/90 via-gh-l-card/70 to-transparent dark:from-gh-card/90 dark:via-gh-card/70" />
-                    </div>
-                )}
+            {/* ── FEATURED EPISODE ── */}
+            <div className="px-4 mb-4">
+                <FeaturedCard
+                    track={featured}
+                    onClick={() => handlePlay(featured)}
+                    interaction={featuredInteraction ?? undefined}
+                />
+            </div>
 
-                <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-                    {/* artwork */}
-                    <div className="relative shrink-0 w-full md:w-44 md:h-44 lg:w-52 lg:h-52 aspect-square md:aspect-auto rounded-none sm:rounded-xl overflow-hidden">
-                        {featured.artwork ? (
-                            <img src={featured.artwork} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full bg-gh-l-hover dark:bg-gh-hover flex items-center justify-center">
-                                <Headphones size={48} className="text-gh-l-muted dark:text-gh-muted" />
-                            </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center">
-                                <Play size={22} fill="white" className="text-white ml-0.5" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* meta */}
-                    {/* meta */}
-                    <div className="flex-1 min-w-0 px-4 md:px-0 pb-4 md:pb-0">
-                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                                <Sparkles size={9} />
-                                Today's pick
-                            </span>
-                            {featured.showTitle && (
-                                <span className="hidden sm:inline text-[9px] uppercase tracking-widest text-gh-l-muted dark:text-gh-muted truncate">
-                                    · {featured.showTitle}
-                                </span>
-                            )}
-                        </div>
-
-                        <h3 className="text-base md:text-lg tracking-tight text-gh-l-text dark:text-gh-text leading-snug line-clamp-2">
-                            {featured.name}
-                        </h3>
-
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] font-semibold text-gh-l-muted dark:text-gh-muted">
-                            {featured.duration && (
-                                <span className="inline-flex items-center gap-1">
-                                    <Clock size={10} />
-                                    {fmtTime(featured.duration)}
-                                </span>
-                            )}
-                            {featured.publishedAt && (
-                                <span className="inline-flex items-center gap-1">
-                                    <Calendar size={10} />
-                                    {new Date(featured.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* ✅ Engagement strip — plays / likes / loves */}
-                        {featuredInteraction && (
-                            (featuredInteraction.playCount > 0 ||
-                                featuredInteraction.counts.like > 0 ||
-                                featuredInteraction.counts.love > 0) && (
-                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
-                                    {featuredInteraction.playCount > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                                            <Play size={9} fill="currentColor" />
-                                            {featuredInteraction.playCount >= 1000
-                                                ? `${(featuredInteraction.playCount / 1000).toFixed(1)}K`
-                                                : featuredInteraction.playCount}{" "}
-                                            plays
-                                        </span>
-                                    )}
-                                    {featuredInteraction.counts.like > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                                            <ThumbsUp size={9} />
-                                            {featuredInteraction.counts.like}
-                                        </span>
-                                    )}
-                                    {featuredInteraction.counts.love > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
-                                            <Heart size={9} fill="currentColor" />
-                                            {featuredInteraction.counts.love}
-                                        </span>
-                                    )}
-                                </div>
-                            )
-                        )}
-
-                        {/* play CTA row */}
-                        <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full">
-                                <Play size={12} fill="white" className="ml-0.5" />
-                                Play now
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gh-l-muted dark:text-gh-muted">
-                                <ApplePodcastsIcon className="w-3.5 h-3.5" />
-                                via Apple Podcasts
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </motion.button>
-
-            {/* ── TOP 6 FOR TODAY — 2 columns on phone (Apple-feel density) ── */}
+            {/* ── TOP 10 FOR TODAY ── */}
             <div className="mb-3 px-4 flex items-center justify-between">
                 <h3 className="text-xs tracking-tight text-gh-l-text dark:text-gh-text">
                     More for today
@@ -243,6 +136,148 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
         </section>
     );
 };
+
+// ============================================================
+//  FEATURED CARD — compact horizontal hero
+//  Left: artwork (150–200px). Right: title, meta, engagement.
+// ============================================================
+function FeaturedCard({
+    track,
+    onClick,
+    interaction,
+}: {
+    track: Track;
+    onClick: () => void;
+    interaction?: InteractionShape;
+}) {
+    const plays = interaction?.playCount ?? 0;
+    const likes = interaction?.counts.like ?? 0;
+    const loves = interaction?.counts.love ?? 0;
+    const showStats = plays > 0 || likes > 0 || loves > 0;
+
+    return (
+        <motion.button
+            onClick={onClick}
+            whileTap={{ scale: 0.995 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            className="group relative w-full overflow-hidden rounded-2xl
+                       bg-gh-l-card dark:bg-gh-card text-left font-sans antialiased
+                       flex items-stretch min-h-[150px] sm:min-h-[180px]"
+        >
+            {/* ── Artwork — square, fixed width, left side ── */}
+            <div className="relative shrink-0 w-[150px] sm:w-[180px] md:w-[200px] overflow-hidden">
+                {track.artwork ? (
+                    <img
+                        src={track.artwork}
+                        alt=""
+                        loading="eager"
+                        className="absolute inset-0 w-full h-full object-cover
+                                   group-hover:scale-105 transition-transform duration-500"
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gh-l-hover dark:bg-gh-hover flex items-center justify-center">
+                        <Headphones size={40} className="text-gh-l-muted dark:text-gh-muted" />
+                    </div>
+                )}
+
+                {/* Gradient blend into the card body */}
+                <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l
+                                from-gh-l-card dark:from-gh-card to-transparent" />
+
+                {/* Hover play */}
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100
+                                transition-opacity flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
+                        <Play size={20} fill="white" className="text-white ml-0.5" />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Meta — right of artwork, vertically centered ── */}
+            <div className="flex-1 min-w-0 px-3 sm:px-4 py-3 flex flex-col justify-center">
+                {/* Eyebrow — pick + show */}
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest
+                                     text-blue-600 dark:text-blue-400
+                                     bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full font-bold">
+                        <Sparkles size={9} />
+                        Today&apos;s pick
+                    </span>
+                    {track.showTitle && (
+                        <span className="text-[9px] uppercase tracking-widest text-gh-l-muted dark:text-gh-muted truncate">
+                            · {track.showTitle}
+                        </span>
+                    )}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-[15px] sm:text-base md:text-lg font-bold tracking-tight
+                               text-gh-l-text dark:text-gh-text leading-snug line-clamp-2">
+                    {track.name}
+                </h3>
+
+                {/* Meta strip: duration · date · Apple */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5
+                                text-[10px] font-semibold text-gh-l-muted dark:text-gh-muted">
+                    {track.duration && (
+                        <span className="inline-flex items-center gap-1">
+                            <Clock size={10} />
+                            {fmtTime(track.duration)}
+                        </span>
+                    )}
+                    {track.publishedAt && (
+                        <span className="inline-flex items-center gap-1">
+                            <Calendar size={10} />
+                            {new Date(track.publishedAt).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                            })}
+                        </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-[#8927EB]">
+                        <ApplePodcastsIcon className="w-3 h-3" />
+                        Apple Podcasts
+                    </span>
+                </div>
+
+                {/* Engagement strip: plays / likes / loves */}
+                {showStats && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-bold">
+                        {plays > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full
+                                             bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                <Play size={8} fill="currentColor" />
+                                {plays >= 1000 ? `${(plays / 1000).toFixed(1)}K` : plays}
+                            </span>
+                        )}
+                        {likes > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full
+                                             bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                <ThumbsUp size={8} />
+                                {likes}
+                            </span>
+                        )}
+                        {loves > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full
+                                             bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                                <Heart size={8} fill="currentColor" />
+                                {loves}
+                            </span>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Play — desktop right side ── */}
+            <div className="hidden sm:flex items-center pr-4">
+                <div className="w-11 h-11 rounded-full bg-blue-600 group-hover:bg-blue-500
+                                flex items-center justify-center shadow-md transition-colors">
+                    <Play size={16} fill="white" className="text-white ml-0.5" />
+                </div>
+            </div>
+        </motion.button>
+    );
+}
 
 // ── Top Pick Card ──────────────────────────────────────
 interface InteractionShape {
@@ -277,7 +312,6 @@ function TopPickCard({
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
             className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card overflow-hidden font-sans antialiased"
         >
-            {/* ── Big artwork on top, edge to edge ── */}
             <div className="relative w-full aspect-square overflow-hidden">
                 {track.artwork ? (
                     <img
@@ -297,7 +331,6 @@ function TopPickCard({
                 </div>
             </div>
 
-            {/* ── Meta row below ── */}
             <div className="p-2.5">
                 <p className="text-[12.5px] font-bold truncate text-gh-l-text dark:text-gh-text">
                     {track.name}
@@ -307,7 +340,6 @@ function TopPickCard({
                     {track.duration ? fmtTime(track.duration) : '—'}
                 </p>
 
-                {/* ✅ Engagement strip */}
                 {showStrip && (
                     <div className="mt-1.5 flex items-center gap-1 flex-wrap text-[9px] font-bold">
                         {hasPlays && (
@@ -334,7 +366,6 @@ function TopPickCard({
                 )}
             </div>
 
-            {/* ── Full-width counter strip at the bottom ── */}
             <div className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gh-l-hover dark:bg-gh-hover">
                 <span className="text-[9px] tracking-widest text-gh-l-muted dark:text-gh-muted">
                     Pick {index + 1}
@@ -347,24 +378,27 @@ function TopPickCard({
     );
 }
 
-// ── Skeleton ───────────────────────────────────────────
+// ── Skeleton — 10 placeholders ─────────────────────────
 function DailyDoseSkeleton() {
     return (
         <section className="w-full animate-pulse">
             <div className="h-5 w-32 rounded-full bg-gh-l-hover dark:bg-gh-hover mb-4 mx-4" />
-            <div className="w-full rounded-none sm:rounded-xl bg-gh-l-card dark:bg-gh-card p-4 mb-6">
-                <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="w-full md:w-32 aspect-square md:aspect-auto md:h-32 rounded-xl bg-gh-l-hover dark:bg-gh-hover" />
-                    <div className="flex-1 space-y-3">
+
+            {/* Featured skeleton — matches the horizontal card shape */}
+            <div className="px-4 mb-4">
+                <div className="w-full rounded-2xl bg-gh-l-card dark:bg-gh-card flex items-stretch min-h-[150px] sm:min-h-[180px] overflow-hidden">
+                    <div className="shrink-0 w-[150px] sm:w-[180px] md:w-[200px] bg-gh-l-hover dark:bg-gh-hover" />
+                    <div className="flex-1 px-4 py-3 flex flex-col justify-center space-y-2.5">
                         <div className="h-3 w-24 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
                         <div className="h-4 w-4/5 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
                         <div className="h-3 w-1/3 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
-                        <div className="h-8 w-32 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
+                        <div className="h-3 w-1/2 rounded-full bg-gh-l-hover dark:bg-gh-hover" />
                     </div>
                 </div>
             </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-4 px-4">
-                {Array.from({ length: 6 }).map((_, i) => (
+                {Array.from({ length: 10 }).map((_, i) => (
                     <div key={i} className="rounded-xl bg-gh-l-card dark:bg-gh-card overflow-hidden">
                         <div className="w-full aspect-square bg-gh-l-hover dark:bg-gh-hover" />
                         <div className="p-2.5 space-y-2">
@@ -378,7 +412,7 @@ function DailyDoseSkeleton() {
     );
 }
 
-// ── Apple Podcasts SVG icon (tiny, official-looking) ──
+// ── Apple Podcasts SVG icon ────────────────────────────
 function ApplePodcastsIcon({ className = '' }: { className?: string }) {
     return (
         <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
@@ -387,7 +421,7 @@ function ApplePodcastsIcon({ className = '' }: { className?: string }) {
     );
 }
 
-// ── 11th card: Apple Podcasts tile ─────────────────────
+// ── Apple Podcasts tile ────────────────────────────────
 function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
     return (
         <motion.button

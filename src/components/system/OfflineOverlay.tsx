@@ -89,7 +89,7 @@ export function OfflineOverlay() {
             aria-describedby="offline-desc"
         >
             {/* ── Scrollable body ────────────────────────── */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
                 <div
                     className="
                         min-h-full

@@ -14,7 +14,9 @@ import {
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useStableSession } from "@/hooks/useStableSession";
+import { useConnectivity } from "@/context/ConnectivityContext";
 import MicroCaseComments from "@/components/MicroCase/MicroCaseComments";
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -141,9 +143,7 @@ async function fetchUserStateForCard(userId: string, cardId: string) {
 }
 
 // ============================================================
-// SECTION STYLES — GitHub dark mode palette
-// Light: solid -50 bg, -950 text (dark on light)
-// Dark:  #0d1117-adjacent deep tints, #e6edf3 text (light on dark)
+// SECTION STYLES
 // ============================================================
 const SECTION_STYLES = {
     scenario: {
@@ -178,6 +178,13 @@ const SECTION_STYLES = {
 export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
     const { user, ready } = useStableSession();
     const isMobile = useMobileDetect();
+    const { isOnline } = useConnectivity();
+
+    // ✅ Stable onLoaded — prevents re-triggering the load effect
+    const onLoadedRef = useRef(onLoaded);
+    useEffect(() => {
+        onLoadedRef.current = onLoaded;
+    }, [onLoaded]);
 
     const [card, setCard] = useState<MicroCaseCardType | null>(null);
     const [liked, setLiked] = useState(false);
@@ -204,6 +211,16 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
     // ── Load a card ──────────────────────────────────────────
     useEffect(() => {
         if (!ready) return;
+
+        // 🚫 No network → do not attempt to fetch.
+        if (!isOnline) {
+            if (!card) {
+                setNoCard("offline");
+                setLoading(false);
+            }
+            return;
+        }
+
         if (!user?.id) {
             setLoading(true);
             return;
@@ -219,6 +236,15 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
 
             for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                 if (cancelled || !isMounted.current) return;
+
+                // Bail mid-retry if we went offline
+                if (!navigator.onLine) {
+                    if (isMounted.current && !cancelled) {
+                        setNoCard("offline");
+                        setLoading(false);
+                    }
+                    return;
+                }
 
                 try {
                     let picked: MicroCaseCardType | null = null;
@@ -252,10 +278,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                     const state = await fetchUserStateForCard(user.id, picked.id);
                     if (cancelled || !isMounted.current) return;
 
-                    setCard({
-                        ...picked,
-                        views_count: picked.views_count + 1,
-                    });
+                    setCard({ ...picked, views_count: picked.views_count + 1 });
                     setCommentsCountState((picked as any).comments_count ?? 0);
                     setLiked(state.isLiked);
                     setSaved(state.isSaved);
@@ -263,16 +286,13 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                     setNoCard(false);
                     setLoading(false);
 
-                    onLoaded?.(picked.id);
+                    onLoadedRef.current?.(picked.id);
 
                     if (!viewedCardsRef.current.has(picked.id)) {
                         viewedCardsRef.current.add(picked.id);
                         supabase
                             .from("micro_case_card_views")
-                            .insert({
-                                user_id: user.id,
-                                card_id: picked.id,
-                            })
+                            .insert({ user_id: user.id, card_id: picked.id })
                             .then(({ error }) => {
                                 if (error && error.code !== "23505") {
                                     console.warn("[MicroCase] view insert failed:", error.message);
@@ -303,7 +323,8 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
             cancelled = true;
             isMounted.current = false;
         };
-    }, [ready, user?.id, cardId, retryTick, onLoaded]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready, user?.id, cardId, retryTick, isOnline]);
 
     // ── Fire-and-forget RPC helper ───────────────────────────
     const fireRpc = useCallback((name: string, cardId: string) => {
@@ -328,10 +349,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
         setLiked(newLiked);
         setCard((prev) =>
             prev
-                ? {
-                    ...prev,
-                    likes_count: Math.max(0, prev.likes_count + (newLiked ? 1 : -1)),
-                }
+                ? { ...prev, likes_count: Math.max(0, prev.likes_count + (newLiked ? 1 : -1)) }
                 : prev
         );
 
@@ -339,10 +357,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
             if (newLiked) {
                 const { error } = await supabase
                     .from("micro_case_card_likes")
-                    .upsert(
-                        { user_id: user.id, card_id: card.id },
-                        { onConflict: "user_id,card_id" }
-                    );
+                    .upsert({ user_id: user.id, card_id: card.id }, { onConflict: "user_id,card_id" });
                 if (error) throw error;
                 fireRpc("increment_likes", card.id);
             } else {
@@ -371,10 +386,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
         setSaved(newSaved);
         setCard((prev) =>
             prev
-                ? {
-                    ...prev,
-                    saves_count: Math.max(0, prev.saves_count + (newSaved ? 1 : -1)),
-                }
+                ? { ...prev, saves_count: Math.max(0, prev.saves_count + (newSaved ? 1 : -1)) }
                 : prev
         );
 
@@ -382,10 +394,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
             if (newSaved) {
                 const { error } = await supabase
                     .from("micro_case_card_saved_reports")
-                    .upsert(
-                        { user_id: user.id, card_id: card.id },
-                        { onConflict: "user_id,card_id" }
-                    );
+                    .upsert({ user_id: user.id, card_id: card.id }, { onConflict: "user_id,card_id" });
                 if (error) throw error;
                 fireRpc("increment_saves", card.id);
             } else {
@@ -424,10 +433,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
         try {
             const { error } = await supabase
                 .from("micro_case_card_reports")
-                .upsert(
-                    { user_id: user.id, card_id: card.id, reason: finalReason },
-                    { onConflict: "user_id,card_id" }
-                );
+                .upsert({ user_id: user.id, card_id: card.id, reason: finalReason }, { onConflict: "user_id,card_id" });
             if (error) throw error;
             fireRpc("increment_reports", card.id);
         } catch (err) {
@@ -474,11 +480,15 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
     if (loading) return LoadingSkeleton;
 
     if (noCard === "offline") {
+        // If the parent is showing its own offline page, silently
+        // disappear to avoid duplicate "offline" messaging.
+        if (!isOnline) return null;
+
         return (
             <Card className="mb-3 bg-white dark:bg-[#0d1117] rounded-2xl border-0">
                 <CardContent className="py-6 flex flex-col items-center gap-3">
                     <p className="text-center text-gray-600 dark:text-[#8b949e] font-semibold text-sm">
-                        Couldn't load the micro-case.
+                        Couldn't load this micro-case.
                     </p>
                     <button
                         onClick={() => {
@@ -552,53 +562,41 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
 
                     {/* Sections */}
                     <CardContent className="px-3 pb-3 space-y-2.5">
-                        {/* Scenario */}
                         <div className={`p-3 rounded-xl ${SECTION_STYLES.scenario.bg} ${SECTION_STYLES.scenario.accent}`}>
                             <div className={`flex items-center gap-2 mb-1.5 ${SECTION_STYLES.scenario.label}`}>
                                 <Eye className="w-3.5 h-3.5" />
-                                <span className="text-[10px] uppercase tracking-widest font-bold">
-                                    The Patient Situation
-                                </span>
+                                <span className="text-[10px] uppercase tracking-widest font-bold">The Patient Situation</span>
                             </div>
                             <p className={`text-sm leading-relaxed font-medium italic ${SECTION_STYLES.scenario.text}`}>
                                 "{card.scenario}"
                             </p>
                         </div>
 
-                        {/* Question */}
                         <div className={`p-3 rounded-xl ${SECTION_STYLES.question.bg} ${SECTION_STYLES.question.accent}`}>
                             <div className={`flex items-center gap-2 mb-1.5 ${SECTION_STYLES.question.label}`}>
                                 <HelpCircle className="w-3.5 h-3.5" />
-                                <span className="text-[10px] uppercase tracking-widest font-bold">
-                                    Critical Question
-                                </span>
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Critical Question</span>
                             </div>
                             <p className={`text-sm font-bold ${SECTION_STYLES.question.text}`}>
                                 {card.question}
                             </p>
                         </div>
 
-                        {/* Answer */}
                         <div className={`p-3 rounded-xl ${SECTION_STYLES.answer.bg} ${SECTION_STYLES.answer.accent}`}>
                             <div className={`flex items-center gap-2 mb-1.5 ${SECTION_STYLES.answer.label}`}>
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span className="text-[10px] uppercase tracking-widest font-bold">
-                                    Correct Response
-                                </span>
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Correct Response</span>
                             </div>
                             <p className={`text-sm font-bold ${SECTION_STYLES.answer.text}`}>
                                 {card.answer}
                             </p>
                         </div>
 
-                        {/* Rationale */}
                         {card.explanation && (
                             <div className={`p-3 rounded-xl ${SECTION_STYLES.rationale.bg} ${SECTION_STYLES.rationale.accent}`}>
                                 <div className={`flex items-center gap-2 mb-1.5 ${SECTION_STYLES.rationale.label}`}>
                                     <Lightbulb className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] uppercase tracking-widest font-bold">
-                                        Clinical Rationale
-                                    </span>
+                                    <span className="text-[10px] uppercase tracking-widest font-bold">Clinical Rationale</span>
                                 </div>
                                 <p className={`text-xs sm:text-sm leading-relaxed font-medium ${SECTION_STYLES.rationale.text}`}>
                                     {card.explanation}
@@ -606,7 +604,6 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                             </div>
                         )}
 
-                        {/* Tags */}
                         {card.tags && (
                             <div className="flex flex-wrap gap-1.5 pt-1">
                                 {card.tags.split(",").slice(0, 5).map((tag) => (
@@ -621,7 +618,6 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                             </div>
                         )}
 
-                        {/* Action bar */}
                         <div className="pt-2 flex items-center justify-between gap-1.5">
                             <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
                                 <button
@@ -651,11 +647,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                                 <button
                                     onClick={() =>
                                         reported
-                                            ? setViewReportReason({
-                                                show: true,
-                                                reason:
-                                                    "You have already reported this case. Thank you.",
-                                            })
+                                            ? setViewReportReason({ show: true, reason: "You have already reported this case. Thank you." })
                                             : setShowReportDialog(true)
                                     }
                                     title={reported ? "View Report Reason" : "Report Issue"}
@@ -689,7 +681,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                 </div>
             </Card>
 
-            {/* Report Dialog */}
+            {/* Report Dialog + View Report Dialog — unchanged from your original */}
             {showReportDialog && (
                 <div
                     className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -704,9 +696,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                                 <div className="p-2 bg-rose-100 dark:bg-[#241012] rounded-lg">
                                     <Flag className="w-5 h-5 text-rose-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-[#e6edf3]">
-                                    Report Micro-Case
-                                </h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-[#e6edf3]">Report Micro-Case</h3>
                             </div>
                             <button
                                 onClick={() => {
@@ -735,9 +725,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {REPORT_REASONS.map((reason) => (
-                                            <SelectItem key={reason} value={reason}>
-                                                {reason}
-                                            </SelectItem>
+                                            <SelectItem key={reason} value={reason}>{reason}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -784,7 +772,6 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                 </div>
             )}
 
-            {/* View Report Dialog */}
             {viewReportReason.show && (
                 <div
                     className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -799,9 +786,7 @@ export function MicroCaseCard({ cardId, onLoaded }: MicroCaseCardProps = {}) {
                                 <div className="p-2 bg-rose-100 dark:bg-[#241012] rounded-lg">
                                     <AlertCircle className="w-5 h-5 text-rose-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-[#e6edf3]">
-                                    Report Details
-                                </h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-[#e6edf3]">Report Details</h3>
                             </div>
                             <button
                                 onClick={() => setViewReportReason({ show: false, reason: "" })}
