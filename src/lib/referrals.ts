@@ -24,9 +24,14 @@ export async function getMyReferralCode(userId: string): Promise<string | null> 
             .eq("user_id", userId)
             .maybeSingle();
 
-        if (error || !data) return null;
+        if (error) {
+            console.warn("[referrals] getMyReferralCode failed:", error.message);
+            return null;
+        }
+        if (!data) return null;
         return data.referral_code ?? null;
-    } catch {
+    } catch (err) {
+        console.warn("[referrals] getMyReferralCode threw:", err);
         return null;
     }
 }
@@ -74,26 +79,36 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────
 // Stats: how many friends has the user referred, and how many
 // days they've earned.
-//   - completed/rewarded → counted
-//   - pending → not counted yet
-//   - rejected → never counted
+//
+// Status mapping:
+//   rewarded            → counted as a confirmed invite + days
+//   completed           → signed up but not yet credited → pending
+//   pending             → signup not yet verified → pending
+//   rejected            → never counted
+//
+// NOTE: if your DB uses `completed` to mean "fully rewarded,"
+// move it into the `rewarded` branch below.
 // ─────────────────────────────────────────────────────────────
 export type ReferralStats = {
     invites: number;      // confirmed rewarded referrals
     pending: number;      // signups that haven't been rewarded yet
-    daysEarned: number;   // invites * 2 (referrer reward)
+    daysEarned: number;   // sum of reward_days_referrer for rewarded rows
 };
 
 export async function getMyReferralStats(userId: string): Promise<ReferralStats> {
+    const empty: ReferralStats = { invites: 0, pending: 0, daysEarned: 0 };
+
     try {
         const { data, error } = await supabase
             .from("referrals")
             .select("status, reward_days_referrer")
             .eq("referrer_user_id", userId);
 
-        if (error || !data) {
-            return { invites: 0, pending: 0, daysEarned: 0 };
+        if (error) {
+            console.warn("[referrals] getMyReferralStats failed:", error.message);
+            return empty;
         }
+        if (!data) return empty;
 
         let invites = 0;
         let pending = 0;
@@ -102,7 +117,7 @@ export async function getMyReferralStats(userId: string): Promise<ReferralStats>
         for (const row of data) {
             if (row.status === "rewarded") {
                 invites += 1;
-                daysEarned += row.reward_days_referrer ?? 2;
+                daysEarned += row.reward_days_referrer ?? 0;
             } else if (row.status === "pending" || row.status === "completed") {
                 pending += 1;
             }
@@ -110,7 +125,8 @@ export async function getMyReferralStats(userId: string): Promise<ReferralStats>
         }
 
         return { invites, pending, daysEarned };
-    } catch {
-        return { invites: 0, pending: 0, daysEarned: 0 };
+    } catch (err) {
+        console.warn("[referrals] getMyReferralStats threw:", err);
+        return empty;
     }
 }
