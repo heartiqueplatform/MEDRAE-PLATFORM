@@ -1,7 +1,6 @@
 "use client";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
-import { MusicPlayer } from "@/components/MusicPlayer";
+
 import { Toaster } from "@/components/ui/toaster";
 import { Outlet } from "react-router-dom";
 
@@ -141,13 +140,6 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
 
           <Toaster />
 
-          {!isListenRoute && (
-            <ErrorBoundary label="MusicPlayer">
-              <Suspense fallback={null}>
-                <MusicPlayer />
-              </Suspense>
-            </ErrorBoundary>
-          )}
         </div>
       </div>
 
@@ -478,19 +470,19 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   if (user) {
     return (
       <SidebarProvider>
-        <MusicPlayerProvider>
-          <DashboardContent
-            user={user}
-            role={userRole || "student"}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            streak={streak}
 
-            userId={user.id}
-          >
-            {children}
-          </DashboardContent>
-        </MusicPlayerProvider>
+        <DashboardContent
+          user={user}
+          role={userRole || "student"}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          streak={streak}
+
+          userId={user.id}
+        >
+          {children}
+        </DashboardContent>
+
       </SidebarProvider>
     );
   }
@@ -506,24 +498,24 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   if (!user && _authLoading) {
     return (
       <SidebarProvider>
-        <MusicPlayerProvider>
-          <DashboardContent
-            user={{
-              name: cachedUser?.email?.split('@')[0] || "Nurse",
-              role: userRole || "student",
-              avatar: "/avatars/default.jpg",
-              id: cachedUser?.id || "hydrating",
-            }}
-            role={userRole || "student"}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            streak={streak}
 
-            userId={cachedUser?.id || authUser?.id || "hydrating"}
-          >
-            {children}
-          </DashboardContent>
-        </MusicPlayerProvider>
+        <DashboardContent
+          user={{
+            name: cachedUser?.email?.split('@')[0] || "Nurse",
+            role: userRole || "student",
+            avatar: "/avatars/default.jpg",
+            id: cachedUser?.id || "hydrating",
+          }}
+          role={userRole || "student"}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          streak={streak}
+
+          userId={cachedUser?.id || authUser?.id || "hydrating"}
+        >
+          {children}
+        </DashboardContent>
+
       </SidebarProvider>
     );
   }

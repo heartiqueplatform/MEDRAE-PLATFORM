@@ -150,7 +150,7 @@ import NCKExamPreparationPage from "./pages/seo/NCKExamPreparationPage";
 import NursingRevisionKenyaPage from "./pages/seo/NursingRevisionKenyaPage";
 import MedraeNursingMeritCupPage from "./pages/seo/MedraeNursingMeritCupPage";
 import AdminPodcastTest from "./pages/AdminPodcastTest";
-
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 // ═══════════════════════════════════════════════════════════════
 // STAFF CPD MODULE (self-contained — nothing else imports from here)
 // ═══════════════════════════════════════════════════════════════
@@ -418,6 +418,31 @@ const FooterGate = ({ user }: { user: any }) => {
     return null;
   }
   return <Footer />;
+};
+
+// Pages where the floating mini music player should NOT render.
+// The PROVIDER stays mounted everywhere — only the mini UI hides here.
+const PLAYER_HIDDEN_PREFIXES = [
+  "/quiz-simulation",
+  "/simulation",
+  "/exam",          // candidate, instructions, access, results
+  "/tutor/exams",   // tutor exam control (remove this line if you want the list page to keep the player)
+];
+
+const GlobalMusicPlayerGate = () => {
+  const location = useLocation();
+
+  if (PLAYER_HIDDEN_PREFIXES.some((p) => location.pathname.startsWith(p))) {
+    return null;
+  }
+
+  return (
+    <ErrorBoundary label="MusicPlayer">
+      <Suspense fallback={null}>
+        <MusicPlayer />
+      </Suspense>
+    </ErrorBoundary>
+  );
 };
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -855,7 +880,9 @@ const AppContent = () => {
                         <Route path="/live-classes/create" element={<CreateClass />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
-
+                      {/* ✅ Global music player — mounted once, above routes.
+                          Survives every navigation except the hidden prefixes. */}
+                      <GlobalMusicPlayerGate />
                       {/* ✅ Footer — hidden on full-screen pages (overlays,
                           medtube, quiz, settings, etc.). Only shows on
                           dashboard-style routes. */}
