@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 const APP_ORIGIN =
     typeof window !== "undefined"
         ? window.location.origin
-        : "https://medrae.app"; // fallback for SSR
+        : "https://medrae.vercel.app"; // fallback for SSR
 
 // ─────────────────────────────────────────────────────────────
 // Fetch the current user's referral code from profiles.

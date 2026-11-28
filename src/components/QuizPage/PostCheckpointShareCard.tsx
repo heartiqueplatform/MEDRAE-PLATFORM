@@ -33,7 +33,7 @@ const SHARE_IMAGE_PATH = "/medraeshare.jpeg";
 const buildShareMessage = (code: string): string =>
     `🎓 I'm studying smarter with *Medrae* — A smarter study companion for nursing students.\n\n` +
     `Use my link and we BOTH get FREE Premium:\n` +
-    `👉 https://medrae.app/?ref=${code}\n\n` +
+    `👉 https://medrae.vercel.app/?ref=${code}\n\n` +
     `You get 1 day free. I get 2. Everyone wins 💚`;
 
 const loadShareImageFile = async (): Promise<File | null> => {
@@ -76,7 +76,7 @@ export default function PostCheckpointShareCard({
         if (visible) setCopied(false);
     }, [visible]);
 
-    const shareUrl = referralCode ? `https://medrae.app/?ref=${referralCode}` : "";
+    const shareUrl = referralCode ? `https://medrae.vercel.app/?ref=${referralCode}` : "";
     const shareMessage = referralCode ? buildShareMessage(referralCode) : "";
 
     const handleClose = useCallback(() => {
