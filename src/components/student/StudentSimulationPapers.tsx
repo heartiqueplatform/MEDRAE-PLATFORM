@@ -33,24 +33,25 @@ export default function StudentSimulationPapers({
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-2">
                         <div>
                             <div className="flex items-center gap-2.5">
-                                <div className="flex items-center gap-2.5 flex-wrap">
-                                    {/* YOUR WORD — style preserved */}
-                                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                                        Proctorium
-                                    </h2>
+                                {/* word + count always together */}
+                                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                    Proctorium
+                                </h2>
+                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums
+                     bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
+                                    {papers.length} papers
+                                </span>
+                            </div>
 
-                                    {/* [🛡 DigiProctor style Environment] */}
-                                    <span className="inline-flex items-center gap-1.5 rounded-full
+                            {/* DigiProctor pill on its own line below — full room */}
+                            <div className="mt-1.5">
+                                <span className="inline-flex items-center gap-1.5 rounded-full
                      bg-blue-100 dark:bg-blue-500/20
                      text-blue-700 dark:text-blue-300
                      ring-1 ring-blue-200/60 dark:ring-blue-400/20
                      px-2.5 py-0.5 text-[11px] font-semibold">
-                                        <ShieldCheck className="w-3 h-3" />
-                                        DigiProctor style Environment
-                                    </span>
-                                </div>
-                                <span className="text-[11px] font-semibold px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full tabular-nums">
-                                    {papers.length} papers
+                                    <ShieldCheck className="w-3 h-3" />
+                                    DigiProctor style Environment
                                 </span>
                             </div>
                             <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">
